@@ -1,0 +1,13 @@
+{
+  "_comment": "Merge this into <project>/.claude/settings.json (create the file if absent, or merge the hooks.PreToolUse array into an existing one). Registers a non-blocking nudge that fires on Grep/Glob and steers navigation to graphify-out/q.py. The lanes skill CANNOT write this file for you under auto-mode (self-modification guard) — hand this snippet to the user to paste/approve.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Grep|Glob",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/graphify-nudge.sh\"" }
+        ]
+      }
+    ]
+  }
+}

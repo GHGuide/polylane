@@ -1,0 +1,52 @@
+{
+  "skill": "lanes",
+  "purpose": "Verify /lanes interviews to a locked spec, derives correct lane count from file overlap, recommends token-efficient model/effort, and only emits prompts after two gates.",
+  "cases": [
+    {
+      "name": "single_goal_one_lane",
+      "input": "just make the settings screen use the dark theme",
+      "expect": [
+        "interviews briefly, presents a 1-item INTEGRATION SPEC",
+        "waits for explicit yes before recon",
+        "derives exactly 1 lane (no forced 3)",
+        "recommends Opus 4.8 high (mechanical UI, known files)",
+        "no prompt output before both gates approved"
+      ]
+    },
+    {
+      "name": "three_disjoint_three_lanes",
+      "input": "optimize fetching, make Siri work, redesign the UI to black",
+      "expect": [
+        "spec has 3 testable items",
+        "recon shows disjoint file-sets -> 3 parallel lanes + 1 integrator",
+        "Fetch/Efficiency-type lanes -> Fable medium or Opus high per rules; mechanical -> Opus; integrator -> Opus xhigh",
+        "suggestion list includes superpowers + caveman + graphify + any task-specific (e.g. ios-simulator, design skills)"
+      ]
+    },
+    {
+      "name": "entangled_pair_carve_or_merge",
+      "input": "make fetching more accurate AND make the model run cooler and faster",
+      "expect": [
+        "recon finds both touch the engine/generator files",
+        "either merges into one 'engine' lane OR carves with a HARD CONTRACT (one owns LeLauAI-equivalent, other owns generator), never two lanes both editing the same file",
+        "security/privacy-adjacent work routed to Opus not Fable"
+      ]
+    },
+    {
+      "name": "spec_gate_blocks",
+      "input": "build the whole thing (vague)",
+      "expect": [
+        "does NOT generate prompts",
+        "asks batched clarifying questions, re-presents spec each round",
+        "requires explicit yes; 'looks good so far' triggers one more confirmation round"
+      ]
+    }
+  ],
+  "red_flags": [
+    "emits prompts before the spec gate",
+    "defaults to 3 lanes regardless of overlap",
+    "puts two lanes' OWN globs on the same file",
+    "recommends Fable on every lane",
+    "auto-installs a third-party skill without approval"
+  ]
+}
