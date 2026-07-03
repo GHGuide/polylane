@@ -68,13 +68,13 @@ You launch the prompts in separate terminals. They coordinate through a shared s
 ## Install
 
 ```bash
-git clone https://github.com/OWNER/polylane ~/.claude/skills/polylane
+git clone https://github.com/GHGuide/polylane ~/.claude/skills/polylane
 ```
 
 Then in Claude Code, type `/polylane` (or just describe several goals and ask for parallel prompts).
 
 **Works best with** (polylane recommends/installs them for you where relevant):
-- [graphify](https://github.com/) — code knowledge graph (query instead of grep)
+- graphify — code knowledge graph (query instead of grep)
 - caveman — terse output mode
 - [superpowers](https://github.com/obra/superpowers) — verification / debugging / plans
 
