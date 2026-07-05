@@ -2,7 +2,7 @@
 """graphify query helper — navigate the repo WITHOUT reading files.
 
 Filters graph.json and prints only small, concise results (never the graph),
-so context gets ~a few lines instead of whole source files. Use this instead
+so context gets a few lines instead of whole source files. Use this instead
 of grep for "where is X / who calls Y / what does Z use / what's near it".
 
 Usage:
@@ -13,18 +13,39 @@ Usage:
   python graphify-out/q.py file <path-sub>   # nodes defined in matching files
   python graphify-out/q.py community <node|N># sibling nodes in the same cluster
 
-Each result prints  id  [label]  file:line  (community N)  so you can then
-Read the exact file:line if you truly need the source — a targeted read, not a blind grep.
+Flags (any position):
+  --json           machine-readable JSON instead of text
+  --graph PATH     graph.json to query (default: graph.json beside this script)
+  --cap N          max results to print (default 40)
+
+Each result prints  id  [label]  file:line  (cN)  so you can then Read the exact
+file:line if you truly need the source — a targeted read, not a blind grep.
 """
-import json, os, sys
+import argparse
+import json
+import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-GRAPH = os.path.join(HERE, "graph.json")
-CAP = 40  # never flood context
+DEFAULT_GRAPH = os.path.join(HERE, "graph.json")
+DEFAULT_CAP = 40
+COMMANDS = ("callers", "uses", "near", "file", "community")
 
 
-def load():
-    g = json.load(open(GRAPH))
+def die(msg, code=1):
+    print(msg, file=sys.stderr)
+    sys.exit(code)
+
+
+def load(path):
+    if not os.path.isfile(path):
+        die(f"graph.json not found at {path}\n"
+            f"Run /graphify-auto to build it (free, no LLM), then retry.")
+    try:
+        with open(path) as f:
+            g = json.load(f)
+    except (OSError, ValueError) as e:
+        die(f"could not read graph at {path}: {e}")
     nodes = {n["id"]: n for n in g.get("nodes", [])}
     return nodes, g.get("links", []), g.get("built_at_commit", "?")
 
@@ -35,8 +56,32 @@ def loc(n):
     return f'{n.get("source_file","?")}:{str(n.get("source_location","")).lstrip("L")}'
 
 
+def comm(n):
+    return f'c{n.get("community","?")}' if n else "c?"
+
+
 def fmt(n):
-    return f'{n["id"]}  [{n.get("label","")}]  {loc(n)}  (c{n.get("community","?")})'
+    return f'{n["id"]}  [{n.get("label","")}]  {loc(n)}  ({comm(n)})'
+
+
+def node_dict(n):
+    return {
+        "id": n["id"],
+        "label": n.get("label", ""),
+        "file": n.get("source_file"),
+        "line": str(n.get("source_location", "")).lstrip("L"),
+        "community": n.get("community"),
+    }
+
+
+def edge_dict(link, other, key):
+    return {
+        "relation": link.get("relation", "?"),
+        "id": other.get("id", link.get(key)),
+        "file": other.get("source_file"),
+        "line": str(other.get("source_location", "")).lstrip("L"),
+        "community": other.get("community"),
+    }
 
 
 def resolve(term, nodes):
@@ -49,62 +94,130 @@ def resolve(term, nodes):
             or t in str(n.get("source_file", "")).lower()]
 
 
+def emit_json(obj):
+    print(json.dumps(obj, indent=2))
+
+
+def cmd_search(term, nodes, commit, cap, as_json):
+    hits = resolve(term, nodes)
+    shown = hits[:cap]
+    if as_json:
+        emit_json({"query": term, "count": len(hits),
+                   "results": [node_dict(nodes[h]) for h in shown]})
+        return
+    for h in shown:
+        print(fmt(nodes[h]))
+    print(f"[{len(hits)} matches for '{term}'; showing {len(shown)}] (graph@{commit[:8]})")
+
+
+def cmd_file(sub, nodes, commit, cap, as_json):
+    hits = [n for n in nodes.values() if sub in str(n.get("source_file", "")).lower()]
+    shown = hits[:cap]
+    if as_json:
+        emit_json({"pattern": sub, "count": len(hits),
+                   "results": [node_dict(n) for n in shown]})
+        return
+    for n in shown:
+        print(fmt(n))
+    print(f"[{len(hits)} nodes in files matching '{sub}'; showing {len(shown)}] (graph@{commit[:8]})")
+
+
+def cmd_community(ref, nodes, commit, cap, as_json):
+    if ref.isdigit():
+        target = int(ref)
+    else:
+        r = resolve(ref, nodes)
+        if not r:
+            die("no match — try `q.py <term>` first, or pass a community number")
+        target = nodes[r[0]].get("community")
+    if target is None:
+        die("no community found for that node")
+    mem = [n for n in nodes.values() if n.get("community") == target]
+    shown = mem[:cap]
+    if as_json:
+        emit_json({"community": target, "count": len(mem),
+                   "results": [node_dict(n) for n in shown]})
+        return
+    print(f"community {target}: {len(mem)} nodes")
+    for n in shown:
+        print(fmt(n))
+
+
+def cmd_edges(cmd, ref, nodes, links, commit, cap, as_json):
+    r = resolve(ref, nodes)
+    if not r:
+        die("no match — try a broader term or `q.py <term>` first")
+    nid = r[0]
+    ins = [l for l in links if l.get("target") == nid]
+    outs = [l for l in links if l.get("source") == nid]
+
+    if as_json:
+        obj = {"node": nid}
+        if cmd in ("callers", "near"):
+            obj["callers"] = [edge_dict(l, nodes.get(l.get("source"), {}), "source")
+                              for l in ins[:cap]]
+        if cmd in ("uses", "near"):
+            obj["uses"] = [edge_dict(l, nodes.get(l.get("target"), {}), "target")
+                           for l in outs[:cap]]
+        emit_json(obj)
+        return
+
+    if len(r) > 1:
+        print(f"# using {nid}  (+{len(r)-1} other matches — refine if wrong)")
+
+    def show(lst, title, key):
+        print(f"-- {title} ({len(lst)}) --")
+        for l in lst[:cap]:
+            o = nodes.get(l.get(key), {})
+            print(f'  {l.get("relation","?"):<12} {o.get("id", l.get(key))}  {loc(o)}  ({comm(o)})')
+
+    if cmd in ("callers", "near"):
+        show(ins, "CALLERS (point at it)", "source")
+    if cmd in ("uses", "near"):
+        show(outs, "USES (it points to)", "target")
+
+
+def build_parser():
+    p = argparse.ArgumentParser(
+        prog="q.py", add_help=True,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=__doc__)
+    p.add_argument("--json", action="store_true", dest="as_json",
+                   help="machine-readable JSON output")
+    p.add_argument("--graph", default=DEFAULT_GRAPH,
+                   help="path to graph.json (default: beside this script)")
+    p.add_argument("--cap", type=int, default=DEFAULT_CAP,
+                   help="max results to print (default 40)")
+    p.add_argument("args", nargs=argparse.REMAINDER,
+                   help="<term> | callers|uses|near|file|community <arg>")
+    return p
+
+
 def main():
-    a = sys.argv[1:]
-    if not a:
+    parser = build_parser()
+    opts = parser.parse_args()
+    pos = opts.args
+    if not pos:
         print(__doc__)
         return
-    nodes, links, commit = load()
-    cmd = a[0]
 
-    if cmd == "file" and len(a) > 1:
-        sub = " ".join(a[1:]).lower()
-        hits = [n for n in nodes.values() if sub in str(n.get("source_file", "")).lower()]
-        for n in hits[:CAP]:
-            print(fmt(n))
-        print(f"[{len(hits)} nodes in files matching '{sub}'; showing {min(len(hits),CAP)}] (graph@{commit[:8]})")
+    nodes, links, commit = load(opts.graph)
+    cmd = pos[0]
+
+    if cmd in COMMANDS:
+        arg = " ".join(pos[1:]).strip()
+        if not arg:
+            die(f"`{cmd}` needs an argument, e.g. `q.py {cmd} <node>`")
+        if cmd == "file":
+            cmd_file(arg.lower(), nodes, commit, opts.cap, opts.as_json)
+        elif cmd == "community":
+            cmd_community(arg, nodes, commit, opts.cap, opts.as_json)
+        else:
+            cmd_edges(cmd, arg, nodes, links, commit, opts.cap, opts.as_json)
         return
 
-    if cmd == "community" and len(a) > 1:
-        arg = " ".join(a[1:])
-        comm = int(arg) if arg.isdigit() else (nodes[resolve(arg, nodes)[0]].get("community") if resolve(arg, nodes) else None)
-        if comm is None:
-            print("no match")
-            return
-        mem = [n for n in nodes.values() if n.get("community") == comm]
-        print(f"community {comm}: {len(mem)} nodes")
-        for n in mem[:CAP]:
-            print(fmt(n))
-        return
-
-    if cmd in ("callers", "uses", "near") and len(a) > 1:
-        r = resolve(" ".join(a[1:]), nodes)
-        if not r:
-            print("no match — try a broader term or `q.py <term>` first")
-            return
-        nid = r[0]
-        if len(r) > 1:
-            print(f"# using {nid}  (+{len(r)-1} other matches — refine if wrong)")
-        ins = [l for l in links if l.get("target") == nid]
-        outs = [l for l in links if l.get("source") == nid]
-
-        def show(lst, title, key):
-            print(f"-- {title} ({len(lst)}) --")
-            for l in lst[:CAP]:
-                o = nodes.get(l.get(key), {})
-                print(f'  {l.get("relation","?"):<12} {o.get("id", l.get(key))}  {loc(o)}')
-        if cmd in ("callers", "near"):
-            show(ins, "CALLERS (point at it)", "source")
-        if cmd in ("uses", "near"):
-            show(outs, "USES (it points to)", "target")
-        return
-
-    # default: node search
-    term = " ".join(a)
-    hits = resolve(term, nodes)
-    for nid in hits[:CAP]:
-        print(fmt(nodes[nid]))
-    print(f"[{len(hits)} matches for '{term}'; showing {min(len(hits),CAP)}] (graph@{commit[:8]})")
+    # default: node search (contract: `q.py <symbol>`)
+    cmd_search(" ".join(pos), nodes, commit, opts.cap, opts.as_json)
 
 
 if __name__ == "__main__":
