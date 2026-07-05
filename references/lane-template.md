@@ -4,9 +4,9 @@ Emit ONE of these per lane, as: a launch line + a fenced paste block. Order the 
 
 ## Launch line
 ```
-cd "<PROJECT_ABS_PATH>" && claude --model <MODEL_ID>
+cd "<WORKTREE_ABS_PATH>" && claude --model <MODEL_ID>
 ```
-(`claude-fable-5` or `claude-opus-4-8` per model-selection.md. Effort is instructed in-prompt via block B — there is no verifiable CLI effort flag.)
+(`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `claude-fable-5` or `claude-opus-4-8` per model-selection.md. Effort is instructed in-prompt via block B — there is no verifiable CLI effort flag.)
 
 ## Paste block skeleton (fill and inline the blocks)
 ```
@@ -23,10 +23,27 @@ GOAL (LOCKED — do not re-scope):
 
 WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [G forced verification]
-[H coordination + mutex]
+[H coordination + mutex]   (docs/parallel-status.md = cross-lane requests + NEEDS DECISION only, never the done signal)
 [I scoped git]
 [J done checklist]
+
+DONE-SIGNAL: on completion write docs/status-<lane>.md, first line EXACTLY `STATUS: <lane> DONE` — per-lane + worktree-safe; the runner reads this file to know the lane finished.
 ```
+
+## After all lane prompts — emit the run manifest (planner action, not the builder's)
+Once every lane's paste block is printed, the planner ALSO writes them to disk and emits the manifest the runner consumes (mirrors SKILL.md Phase 6):
+- Write each lane's full paste block (and the integrator's) to `.polylane/lanes/<lane>.txt`.
+- Emit `.polylane/run.json` conforming EXACTLY to the frozen schema — no added, dropped, or renamed keys:
+```json
+{
+  "base": "<base branch>",
+  "integrator": {"name":"<int>","model":"<id>","branch":"<int-branch>","worktree":"<int-worktree>","prompt_file":".polylane/lanes/<int>.txt"},
+  "lanes": [
+    {"name":"<lane>","model":"<id>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>"]}
+  ]
+}
+```
+`worktree` is each lane's Phase 5 worktree; `prompt_file` is its `.polylane/lanes/<lane>.txt`. The integrator omits `own_globs`; every lane includes it.
 
 ## Rules
 - The GOAL is copied verbatim from the locked INTEGRATION SPEC — never paraphrased or expanded. If a builder wants scope beyond it, it must raise NEEDS DECISION, not act.
@@ -40,7 +57,7 @@ Scenario: a Vue todo app. One derived lane, `dark-theme`, on Opus 4.8 / high, ow
 
 Launch line:
 ```
-cd "/Users/me/todo-app" && claude --model claude-opus-4-8
+cd "/Users/me/.worktrees/todo-app-dark-theme" && claude --model claude-opus-4-8
 ```
 
 Paste block:
@@ -79,11 +96,13 @@ WORKFLOW: writing-plans → smallest steps → verify each → commit.
 
 VERIFY with evidence — no claim without it. Write docs/verify-dark-theme.md containing: preview_start command output + before/after screenshots of app, a modal, and a menu in dark mode. Never say "done"/"works"/"looks good" without the artifact in that file.
 
-Append your lane's status to docs/parallel-status.md: what changed (your paths only), what's now stable, any shared-file request, and a NEEDS DECISION: line if you hit a fork only the user can resolve (then continue other work, don't stall).
+Use docs/parallel-status.md ONLY for cross-lane requests: a shared-file edit ask addressed to the owning lane, or a NEEDS DECISION: line if you hit a fork only the user can resolve (then continue other work, don't stall). It is not a general status log and not the done signal.
 
-Commit often. Stage ONLY your paths (git add src/styles src/components tailwind.config.*) — NEVER git add -A or git add . (other Claudes have uncommitted work in this tree). On index.lock, wait + retry.
+Commit often. Stage ONLY your paths (git add src/styles src/components tailwind.config.*) — NEVER git add -A or git add . (scope every add to your own paths). On index.lock, wait + retry.
 
-DONE = all true: both GOAL items observably met + docs/verify-dark-theme.md has proof + parallel-status.md updated + no new errors. Drive with the skills; no generic output.
+DONE-SIGNAL: on completion write docs/status-dark-theme.md, first line EXACTLY `STATUS: dark-theme DONE` — the runner reads this to know the lane finished.
+
+DONE = all true: both GOAL items observably met + docs/verify-dark-theme.md has proof + docs/status-dark-theme.md written with first line `STATUS: dark-theme DONE` + no new errors. Drive with the skills; no generic output.
 ```
 
-Reading top to bottom: A (identity) → B (model header) → 0 (mandatory-4 preamble) → C (terse) → D (skills) → E (graphify-first) → F (ownership + contract) → GOAL (locked, verbatim from spec) → WORKFLOW → G (verify) → H (coordination) → I (scoped git) → J (done). Same order the skeleton above prescribes.
+Reading top to bottom: A (identity) → B (model header) → 0 (mandatory-4 preamble) → C (terse) → D (skills) → E (graphify-first) → F (ownership + contract) → GOAL (locked, verbatim from spec) → WORKFLOW → G (verify) → H (coordination) → I (scoped git) → J (done) → DONE-SIGNAL (docs/status-<lane>.md, first line `STATUS: <lane> DONE`). Same order the skeleton above prescribes.
