@@ -16,6 +16,34 @@ Goal: converge on a complete, numbered INTEGRATION SPEC with minimum user effort
    Mark changes since last round with `*`.
 4. **Probe for the missing.** Before declaring complete, ask ONE completeness question: "Anything else — settings, error states, offline, migrations, docs?" with a "No, that's everything" option.
 
+## Worked round (what one batch actually looks like)
+
+User opens with three lines:
+```
+dark theme
+faster search
+export to CSV
+```
+
+Draft spec (before asking anything):
+```
+1. Dark theme — done when <scope?> renders dark, screenshot-verified.
+2. Faster search — done when <target?> latency met.
+3. CSV export — done when <what data?> downloads as valid CSV.
+```
+
+Three slots are ambiguous, so fire ONE AskUserQuestion with three questions (each option's recommended choice first, labeled "(Recommended)"):
+
+- **Dark theme scope** — options: `App + modals + menus (Recommended)` / `App shell only` / `Also emails/PDF exports`.
+- **Search target** — options: `<150 ms on 10k rows (Recommended)` / `<500 ms, keep it simple` / `Add a backend index`.
+- **CSV contents** — options: `Current filtered view (Recommended)` / `Entire dataset` / `User picks columns`.
+
+The user clicks three answers. Re-present the spec immediately (step 3), marking every changed line with `*`. If no slots remained ambiguous, skip the question entirely — never ask to look busy.
+
+## Re-present rule (when the numbered spec is shown again)
+
+Show the full numbered spec: after EVERY question round, after any freeform correction the user types, and one final time at the gate. Between those, don't reprint it. Each reprint carries a version bump (`v1 → v2 …`) and `*` on changed lines so the user diffs at a glance.
+
 ## Spec item format
 
 ```

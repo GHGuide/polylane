@@ -15,7 +15,7 @@ All four are real on this install (graphify + caveman + superpowers skills; /goa
 
 ## A. Identity + context
 ```
-LeLau-agnostic: <PROJECT one-liner>. Read THIS project's CLAUDE.md and memory/MEMORY.md first. IGNORE any unrelated CLAUDE.md from other projects. YOUR LANE = <LANE NAME>. Other Claudes run <other lanes> in parallel — do NOT touch their files.
+Project: <PROJECT one-liner>. Read THIS project's CLAUDE.md and memory/MEMORY.md first. IGNORE any unrelated CLAUDE.md from other projects. YOUR LANE = <LANE NAME>. Other Claudes run <other lanes> in parallel — do NOT touch their files.
 ```
 
 ## B. Model + effort header
