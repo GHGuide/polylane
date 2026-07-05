@@ -1,39 +1,69 @@
-# Post-GO merge + cleanup (automatic — integrator/final step)
+# Post-GO merge + cleanup (automated — `bin/polylane-run.sh`)
 
-Parallel worktrees leave a confusing pile of sibling folders + branches. After the integrator issues GO, consolidate to ONE project folder and remove/quarantine the rest. Destructive — every step verifies before it removes, and quarantines (MOVE) rather than deletes anything it didn't create.
+Parallel worktrees leave a confusing pile of sibling folders + branches. After the integrator issues GO, one command consolidates to the single project tree and removes the rest. The runner is destructive by design, so every removal is gated: it verifies each lane is fully merged first, asks for one confirmation, and only ever deletes worktrees, branches, and its own scratch — never anything outside them.
 
-## 0. Precondition
-Run ONLY after the integrator's GO on a **re-merge of current branch HEADs** (not a stale prior GO — see below). If NO-GO, skip cleanup.
+## The runner
 
-Set the integration branch once (every command below reuses it):
 ```bash
-INT=main   # the branch the integrator merged lanes into
+bin/polylane-run.sh <manifest> [--dry-run] [--yes]
 ```
 
-## 1. Verify before destroying (never lose work)
-- For each lane branch: `git log --oneline <branch> ^"$INT"` must be **empty** (0 commits not yet merged). Non-empty → NOT merged → STOP, do not remove that worktree.
-  ```bash
-  git log --oneline <lane-branch> ^"$INT"   # empty output = fully merged = safe to remove
-  ```
-- `git status` in the main tree: note uncommitted/untracked work. It lives in the MAIN tree (not a worktree) — it survives worktree removal. Never `rm` the main tree. If an orphan workstream is uncommitted, tell the user (commit/stash) — do not silently carry it into a destructive step.
+- `<manifest>` — the run manifest polylane wrote when it generated the lanes. It declares the integration branch, and each lane's worktree path + branch name. The runner reads it; you don't hand-list worktrees.
+- `--dry-run` — print exactly what would be verified and removed, then stop. Deletes nothing. Run this first when unsure.
+- `--yes` — skip the interactive confirmation (for non-interactive / CI use). Without it, the runner asks once (see step 3).
 
-## 2. Merge (if the integrator hasn't already)
-Merge each verified lane branch into the integration branch. Resolve `docs/parallel-status.md` (and other doc) conflicts by keeping BOTH lane sections verbatim. Confirm the merged tree builds before cleanup.
+Run it ONLY after the integrator's GO on a **re-merge of current branch HEADs** (not a stale prior GO). If NO-GO, don't run cleanup.
 
-## 3. Remove merged worktrees (git-aware, safe)
-- `git worktree list`. For each lane worktree whose branch is confirmed merged: `git worktree remove --force <path>` (discards only build artifacts — node_modules/DerivedData/out — the committed code is in the branch).
-- `git worktree prune`.
+## What the runner does, in order
 
-## 4. Delete merged branches
-- `git branch -d <lane/branch>` for each merged lane branch (`-d` refuses if unmerged — safe by construction).
+### 1. Collect DONE lanes
+Each lane signals completion by writing `docs/status-<lane>.md` with a first line `STATUS: <lane> DONE`. The runner reads these markers to know which lanes claim done. A lane with no `STATUS: … DONE` marker is treated as not-done and is left untouched.
 
-## 5. Quarantine the useless — MOVE, never rm
-- The canonical project folder = the main worktree. Everything about the project stays there (that satisfies "one project folder").
-- Create `<parent>/<project>-useless/` (e.g. `lelau-useless`). MOVE into it (do not delete): stray loose files, stale non-repo shells, duplicate checkouts that aren't the canonical tree, throwaway/detached worktrees already merged.
-- Do NOT move: the harness's current working directory, or any folder holding UNIQUE uncommitted work — verify each with `ls`/`git status`/`du` first. When unsure, quarantine (reversible), never delete.
+### 2. Verify merged — never lose work
+For every lane branch, the runner checks it is fully merged into the integration branch:
 
-## 6. Report
-Print: worktrees removed, branches deleted, dirs quarantined, space reclaimed. Exactly one folder should remain as the project; one `<project>-useless/` holds the quarantine. Nothing in the main tree touched.
+```bash
+git log --oneline <lane-branch> ^<integration-branch>   # empty = 0 commits at risk = safe
+```
+
+- **Empty output → 0 commits at risk →** safe to remove.
+- **Non-empty output →** that lane has commits not yet on the integration branch. The runner does NOT remove that worktree or branch. It reports the at-risk commits and skips that lane.
+
+Uncommitted/untracked work lives in the MAIN tree, not in a lane worktree, so it survives worktree removal. The runner never touches the main tree.
+
+### 3. One confirmation
+After verification, the runner prints the plan — worktrees to remove, branches to delete, scratch to clear — and asks a single `y/N` prompt. Answer `N` (the default) and it aborts without deleting anything. `--yes` pre-answers `y`. `--dry-run` stops before this prompt.
+
+### 4. Hard-delete (only after y)
+For each lane confirmed merged (step 2):
+
+```bash
+git worktree remove --force <lane-worktree-path>   # discards only build artifacts; committed code is in the branch
+git branch -d <lane-branch>                         # -d refuses an unmerged branch → safe by construction
+```
+
+Then it clears its own scratch:
+
+- remove `.polylane/` (the runner's working state)
+- remove `docs/status-*.md` (the DONE markers — scratch, their job is finished once merged)
+- `git worktree prune`
+
+### 5. Keep the evidence
+The runner KEEPS, always:
+
+- `docs/verify-*.md` — the per-lane proof files. These are the audit trail of what each lane verified; they are NOT scratch.
+- `docs/parallel-status.md` — the coordination log.
+
+Deleting the status markers but keeping the verify files is the point: the transient DONE signal goes, the durable evidence stays.
+
+### 6. Report
+The runner prints: worktrees removed, branches deleted, scratch cleared, lanes skipped (if any were unmerged). Exactly one folder remains — the main project tree.
+
+## Safety rules (invariants the runner holds)
+
+- **Verify before remove.** No worktree or branch is removed until its lane branch shows 0 commits at risk (step 2). `git branch -d` (not `-D`) is a second guard — it refuses to delete an unmerged branch.
+- **Conflict → abort, delete nothing.** If merging a lane into the integration branch hits a conflict, the runner aborts the whole cleanup and deletes nothing. Resolve the conflict (keep BOTH lane sections verbatim in doc files like `docs/parallel-status.md`), re-run the integrator to GO, then re-run the runner.
+- **Never `rm` outside worktrees + `.polylane/` + status scratch.** The runner only ever calls `git worktree remove`, `git branch -d`, and removes `.polylane/` + `docs/status-*.md`. It never `rm`s the main tree, `docs/verify-*.md`, `docs/parallel-status.md`, or any path outside that fixed set.
 
 ## Permissions note
-Removing worktrees / moving folders may be gated by the harness auto-mode (destructive). If blocked, present the exact `git worktree remove` / `mv` commands for the user to run or approve — do not work around the guard.
+Removing worktrees may be gated by the harness auto-mode (destructive). If blocked, the runner surfaces the exact `git worktree remove` / `git branch -d` commands for the user to run or approve — it does not work around the guard.
