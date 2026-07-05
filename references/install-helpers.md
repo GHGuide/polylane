@@ -4,6 +4,34 @@ Goal: make the graph the path of least resistance so fresh builder CLIs actually
 
 Assets live beside this skill: `assets/q.py`, `assets/graphify-nudge.sh`, `assets/settings-hook-snippet.json`. This skill's base dir is provided at invocation — reference assets from there.
 
+## Install the polylane-run skill (one-time, per machine)
+
+The automated merge + cleanup runner (`bin/polylane-run.sh`, see `references/merge-and-cleanup.md`) ships as its own skill in `polylane-run/`. Install it once so `/polylane-run` and the runner are available:
+
+```bash
+# Copy the runner skill into place (idempotent — overwrites an older copy).
+cp -R polylane-run/ ~/.claude/skills/polylane-run/
+```
+
+Verify:
+```bash
+test -f ~/.claude/skills/polylane-run/SKILL.md && echo installed || echo "polylane-run/ not found — run from the polylane repo root"
+```
+
+### Runtime dependencies
+
+The runner drives lanes through tmux and reads its manifest with jq. Install both once:
+
+```bash
+brew install tmux jq      # macOS (Homebrew)
+# Debian/Ubuntu: sudo apt-get install -y tmux jq
+```
+
+Verify:
+```bash
+command -v tmux >/dev/null && command -v jq >/dev/null && echo "deps ok" || echo "install tmux + jq"
+```
+
 ## Set two paths first (every command below reuses them)
 
 ```bash
