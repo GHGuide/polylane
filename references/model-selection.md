@@ -1,12 +1,12 @@
 # Phase 4b — Model + effort per lane (token-efficiency first)
 
-Recommend per lane; user overrides at the plan gate. Verify current pricing with the claude-api skill ONLY if the user asks for costs — otherwise use this cached table (as of 2026-07; per 1M tokens).
+Recommend per lane; user overrides at the plan gate. Verify current pricing with the claude-api skill ONLY if the user asks for costs — otherwise use this cached table (IDs + pricing confirmed against the claude-api skill 2026-07; per 1M tokens).
 
 | Model | In/Out | Character |
 |---|---|---|
 | Claude Fable 5 (`claude-fable-5`) | $10/$50 | Most capable; always-on thinking; long turns → highest token volume. Medium effort often beats prior models' max. |
 | Claude Opus 4.8 (`claude-opus-4-8`) | $5/$25 | Agentic-coding workhorse (Claude Code default); xhigh available. |
-| Claude Haiku 4.5 | $1/$5 | Recon/read-only subagents inside lanes only. |
+| Claude Haiku 4.5 (`claude-haiku-4-5`) | $1/$5 | Recon/read-only subagents inside lanes only. |
 
 ## Assignment rules
 

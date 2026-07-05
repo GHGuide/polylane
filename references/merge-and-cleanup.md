@@ -5,8 +5,16 @@ Parallel worktrees leave a confusing pile of sibling folders + branches. After t
 ## 0. Precondition
 Run ONLY after the integrator's GO on a **re-merge of current branch HEADs** (not a stale prior GO — see below). If NO-GO, skip cleanup.
 
+Set the integration branch once (every command below reuses it):
+```bash
+INT=main   # the branch the integrator merged lanes into
+```
+
 ## 1. Verify before destroying (never lose work)
-- For each lane branch: `git log --oneline <branch> ^<integration-branch>` must be **empty** (0 commits not yet merged). Non-empty → NOT merged → STOP, do not remove that worktree.
+- For each lane branch: `git log --oneline <branch> ^"$INT"` must be **empty** (0 commits not yet merged). Non-empty → NOT merged → STOP, do not remove that worktree.
+  ```bash
+  git log --oneline <lane-branch> ^"$INT"   # empty output = fully merged = safe to remove
+  ```
 - `git status` in the main tree: note uncommitted/untracked work. It lives in the MAIN tree (not a worktree) — it survives worktree removal. Never `rm` the main tree. If an orphan workstream is uncommitted, tell the user (commit/stash) — do not silently carry it into a destructive step.
 
 ## 2. Merge (if the integrator hasn't already)

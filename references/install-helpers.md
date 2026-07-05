@@ -4,17 +4,41 @@ Goal: make the graph the path of least resistance so fresh builder CLIs actually
 
 Assets live beside this skill: `assets/q.py`, `assets/graphify-nudge.sh`, `assets/settings-hook-snippet.json`. This skill's base dir is provided at invocation — reference assets from there.
 
+## Set two paths first (every command below reuses them)
+
+```bash
+SKILL_DIR="$HOME/.claude/skills/polylane"   # where this skill is installed; adjust if elsewhere
+PROJECT="/absolute/path/to/target/project"  # the repo builders will edit
+```
+
 ## Steps
 
-1. **Precondition.** Only proceed if `graphify-out/graph.json` exists in the project (i.e. graphify was built). If not, tell the user to run `/graphify` first, or skip graphify entirely for this run and use Explore agents for navigation.
+1. **Precondition.** Only proceed if `$PROJECT/graphify-out/graph.json` exists (i.e. graphify was built). Check:
+   ```bash
+   test -f "$PROJECT/graphify-out/graph.json" && echo present || echo "run /graphify first (or skip graphify; use Explore agents to navigate)"
+   ```
 
-2. **Install the query helper** (safe file copies — allowed under auto-mode):
-   - Copy `assets/q.py` → `<project>/graphify-out/q.py`, `chmod +x`. It's portable: it reads `graph.json` from its own directory. Skip if already present and identical.
-   - Copy `assets/graphify-nudge.sh` → `<project>/.claude/hooks/graphify-nudge.sh`, `chmod +x`.
+2. **Install the query helper** (safe file copies — allowed under auto-mode). Run verbatim:
+   ```bash
+   # q.py is portable: reads graph.json from its own dir. Copy is idempotent.
+   cp "$SKILL_DIR/assets/q.py" "$PROJECT/graphify-out/q.py"
+   chmod +x "$PROJECT/graphify-out/q.py"
 
-3. **Register the hook — HAND OFF, do not write it.** Writing `<project>/.claude/settings.json` installs a PreToolUse hook = a behavioral/startup-config change; auto-mode blocks the skill from doing it. So:
-   - If `<project>/.claude/settings.json` is absent: show the user `assets/settings-hook-snippet.json` and ask them to save it as `.claude/settings.json`.
-   - If it exists: show them the `hooks.PreToolUse` entry to merge in.
+   mkdir -p "$PROJECT/.claude/hooks"
+   cp "$SKILL_DIR/assets/graphify-nudge.sh" "$PROJECT/.claude/hooks/graphify-nudge.sh"
+   chmod +x "$PROJECT/.claude/hooks/graphify-nudge.sh"
+   ```
+   Verify:
+   ```bash
+   python "$PROJECT/graphify-out/q.py" 2>&1 | head -1   # prints usage → q.py runs
+   ```
+
+3. **Register the hook — HAND OFF, do not write it.** Writing `$PROJECT/.claude/settings.json` installs a PreToolUse hook = a behavioral/startup-config change; auto-mode blocks the skill from doing it. So:
+   - If `$PROJECT/.claude/settings.json` is absent: hand the user `$SKILL_DIR/assets/settings-hook-snippet.json` and ask them to save it as `$PROJECT/.claude/settings.json` (drop the `_comment` key). Show it with:
+     ```bash
+     cat "$SKILL_DIR/assets/settings-hook-snippet.json"
+     ```
+   - If it exists: show them the `hooks.PreToolUse` entry from that file to merge into the existing `hooks.PreToolUse` array.
    - Note they can instead re-run outside auto-mode or add a settings-write permission rule. The helper still works without the hook (via the CLAUDE.md rule + the Step-1 mandate in each lane prompt); the hook just makes it enforced.
 
 4. **Add the navigation rule to the project's CLAUDE.md** (a normal doc edit, allowed) if not already there:
