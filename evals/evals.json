@@ -1,9 +1,130 @@
 {
-  "skill": "lanes",
-  "purpose": "Verify /lanes interviews to a locked spec, derives correct lane count from file overlap, recommends token-efficient model/effort, and only emits prompts after two gates.",
+  "skill": "polylane",
+  "purpose": "Verify polylane fires on its 6 documented trigger phrases (and NOT on unrelated prompts), interviews to a locked spec, derives correct lane count from file overlap, recommends token-efficient model/effort, and that every generated lane prompt opens with the mandatory-4 preamble and never emits `git add -A`.",
+  "schema": {
+    "skill": "string — canonical skill name under test",
+    "purpose": "string — what this eval set verifies",
+    "trigger_phrases": "string[] — the exact phrases SKILL.md's description declares as triggers (source of truth)",
+    "cases": "object[] — each: { name, class, input, should_fire?, expect[] }. class ∈ {trigger, scenario, behavior}. should_fire is a boolean present only on class=trigger cases.",
+    "red_flags": "string[] — behaviors that must never appear"
+  },
+  "trigger_phrases": [
+    "/polylane",
+    "/lanes",
+    "split this into prompts",
+    "parallel terminals",
+    "make lane prompts",
+    "orchestrate builders"
+  ],
   "cases": [
     {
+      "name": "trigger_slash_polylane",
+      "class": "trigger",
+      "input": "/polylane",
+      "should_fire": true,
+      "expect": [
+        "polylane skill activates",
+        "enters Phase 1 interview (does not implement)"
+      ]
+    },
+    {
+      "name": "trigger_slash_lanes",
+      "class": "trigger",
+      "input": "/lanes optimize fetching and redo the settings screen",
+      "should_fire": true,
+      "expect": [
+        "polylane skill activates",
+        "starts interview toward an INTEGRATION SPEC"
+      ]
+    },
+    {
+      "name": "trigger_split_into_prompts",
+      "class": "trigger",
+      "input": "split this into prompts so I can run them in separate terminals",
+      "should_fire": true,
+      "expect": [
+        "polylane skill activates",
+        "no prompt output before spec + plan gates"
+      ]
+    },
+    {
+      "name": "trigger_parallel_terminals",
+      "class": "trigger",
+      "input": "I want to build these three features across parallel terminals",
+      "should_fire": true,
+      "expect": [
+        "polylane skill activates",
+        "interviews before deriving lanes"
+      ]
+    },
+    {
+      "name": "trigger_make_lane_prompts",
+      "class": "trigger",
+      "input": "make lane prompts for these goals",
+      "should_fire": true,
+      "expect": [
+        "polylane skill activates",
+        "presents numbered INTEGRATION SPEC and waits for explicit yes"
+      ]
+    },
+    {
+      "name": "trigger_orchestrate_builders",
+      "class": "trigger",
+      "input": "orchestrate builders to knock these out in parallel",
+      "should_fire": true,
+      "expect": [
+        "polylane skill activates",
+        "acts as orchestrator only, never implements"
+      ]
+    },
+    {
+      "name": "negative_single_agent",
+      "class": "trigger",
+      "input": "run one agent to fix this bug",
+      "should_fire": false,
+      "expect": [
+        "polylane does NOT activate (single agent, no parallel-lane intent)"
+      ]
+    },
+    {
+      "name": "negative_review_pr",
+      "class": "trigger",
+      "input": "review my PR",
+      "should_fire": false,
+      "expect": [
+        "polylane does NOT activate (code review, not lane orchestration)"
+      ]
+    },
+    {
+      "name": "negative_install_skill",
+      "class": "trigger",
+      "input": "install a skill for me",
+      "should_fire": false,
+      "expect": [
+        "polylane does NOT activate (skill install, not prompt splitting)"
+      ]
+    },
+    {
+      "name": "negative_plain_build",
+      "class": "trigger",
+      "input": "add a dark theme to the settings screen",
+      "should_fire": false,
+      "expect": [
+        "polylane does NOT activate (single change, no parallel/terminal/lane cue)"
+      ]
+    },
+    {
+      "name": "negative_lanes_unrelated_word",
+      "class": "trigger",
+      "input": "how many lanes does the highway merge have near exit 12",
+      "should_fire": false,
+      "expect": [
+        "polylane does NOT activate ('lanes' is not the /lanes command and no build intent)"
+      ]
+    },
+    {
       "name": "single_goal_one_lane",
+      "class": "scenario",
       "input": "just make the settings screen use the dark theme",
       "expect": [
         "interviews briefly, presents a 1-item INTEGRATION SPEC",
@@ -15,6 +136,7 @@
     },
     {
       "name": "three_disjoint_three_lanes",
+      "class": "scenario",
       "input": "optimize fetching, make Siri work, redesign the UI to black",
       "expect": [
         "spec has 3 testable items",
@@ -25,6 +147,7 @@
     },
     {
       "name": "entangled_pair_carve_or_merge",
+      "class": "scenario",
       "input": "make fetching more accurate AND make the model run cooler and faster",
       "expect": [
         "recon finds both touch the engine/generator files",
@@ -34,19 +157,44 @@
     },
     {
       "name": "spec_gate_blocks",
+      "class": "scenario",
       "input": "build the whole thing (vague)",
       "expect": [
         "does NOT generate prompts",
         "asks batched clarifying questions, re-presents spec each round",
         "requires explicit yes; 'looks good so far' triggers one more confirmation round"
       ]
+    },
+    {
+      "name": "behavior_preamble_mandatory_four",
+      "class": "behavior",
+      "input": "after both gates approved, generate the lane prompts for a 2-lane split",
+      "expect": [
+        "every generated lane prompt OPENS with the mandatory-4 preamble, in order: 1) `/graphify-auto`, 2) caveman skill (full), 3) `/goal <one-line lane goal>`, 4) `superpowers:using-superpowers`",
+        "none of the four preamble steps is omitted or reordered",
+        "a LOCKED-GOAL block restates the lane goal in-prompt"
+      ]
+    },
+    {
+      "name": "behavior_never_git_add_all",
+      "class": "behavior",
+      "input": "generate a lane prompt whose git block tells the builder how to stage and commit",
+      "expect": [
+        "generated git block stages ONLY the lane's own paths (scoped `git add <files>`)",
+        "prompt NEVER contains `git add -A` or `git add .`",
+        "prompt tells builder to wait + retry on index.lock (shared tree, other lanes have uncommitted work)"
+      ]
     }
   ],
   "red_flags": [
+    "fires on a hard-negative prompt (single agent, PR review, skill install, plain single-change build)",
+    "fails to fire on any of the 6 documented trigger phrases",
     "emits prompts before the spec gate",
     "defaults to 3 lanes regardless of overlap",
     "puts two lanes' OWN globs on the same file",
     "recommends Fable on every lane",
-    "auto-installs a third-party skill without approval"
+    "auto-installs a third-party skill without approval",
+    "generated prompt omits or reorders any of the mandatory-4 preamble steps",
+    "generated prompt contains `git add -A` or `git add .`"
   ]
 }
