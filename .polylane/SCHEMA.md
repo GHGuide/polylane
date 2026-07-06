@@ -11,12 +11,15 @@ lanes L2/L3/L4 depend on them.
 ```json
 {
   "base": "main",
+  "intensity": "balanced",
+  "available_models": ["claude-fable-5", "claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5"],
   "integrator": {
     "name": "integrator",
     "model": "claude-opus-4-8",
     "branch": "lane/integrator",
     "worktree": "../pl-integrator",
-    "prompt_file": ".polylane/prompts/integrator.txt"
+    "prompt_file": ".polylane/prompts/integrator.txt",
+    "effort": "high"
   },
   "lanes": [
     {
@@ -25,7 +28,8 @@ lanes L2/L3/L4 depend on them.
       "branch": "lane/api",
       "worktree": "../pl-api",
       "prompt_file": ".polylane/prompts/api.txt",
-      "own_globs": ["backend/api/**"]
+      "own_globs": ["backend/api/**"],
+      "effort": "high"
     }
   ]
 }
@@ -36,6 +40,8 @@ lanes L2/L3/L4 depend on them.
 | Key | Type | Meaning |
 |---|---|---|
 | `base` | string | Branch each lane/integrator worktree is created from (e.g. `main`). |
+| `intensity` | string | *(optional)* Preset the generator tuned this manifest for: `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** — records provenance; the per-lane `model`/`effort` are already baked to match it. The engine does **not** re-resolve from this at runtime; use the `--intensity` flag to remap live. `custom` = hand-tuned, no preset. |
+| `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh`). Required only if you pass `--intensity`; empty/absent then → error. |
 | `integrator` | object | The lane that runs **last**: merges lane branches, writes the verdict. |
 | `lanes[]` | array | One object per parallel builder. |
 
@@ -48,6 +54,7 @@ Each **lane** object (and the **integrator** object) has:
 | `branch` | string | Branch created for this lane (`git worktree add -b <branch> <base>`). |
 | `worktree` | string | Path of the lane's git worktree. Relative paths resolve from the repo root. |
 | `prompt_file` | string | File whose contents seed the lane's `claude` pane. Read at pane runtime. |
+| `effort` | string | *(optional)* Reasoning effort for this lane: `low` \| `medium` \| `high` \| `xhigh` \| `max`. Surfaced to the pane as the `POLYLANE_EFFORT` env var and printed at launch. Absent → unset (no behavior change; the legacy pane command is reproduced byte-for-byte). |
 | `own_globs` | string[] | *(lanes only)* Files the lane owns. Informational — the engine does not enforce it. |
 
 ---
@@ -56,6 +63,8 @@ Each **lane** object (and the **integrator** object) has:
 
 ```
 bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]
+                    [--intensity <economy|balanced|performance|max>]
+                    [--model <lane=model_id>]...
 ```
 
 | Arg / flag | Effect |
@@ -63,11 +72,61 @@ bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]
 | `<manifest.json>` | Path to the manifest. **Required** — missing → exit 2. |
 | `--dry-run` | Print every git/tmux command without executing. Nothing is created, launched, or deleted. |
 | `--yes` | Skip the final delete-confirmation prompt. |
+| `--intensity <preset>` | Remap **every** lane **and** the integrator to the preset's model + effort (see *Intensity presets* below). The model is resolved against `available_models`. `--intensity=<preset>` form also accepted. Applied before any worktree/pane exists. |
+| `--model <lane=model_id>` | Override **one** lane's (or the integrator's) `model`, matched by `name`. **Repeatable.** Applied *after* `--intensity`, so a per-lane override always wins. `--model=<lane=id>` form also accepted. |
 | `-h`, `--help` | Print usage, exit 0. |
 
-Exit codes: `0` success · `1` preflight / gate / conflict failure · `2` bad arguments.
+Both overrides are applied **before** any worktree or pane is created; a bad
+value aborts with nothing created or launched.
+
+Exit codes: `0` success · `1` preflight / gate / conflict failure, or `--intensity` with an empty/absent `available_models` · `2` bad arguments, including an unknown `--intensity` value, a malformed `--model` (not `lane=model_id`), or a `--model` naming an unknown lane.
 
 Environment: `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default `15`).
+
+---
+
+## Intensity presets
+
+`--intensity <preset>` re-resolves **model + effort** for every lane and the
+integrator. Effort is fixed per preset; the model is picked from the manifest's
+`available_models` by walking a preference ladder and taking the **first id that
+is available**. If none of the ladder is available, it falls back to
+`available_models[0]` (graceful — never a model the environment can't serve).
+
+| Preset | effort | Model preference ladder (first available wins) |
+|---|---|---|
+| `economy` | `low` | `claude-haiku-4-5` → `claude-fable-5` → `claude-sonnet-5` → `claude-opus-4-8` |
+| `balanced` | `medium` | `claude-sonnet-5` → `claude-fable-5` → `claude-haiku-4-5` → `claude-opus-4-8` |
+| `performance` | `high` | `claude-opus-4-8` → `claude-sonnet-5` → `claude-fable-5` → `claude-haiku-4-5` |
+| `max` | `max` | `claude-opus-4-8` → `claude-sonnet-5` → `claude-fable-5` → `claude-haiku-4-5` |
+
+`custom` is a manifest `intensity` value only (hand-tuned, no remap) — it is
+**not** a valid `--intensity` CLI argument.
+
+Precedence: `--intensity` remaps all lanes first, then each `--model lane=id`
+overrides that single lane's model (effort keeps the preset value). Guards: an
+unknown preset, a `--model` for an unknown lane, or `--intensity` against an
+empty/absent `available_models` all abort **before** any worktree/pane exists.
+
+---
+
+## Model probe helper — `bin/polylane-models.sh`
+
+Prints the model ids to put in `available_models`, **one id per line**:
+
+```
+bin/polylane-models.sh
+```
+
+- With `ANTHROPIC_API_KEY` set (and `curl`+`jq` present): probes
+  `GET https://api.anthropic.com/v1/models` and prints `.data[].id`.
+- On no key, missing tool, network/HTTP failure, or empty result: prints the
+  curated fallback list — `claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`,
+  `claude-haiku-4-5`.
+
+Always prints at least the fallback and exits `0`. The generator (`polylane`
+skill) captures its output into the manifest's `available_models`; the engine
+itself does not call it.
 
 ---
 
@@ -145,7 +204,8 @@ cd '<worktree>' && claude --model '<model>' "$(cat '<prompt_file>')" \
 | `git` | worktree split, branch create, merge-branch cleanup |
 
 `pbcopy` (macOS) or `xclip` (Linux) are optional — only used by the seed-failure
-clipboard fallback.
+clipboard fallback. `curl` is optional and used only by `bin/polylane-models.sh`
+to probe the live model list; without it the helper prints its fallback list.
 
 ---
 
