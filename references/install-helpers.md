@@ -32,6 +32,21 @@ Verify:
 command -v tmux >/dev/null && command -v jq >/dev/null && echo "deps ok" || echo "install tmux + jq"
 ```
 
+### Optional: live model probing
+
+The runner's model controls (`--intensity` / `--model`, documented in
+`polylane-run/SKILL.md`) resolve model IDs through the probe helper
+`bin/polylane-models.sh`. Setting `ANTHROPIC_API_KEY` is **optional**:
+
+- **With `ANTHROPIC_API_KEY` set** — `bin/polylane-models.sh` probes the Anthropic
+  API live and lists the models that key can actually reach.
+- **Without it** — the helper falls back to a curated built-in model list, so the
+  runner still works unauthenticated; the list is just static rather than probed.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # optional — enables live model probing
+```
+
 ## Set two paths first (every command below reuses them)
 
 ```bash

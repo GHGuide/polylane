@@ -77,6 +77,42 @@ Tell the user, once, what the runner now does on its own:
 
 Then hand back to the runner — it drives the rest.
 
+## Runtime model controls (optional)
+
+Each lane already has a model and effort baked into the manifest (you see them in
+the dry-run). Two optional flags override the models **at launch, without editing
+the manifest**. Layer them onto the same `"$RUNNER" .polylane/run.json` call and
+preview with `--dry-run` first.
+
+### `--intensity <economy|balanced|performance|max>` — remap the whole run
+Shifts every lane to one intensity tier in a single switch: `economy` favours the
+cheapest/fastest models, `max` the strongest, with `balanced` and `performance`
+in between. Preview, then launch:
+```
+"$RUNNER" .polylane/run.json --intensity balanced --dry-run
+"$RUNNER" .polylane/run.json --intensity balanced
+```
+
+### `--model <lane=model_id>` — override a single lane
+Pins one lane to a specific model and leaves every other lane as planned. It is
+**repeatable** — pass it once per lane you want to change:
+```
+"$RUNNER" .polylane/run.json --model backend=claude-opus-4-8 --dry-run
+"$RUNNER" .polylane/run.json \
+  --model backend=claude-opus-4-8 \
+  --model docs=claude-fable-5
+```
+
+The two flags compose: `--intensity` sets the baseline for the run, then each
+`--model lane=id` pins a specific lane on top of it.
+```
+"$RUNNER" .polylane/run.json --intensity performance --model docs=claude-fable-5 --dry-run
+```
+
+Always dry-run first and read back the per-lane model column before the real
+launch. These flags are additive — the base CLI (`<manifest> [--dry-run]
+[--yes]`) is unchanged.
+
 ## Install
 
 Copy this skill into your Claude Code skills dir:
