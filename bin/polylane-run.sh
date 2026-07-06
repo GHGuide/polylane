@@ -30,14 +30,21 @@ polylane-run.sh — parallel-lane build engine (worktrees · tmux · git · clau
 
 USAGE:
   bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]
+                      [--intensity <economy|balanced|performance|max>]
+                      [--model <lane=model_id>]...
 
 ARGS:
   <manifest.json>   path to a .polylane/run.json manifest (see .polylane/SCHEMA.md)
 
 OPTIONS:
-  --dry-run    print every git/tmux command without executing anything
-  --yes        skip the final delete-confirmation prompt
-  -h, --help   show this help and exit 0
+  --dry-run              print every git/tmux command without executing anything
+  --yes                  skip the final delete-confirmation prompt
+  --intensity <preset>   remap EVERY lane + integrator to the preset's model
+                         (resolved against the manifest's available_models) and
+                         effort. preset: economy|balanced|performance|max.
+  --model <lane=id>      override ONE lane's (or the integrator's) model by name.
+                         Repeatable; applied after --intensity so it always wins.
+  -h, --help             show this help and exit 0
 
 FLOW:
   split worktrees -> launch seeded claude panes (tmux session 'polylane')
@@ -83,12 +90,18 @@ parse_args() {
   DRY_RUN=0
   YES=0
   MANIFEST=""
+  INTENSITY=""
+  MODEL_OVERRIDES=()
   [ $# -eq 0 ] && { usage >&2; exit 2; }
   while [ $# -gt 0 ]; do
     case "$1" in
       -h|--help) usage; exit 0 ;;
       --dry-run) DRY_RUN=1 ;;
       --yes)     YES=1 ;;
+      --intensity)   shift; [ $# -gt 0 ] || { echo "polylane-run: --intensity requires a value (economy|balanced|performance|max)" >&2; exit 2; }; INTENSITY="$1" ;;
+      --intensity=*) INTENSITY="${1#*=}" ;;
+      --model)       shift; [ $# -gt 0 ] || { echo "polylane-run: --model requires lane=model_id" >&2; exit 2; }; MODEL_OVERRIDES+=("$1") ;;
+      --model=*)     MODEL_OVERRIDES+=("${1#*=}") ;;
       --)        shift; [ $# -gt 0 ] && MANIFEST="$1" ;;
       -*)        echo "polylane-run: unknown option: $1" >&2; usage >&2; exit 2 ;;
       *)
@@ -140,13 +153,23 @@ load_manifest() {
   INT_BRANCH=$(jq -r '.integrator.branch' "$MANIFEST")
   INT_WORKTREE=$(jq -r '.integrator.worktree' "$MANIFEST")
   INT_PROMPT=$(jq -r '.integrator.prompt_file' "$MANIFEST")
+  # effort is optional; absent -> "" (no behavior change). // "" also maps a JSON null.
+  INT_EFFORT=$(jq -r '.integrator.effort // ""' "$MANIFEST")
 
-  LANE_NAMES=(); LANE_MODELS=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
+  # available_models feeds --intensity resolution; absent -> empty array.
+  AVAILABLE_MODELS=()
+  local m
+  while IFS= read -r m; do
+    [ -n "$m" ] && AVAILABLE_MODELS+=("$m")
+  done < <(jq -r '.available_models // [] | .[]' "$MANIFEST")
+
+  LANE_NAMES=(); LANE_MODELS=(); LANE_EFFORTS=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
   local n i
   n=$(jq '.lanes | length' "$MANIFEST")
   for ((i = 0; i < n; i++)); do
     LANE_NAMES+=("$(jq -r ".lanes[$i].name" "$MANIFEST")")
     LANE_MODELS+=("$(jq -r ".lanes[$i].model" "$MANIFEST")")
+    LANE_EFFORTS+=("$(jq -r ".lanes[$i].effort // \"\"" "$MANIFEST")")
     LANE_BRANCHES+=("$(jq -r ".lanes[$i].branch" "$MANIFEST")")
     LANE_WORKTREES+=("$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
     LANE_PROMPTS+=("$(jq -r ".lanes[$i].prompt_file" "$MANIFEST")")
@@ -155,6 +178,98 @@ load_manifest() {
 
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
   BASE_WT="$REPO_ROOT"
+}
+
+# ---------------------------------------------------------------------------
+# intensity presets + runtime overrides (--intensity / --model)
+# ---------------------------------------------------------------------------
+
+# model_available ID : 0 iff ID is one of AVAILABLE_MODELS.
+model_available() {
+  local want="$1" m
+  for m in "${AVAILABLE_MODELS[@]:-}"; do
+    [ "$m" = "$want" ] && return 0
+  done
+  return 1
+}
+
+# preset_effort PRESET : echo the reasoning effort for a preset; rc 1 if unknown.
+preset_effort() {
+  case "$1" in
+    economy)     echo low ;;
+    balanced)    echo medium ;;
+    performance) echo high ;;
+    max)         echo max ;;
+    *) return 1 ;;
+  esac
+}
+
+# preset_model PRESET : echo the model id a preset resolves to. Walks the
+# preset's preference ladder and returns the first id present in
+# AVAILABLE_MODELS; if none of the ladder is available, falls back to the first
+# available id (graceful). rc 1 for an unknown preset. Assumes a non-empty
+# AVAILABLE_MODELS (apply_overrides guards that before calling).
+preset_model() {
+  local preset="$1" ladder m
+  case "$preset" in
+    economy)     ladder="claude-haiku-4-5 claude-fable-5 claude-sonnet-5 claude-opus-4-8" ;;
+    balanced)    ladder="claude-sonnet-5 claude-fable-5 claude-haiku-4-5 claude-opus-4-8" ;;
+    performance) ladder="claude-opus-4-8 claude-sonnet-5 claude-fable-5 claude-haiku-4-5" ;;
+    max)         ladder="claude-opus-4-8 claude-sonnet-5 claude-fable-5 claude-haiku-4-5" ;;
+    *) return 1 ;;
+  esac
+  for m in $ladder; do
+    if model_available "$m"; then echo "$m"; return 0; fi
+  done
+  echo "${AVAILABLE_MODELS[0]}"
+}
+
+# apply_overrides : mutate the loaded lane/integrator model+effort from the CLI
+# --intensity preset (all lanes + integrator) then --model lane=id (one lane,
+# wins over the preset). Runs BEFORE any worktree/pane side effect; a bad
+# preset / empty available_models / unknown lane exits non-zero, creating
+# nothing. No-op when neither flag is passed.
+apply_overrides() {
+  local i eff mdl ov name id found
+
+  if [ -n "${INTENSITY:-}" ]; then
+    if ! eff=$(preset_effort "$INTENSITY"); then
+      echo "polylane-run: unknown --intensity '$INTENSITY' (want economy|balanced|performance|max)" >&2
+      exit 2
+    fi
+    if [ "${#AVAILABLE_MODELS[@]}" -eq 0 ]; then
+      echo "polylane-run: --intensity needs a non-empty \"available_models\" in $MANIFEST" >&2
+      exit 1
+    fi
+    mdl=$(preset_model "$INTENSITY")
+    for i in "${!LANE_NAMES[@]}"; do
+      LANE_MODELS[$i]="$mdl"; LANE_EFFORTS[$i]="$eff"
+    done
+    INT_MODEL="$mdl"; INT_EFFORT="$eff"
+    echo "== intensity '$INTENSITY' -> model=$mdl effort=$eff (all lanes + integrator) =="
+  fi
+
+  for ov in "${MODEL_OVERRIDES[@]:-}"; do
+    [ -n "$ov" ] || continue
+    case "$ov" in
+      *=*) : ;;
+      *) echo "polylane-run: malformed --model '$ov' (want lane=model_id)" >&2; exit 2 ;;
+    esac
+    name="${ov%%=*}"; id="${ov#*=}"
+    if [ -z "$name" ] || [ -z "$id" ]; then
+      echo "polylane-run: malformed --model '$ov' (want lane=model_id)" >&2; exit 2
+    fi
+    found=0
+    if [ "$name" = "$INT_NAME" ]; then INT_MODEL="$id"; found=1; fi
+    for i in "${!LANE_NAMES[@]}"; do
+      if [ "${LANE_NAMES[$i]}" = "$name" ]; then LANE_MODELS[$i]="$id"; found=1; fi
+    done
+    if [ "$found" != "1" ]; then
+      echo "polylane-run: --model names unknown lane '$name' (not a lane or the integrator)" >&2
+      exit 2
+    fi
+    echo "== model override: $name -> $id =="
+  done
 }
 
 # ---------------------------------------------------------------------------
@@ -188,20 +303,25 @@ split_worktrees() {
 # launch — one seeded claude pane per lane
 # ---------------------------------------------------------------------------
 
-# pane_cmd WORKTREE MODEL PROMPT_FILE : the literal command a pane's shell runs.
-# Reads the prompt at pane runtime via $(cat ...) — no prompt text is embedded
-# in the orchestrator. On seed failure it copies the prompt to the clipboard
-# and starts a bare claude so the operator can paste it.
+# pane_cmd WORKTREE MODEL PROMPT_FILE [EFFORT] : the literal command a pane's
+# shell runs. Reads the prompt at pane runtime via $(cat ...) — no prompt text
+# is embedded in the orchestrator. On seed failure it copies the prompt to the
+# clipboard and starts a bare claude so the operator can paste it.
+# A non-empty EFFORT is exported to the pane as POLYLANE_EFFORT (a harmless env
+# prefix claude ignores if unused); an empty EFFORT reproduces the legacy
+# command byte-for-byte, so behavior is unchanged when no effort is set.
 pane_cmd() {
-  local wt="$1" model="$2" pf="$3"
-  printf "cd '%s' && claude --model '%s' \"\$(cat '%s')\" || { pbcopy < '%s' 2>/dev/null || xclip -selection clipboard < '%s' 2>/dev/null; echo 'SEED FAILED — prompt copied to clipboard; paste it into claude'; claude --model '%s'; }" \
-    "$wt" "$model" "$pf" "$pf" "$pf" "$model"
+  local wt="$1" model="$2" pf="$3" effort="${4:-}" pfx=""
+  [ -n "$effort" ] && pfx="POLYLANE_EFFORT='$effort' "
+  printf "cd '%s' && %sclaude --model '%s' \"\$(cat '%s')\" || { pbcopy < '%s' 2>/dev/null || xclip -selection clipboard < '%s' 2>/dev/null; echo 'SEED FAILED — prompt copied to clipboard; paste it into claude'; %sclaude --model '%s'; }" \
+    "$wt" "$pfx" "$model" "$pf" "$pf" "$pf" "$pfx" "$model"
 }
 
 launch_panes() {
   local i first=1 pc
   for i in "${!LANE_NAMES[@]}"; do
-    pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}")
+    echo "lane ${LANE_NAMES[$i]}: model=${LANE_MODELS[$i]} effort=${LANE_EFFORTS[$i]:-(default)}"
+    pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
     if [ "$first" = "1" ]; then
       run tmux new-session -d -s polylane -n "${LANE_NAMES[$i]}"
       first=0
@@ -251,7 +371,8 @@ poll_done() {
 run_integrator() {
   add_worktree "$INT_WORKTREE" "$INT_BRANCH"
   local pc
-  pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT")
+  echo "lane $INT_NAME: model=$INT_MODEL effort=${INT_EFFORT:-(default)}"
+  pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
   run tmux split-window -t polylane
   run tmux select-layout -t polylane tiled
   run tmux send-keys -t polylane "$pc" C-m
@@ -354,6 +475,7 @@ main() {
   parse_args "$@"
   preflight
   load_manifest
+  apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
 
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees
