@@ -27,6 +27,15 @@ The runner consumes **exactly** what `/polylane` writes: the single manifest at
 
 Run these in order. Do not skip the dry-run.
 
+### 0. Resolve the runner script (portable — works in any project)
+The script ships with the polylane skill, not with the target project. Resolve it
+once — prefer PATH, else the skill install path — and use `"$RUNNER"` everywhere below
+(never a bare relative `bin/polylane-run.sh`, which only exists inside the polylane repo):
+```
+RUNNER="$(command -v polylane-run.sh 2>/dev/null || echo "$HOME/.claude/skills/polylane/bin/polylane-run.sh")"
+test -x "$RUNNER" || { echo "runner not found at $RUNNER — reinstall polylane"; exit 1; }
+```
+
 ### 1. Check the manifest exists
 ```
 test -f .polylane/run.json && echo FOUND || echo MISSING
@@ -43,7 +52,7 @@ Any `MISSING` → tell the user the install command (above) and stop.
 ### 3. Dry-run first (always)
 Show the planned panes without launching anything:
 ```
-bin/polylane-run.sh .polylane/run.json --dry-run
+"$RUNNER" .polylane/run.json --dry-run
 ```
 Relay the output to the user: how many panes, which lane in each, the model/effort
 per lane. This is the review gate — the user sees the plan before any terminal opens.
@@ -51,7 +60,7 @@ per lane. This is the review gate — the user sees the plan before any terminal
 ### 4. Launch on go-ahead
 Only after the user approves the dry-run, run the same command **without** `--dry-run`:
 ```
-bin/polylane-run.sh .polylane/run.json
+"$RUNNER" .polylane/run.json
 ```
 The runner opens the tmux panes and starts every lane.
 (Optional: append `--yes` to pre-approve the runner's own prompts — including the
