@@ -12,7 +12,7 @@ Turn a plain-line description into N paste-ready builder prompts for parallel Cl
 ## Phases (in order, no skipping)
 
 ### 1. Interview → integration spec
-Read `references/interview.md`. Converse until you can present a complete numbered **INTEGRATION SPEC** — every feature/change the user expects, each one line with a testable outcome. Use batched AskUserQuestion (2-4 questions per round, options pre-recommended) so the user only clicks. Re-present the updated spec after every round.
+Read `references/interview.md`. Converse until you can present a complete numbered **INTEGRATION SPEC** — every feature/change the user expects, each one line with a testable outcome. Use batched AskUserQuestion (2-4 questions per round, options pre-recommended) so the user only clicks. Re-present the updated spec after every round. In an early round also ask the ONE intensity question (`economy | balanced | performance | max | custom`, `balanced` recommended) and the optional "which models do you have" step — default probe = assume the `model-selection.md` trio available. These set the global `intensity` + `available_models` consumed in Phase 4.
 
 ### 2. Spec gate (blocking)
 Present the full spec. Ask: "Is this everything?" Loop on edits. **Only an explicit yes advances.** No file edits, no prompts before this.
@@ -26,11 +26,11 @@ Then map spec items → files. If `graphify-out/` exists: run `/graphify-auto`, 
 
 ### 4. Derive lanes + models + skills
 - Lane count/carving: `references/lane-derivation.md`. N is computed from file-overlap, never assumed.
-- Per-lane model + effort: `references/model-selection.md` (Fable 5 vs Opus 4.8, effort level, token-efficiency rules).
+- Per-lane model + effort: resolve each lane from the chosen `intensity` preset against `available_models` using the rank map in `references/model-selection.md` (Fable 5 vs Opus 4.8, effort level, token-efficiency rules). When a preset's ideal model isn't in `available_models`, degrade gracefully to the best available rank. If `intensity` = `custom`, skip auto-resolution — the user sets model + effort per lane at the Phase 5 gate.
 - Skill recommendations: `references/skill-catalog.md` — check installed skills first, then search the awesome-lists for gaps. Output a **GitHub repo/skill suggestion list** (name, purpose, install command). Recommend only — NEVER install third-party skills without explicit user approval (untrusted skill = prompt-injection surface).
 
 ### 5. Plan gate (blocking)
-Present: lane table (name, model+effort, OWN globs, contracts, goals), the skill-suggestion list, and the isolation choice. **Default isolation = one git worktree per lane.** On a shared working tree every lane shares ONE git index, so any lane's `git add` + commit sweeps in every other lane's already-staged files — the shared-index race (observed in a prior run: one lane's commit co-committed another lane's staged, unrelated files). A worktree per lane gives each its own index + checkout, so scoped commits stay scoped and branches stay independent. Fall back to a shared tree only if the user explicitly opts out (e.g. worktrees unavailable). One batched AskUserQuestion. Wait for approval.
+Present: lane table (name, model+effort, OWN globs, contracts, goals), the skill-suggestion list, and the isolation choice. The model+effort column is the value **resolved from the `intensity` preset** in Phase 4 (or the user's picks when `intensity` = `custom`). Before approving, the user may override ANY single lane — bump it up or drop it down (model and/or effort), independent of the global preset. Apply the overrides, re-present the table, then take the batched approval. **Default isolation = one git worktree per lane.** On a shared working tree every lane shares ONE git index, so any lane's `git add` + commit sweeps in every other lane's already-staged files — the shared-index race (observed in a prior run: one lane's commit co-committed another lane's staged, unrelated files). A worktree per lane gives each its own index + checkout, so scoped commits stay scoped and branches stay independent. Fall back to a shared tree only if the user explicitly opts out (e.g. worktrees unavailable). One batched AskUserQuestion. Wait for approval.
 
 ### 6. Generate prompts + emit run manifest
 Fill `references/lane-template.md` per lane using the blocks in `references/prompt-blocks.md`. Every prompt MUST OPEN with the mandatory-4 preamble (block 0), in order: **1) `/graphify-auto`, 2) caveman skill (full), 3) `/goal <one-line lane goal>` (Anthropic built-in — sets + locks the objective), 4) `superpowers:using-superpowers`** — these four are non-negotiable in every prompt. The LOCKED-GOAL block also restates the goal in-prompt (belt-and-suspenders with `/goal`). Then include: OWN/FORBIDDEN + contracts, the graphify-first query block (E), the lane's specific superpowers (D), forced-verify evidence file, coordination/status block, scoped git, LOCKED goal, done-checklist.
@@ -46,9 +46,12 @@ Brainstorming is orchestrator-only — builders get the LOCKED goal. Print each 
 ```json
 {
   "base": "<base branch lanes fork from>",
+  "intensity": "<economy|balanced|performance|max|custom>",
+  "available_models": ["<model id>", "..."],
   "integrator": {
     "name": "<integrator lane name>",
     "model": "<model id>",
+    "effort": "<low|medium|high|xhigh>",
     "branch": "<integrator branch>",
     "worktree": "<integrator worktree path>",
     "prompt_file": ".polylane/lanes/<integrator>.txt"
@@ -57,6 +60,7 @@ Brainstorming is orchestrator-only — builders get the LOCKED goal. Print each 
     {
       "name": "<lane name>",
       "model": "<model id>",
+      "effort": "<low|medium|high|xhigh>",
       "branch": "<lane branch>",
       "worktree": "<lane worktree path>",
       "prompt_file": ".polylane/lanes/<lane>.txt",
@@ -66,7 +70,7 @@ Brainstorming is orchestrator-only — builders get the LOCKED goal. Print each 
 }
 ```
 
-Each `prompt_file` points at the `.polylane/lanes/<lane>.txt` written in step 1; `worktree` is the per-lane worktree from the Phase 5 default. The integrator object omits `own_globs` (it edits only its own verify/glue files); every lane object includes it. Then STOP.
+Global `intensity` is the Phase 1 preset; `available_models` is the resolved-against set; per-object `effort` is the Phase 4-resolved (or user-overridden) effort, carried on every lane object and the integrator exactly as `model` is — matching Lc's `.polylane/SCHEMA.md`. Each `prompt_file` points at the `.polylane/lanes/<lane>.txt` written in step 1; `worktree` is the per-lane worktree from the Phase 5 default. The integrator object omits `own_globs` (it edits only its own verify/glue files); every lane object includes it. Then STOP.
 
 ### 7. Merge + cleanup (automatic, after the integrator issues GO)
 When the run finishes and the integrator issues GO on a **re-merge of current branch HEADs** (never a stale prior GO), consolidate to ONE project folder — follow `references/merge-and-cleanup.md`: verify each lane branch is merged (0 commits at risk), remove merged worktrees (`git worktree remove --force`), delete merged lane branches (`git branch -d`), and MOVE stray / duplicate / non-canonical dirs into `<project>-useless/` (never `rm` what you didn't create; never touch the main tree's uncommitted work or the harness cwd). One project folder remains. If auto-mode blocks a destructive step, hand the user the exact commands.
@@ -81,7 +85,7 @@ When the run finishes and the integrator issues GO on a **re-merge of current br
 - Every lane's "done" requires evidence in `docs/verify-<lane>.md`.
 - Every generated prompt bakes the done-signal: the lane writes `docs/status-<lane>.md` with first line exactly `STATUS: <lane> DONE` (per-lane, worktree-safe). `docs/parallel-status.md` is for cross-lane requests only — never the done signal.
 - Phase 5 defaults to one git worktree per lane (shared-index race — a shared tree lets one lane's commit bundle another's staged files); shared-tree only on explicit user opt-out.
-- Phase 6 emits `.polylane/run.json` (frozen schema: `base` · `integrator{name,model,branch,worktree,prompt_file}` · `lanes[]{name,model,branch,worktree,prompt_file,own_globs}`) plus `.polylane/lanes/<lane>.txt` per lane, alongside the printed paste blocks.
+- Phase 6 emits `.polylane/run.json` (frozen schema: `base` · `intensity` · `available_models[]` · `integrator{name,model,effort,branch,worktree,prompt_file}` · `lanes[]{name,model,effort,branch,worktree,prompt_file,own_globs}`) plus `.polylane/lanes/<lane>.txt` per lane, alongside the printed paste blocks. New keys (`intensity`, `available_models`, per-object `effort`) match Lc's `.polylane/SCHEMA.md`.
 - Shared file between lanes → one lane owns it; the other requests edits via `docs/parallel-status.md`, never edits directly.
 - Exactly one lane may hold any shared physical resource (device/simulator/deploy target) — mutex via status file.
 - Project-specific facts (build recipes, device UDIDs, quirks) come from the project's CLAUDE.md — keep this skill generic.

@@ -6,7 +6,7 @@ Emit ONE of these per lane, as: a launch line + a fenced paste block. Order the 
 ```
 cd "<WORKTREE_ABS_PATH>" && claude --model <MODEL_ID>
 ```
-(`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `claude-fable-5` or `claude-opus-4-8` per model-selection.md. Effort is instructed in-prompt via block B — there is no verifiable CLI effort flag.)
+(`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `<MODEL_ID>` (`claude-fable-5` or `claude-opus-4-8`) and the lane's effort both come from the Phase 4 resolution of the `intensity` preset against `available_models` per model-selection.md — or the user's Phase 5 per-lane override. Effort is instructed in-prompt via block B — there is no verifiable CLI effort flag.)
 
 ## Paste block skeleton (fill and inline the blocks)
 ```
@@ -37,13 +37,15 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
 ```json
 {
   "base": "<base branch>",
-  "integrator": {"name":"<int>","model":"<id>","branch":"<int-branch>","worktree":"<int-worktree>","prompt_file":".polylane/lanes/<int>.txt"},
+  "intensity": "<economy|balanced|performance|max|custom>",
+  "available_models": ["<id>", "..."],
+  "integrator": {"name":"<int>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<int-branch>","worktree":"<int-worktree>","prompt_file":".polylane/lanes/<int>.txt"},
   "lanes": [
-    {"name":"<lane>","model":"<id>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>"]}
+    {"name":"<lane>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>"]}
   ]
 }
 ```
-`worktree` is each lane's Phase 5 worktree; `prompt_file` is its `.polylane/lanes/<lane>.txt`. The integrator omits `own_globs`; every lane includes it.
+`intensity` is the Phase 1 preset; `available_models` is the set it resolved against; per-object `model` + `effort` are the Phase 4-resolved (or Phase 5-overridden) values, on every lane object and the integrator (matching Lc's `.polylane/SCHEMA.md`). `worktree` is each lane's Phase 5 worktree; `prompt_file` is its `.polylane/lanes/<lane>.txt`. The integrator omits `own_globs`; every lane includes it.
 
 ## Rules
 - The GOAL is copied verbatim from the locked INTEGRATION SPEC — never paraphrased or expanded. If a builder wants scope beyond it, it must raise NEEDS DECISION, not act.
