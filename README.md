@@ -73,6 +73,11 @@ git clone https://github.com/GHGuide/polylane ~/.claude/skills/polylane
 
 Then in Claude Code, type `/polylane` (or just describe several goals and ask for parallel prompts).
 
+**Three entry points** (install `polylane-run/` and `polylane-auto/` per [install-helpers](references/install-helpers.md)):
+- **`/polylane`** — plan only: interview → spec + plan gates → paste-ready prompts. You launch them.
+- **`/polylane-run`** — run an already-planned `.polylane/run.json`: launch tmux panes → poll → integrate → merge → clean up.
+- **`/polylane-auto`** — both in one command: interview and gates, then hands-off launch/poll/integrate/merge/cleanup after the plan gate.
+
 **Works best with** (polylane recommends/installs them for you where relevant):
 - graphify — code knowledge graph (query instead of grep)
 - caveman — terse output mode

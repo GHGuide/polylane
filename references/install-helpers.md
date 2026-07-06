@@ -18,6 +18,18 @@ Verify:
 test -f ~/.claude/skills/polylane-run/SKILL.md && echo installed || echo "polylane-run/ not found — run from the polylane repo root"
 ```
 
+### Install the polylane-auto skill (one-time, optional)
+
+`polylane-auto/` fuses plan + run into one command (`/polylane-auto`): interview →
+spec gate → plan gate → generate + emit manifest → then hands-off launch, poll,
+integrate, merge, and clean up. It drives the same runner, so it needs the
+`polylane-run` install above plus the deps below.
+
+```bash
+cp -R polylane-auto/ ~/.claude/skills/polylane-auto/
+test -f ~/.claude/skills/polylane-auto/SKILL.md && echo installed || echo "polylane-auto/ not found — run from the polylane repo root"
+```
+
 ### Runtime dependencies
 
 The runner drives lanes through tmux and reads its manifest with jq. Install both once:
