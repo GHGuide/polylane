@@ -16,6 +16,24 @@ Goal: converge on a complete, numbered INTEGRATION SPEC with minimum user effort
    Mark changes since last round with `*`.
 4. **Probe for the missing.** Before declaring complete, ask ONE completeness question: "Anything else — settings, error states, offline, migrations, docs?" with a "No, that's everything" option.
 
+## Intensity + model availability (ask once, early)
+
+Two extra choices belong in Phase 1 — they set the token/quality budget the planner spends later (Phase 4 model resolution). Fold them into an early AskUserQuestion round (they change the build), then keep re-presenting the spec as usual.
+
+1. **Intensity — one question.** "How hard should the fleet run?" with these presets, recommended FIRST:
+   - `balanced (Recommended)` — Opus-high builders, the default fleet.
+   - `economy` — cheapest models/effort that still ship the spec.
+   - `performance` — bias toward more capable models on the load-bearing lanes.
+   - `max` — top model + effort everywhere, cost no object.
+   - `custom` — the user picks model + effort per lane themselves at the plan gate.
+
+   The answer becomes the global **`intensity`** (one of `economy | balanced | performance | max | custom`) — the exact preset the manifest emits and Phase 4 resolves against the rank map in `references/model-selection.md`.
+
+2. **Which models do you have — optional.** "Which Claude models can this machine run?" Sets the global **`available_models`** list (model ids) that Phase 4 resolves within.
+   - **Default probe path:** don't require a live API call. If the user skips this, assume the standard install trio from `references/model-selection.md` is available — `["claude-fable-5","claude-opus-4-8","claude-haiku-4-5"]`. The user narrows it only if a model is missing (e.g. no Fable), or confirms exact current availability via the `claude-api` skill when they care.
+
+Both feed Phase 4 (`references/model-selection.md`): the preset + the available set resolve each lane's model + effort; `custom` defers the per-lane choice to the user at the Phase 5 plan gate.
+
 ## Worked round (what one batch actually looks like)
 
 User opens with three lines:
