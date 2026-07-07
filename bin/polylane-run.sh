@@ -146,13 +146,31 @@ preflight() {
 # manifest -> globals
 # ---------------------------------------------------------------------------
 
+# abs_prompt PATH : make a manifest prompt_file absolute. Relative paths in the
+# manifest are anchored at PROJECT_ROOT (the dir that CONTAINS .polylane). Panes
+# `cd` into lane worktrees that do NOT contain .polylane/, so a relative
+# "$(cat .polylane/lanes/x.txt)" reads NOTHING there and launches claude with an
+# empty prompt (the "panes open but sit at an empty input" bug). Absolute paths
+# read correctly from any pane cwd.
+abs_prompt() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    *)  printf '%s/%s' "$PROJECT_ROOT" "$1" ;;
+  esac
+}
+
 load_manifest() {
   BASE=$(jq -r '.base' "$MANIFEST")
+  # PROJECT_ROOT = parent of the manifest's own dir (.polylane) = the project root
+  # where .polylane/lanes/*.txt actually live. Robust even outside a git checkout.
+  local _mdir
+  _mdir=$(cd "$(dirname "$MANIFEST")" && pwd)
+  PROJECT_ROOT=$(cd "$_mdir/.." && pwd)
   INT_NAME=$(jq -r '.integrator.name' "$MANIFEST")
   INT_MODEL=$(jq -r '.integrator.model' "$MANIFEST")
   INT_BRANCH=$(jq -r '.integrator.branch' "$MANIFEST")
   INT_WORKTREE=$(jq -r '.integrator.worktree' "$MANIFEST")
-  INT_PROMPT=$(jq -r '.integrator.prompt_file' "$MANIFEST")
+  INT_PROMPT=$(abs_prompt "$(jq -r '.integrator.prompt_file' "$MANIFEST")")
   # effort is optional; absent -> "" (no behavior change). // "" also maps a JSON null.
   INT_EFFORT=$(jq -r '.integrator.effort // ""' "$MANIFEST")
 
@@ -172,7 +190,7 @@ load_manifest() {
     LANE_EFFORTS+=("$(jq -r ".lanes[$i].effort // \"\"" "$MANIFEST")")
     LANE_BRANCHES+=("$(jq -r ".lanes[$i].branch" "$MANIFEST")")
     LANE_WORKTREES+=("$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
-    LANE_PROMPTS+=("$(jq -r ".lanes[$i].prompt_file" "$MANIFEST")")
+    LANE_PROMPTS+=("$(abs_prompt "$(jq -r ".lanes[$i].prompt_file" "$MANIFEST")")")
     LANE_POLLSPEC+=("$(jq -r ".lanes[$i].name" "$MANIFEST"):$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
   done
 
@@ -317,8 +335,29 @@ pane_cmd() {
     "$wt" "$pfx" "$model" "$pf" "$pf" "$pf" "$pfx" "$model"
 }
 
+# assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
+# file is missing or empty — the exact condition that otherwise launches an empty
+# claude session that silently sits at a blank input.
+assert_prompt() {
+  local pf="$1" name="$2"
+  if [ ! -f "$pf" ]; then
+    echo "polylane-run: prompt file MISSING for lane '$name': $pf" >&2
+    echo "  the planner (/polylane) must emit it before launch — nothing to seed." >&2
+    exit 1
+  fi
+  if [ ! -s "$pf" ]; then
+    echo "polylane-run: prompt file EMPTY for lane '$name': $pf" >&2
+    exit 1
+  fi
+}
+
 launch_panes() {
   local i first=1 pc
+  # Preflight ALL prompts first — better to abort before opening a single pane
+  # than to leave half a tmux session of empty claude sessions.
+  for i in "${!LANE_NAMES[@]}"; do
+    assert_prompt "${LANE_PROMPTS[$i]}" "${LANE_NAMES[$i]}"
+  done
   for i in "${!LANE_NAMES[@]}"; do
     echo "lane ${LANE_NAMES[$i]}: model=${LANE_MODELS[$i]} effort=${LANE_EFFORTS[$i]:-(default)}"
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
@@ -369,6 +408,7 @@ poll_done() {
 # ---------------------------------------------------------------------------
 
 run_integrator() {
+  assert_prompt "$INT_PROMPT" "$INT_NAME"
   add_worktree "$INT_WORKTREE" "$INT_BRANCH"
   local pc
   echo "lane $INT_NAME: model=$INT_MODEL effort=${INT_EFFORT:-(default)}"
