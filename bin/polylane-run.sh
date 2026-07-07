@@ -436,19 +436,23 @@ parse_verdict() {
   fi
 }
 
+# merge_gate : sets VERDICT_RESULT and returns 0 iff GO. Does NOT exit — the caller
+# writes the run report on both paths, then decides. NO-GO keeps worktrees intact.
 merge_gate() {
   local f="$INT_WORKTREE/docs/verify-integration.md" v
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would read integrator verdict from $f (proceed only on GO)"
+    VERDICT_RESULT="GO"
     return 0
   fi
   v=$(parse_verdict "$f")
+  VERDICT_RESULT="$v"
   case "$v" in
-    GO) echo "Integrator verdict: GO — proceeding." ;;
+    GO) echo "Integrator verdict: GO — proceeding."; return 0 ;;
     *)
-      echo "Integrator verdict: $v — NOT a GO. Stopping. Nothing deleted." >&2
+      echo "Integrator verdict: $v — NOT a GO. Nothing deleted." >&2
       [ -f "$f" ] && { echo "--- $f ---" >&2; cat "$f" >&2; }
-      exit 1
+      return 1
       ;;
   esac
 }
@@ -503,7 +507,82 @@ cleanup() {
   done
   run rm -f "$REPO_ROOT/docs/status-$INT_NAME.md"
 
-  echo "Cleanup complete. Kept: docs/verify-*.md, docs/parallel-status.md"
+  echo "Cleanup complete. Kept: docs/verify-*.md, docs/parallel-status.md, docs/polylane-report.md"
+}
+
+# ---------------------------------------------------------------------------
+# report — plain-terms rollup the chat surfaces after the run
+# ---------------------------------------------------------------------------
+
+# capture_stats : best-effort grab each lane pane's "Goal achieved (…)" line while
+# the tmux panes are still alive (call BEFORE cleanup). Fills LANE_STATS aligned
+# with LANE_NAMES. Never fatal — a missing pane just yields "completed".
+capture_stats() {
+  LANE_STATS=()
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  local i line
+  for i in "${!LANE_NAMES[@]}"; do
+    line=$(tmux capture-pane -t "polylane:0.$i" -p 2>/dev/null \
+           | grep -oE 'Goal achieved \([^)]*\)' | tail -1 || true)
+    LANE_STATS+=("${line:-completed}")
+  done
+  return 0
+}
+
+# write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
+# what happened + suggested next steps. Written on BOTH GO and NO-GO.
+write_report() {
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps
+  when=$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo "?")
+  mkdir -p "$REPO_ROOT/docs" 2>/dev/null || true
+
+  # next steps: surface anything the lanes flagged as open (kept files only).
+  steps=$(grep -hiE 'NEEDS DECISION|unverified|half-satisf|follow-up|not (yet|tested)|TODO|manual (verif|test)|out of scope|NO-GO' \
+            "$REPO_ROOT"/docs/verify-*.md "$REPO_ROOT/docs/parallel-status.md" 2>/dev/null \
+          | sed 's/^[[:space:]]*//; s/^[-*#> ]*//' | grep -v '^$' | sort -u | head -8 || true)
+
+  {
+    echo "# polylane run report"
+    echo
+    echo "**Outcome:** ${verdict}  ·  **When:** ${when}  ·  **Base branch:** ${BASE}  ·  **Lanes:** ${#LANE_NAMES[@]}"
+    echo
+    echo "## Lanes"
+    echo
+    echo "| Lane | Model | Branch | Result |"
+    echo "|---|---|---|---|"
+    for i in "${!LANE_NAMES[@]}"; do
+      printf '| %s | %s | %s | %s |\n' \
+        "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "${LANE_STATS[$i]:-completed}"
+    done
+    echo
+    echo "## Integrator verdict"
+    echo
+    if [ "$verdict" = "GO" ]; then
+      echo "**GO** — all lanes merged into \`${BASE}\`; worktrees, branches, and scratch removed. Kept the \`docs/verify-*.md\` evidence."
+    else
+      echo "**${verdict}** — integrator withheld GO. Nothing merged, nothing deleted; the lane worktrees are left intact so you can fix and re-run. See \`docs/verify-integration.md\`."
+    fi
+    echo
+    echo "## Recent commits on ${BASE}"
+    echo '```'
+    git -C "$REPO_ROOT" log --oneline -n "$(( ${#LANE_NAMES[@]} + 3 ))" "$BASE" 2>/dev/null || echo "(git log unavailable)"
+    echo '```'
+    echo
+    echo "## Suggested next steps"
+    echo
+    if [ "$verdict" = "GO" ]; then
+      echo "- Review the merged result, then \`git push\` to back it up."
+    else
+      echo "- Read \`docs/verify-integration.md\` for why the integrator said ${verdict}; fix the flagged lane(s) and re-run."
+    fi
+    if [ -n "$steps" ]; then
+      echo "- Open items the lanes flagged:"
+      printf '%s\n' "$steps" | sed 's/^/  - /'
+    else
+      echo "- No open items were flagged by the lanes."
+    fi
+  } > "$f" 2>/dev/null || echo "write_report: could not write $f" >&2
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -533,14 +612,20 @@ main() {
   poll_done "$INT_NAME:$INT_WORKTREE"
 
   echo "== gate: integrator verdict =="
-  merge_gate
-  assert_no_conflict "$INT_WORKTREE"
+  capture_stats                        # panes still alive — grab per-lane tokens/time
+  if merge_gate; then
+    assert_no_conflict "$INT_WORKTREE"
+    echo "== cleanup =="
+    cleanup
+  fi
 
-  echo "== cleanup =="
-  cleanup
+  echo "== report =="
+  write_report "${VERDICT_RESULT:-UNKNOWN}" || true
+  echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+  [ "${VERDICT_RESULT:-}" = "GO" ] || exit 1
 }
 
 # Only run main when executed directly (so tests can source the functions).
-if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
   main "$@"
 fi

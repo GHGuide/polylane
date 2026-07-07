@@ -74,6 +74,9 @@ Tell the user, once, what the runner now does on its own:
   the branches merge into one project folder.
 - **Cleans up** — removes merged worktrees/branches and quarantines strays, then
   **deletes the scratch after one confirmation** (or immediately if `--yes` was passed).
+- **Writes `docs/polylane-report.md`** — a plain-terms digest (outcome, per-lane
+  results, next steps) on both GO and NO-GO. When the run finishes, read it and
+  relay a simple summary to the user in the chat.
 
 Then hand back to the runner — it drives the rest.
 

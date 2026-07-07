@@ -65,7 +65,26 @@ for t in tmux jq claude; do command -v "$t" >/dev/null || { echo "$t MISSING —
 runner then, on its own: opens one tmux pane per lane, auto-polls each
 `<worktree>/docs/status-<lane>.md` until all DONE, runs the integrator over the
 finished branches, merges on GO (re-merge of current HEADs), and deletes worktrees
-+ branches + `.polylane` scratch while keeping `docs/verify-*.md`.
++ branches + `.polylane` scratch while keeping `docs/verify-*.md`. When it finishes
+it writes `docs/polylane-report.md` — the plain-terms digest of the whole run.
+
+### Phase 8 — report back to the chat (REQUIRED — do not skip)
+The run happens in tmux, out of the user's sight. **When it finishes you MUST
+surface the result in this chat, in simple terms.** Wait for the runner to complete
+(poll for `docs/polylane-report.md` to appear, or wait on the background task),
+then read it (plus `docs/verify-integration.md` for verdict detail):
+```
+test -f docs/polylane-report.md && cat docs/polylane-report.md
+```
+Then post a short, plain-language summary in the chat — the user's own words, no
+jargon:
+- **What happened** — GO or NO-GO, how many lanes, what got built + merged.
+- **Per lane** — one line each, from the report's Lanes table.
+- **Suggested next steps** — the report's next-steps, phrased simply (e.g. "push to
+  back it up", "one thing needs your call: <the flagged item>", "UI wasn't visually
+  checked — want me to?").
+Keep it to a few lines. If NO-GO: say plainly what blocked it and that the worktrees
+are still there to fix.
 
 ## Runtime model controls (optional, same as /polylane-run)
 Both override flags still compose onto the launch call — layer them on and dry-run
