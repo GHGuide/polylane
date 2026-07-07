@@ -69,6 +69,10 @@ final scratch-delete — for an unattended run. Default flow leaves them interac
 ### 5. Explain what happens next
 Tell the user, once, what the runner now does on its own:
 - **Auto-polls** each lane pane until every lane signals done.
+- **Auto-retries transient errors** — every 5 min it scans each unfinished pane for
+  an API 500 / overloaded / network error and respawns (retries) that lane, up to 3×
+  (tune via `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES`). Past the cap the run
+  halts and writes the report instead of hanging.
 - **Auto-integrates** — runs the integrator lane over the finished branches.
 - **Merges on GO** — when the integrator issues GO on a re-merge of current HEADs,
   the branches merge into one project folder.

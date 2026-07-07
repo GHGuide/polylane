@@ -56,7 +56,10 @@ FLOW:
 DEPS: tmux, claude, jq, git
 
 ENV:
-  POLYLANE_POLL_INTERVAL   seconds between DONE-file polls (default 15)
+  POLYLANE_POLL_INTERVAL    seconds between DONE-file polls (default 15)
+  POLYLANE_HEALTH_INTERVAL  seconds between error-scans that auto-retry a lane
+                            stuck on a transient API/network error (default 300 = 5 min)
+  POLYLANE_MAX_RETRIES      retries per lane before it is marked failed (default 3)
 EOF
 }
 
@@ -384,22 +387,98 @@ lane_done() {
   [ "$first" = "STATUS: $name DONE" ]
 }
 
-# poll_done SPEC... : each SPEC is "name:worktree". Loops until all are DONE.
+# --- health-check + auto-retry (transient API/network errors) ----------------
+# A lane that hits a 500 / overloaded / network error stops WITHOUT writing its
+# DONE file, so a plain DONE-poll would hang forever. Every POLYLANE_HEALTH_INTERVAL
+# (default 300s = 5 min) we scan each unfinished lane's pane for an error banner and
+# respawn (retry) it, up to POLYLANE_MAX_RETRIES (default 3). Past the cap the lane
+# is marked failed so the run halts with a report instead of hanging.
+# bash-3.2 safe: indexed arrays only (LANE_RETRIES keyed by pane index), no assoc.
+
+# pane_index_for NAME : tmux pane index for a lane (its position) or the integrator
+# (last pane). -1 if unknown.
+pane_index_for() {
+  local name="$1" i
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "${LANE_NAMES[$i]}" = "$name" ] && { printf '%s' "$i"; return; }
+  done
+  [ "$name" = "${INT_NAME:-}" ] && { printf '%s' "${#LANE_NAMES[@]}"; return; }
+  printf '%s' "-1"
+}
+
+# pane_cmd_for NAME : the seeded launch command for a lane / the integrator.
+pane_cmd_for() {
+  local name="$1" i
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "${LANE_NAMES[$i]}" = "$name" ] && {
+      pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}"
+      return
+    }
+  done
+  [ "$name" = "${INT_NAME:-}" ] && pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}"
+}
+
+# pane_errored IDX : 0 iff the pane shows a transient error signature (or died).
+pane_errored() {
+  local idx="$1" txt
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "polylane:0.$idx" -p 2>/dev/null || true)
+  printf '%s' "$txt" | grep -qiE \
+    'API Error|Internal server error|overloaded|rate.?limit|Connection error|network error|5[0-9][0-9] (Internal|error)|status\.claude\.com' \
+    && return 0
+  return 1
+}
+
+lane_failed() { case " ${FAILED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
+retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[$i]="$2"; }
+
+# health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
+health_check() {
+  local specs=("$@") s name wt idx max n cmd
+  max="${POLYLANE_MAX_RETRIES:-3}"
+  for s in "${specs[@]}"; do
+    name="${s%%:*}"; wt="${s#*:}"
+    lane_done "$wt" "$name" && continue
+    lane_failed "$name" && continue
+    idx=$(pane_index_for "$name")
+    pane_errored "$idx" || continue
+    n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
+    if [ "$n" -le "$max" ]; then
+      echo "health: lane '$name' hit a transient error — retry $n/$max, respawning pane $idx"
+      cmd=$(pane_cmd_for "$name")
+      if ! run tmux respawn-pane -k -t "polylane:0.$idx" "$cmd" 2>/dev/null; then
+        run tmux send-keys -t "polylane:0.$idx" C-c 2>/dev/null || true
+        run tmux send-keys -t "polylane:0.$idx" "$cmd" C-m 2>/dev/null || true
+      fi
+    else
+      echo "health: lane '$name' still erroring after $max retries — marking failed." >&2
+      FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+    fi
+  done
+}
+
+# poll_done SPEC... : each SPEC is "name:worktree". Returns 0 when all DONE, or 3
+# if the only remaining lanes have failed past the retry cap (halt, don't hang).
 poll_done() {
   local specs=("$@") interval="${POLYLANE_POLL_INTERVAL:-15}"
+  local hinterval="${POLYLANE_HEALTH_INTERVAL:-300}" since=0
   if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "+ (dry-run) would poll for DONE: ${specs[*]}"
+    echo "+ (dry-run) would poll for DONE (auto-retry errored lanes every ${hinterval}s): ${specs[*]}"
     return 0
   fi
   while :; do
-    local done=0 total=${#specs[@]} s name wt
+    local done=0 settled=0 total=${#specs[@]} s name wt
     for s in "${specs[@]}"; do
       name="${s%%:*}"; wt="${s#*:}"
-      if lane_done "$wt" "$name"; then done=$((done + 1)); fi
+      if lane_done "$wt" "$name"; then done=$((done + 1)); settled=$((settled + 1))
+      elif lane_failed "$name"; then settled=$((settled + 1)); fi
     done
-    echo "poll: $done/$total lanes DONE"
+    echo "poll: $done/$total DONE${FAILED_LANES:+ (failed: $FAILED_LANES)}"
     [ "$done" -eq "$total" ] && return 0
-    sleep "$interval"
+    [ "$settled" -eq "$total" ] && return 3
+    sleep "$interval"; since=$((since + interval))
+    if [ "$since" -ge "$hinterval" ]; then health_check "${specs[@]}"; since=0; fi
   done
 }
 
@@ -551,8 +630,10 @@ write_report() {
     echo "| Lane | Model | Branch | Result |"
     echo "|---|---|---|---|"
     for i in "${!LANE_NAMES[@]}"; do
+      local _r="${LANE_STATS[$i]:-completed}"
+      lane_failed "${LANE_NAMES[$i]}" && _r="FAILED — errored after retries"
       printf '| %s | %s | %s | %s |\n' \
-        "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "${LANE_STATS[$i]:-completed}"
+        "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "$_r"
     done
     echo
     echo "## Integrator verdict"
@@ -572,6 +653,11 @@ write_report() {
     echo
     if [ "$verdict" = "GO" ]; then
       echo "- Review the merged result, then \`git push\` to back it up."
+    elif [ -n "${FAILED_LANES:-}" ]; then
+      echo "- Lane(s) errored out and could not recover after retries: **${FAILED_LANES}**."
+      echo "  A transient API/network error (e.g. 500 / overloaded) kept firing. Their"
+      echo "  worktrees are left intact — re-run the runner to resume just those, or wait"
+      echo "  for https://status.claude.com to clear and re-run."
     else
       echo "- Read \`docs/verify-integration.md\` for why the integrator said ${verdict}; fix the flagged lane(s) and re-run."
     fi
@@ -603,13 +689,26 @@ main() {
   launch_panes
   echo "Launched ${#LANE_NAMES[@]} lane(s). Attach with: tmux attach -t polylane"
 
-  echo "== poll: waiting for builders =="
-  poll_done "${LANE_POLLSPEC[@]}"
-  echo "All builders DONE."
+  echo "== poll: waiting for builders (auto-retry on transient errors) =="
+  if poll_done "${LANE_POLLSPEC[@]}"; then
+    echo "All builders DONE."
+  else
+    echo "Halt: lane(s) failed after retries: ${FAILED_LANES:-?}. Not integrating." >&2
+    capture_stats
+    write_report "HALTED" || true
+    echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+    exit 1
+  fi
 
   echo "== integrator: $INT_NAME =="
   run_integrator
-  poll_done "$INT_NAME:$INT_WORKTREE"
+  if ! poll_done "$INT_NAME:$INT_WORKTREE"; then
+    echo "Halt: integrator failed after retries. Nothing merged." >&2
+    capture_stats
+    write_report "HALTED" || true
+    echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+    exit 1
+  fi
 
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time
