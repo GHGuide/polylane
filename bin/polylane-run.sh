@@ -63,6 +63,9 @@ ENV:
 EOF
 }
 
+# tmux session name — POLYLANE_SESSION lets parallel runs coexist (default: polylane).
+TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
+
 # run CMD... : in dry-run print it; otherwise execute it (argv form, no eval).
 run() {
   if [ "${DRY_RUN:-0}" = "1" ]; then
@@ -365,13 +368,13 @@ launch_panes() {
     echo "lane ${LANE_NAMES[$i]}: model=${LANE_MODELS[$i]} effort=${LANE_EFFORTS[$i]:-(default)}"
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
     if [ "$first" = "1" ]; then
-      run tmux new-session -d -s polylane -n "${LANE_NAMES[$i]}"
+      run tmux new-session -d -s "$TMUX_SESSION" -n "${LANE_NAMES[$i]}"
       first=0
     else
-      run tmux split-window -t polylane
-      run tmux select-layout -t polylane tiled
+      run tmux split-window -t "$TMUX_SESSION"
+      run tmux select-layout -t "$TMUX_SESSION" tiled
     fi
-    run tmux send-keys -t polylane "$pc" C-m
+    run tmux send-keys -t "$TMUX_SESSION" "$pc" C-m
   done
 }
 
@@ -422,7 +425,7 @@ pane_cmd_for() {
 pane_errored() {
   local idx="$1" txt
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
-  txt=$(tmux capture-pane -t "polylane:0.$idx" -p 2>/dev/null || true)
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
   printf '%s' "$txt" | grep -qiE \
     'API Error|Internal server error|overloaded|rate.?limit|Connection error|network error|5[0-9][0-9] (Internal|error)|status\.claude\.com' \
     && return 0
@@ -447,9 +450,9 @@ health_check() {
     if [ "$n" -le "$max" ]; then
       echo "health: lane '$name' hit a transient error — retry $n/$max, respawning pane $idx"
       cmd=$(pane_cmd_for "$name")
-      if ! run tmux respawn-pane -k -t "polylane:0.$idx" "$cmd" 2>/dev/null; then
-        run tmux send-keys -t "polylane:0.$idx" C-c 2>/dev/null || true
-        run tmux send-keys -t "polylane:0.$idx" "$cmd" C-m 2>/dev/null || true
+      if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
+        run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
+        run tmux send-keys -t "$TMUX_SESSION:0.$idx" "$cmd" C-m 2>/dev/null || true
       fi
     else
       echo "health: lane '$name' still erroring after $max retries — marking failed." >&2
@@ -492,9 +495,9 @@ run_integrator() {
   local pc
   echo "lane $INT_NAME: model=$INT_MODEL effort=${INT_EFFORT:-(default)}"
   pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
-  run tmux split-window -t polylane
-  run tmux select-layout -t polylane tiled
-  run tmux send-keys -t polylane "$pc" C-m
+  run tmux split-window -t "$TMUX_SESSION"
+  run tmux select-layout -t "$TMUX_SESSION" tiled
+  run tmux send-keys -t "$TMUX_SESSION" "$pc" C-m
 }
 
 # ---------------------------------------------------------------------------
@@ -601,7 +604,7 @@ capture_stats() {
   [ "${DRY_RUN:-0}" = "1" ] && return 0
   local i line
   for i in "${!LANE_NAMES[@]}"; do
-    line=$(tmux capture-pane -t "polylane:0.$i" -p 2>/dev/null \
+    line=$(tmux capture-pane -t "$TMUX_SESSION:0.$i" -p 2>/dev/null \
            | grep -oE 'Goal achieved \([^)]*\)' | tail -1 || true)
     LANE_STATS+=("${line:-completed}")
   done
@@ -685,9 +688,9 @@ main() {
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees
 
-  echo "== launch: tmux session 'polylane' =="
+  echo "== launch: tmux session '$TMUX_SESSION' =="
   launch_panes
-  echo "Launched ${#LANE_NAMES[@]} lane(s). Attach with: tmux attach -t polylane"
+  echo "Launched ${#LANE_NAMES[@]} lane(s). Attach with: tmux attach -t $TMUX_SESSION"
 
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
