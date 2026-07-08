@@ -1,205 +1,94 @@
-# Verify — integrator lane (adaptive-model / intensity feature)
+# verify-integration.md — max-upgrade round (integrator)
 
-**VERDICT: GO.** 4 lane branch tips re-merged into `main` (0 commits at risk, 0
-conflicts); all 5 hard contracts cross-checked with quoted lines from the merged
-tree (zero contradiction); runner + probe helper smoke-tested on merged `main`
-including the no-API-key fallback. Details below. This is a fresh re-verify of
-the current branch HEADs — no prior GO was trusted.
+Date: 2026-07-08 · Integrator model: claude-fable-5 (effort high) · Base: `main` @ c1cbf25 pre-merge → `a9b9fa8` post-merge+fix. Fresh re-verify of current branch tips — no prior GO trusted.
 
-Merged `main` tip at verification: `41e22ca`.
-Environment: host bash `3.2.57`; `tmux`, `claude`, `jq`, `git`, `curl` all present;
-**no `ANTHROPIC_API_KEY`** set (fallback path exercised for real).
+> Provenance note: this file was first written in the integrator worktree, where the live
+> runner consumed it (gated GO) and then cleaned up the worktree + `lane/integrator`
+> branch before the integrator's evidence commit landed. Content re-landed here on
+> `main` directly, unchanged; the race is logged below in §4 and recommended for a
+> runner follow-up. A disk-full (ENOSPC) window also interrupted the re-land; space was
+> freed and this write completed after.
 
----
+## 1. Re-merge — all 9 lane tips into main (goal 1)
 
-## 1. Per-lane merged status (goal 1 — 4 branches merged, 0 at risk)
+All 9 builder lanes had `STATUS: <lane> DONE` as first line of their status file before merging (checked per worktree). Merge order: engine → dashboard → doctor-notify → tests → planner-skill → run-skills → readme → evals → assets. **Zero conflicts** — every merge completed clean, no manual resolution.
 
-Pre-merge `main` = `4a97f99`. Each lane = exactly one feat commit ahead, clean
-file isolation (no two lanes touch the same file), so all four merged with the
-`ort` strategy and **zero conflicts**:
+| Lane | Tip merged | `rev-list --count main..lane/<x>` | Result |
+|---|---|---|---|
+| engine | ca535c5 | 0 | merged clean (runner: --resume/--push, auto-retry, report, POLYLANE_SESSION) |
+| dashboard | aabddc4 | 0 | merged clean (bin/polylane-dashboard.sh) |
+| doctor-notify | b3408fa | 0 | merged clean (bin/polylane-doctor.sh, bin/polylane-notify.sh) |
+| tests | 9d19a66 | 0 | merged clean (8-file suite + fixtures) |
+| planner-skill | 318a466 | 0 | merged clean (SKILL.md + references/, 16 drift fixes) |
+| run-skills | 127bf56 | 0 | merged clean (polylane-run/SKILL.md, polylane-auto/SKILL.md) |
+| readme | 38f9465 | 0 | merged clean (README.md) |
+| evals | 0fd03ef | 0 | merged clean (evals/*.json, 71 cases) |
+| assets | b252050 | 0 | merged clean (assets/q.py, nudge hook) |
 
-| Lane | Branch | Tip | Merge commit | Files (owned) | In `main`? |
-|---|---|---|---|---|---|
-| La intensity-model | `lane/intensity-model` | `4b4633b` | `7927634` | `references/model-selection.md` | ✅ 0 at risk |
-| Lb planner-wiring | `lane/planner-wiring` | `f8c956f` | `ee89744` | `SKILL.md`, `references/interview.md`, `references/lane-template.md` | ✅ 0 at risk |
-| Lc schema-runner | `lane/schema-runner` | `eb5fd72` | `c4c89ab` | `.polylane/SCHEMA.md`, `bin/polylane-run.sh`, `bin/polylane-models.sh` (new) | ✅ 0 at risk |
-| Ld runner-docs | `lane/runner-docs` | `b7b8b5f` | `41e22ca` | `polylane-run/SKILL.md`, `references/install-helpers.md` | ✅ 0 at risk |
+**0 commits at risk** — rev-list re-checked fresh immediately before the verdict was issued.
+Post-check note: `lane/assets` later fast-forwarded itself to the merged main tip `d46cb65` (reflog: "merge main: Fast-forward", from inside its worktree). Its real work commit b252050 was already merged; the branch contained nothing beyond main; at-risk still 0. Harmless (branch since removed by runner cleanup).
 
-Ancestry proof (`git merge-base --is-ancestor <tip> HEAD` → true for all four):
+## 2. Contract cross-checks (goal 2 — each quoted from the MERGED tree)
 
-```
-OK  lane/intensity-model (4b4633b) fully in main — 0 at risk
-OK  lane/planner-wiring   (f8c956f) fully in main — 0 at risk
-OK  lane/schema-runner    (eb5fd72) fully in main — 0 at risk
-OK  lane/runner-docs      (b7b8b5f) fully in main — 0 at risk
-```
+### (a) Runner CLI — usage() == polylane-run/SKILL.md == polylane-auto/SKILL.md == README — PASS
+- `bin/polylane-run.sh:32` (usage): `bin/polylane-run.sh <manifest.json> [--dry-run] [--yes] [--resume] [--push] [--intensity <economy|balanced|performance|max>] [--model <lane=model_id>]...`
+- `polylane-run/SKILL.md:144`: `[--push] [--resume] [--intensity <economy|balanced|performance|max>] ...`
+- `polylane-auto/SKILL.md:135`: `[--push] [--resume] [--intensity <economy|balanced|performance|max>] ...`
+- `README.md:111`: `polylane-run.sh <manifest> [--dry-run] [--yes] [--push] [--resume] [--intensity ...] [--model lane=id]`
+- Same flag SET everywhere; only listing order differs (cosmetic). run-skills lane's note "usage() does not yet list --resume/--push" was written pre-engine-merge; the merged usage() DOES list both (verified live via `--help`).
+- Minor: `bin/polylane-run.sh:14` file-header comment still reads `[--dry-run] [--yes]` only — stale intra-file comment in engine's own file, not a cross-lane mismatch; noted, not fixed.
 
-All four lane DONE markers verified in-branch before merge (first line of each
-`docs/status-<lane>.md` = `STATUS: <lane> DONE`).
+### (b) Helper CLIs match scripts + docs — PASS
+- doctor script `USAGE: bin/polylane-doctor.sh [manifest.json]` == `polylane-run/SKILL.md:58` + `polylane-auto/SKILL.md:68` "CLI `bin/polylane-doctor.sh [manifest]` — the manifest argument is optional". Exit contract verified live (FAILs present → exit 1).
+- dashboard script `USAGE: bin/polylane-dashboard.sh <manifest.json> [--interval N]` + `--demo` == `polylane-run/SKILL.md:156` + `polylane-auto/SKILL.md:80` "CLI: `bin/polylane-dashboard.sh <manifest> [--interval N]`" == `README.md:173` `bin/polylane-dashboard.sh --demo`.
+- notify script `USAGE: bin/polylane-notify.sh <event> <message>`; events in script (:49-52): `go)Glass · no-go|halt)Basso · done)Ping · stall)Sosumi` == docs event list `done|go|no-go|halt|stall` (`polylane-run/SKILL.md:163`, `polylane-auto/SKILL.md:93`).
 
----
+### (c) DONE marker + report filename + manifest schema — PASS
+- DONE marker `STATUS: <lane> DONE` identical in: `bin/polylane-run.sh:479` (`[ "$first" = "STATUS: $name DONE" ]`), `SKILL.md:40,:88`, `references/lane-template.md:30,:110`, `references/prompt-blocks.md:73`, `references/merge-and-cleanup.md:27`, `.polylane/SCHEMA.md` DONE-file convention, dashboard states table.
+- Report filename `docs/polylane-report.md` consistent across all 7 referencing files: `bin/polylane-run.sh`, `polylane-run/SKILL.md`, `polylane-auto/SKILL.md`, `README.md`, `SKILL.md`, `references/merge-and-cleanup.md`, `tests/test-write-report.sh`.
+- Manifest schema keys (`base, intensity?, available_models?, integrator{name,model,branch,worktree,prompt_file,effort?}, lanes[{…,own_globs}]`): `.polylane/SCHEMA.md` == fixture `tests/fixtures/project/.polylane/run.json` == runner load_manifest (`test-load-manifest.sh` green in suite) == planner references (keys frozen, unchanged).
 
-## 2. Cross-check of the 5 hard contracts (goal 2 — each quoted from merged `main`)
+### (d) Mandatory-4 order — PASS
+Order `/graphify-auto → caveman → /goal → superpowers:using-superpowers` identical in: `SKILL.md:38`, `SKILL.md:81`, `references/lane-template.md:15` (`[0 MANDATORY-4 preamble: /graphify-auto · caveman(full) · /goal <lane goal> · superpowers:using-superpowers]`), `references/prompt-blocks.md` block 0 (+ :14 "never dropped or reordered"), `polylane-auto/SKILL.md:34`, `references/model-selection.md:82` (intensity varies caveman LEVEL only; step never dropped/reordered).
 
-### Contract 1 — preset names `economy|balanced|performance|max|custom`
+### (e) Price table: report == references/model-selection.md — PASS
+- `references/model-selection.md:7-10`: Fable $10/$50 · Opus $5/$25 · Sonnet $3/$15 (*intro $2/$10 through 2026-08-31; sticker rate used*) · Haiku $1/$5 per 1M in/out.
+- `bin/polylane-run.sh:801-803` comment: "Price table cached from references/model-selection.md (confirmed 2026-07): Fable 5 $10/$50, Opus 4.8 $5/$25, Sonnet 5 $3/$15, Haiku 4.5 $1/$5" — verbatim match.
+- `model_out_price()` codes output rates 50/25/15/5 — matches the table's output column exactly.
+- Generated report footer cites the source: "rough, output-rate pricing from `references/model-selection.md`" (captured live from a runner-produced report).
 
-Two deliberate surfaces, each internally consistent; **not drift** — reconciled
-explicitly in `SCHEMA.md`.
+### (f) q.py subcommands unchanged + --json additive — PASS
+- Pre-merge (c1cbf25) vs merged `assets/q.py`: dispatch set identical — default find, `callers`, `uses`, `near`, `file`, `community`; `--json`, `--graph`, `--cap` present in BOTH versions.
+- Diff (+57/−6) adds only internal helpers `suggest()`/`miss()` (miss-suggestions), community field in callers/uses/near output, and a file-handle-leak fix. No CLI surface removed or renamed.
+- prompt-blocks Block E lists 4 subcommands + default; `community` omitted there by documented contract design (evals + assets lanes both state this) — consistent, not a contradiction.
 
-**Manifest/preset surface = 5-set (incl `custom`):**
-- `references/model-selection.md` distinct tokens: `` `balanced` `` `` `custom` `` `` `economy` `` `` `max` `` `` `performance` `` (grep `-oE` unique).
-- `SKILL.md:15` — `` ask the ONE intensity question (`economy | balanced | performance | max | custom`, `balanced` recommended) ``
-- `SKILL.md:49` — `"intensity": "<economy|balanced|performance|max|custom>",`
-- `.polylane/SCHEMA.md:43` — `` `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** … ``
+## 3. Test + smoke evidence (goal 3 — all run on the merged tree)
 
-**Runtime `--intensity` flag surface = 4-set (`custom` excluded by design):**
-- `bin/polylane-run.sh:33` — `[--intensity <economy|balanced|performance|max>]`
-- `bin/polylane-run.sh:237` — `unknown --intensity '$INTENSITY' (want economy|balanced|performance|max)`
-- `polylane-run/SKILL.md:87` — `` ### `--intensity <economy|balanced|performance|max>` — remap the whole run ``
+| Check | Command | Result |
+|---|---|---|
+| Syntax | `bash -n bin/*.sh` (5 scripts) | all OK |
+| Suite | `bash tests/run.sh` | **112 passed, 0 failed, 8 test files — exit 0** (run twice: post-merge and again post-SCHEMA-fix; both green) |
+| Doctor | `bin/polylane-doctor.sh tests/fixtures/project/.polylane/run.json` | runs; `12 PASS · 1 WARN · 2 FAIL` → **exit 1** (correct: fixture's placeholder `/abs/prompts/integrator.txt` missing + live tmux session `polylane` exists — both genuine findings) |
+| Dashboard | `bin/polylane-dashboard.sh --demo --interval 1` (6 s capture) | renders demo table: 4 fabricated lanes, states cycling waiting/working, `0/4 done · session polylane · refresh 1s` footer |
+| q.py plain | `python3 assets/q.py --graph graphify-out/graph.json parse_args` | `bin_polylane_run_parse_args [parse_args()] bin/polylane-run.sh:95` — 1 match |
+| q.py --json | same + `--json` | valid JSON: `{"query": "parse_args", "count": 1, ...}` |
+| Runner dry-run (fixture) | `bin/polylane-run.sh tests/fixtures/.../run.json --dry-run` | full split/launch/poll print; halts at fixture's placeholder integrator prompt with clear message, exit 1 (correct preflight) |
+| Runner dry-run, complete 2-lane manifest, `--resume --push` | scratchpad copy of fixture + real integrator prompt | **exit 0**; full flow printed: split → launch (`POLYLANE_EFFORT=medium claude --model claude-sonnet-5 …` prefix present) → poll → integrator → gate on `verify-integration.md` (proceed only on GO) → cleanup → `== push: current branch == / + git -C <root> push` (--push honored) → report written |
+| Flag parsing | `--bogus` → **exit 2** + usage; `--resume` → `RESUME=1` (`bin/polylane-run.sh:128`); `--push` → `PUSH=1` (`:129`); push step at `:954-956` | rejected/parsed correctly |
 
-**Reconciliation (single source of truth), `.polylane/SCHEMA.md:103-104`:**
-> `custom` is a manifest `intensity` value only (hand-tuned, no remap) — it is
-> **not** a valid `--intensity` CLI argument.
+## 4. Missing / unverified / regressed (goal 4)
 
-Operationally confirmed: `bin/polylane-run.sh sample.json --dry-run --intensity custom`
-→ `polylane-run: unknown --intensity 'custom' (want economy|balanced|performance|max)`,
-exit 2, no split. **PASS.**
+- **Unverified (accepted, bounded):** `--resume` skip-behavior against a pre-existing valid DONE file and a live (non-dry-run) `--push` were not exercised end-to-end here (needs a real multi-pane run); covered by engine lane's own 32-pass test file per its verify doc, plus the live parse/code-path evidence above. The frozen suite (`tests/`) intentionally carries no --resume/--push cases (frozen-contract scope).
+- **Known wart (engine-owned, NOT fixed — intra-lane, not cross-lane):** `write_report` runs even under `--dry-run`, writing a real `docs/polylane-report.md` with a fabricated "Outcome: GO" into the repo (untracked). Evidence preserved in integrator scratchpad; residue removed. Recommend engine guard report-writing behind dry-run in a follow-up.
+- **Race (runner-owned, follow-up recommended):** the runner gates on the integrator worktree's `verify-integration.md`/DONE file and starts cleanup immediately — it deleted the integrator worktree + `lane/integrator` branch BEFORE the integrator's evidence commit/merge could land. No lane work was lost (all 9 tips were already merged; cleanup uses `git branch -d`, merged-only), but integrator evidence had to be re-landed on main directly. Recommend the runner wait for the integrator's evidence commit (or copy the verify file out) before worktree removal. Runner cleanup also `rm`'d the tracked `.polylane/SCHEMA.md` along with the `.polylane/` scratch dir (restored from HEAD, content intact) and self-committed the status-scratch removal (df85444).
+- **Stale intra-file comment (engine-owned, NOT fixed):** `bin/polylane-run.sh:14` header CLI comment lacks the new flags; usage() at :32 is correct.
+- **Fixed on main (logged FIRST in docs/parallel-status.md, then committed as a9b9fa8):** `.polylane/SCHEMA.md` synced to the merged runner contract — CLI synopsis + `--resume`/`--push` table rows, env vars `POLYLANE_SESSION`/`POLYLANE_HEALTH_INTERVAL`/`POLYLANE_MAX_RETRIES`, pane-command `POLYLANE_EFFORT` prefix. Exactly the 3 spots the engine lane flagged for the integrator. Suite re-run green after the fix.
+- **Environment:** ENOSPC (disk full) hit twice this session — once during prior round (logged then), once during this round's evidence re-land. `doctor` correctly WARNs at <5GB free.
+- **Regressions:** none found — suite green, q.py CLI byte-compat vs pre-merge, no renamed contracts, all frozen names intact.
+- Historical (prior round, no action): f53b9e9 shared-index ride-along already verified clean by the prior integrator.
 
-### Contract 2 — manifest keys `intensity` / `available_models` / per-lane `effort`
+## 5. Verdict
 
-Identical key names in Lc's `.polylane/SCHEMA.md` and Lb's `SKILL.md` Phase 6 emit:
+All 9 current tips merged with 0 conflicts and 0 commits at risk (re-checked fresh); every frozen contract (a)–(f) evidenced with quoted lines and zero unresolved contradiction; suite 112/112 green on the merged tree; smokes captured for doctor, dashboard, q.py (plain + json), and runner dry-run incl. `--resume`/`--push`.
 
-- `.polylane/SCHEMA.md:43` `` | `intensity` | string | … ``
-- `.polylane/SCHEMA.md:44` `` | `available_models` | string[] | … ``
-- `.polylane/SCHEMA.md:57` `` | `effort` | string | … Surfaced to the pane as the `POLYLANE_EFFORT` env var … ``
-- `SKILL.md:49` `"intensity": "<economy|balanced|performance|max|custom>",`
-- `SKILL.md:50` `"available_models": ["<model id>", "..."],`
-- `SKILL.md` Phase 6 JSON carries `"effort"` on the integrator object and on each lane object (same lines as `"model"`).
-- `SKILL.md:88` non-negotiable — `` frozen schema: `base` · `intensity` · `available_models[]` · `integrator{name,model,effort,…}` · `lanes[]{name,model,effort,…}` … New keys (`intensity`, `available_models`, per-object `effort`) match Lc's `.polylane/SCHEMA.md`. ``
-
-**PASS** (key names identical). Non-blocking note logged in §4.
-
-### Contract 3 — CLI flags `--intensity` / `--model` spelled identically
-
-- `bin/polylane-run.sh:33` — `[--intensity <economy|balanced|performance|max>]`
-- `bin/polylane-run.sh:34` — `[--model <lane=model_id>]...`
-- `polylane-run/SKILL.md:87` — `` ### `--intensity <economy|balanced|performance|max>` — remap the whole run ``
-- `polylane-run/SKILL.md:96` — `` ### `--model <lane=model_id>` — override a single lane ``
-- `references/install-helpers.md:37` — `` The runner's model controls (`--intensity` / `--model`, documented in … ``
-
-Spellings match byte-for-byte across runner + docs. **PASS.**
-
-### Contract 4 — probe helper name `bin/polylane-models.sh` consistent
-
-- File present on merged `main`: `bin/polylane-models.sh` (executable, 65 lines).
-- `.polylane/SCHEMA.md:44` — `` typically the output of `bin/polylane-models.sh` ``
-- `.polylane/SCHEMA.md:113` — `` ## Model probe helper — `bin/polylane-models.sh` ``
-- `references/install-helpers.md:39,41` — `` `bin/polylane-models.sh` … probes the Anthropic API … ``
-
-**PASS.**
-
-### Contract 5 — existing contracts unchanged (base CLI, DONE marker, mandatory-4)
-
-- **Base CLI** — `bin/polylane-run.sh:14,32` `bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]`; `polylane-run/SKILL.md:113-114` — `` These flags are additive — the base CLI (`<manifest> [--dry-run] [--yes]`) is unchanged. `` New flags are additive; baseline (no flags) dry-run reproduces the manifest values unchanged (§3 smoke 4).
-- **DONE marker** — `SKILL.md:38` — `` each lane writes `docs/status-<lane>.md` whose FIRST LINE is exactly `STATUS: <lane> DONE` `` (also `SKILL.md:86`). Unchanged.
-- **Mandatory-4 preamble** — `SKILL.md:36` and `SKILL.md:79` — `` `/graphify-auto` · caveman (full) · `/goal <lane goal>` · `superpowers:using-superpowers` `` in order. Unchanged.
-
-**PASS.**
-
-**No cross-lane contradiction found → no `SKILL.md` fix applied.**
-
----
-
-## 3. Smoke tests on merged `main` (goal 3)
-
-**Syntax — `bash -n` both scripts:**
-```
-run.sh: syntax OK
-models.sh: syntax OK
-```
-
-**Probe helper, no `ANTHROPIC_API_KEY` → curated fallback (real, key absent):**
-```
-$ env -u ANTHROPIC_API_KEY bash bin/polylane-models.sh
-claude-fable-5
-claude-opus-4-8
-claude-sonnet-5
-claude-haiku-4-5
-[exit=0]
-```
-
-**Schema example validates with `jq` (first ```json``` block in SCHEMA.md):**
-```
-SCHEMA example: VALID JSON
-new fields present: intensity, available_models, lane.effort, integrator.effort
-```
-
-**Sample manifest** (2 lanes `api`=sonnet/medium, `ui`=fable/low + integrator
-opus/high; `available_models`=all four; `intensity`=balanced).
-
-Baseline `--dry-run` — unchanged, no real pane (dry `+ tmux` / `+ (dry-run) poll`):
-```
-lane api: model=claude-sonnet-5 effort=medium
-+ tmux new-session -d -s polylane -n api
-lane ui: model=claude-fable-5 effort=low
-+ (dry-run) would poll for DONE: api:../polylane-api ui:../polylane-ui
-lane integrator: model=claude-opus-4-8 effort=high
-```
-
-`--dry-run --intensity economy` — all lanes + integrator remap to haiku/low
-(economy ladder `haiku→fable→sonnet→opus`, all available → haiku); 8 dry `+ tmux`
-lines, **no real launch**:
-```
-== intensity 'economy' -> model=claude-haiku-4-5 effort=low (all lanes + integrator) ==
-lane api: model=claude-haiku-4-5 effort=low
-lane ui: model=claude-haiku-4-5 effort=low
-lane integrator: model=claude-haiku-4-5 effort=low
-```
-
-`--dry-run --model api=claude-opus-4-8` — single-lane override, others untouched:
-```
-== model override: api -> claude-opus-4-8 ==
-lane api: model=claude-opus-4-8 effort=medium
-lane ui: model=claude-fable-5 effort=low
-lane integrator: model=claude-opus-4-8 effort=high
-```
-
-Effort reaches the pane command:
-```
-POLYLANE_EFFORT='low' claude --model 'claude-haiku-4-5'
-```
-
-Guards (abort in `apply_overrides`, before `split_worktrees` — nothing launched):
-```
-$ … --intensity custom   → unknown --intensity 'custom' (want economy|balanced|performance|max)   [exit=2, no split]
-$ … --model backend=…     → --model names unknown lane 'backend' (not a lane or the integrator)     [exit=2, no split]
-```
-
-All smoke tests + guards **pass**.
-
----
-
-## 4. Missing / unverified / regressed
-
-- **Regressed:** none. Baseline (no-flag) dry-run reproduces manifest values
-  unchanged; `bash -n` clean on both scripts.
-- **Missing:** none against the locked goal.
-- **Non-blocking note (not one of the 5 enforced contracts):** the `SKILL.md`
-  Phase 6 JSON `effort` placeholder reads `<low|medium|high|xhigh>` while
-  `.polylane/SCHEMA.md:57` lists `low | medium | high | xhigh | max`. The **key
-  name** (`effort`) is identical — the contract is satisfied. Only the
-  illustrative enum in the placeholder under-lists `max` (which the `--intensity
-  max` preset resolves to at runtime, `bin/polylane-run.sh:202`). Cosmetic doc
-  under-spec in a placeholder; not a cross-lane contradiction, so left unchanged
-  per minimal-edit scope. Recorded here only — no `SKILL.md` fix and no
-  `docs/parallel-status.md` entry, since no contract mismatch was found.
-
----
-
-## Verdict
-
-**GO.** 4 branches merged (0 at risk), 5 contracts evidenced with quoted lines
-(zero contradiction), runner + probe helper smoke-tested on merged `main`
-including the no-key fallback. Proceed to merge-finalize + scratch cleanup
-(remove 4 lane worktrees + branches, drop `docs/status-*.md` scratch, keep
-`docs/verify-*.md` + `docs/parallel-status.md`).
+VERDICT: GO
