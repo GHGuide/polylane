@@ -201,6 +201,7 @@ load_manifest() {
   done
 
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+  # shellcheck disable=SC2034  # kept for sourcers (tests source this file's functions)
   BASE_WT="$REPO_ROOT"
 }
 
@@ -267,7 +268,7 @@ apply_overrides() {
     fi
     mdl=$(preset_model "$INTENSITY")
     for i in "${!LANE_NAMES[@]}"; do
-      LANE_MODELS[$i]="$mdl"; LANE_EFFORTS[$i]="$eff"
+      LANE_MODELS[i]="$mdl"; LANE_EFFORTS[i]="$eff"
     done
     INT_MODEL="$mdl"; INT_EFFORT="$eff"
     echo "== intensity '$INTENSITY' -> model=$mdl effort=$eff (all lanes + integrator) =="
@@ -286,7 +287,7 @@ apply_overrides() {
     found=0
     if [ "$name" = "$INT_NAME" ]; then INT_MODEL="$id"; found=1; fi
     for i in "${!LANE_NAMES[@]}"; do
-      if [ "${LANE_NAMES[$i]}" = "$name" ]; then LANE_MODELS[$i]="$id"; found=1; fi
+      if [ "${LANE_NAMES[$i]}" = "$name" ]; then LANE_MODELS[i]="$id"; found=1; fi
     done
     if [ "$found" != "1" ]; then
       echo "polylane-run: --model names unknown lane '$name' (not a lane or the integrator)" >&2
@@ -332,13 +333,18 @@ split_worktrees() {
 # is embedded in the orchestrator. On seed failure it copies the prompt to the
 # clipboard and starts a bare claude so the operator can paste it.
 # A non-empty EFFORT is exported to the pane as POLYLANE_EFFORT (a harmless env
-# prefix claude ignores if unused); an empty EFFORT reproduces the legacy
-# command byte-for-byte, so behavior is unchanged when no effort is set.
+# prefix claude ignores if unused).
+# Every interpolated value is %q-escaped: a worktree/prompt path (or model id)
+# containing spaces or quotes stays one shell word instead of splitting the
+# command or escaping its quoting.
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" pfx=""
-  [ -n "$effort" ] && pfx="POLYLANE_EFFORT='$effort' "
-  printf "cd '%s' && %sclaude --model '%s' \"\$(cat '%s')\" || { pbcopy < '%s' 2>/dev/null || xclip -selection clipboard < '%s' 2>/dev/null; echo 'SEED FAILED — prompt copied to clipboard; paste it into claude'; %sclaude --model '%s'; }" \
-    "$wt" "$pfx" "$model" "$pf" "$pf" "$pf" "$pfx" "$model"
+  local qwt qmodel qpf
+  qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf")
+  [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
+  # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
+  printf 'cd %s && %sclaude --model %s "$(cat %s)" || { pbcopy < %s 2>/dev/null || xclip -selection clipboard < %s 2>/dev/null; echo "SEED FAILED — prompt copied to clipboard; paste it into claude"; %sclaude --model %s; }' \
+    "$qwt" "$pfx" "$qmodel" "$qpf" "$qpf" "$qpf" "$pfx" "$qmodel"
 }
 
 # assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
@@ -374,7 +380,9 @@ launch_panes() {
       run tmux split-window -t "$TMUX_SESSION"
       run tmux select-layout -t "$TMUX_SESSION" tiled
     fi
-    run tmux send-keys -t "$TMUX_SESSION" "$pc" C-m
+    # -l = literal: the command types as-is even if a chunk matches a tmux key name
+    run tmux send-keys -t "$TMUX_SESSION" -l "$pc"
+    run tmux send-keys -t "$TMUX_SESSION" C-m
   done
 }
 
@@ -434,7 +442,7 @@ pane_errored() {
 
 lane_failed() { case " ${FAILED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
-retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[$i]="$2"; }
+retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[i]="$2"; }
 
 # health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
 health_check() {
@@ -452,7 +460,8 @@ health_check() {
       cmd=$(pane_cmd_for "$name")
       if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
         run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
-        run tmux send-keys -t "$TMUX_SESSION:0.$idx" "$cmd" C-m 2>/dev/null || true
+        run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
+        run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
       fi
     else
       echo "health: lane '$name' still erroring after $max retries — marking failed." >&2
@@ -497,7 +506,8 @@ run_integrator() {
   pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
   run tmux split-window -t "$TMUX_SESSION"
   run tmux select-layout -t "$TMUX_SESSION" tiled
-  run tmux send-keys -t "$TMUX_SESSION" "$pc" C-m
+  run tmux send-keys -t "$TMUX_SESSION" -l "$pc"
+  run tmux send-keys -t "$TMUX_SESSION" C-m
 }
 
 # ---------------------------------------------------------------------------
