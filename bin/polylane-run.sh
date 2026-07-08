@@ -449,13 +449,15 @@ pane_cmd() {
 # claude session that silently sits at a blank input.
 assert_prompt() {
   local pf="$1" name="$2"
-  if [ ! -f "$pf" ]; then
-    echo "polylane-run: prompt file MISSING for lane '$name': $pf" >&2
+  # In dry-run this is a preview with no side effects — a missing prompt is a
+  # warning, not a hard stop, so `--dry-run` works before the planner emits files.
+  if [ ! -f "$pf" ] || [ ! -s "$pf" ]; then
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+      echo "+ (dry-run) note: prompt file for lane '$name' not present yet: $pf" >&2
+      return 0
+    fi
+    echo "polylane-run: prompt file MISSING/EMPTY for lane '$name': $pf" >&2
     echo "  the planner (/polylane) must emit it before launch — nothing to seed." >&2
-    exit 1
-  fi
-  if [ ! -s "$pf" ]; then
-    echo "polylane-run: prompt file EMPTY for lane '$name': $pf" >&2
     exit 1
   fi
 }
@@ -621,7 +623,7 @@ pane_dead() {
   cmd=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_current_command}' 2>/dev/null || echo "")
   case "$cmd" in
     ""|*claude*|*node*) return 1 ;;   # still running (or unknown) — leave it
-    *sh|*zsh|bash|-*)   return 0 ;;   # back at a shell prompt = the lane exited
+    *sh|-*)             return 0 ;;   # a shell prompt (sh/bash/zsh/fish/login-*) = lane exited
     *)                  return 1 ;;
   esac
 }
