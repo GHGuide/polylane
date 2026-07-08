@@ -519,6 +519,37 @@ pane_errored() {
 }
 
 lane_failed() { case " ${FAILED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+
+# --- usage-limit stall (money decision — never auto-answered/retried) ---------
+# A pane asking to buy/switch credits is STALLED, not errored: a respawn would
+# just re-hit the paywall, and auto-answering would spend money without a
+# human. Detect it, notify once, surface it in the poll + report, and wait.
+
+# pane_stalled IDX : 0 iff the pane shows a usage-limit / paywall prompt.
+pane_stalled() {
+  local idx="$1" txt
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  printf '%s' "$txt" | grep -qiE 'usage limit|Switch to usage credits|Upgrade your plan'
+}
+
+lane_stalled() { case " ${STALLED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+
+# stall_check SPEC... : mark newly stalled lanes (sticky) and notify ONCE each.
+stall_check() {
+  local s name wt idx
+  for s in "$@"; do
+    name="${s%%:*}"; wt="${s#*:}"
+    lane_done "$wt" "$name" && continue
+    lane_failed "$name" && continue
+    lane_stalled "$name" && continue
+    idx=$(pane_index_for "$name")
+    pane_stalled "$idx" || continue
+    STALLED_LANES="${STALLED_LANES:+$STALLED_LANES }$name"
+    echo "stall: lane '$name' hit a usage limit — waiting for a human decision (no auto-retry)"
+    notify_event stall "lane '$name' hit a usage limit — human decision needed"
+  done
+}
 retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
 retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[i]="$2"; }
 
@@ -530,6 +561,7 @@ health_check() {
     name="${s%%:*}"; wt="${s#*:}"
     lane_done "$wt" "$name" && continue
     lane_failed "$name" && continue
+    lane_stalled "$name" && continue   # paywall: human decision, never respawn
     idx=$(pane_index_for "$name")
     pane_errored "$idx" || continue
     n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
@@ -565,6 +597,7 @@ poll_done() {
   fi
   while :; do
     local done=0 settled=0 total=${#specs[@]} s name wt state
+    stall_check "${specs[@]}"   # every poll: stalls need timely human attention
     elapsed=$(fmt_elapsed $(( $(date +%s) - t0 )))
     for s in "${specs[@]}"; do
       name="${s%%:*}"; wt="${s#*:}"
@@ -572,6 +605,8 @@ poll_done() {
         state="DONE"; done=$((done + 1)); settled=$((settled + 1))
       elif lane_failed "$name"; then
         state="failed"; settled=$((settled + 1))
+      elif lane_stalled "$name"; then
+        state="stalled"   # waits — not settled: a human can un-stall it
       else
         state="working"
       fi
@@ -750,6 +785,7 @@ write_report() {
     for i in "${!LANE_NAMES[@]}"; do
       local _r="${LANE_STATS[$i]:-completed}"
       lane_failed "${LANE_NAMES[$i]}" && _r="FAILED — errored after retries"
+      lane_stalled "${LANE_NAMES[$i]}" && _r="STALLED — usage limit (human decision needed)"
       printf '| %s | %s | %s | %s |\n' \
         "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "$_r"
     done
@@ -778,6 +814,12 @@ write_report() {
       echo "  for https://status.claude.com to clear and re-run."
     else
       echo "- Read \`docs/verify-integration.md\` for why the integrator said ${verdict}; fix the flagged lane(s) and re-run."
+    fi
+    if [ -n "${STALLED_LANES:-}" ]; then
+      echo "- Lane(s) stalled on a usage limit: **${STALLED_LANES}** — a paywall/credits"
+      echo "  prompt is waiting in their pane. That's a money decision, so nothing was"
+      echo "  auto-answered or respawned: attach (\`tmux attach -t ${TMUX_SESSION}\`), answer it,"
+      echo "  and the lane resumes."
     fi
     if [ -n "$steps" ]; then
       echo "- Open items the lanes flagged:"
