@@ -79,3 +79,10 @@ Model: Opus 4.8, XHIGH effort. Caveman: full.
 - Cleanup: no-op — nothing to worktree-remove / branch -d / quarantine. One folder remains.
 - Env note: hit ENOSPC mid-run (disk full); user freed space; all verification re-confirmed. `graphify-out/` left untracked (never staged).
 - NEEDS DECISION: none.
+
+## integrator (max-upgrade round) — 2026-07-08
+- FIX (logged before edit): `.polylane/SCHEMA.md` stale vs engine's merged runner (flagged by engine lane, left for integrator). 3 spots, minimal edits only:
+  1. CLI synopsis + flag table: add `--resume`, `--push` (bin/polylane-run.sh:32,:128-129 are the source of truth).
+  2. Environment line: add `POLYLANE_SESSION` (default `polylane`), `POLYLANE_HEALTH_INTERVAL` (300), `POLYLANE_MAX_RETRIES` (3) alongside `POLYLANE_POLL_INTERVAL` (15).
+  3. Pane-command example: add the optional `POLYLANE_EFFORT=<effort>` prefix (emitted when the lane has `effort`; verified via --dry-run).
+- No other files touched on main by integrator besides this log + SCHEMA.md; verdict + evidence land via lane/integrator merge.

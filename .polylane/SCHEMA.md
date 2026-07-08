@@ -62,7 +62,7 @@ Each **lane** object (and the **integrator** object) has:
 ## CLI
 
 ```
-bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]
+bin/polylane-run.sh <manifest.json> [--dry-run] [--yes] [--resume] [--push]
                     [--intensity <economy|balanced|performance|max>]
                     [--model <lane=model_id>]...
 ```
@@ -72,6 +72,8 @@ bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]
 | `<manifest.json>` | Path to the manifest. **Required** — missing → exit 2. |
 | `--dry-run` | Print every git/tmux command without executing. Nothing is created, launched, or deleted. |
 | `--yes` | Skip the final delete-confirmation prompt. |
+| `--resume` | Skip lanes whose DONE file is already valid (no respawn); launch only the unfinished lanes. Composes with every other flag. |
+| `--push` | After a GO verdict + cleanup, `git push` the current branch. |
 | `--intensity <preset>` | Remap **every** lane **and** the integrator to the preset's model + effort (see *Intensity presets* below). The model is resolved against `available_models`. `--intensity=<preset>` form also accepted. Applied before any worktree/pane exists. |
 | `--model <lane=model_id>` | Override **one** lane's (or the integrator's) `model`, matched by `name`. **Repeatable.** Applied *after* `--intensity`, so a per-lane override always wins. `--model=<lane=id>` form also accepted. |
 | `-h`, `--help` | Print usage, exit 0. |
@@ -81,7 +83,7 @@ value aborts with nothing created or launched.
 
 Exit codes: `0` success · `1` preflight / gate / conflict failure, or `--intensity` with an empty/absent `available_models` · `2` bad arguments, including an unknown `--intensity` value, a malformed `--model` (not `lane=model_id`), or a `--model` naming an unknown lane.
 
-Environment: `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default `15`).
+Environment: `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default `15`) · `POLYLANE_SESSION` — tmux session name, enables parallel runs (default `polylane`) · `POLYLANE_HEALTH_INTERVAL` — seconds between pane-health checks / transient-error auto-retry sweeps (default `300`) · `POLYLANE_MAX_RETRIES` — retries per lane before it is marked failed (default `3`).
 
 ---
 
@@ -185,12 +187,15 @@ Each pane runs (prompt read at pane runtime, with a clipboard fallback if the
 seed fails):
 
 ```sh
-cd '<worktree>' && claude --model '<model>' "$(cat '<prompt_file>')" \
+cd '<worktree>' && POLYLANE_EFFORT=<effort> claude --model '<model>' "$(cat '<prompt_file>')" \
   || { pbcopy < '<prompt_file>' 2>/dev/null \
        || xclip -selection clipboard < '<prompt_file>' 2>/dev/null; \
        echo 'SEED FAILED — prompt copied to clipboard; paste it into claude'; \
-       claude --model '<model>'; }
+       POLYLANE_EFFORT=<effort> claude --model '<model>'; }
 ```
+
+The `POLYLANE_EFFORT=<effort>` prefix appears only when the lane has an
+`effort` key; without it the legacy command is reproduced byte-for-byte.
 
 ---
 
