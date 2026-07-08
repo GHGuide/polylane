@@ -1,0 +1,239 @@
+{
+  "skill": "polylane-run",
+  "purpose": "Verify polylane-run fires on its 5 documented trigger phrases (and NOT on plan-only, auto-pipeline, or generic run/launch prompts), refuses to run without the manifest, always dry-runs before launch, resolves the runner portably, and relays the end-of-run report to the chat.",
+  "schema": "Shared schema for all eval files documented in evals/README.md.",
+  "trigger_phrases": [
+    "/polylane-run",
+    "run the lanes",
+    "launch the terminals",
+    "execute the plan",
+    "start the builders"
+  ],
+  "cases": [
+    {
+      "name": "trigger_slash_polylane_run",
+      "class": "trigger",
+      "input": "/polylane-run",
+      "should_fire": true,
+      "expect": [
+        "polylane-run skill activates",
+        "checks `.polylane/run.json` exists before anything else"
+      ]
+    },
+    {
+      "name": "trigger_run_the_lanes",
+      "class": "trigger",
+      "input": "run the lanes",
+      "should_fire": true,
+      "expect": [
+        "polylane-run skill activates (NOT polylane-auto — plan already exists, only execution wanted)",
+        "resolves runner script, preflights tmux/jq/claude"
+      ]
+    },
+    {
+      "name": "trigger_launch_the_terminals",
+      "class": "trigger",
+      "input": "launch the terminals",
+      "should_fire": true,
+      "expect": [
+        "polylane-run skill activates",
+        "dry-run shown before any pane opens"
+      ]
+    },
+    {
+      "name": "trigger_execute_the_plan",
+      "class": "trigger",
+      "input": "execute the plan",
+      "should_fire": true,
+      "expect": [
+        "polylane-run skill activates",
+        "consumes only `.polylane/run.json` — no other input"
+      ]
+    },
+    {
+      "name": "trigger_start_the_builders",
+      "class": "trigger",
+      "input": "start the builders",
+      "should_fire": true,
+      "expect": [
+        "polylane-run skill activates",
+        "one tmux pane per lane per the manifest"
+      ]
+    },
+    {
+      "name": "paraphrase_fire_up_planned_lanes",
+      "class": "trigger",
+      "input": "the polylane plan is ready — fire up the tmux panes for it",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane-run skill activates (paraphrase of 'run the lanes' / 'launch the terminals')",
+        "dry-run first, launch only on go-ahead"
+      ]
+    },
+    {
+      "name": "paraphrase_kick_off_manifest",
+      "class": "trigger",
+      "input": "kick off the lanes that /polylane just planned",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane-run skill activates (paraphrase of 'start the builders')",
+        "drives bin/polylane-run.sh — does not plan or merge by hand"
+      ]
+    },
+    {
+      "name": "negative_disambiguation_make_lane_prompts",
+      "class": "trigger",
+      "input": "make lane prompts for these goals",
+      "should_fire": false,
+      "expected_skill": "polylane",
+      "expect": [
+        "polylane-run does NOT activate — planning wanted, that is polylane's trigger"
+      ]
+    },
+    {
+      "name": "negative_disambiguation_plan_and_run",
+      "class": "trigger",
+      "input": "plan and run — do the whole thing in one go",
+      "should_fire": false,
+      "expected_skill": "polylane-auto",
+      "expect": [
+        "polylane-run does NOT activate — full pipeline (interview through merge) is polylane-auto's trigger; polylane-run only executes an existing plan"
+      ]
+    },
+    {
+      "name": "negative_run_the_tests",
+      "class": "trigger",
+      "input": "run the tests",
+      "should_fire": false,
+      "expect": [
+        "polylane-run does NOT activate (test execution, not lane launching)"
+      ]
+    },
+    {
+      "name": "negative_start_dev_server",
+      "class": "trigger",
+      "input": "start the dev server and launch the app in my browser",
+      "should_fire": false,
+      "expect": [
+        "polylane-run does NOT activate ('start'/'launch' about an app, no lanes/plan/builders context)"
+      ]
+    },
+    {
+      "name": "negative_single_agent",
+      "class": "trigger",
+      "input": "run one agent to fix this bug",
+      "should_fire": false,
+      "expect": [
+        "polylane-run does NOT activate (single agent, no planned lanes)"
+      ]
+    },
+    {
+      "name": "negative_review_pr",
+      "class": "trigger",
+      "input": "review my PR",
+      "should_fire": false,
+      "expect": [
+        "polylane-run does NOT activate (code review request)"
+      ]
+    },
+    {
+      "name": "negative_install_skill",
+      "class": "trigger",
+      "input": "install a skill for me",
+      "should_fire": false,
+      "expect": [
+        "polylane-run does NOT activate (skill install, not lane execution)"
+      ]
+    },
+    {
+      "name": "negative_execute_script",
+      "class": "trigger",
+      "input": "execute the migration script against staging",
+      "should_fire": false,
+      "expect": [
+        "polylane-run does NOT activate ('execute' about a DB script, not the lane plan)"
+      ]
+    },
+    {
+      "name": "behavior_manifest_missing_stops",
+      "class": "behavior",
+      "input": "/polylane-run in a repo with no .polylane/run.json",
+      "expect": [
+        "stops and tells the user: no `.polylane/run.json`, run `/polylane` first",
+        "does NOT fabricate a manifest",
+        "opens zero panes"
+      ]
+    },
+    {
+      "name": "behavior_preflight_tools",
+      "class": "behavior",
+      "input": "/polylane-run on a machine missing jq",
+      "expect": [
+        "preflights tmux, jq, claude on PATH",
+        "reports the missing tool with its install command (`brew install jq`) and stops",
+        "no launch attempt with missing tools"
+      ]
+    },
+    {
+      "name": "behavior_dry_run_before_launch",
+      "class": "behavior",
+      "input": "manifest present, tools ok — user says go",
+      "expect": [
+        "ALWAYS runs `\"$RUNNER\" .polylane/run.json --dry-run` first and relays pane count + lane + model/effort table to the user",
+        "real launch (same command without --dry-run) only AFTER the user approves the dry-run output",
+        "never skips the dry-run even when the user sounds eager"
+      ]
+    },
+    {
+      "name": "behavior_runner_resolved_portably",
+      "class": "behavior",
+      "input": "/polylane-run invoked from a project that is not the polylane repo",
+      "expect": [
+        "resolves the runner via PATH, falling back to `$HOME/.claude/skills/polylane/bin/polylane-run.sh`",
+        "never calls a bare relative `bin/polylane-run.sh`",
+        "`test -x \"$RUNNER\"` guard before use"
+      ]
+    },
+    {
+      "name": "behavior_model_flags_compose_with_dry_run",
+      "class": "behavior",
+      "input": "user wants backend lane pinned to Opus and the run at balanced intensity",
+      "expect": [
+        "layers `--intensity balanced --model backend=claude-opus-4-8` onto the same runner call",
+        "previews the flag combination with --dry-run and reads back the per-lane model column before the real launch",
+        "does not edit the manifest to change models"
+      ]
+    },
+    {
+      "name": "behavior_report_relayed_to_chat",
+      "class": "behavior",
+      "input": "run finishes (GO or NO-GO)",
+      "expect": [
+        "reads `docs/polylane-report.md` when the run completes",
+        "relays a simple plain-language summary in the chat (outcome, per-lane results, next steps)",
+        "explains the runner's autonomous behavior once at launch: auto-poll, auto-retry transient errors, auto-integrate, merge on GO, cleanup"
+      ]
+    },
+    {
+      "name": "behavior_never_hand_merges",
+      "class": "behavior",
+      "input": "integrator finishes and branches are ready",
+      "expect": [
+        "the shell script owns integrate/merge/cleanup — the skill never edits source or merges by hand",
+        "skill's role ends at driving the runner and relaying its output"
+      ]
+    }
+  ],
+  "red_flags": [
+    "fires on plan-only ('make lane prompts') or full-pipeline ('plan and run') prompts instead of deferring to polylane / polylane-auto",
+    "fails to fire on any of the 5 documented trigger phrases",
+    "fires on generic run/launch/start/execute prompts with no lane context",
+    "launches panes without a prior --dry-run review",
+    "fabricates or edits `.polylane/run.json`",
+    "calls bare relative `bin/polylane-run.sh` outside the polylane repo",
+    "edits source files or merges branches by hand",
+    "finishes without relaying `docs/polylane-report.md` to the chat"
+  ]
+}

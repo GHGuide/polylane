@@ -1,0 +1,285 @@
+{
+  "skill": "polylane-auto",
+  "purpose": "Verify polylane-auto fires on its 6 documented trigger phrases (and NOT on plan-only, run-only, or unrelated prompts), keeps the spec + plan gates interactive, runs the planner phases verbatim (mandatory-4 preamble, scoped git add, exact done marker), then goes hands-off: worktrees, dry-run record, launch with --yes, and a REQUIRED plain-language report back to the chat at the end.",
+  "schema": "Shared schema for all eval files documented in evals/README.md.",
+  "trigger_phrases": [
+    "/polylane-auto",
+    "plan and run",
+    "do the whole thing",
+    "autopilot the lanes",
+    "interview and launch",
+    "build it end to end"
+  ],
+  "cases": [
+    {
+      "name": "trigger_slash_polylane_auto",
+      "class": "trigger",
+      "input": "/polylane-auto",
+      "should_fire": true,
+      "expect": [
+        "polylane-auto skill activates",
+        "starts the polylane planner Phase 1 interview — does not launch anything yet"
+      ]
+    },
+    {
+      "name": "trigger_plan_and_run",
+      "class": "trigger",
+      "input": "plan and run",
+      "should_fire": true,
+      "expect": [
+        "polylane-auto skill activates (NOT polylane, NOT polylane-run — full pipeline wanted)",
+        "interviews toward an INTEGRATION SPEC before any lane derivation"
+      ]
+    },
+    {
+      "name": "trigger_do_the_whole_thing",
+      "class": "trigger",
+      "input": "do the whole thing",
+      "should_fire": true,
+      "expect": [
+        "polylane-auto skill activates",
+        "spec gate and plan gate still block — 'whole thing' does not mean gate-free"
+      ]
+    },
+    {
+      "name": "trigger_autopilot_the_lanes",
+      "class": "trigger",
+      "input": "autopilot the lanes",
+      "should_fire": true,
+      "expect": [
+        "polylane-auto skill activates",
+        "after plan approval the run is fully hands-off (launch, poll, integrate, merge, cleanup)"
+      ]
+    },
+    {
+      "name": "trigger_interview_and_launch",
+      "class": "trigger",
+      "input": "interview and launch",
+      "should_fire": true,
+      "expect": [
+        "polylane-auto skill activates",
+        "runs batched AskUserQuestion interview first, launch only after both gates"
+      ]
+    },
+    {
+      "name": "trigger_build_it_end_to_end",
+      "class": "trigger",
+      "input": "build it end to end",
+      "should_fire": true,
+      "expect": [
+        "polylane-auto skill activates",
+        "plans via polylane phases verbatim, then drives the runner — never re-implements either"
+      ]
+    },
+    {
+      "name": "paraphrase_one_command_pipeline",
+      "class": "trigger",
+      "input": "one command: interview me, split this into lanes, open the terminals, and merge it all when done",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane-auto skill activates (paraphrase of 'interview and launch' / 'build it end to end')",
+        "single fused flow — does not stop between plan and run"
+      ]
+    },
+    {
+      "name": "paraphrase_hands_off_after_plan",
+      "class": "trigger",
+      "input": "take these goals from interview to merged main — after I approve the plan I don't want to touch anything",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane-auto skill activates (paraphrase of 'autopilot the lanes')",
+        "keeps the two interactive gates, everything after plan approval is automatic"
+      ]
+    },
+    {
+      "name": "paraphrase_dont_stop_at_paste_blocks",
+      "class": "trigger",
+      "input": "plan the lanes but don't stop at the paste blocks — run them too and clean up after",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane-auto skill activates (paraphrase of 'plan and run' / 'do the whole thing')",
+        "continues straight from Phase 6 into the run — paste blocks printed only for the record"
+      ]
+    },
+    {
+      "name": "negative_disambiguation_run_the_lanes",
+      "class": "trigger",
+      "input": "run the lanes",
+      "should_fire": false,
+      "expected_skill": "polylane-run",
+      "expect": [
+        "polylane-auto does NOT activate — plan already exists, only execution wanted; 'run the lanes' is polylane-run's trigger and auto would wrongly re-interview"
+      ]
+    },
+    {
+      "name": "negative_disambiguation_execute_the_plan",
+      "class": "trigger",
+      "input": "execute the plan",
+      "should_fire": false,
+      "expected_skill": "polylane-run",
+      "expect": [
+        "polylane-auto does NOT activate — executing an existing manifest is polylane-run's job"
+      ]
+    },
+    {
+      "name": "negative_disambiguation_make_lane_prompts",
+      "class": "trigger",
+      "input": "make lane prompts for these goals",
+      "should_fire": false,
+      "expected_skill": "polylane",
+      "expect": [
+        "polylane-auto does NOT activate — plan-only wanted (paste blocks as the deliverable); that is polylane's trigger"
+      ]
+    },
+    {
+      "name": "negative_single_task",
+      "class": "trigger",
+      "input": "add a dark theme to the settings screen",
+      "should_fire": false,
+      "expect": [
+        "polylane-auto does NOT activate (single change, no pipeline/parallel intent)"
+      ]
+    },
+    {
+      "name": "negative_run_one_agent",
+      "class": "trigger",
+      "input": "run one agent to fix this bug",
+      "should_fire": false,
+      "expect": [
+        "polylane-auto does NOT activate (single agent, no lanes, no pipeline)"
+      ]
+    },
+    {
+      "name": "negative_review_pr",
+      "class": "trigger",
+      "input": "review my PR",
+      "should_fire": false,
+      "expect": [
+        "polylane-auto does NOT activate (code review, not a build pipeline)"
+      ]
+    },
+    {
+      "name": "negative_install_skill",
+      "class": "trigger",
+      "input": "install a skill for me",
+      "should_fire": false,
+      "expect": [
+        "polylane-auto does NOT activate (skill install, not plan-and-run)"
+      ]
+    },
+    {
+      "name": "negative_whole_thing_unrelated",
+      "class": "trigger",
+      "input": "read the whole thing and summarize it for me",
+      "should_fire": false,
+      "expect": [
+        "polylane-auto does NOT activate ('whole thing' refers to a document, no build/lane intent)"
+      ]
+    },
+    {
+      "name": "negative_end_to_end_tests",
+      "class": "trigger",
+      "input": "write an end to end test for the checkout flow",
+      "should_fire": false,
+      "expect": [
+        "polylane-auto does NOT activate ('end to end' about a test, not the build pipeline)"
+      ]
+    },
+    {
+      "name": "behavior_gates_remain_interactive",
+      "class": "behavior",
+      "input": "user says: /polylane-auto and just go, skip the questions",
+      "expect": [
+        "still runs the Phase 1 interview and BOTH blocking gates (spec gate, plan gate) — hands-off starts only AFTER the plan gate",
+        "eagerness does not skip a gate; only an explicit yes advances each",
+        "intensity question (economy|balanced|performance|max|custom) still asked once in an early round"
+      ]
+    },
+    {
+      "name": "behavior_no_stop_after_phase6",
+      "class": "behavior",
+      "input": "plan gate approved — prompts and manifest generated",
+      "expect": [
+        "does NOT stop at the paste blocks (the /polylane behavior) — prints them for the record and continues straight to worktrees + launch",
+        "never tells the user to run /polylane-run themselves",
+        "manifest `.polylane/run.json` comes from Phase 6 emission, never fabricated"
+      ]
+    },
+    {
+      "name": "behavior_prompts_match_planner_invariants",
+      "class": "behavior",
+      "input": "inspect a lane prompt generated during the auto flow",
+      "expect": [
+        "opens with the mandatory-4 preamble in order: 1) `/graphify-auto`, 2) caveman skill (full), 3) `/goal <one-line lane goal>`, 4) `superpowers:using-superpowers`",
+        "git block stages only the lane's own paths — NEVER `git add -A` or `git add .`",
+        "done-signal: `docs/status-<lane>.md` first line exactly `STATUS: <lane> DONE`",
+        "identical to /polylane Phase 6 output — auto does not water down planner invariants"
+      ]
+    },
+    {
+      "name": "behavior_worktrees_created_idempotently",
+      "class": "behavior",
+      "input": "Phase 6.5 with one lane's worktree already existing",
+      "expect": [
+        "creates one worktree + branch per lane from the manifest (`jq -r '.lanes[] ...'` loop)",
+        "skips existing worktrees/branches (`|| echo \"exists: $br\"`) — idempotent, no failure",
+        "runs before launch so the dry-run reads clean"
+      ]
+    },
+    {
+      "name": "behavior_dry_run_record_then_yes",
+      "class": "behavior",
+      "input": "Phase 7 launch",
+      "expect": [
+        "resolves runner portably: `command -v polylane-run.sh` falling back to `$HOME/.claude/skills/polylane/bin/polylane-run.sh`, guarded by `test -x`",
+        "preflights tmux, jq, claude on PATH before any launch",
+        "runs `\"$RUNNER\" .polylane/run.json --dry-run` first (for the record), THEN launches with `--yes`",
+        "`--yes` pre-approves launch + scratch-delete prompts — no mid-run stalls, and no hand-opened panes"
+      ]
+    },
+    {
+      "name": "behavior_model_flags_compose",
+      "class": "behavior",
+      "input": "user wants the docs lane on Fable and the whole run at performance intensity",
+      "expect": [
+        "layers `--intensity performance --model docs=claude-fable-5` onto the same `--yes` launch call",
+        "previews the combination with --dry-run before the real launch",
+        "does not edit the manifest to change models"
+      ]
+    },
+    {
+      "name": "behavior_report_back_required",
+      "class": "behavior",
+      "input": "runner finishes (GO or NO-GO) inside tmux",
+      "expect": [
+        "waits for / polls `docs/polylane-report.md`, reads it (plus `docs/verify-integration.md` for verdict detail)",
+        "MUST post a short plain-language summary in the chat: GO/NO-GO outcome, one line per lane, suggested next steps — Phase 8 is required, never skipped",
+        "if NO-GO: says plainly what blocked it and that worktrees are kept for fixing"
+      ]
+    },
+    {
+      "name": "behavior_drives_never_reimplements",
+      "class": "behavior",
+      "input": "any point in the auto flow",
+      "expect": [
+        "planner phases follow ~/.claude/skills/polylane/SKILL.md verbatim; run is driven through the runner script",
+        "never edits source files, hand-merges branches, or re-implements poll/integrate/cleanup logic — the shell script owns those"
+      ]
+    }
+  ],
+  "red_flags": [
+    "fails to fire on any of the 6 documented trigger phrases",
+    "grabs a run-only prompt ('run the lanes', 'execute the plan') instead of deferring to polylane-run",
+    "grabs a plan-only prompt ('make lane prompts') instead of deferring to polylane",
+    "skips the interview, the spec gate, or the plan gate because the user sounds eager",
+    "stops after Phase 6 waiting for /polylane-run instead of continuing hands-off",
+    "launches without the --dry-run record, or without --yes and then stalls on runner prompts",
+    "generated prompt omits/reorders the mandatory-4, contains `git add -A` / `git add .`, or deviates from first line exactly `STATUS: <lane> DONE` in `docs/status-<lane>.md`",
+    "fabricates `.polylane/run.json` instead of emitting it via planner Phase 6",
+    "finishes without relaying `docs/polylane-report.md` to the chat in plain language",
+    "edits source or merges branches by hand"
+  ]
+}

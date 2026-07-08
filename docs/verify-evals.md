@@ -1,70 +1,73 @@
-# Verify — evals/evals.json (LANE = evals)
+# Verify — evals/ suite (LANE = evals)
 
-Owner: evals lane. Scope: `evals/evals.json` only.
+Owner: evals lane. Scope: `evals/**` — three per-skill eval files + shared-schema README.
 
-## 1. Schema (documented)
+Files: `evals/polylane.json`, `evals/polylane-run.json`, `evals/polylane-auto.json`, `evals/README.md` (schema doc — required since suite is multi-file).
 
-`evals.json` top-level:
-
-| Field | Type | Meaning |
-|---|---|---|
-| `skill` | string | canonical skill name under test (`polylane`) |
-| `purpose` | string | what the set verifies |
-| `trigger_phrases` | string[] | the 6 exact phrases from SKILL.md's `description` — source of truth |
-| `schema` | object | self-describing field docs |
-| `cases` | object[] | `{ name, class, input, should_fire?, expect[] }`; `class ∈ {trigger, scenario, behavior}`; `should_fire` present only on `class=trigger` |
-| `red_flags` | string[] | behaviors that must never appear |
-
-## 2. JSON validity (evidence)
+## 1. JSON validity (evidence)
 
 ```
-$ python3 -c "import json; d=json.load(open('evals/evals.json')); print('VALID JSON'); print('cases:',len(d['cases']))"
-VALID JSON
-cases: 17
+$ python3 <validator over evals/*.json>
+== evals/polylane-auto.json: VALID JSON, skill=polylane-auto, cases=26
+   trigger_phrases match frozen contract verbatim: OK
+== evals/polylane-run.json: VALID JSON, skill=polylane-run, cases=22
+   trigger_phrases match frozen contract verbatim: OK
+== evals/polylane.json: VALID JSON, skill=polylane, cases=23
+   trigger_phrases match frozen contract verbatim: OK
+ALL FILES VALID; contract + structure checks pass
 ```
 
-Class counts: `{'trigger': 11, 'scenario': 4, 'behavior': 2}` (6 positive + 5 negative triggers).
+Structure checks also passed: unique case names per file; `class ∈ {trigger, scenario, behavior}`; `should_fire` present on every trigger case and absent elsewhere.
+
+## 2. Case-count table (skill × class)
+
+| Skill | Positive triggers | — of which paraphrase | Negative triggers | — of which disambiguation | Scenario | Behavior | Total |
+|---|---|---|---|---|---|---|---|
+| polylane | 9 | 3 | 7 | 2 | 4 | 3 | 23 |
+| polylane-run | 7 | 2 | 8 | 2 | 0 | 7 | 22 |
+| polylane-auto | 9 | 3 | 9 | 3 | 0 | 8 | 26 |
+| **Total** | **25** | 8 | **24** | 7 | **4** | **18** | **71** |
 
 ## 3. Trigger-phrase coverage (evidence)
 
-Each of the 6 SKILL.md description triggers has a matching positive case input:
+Every documented phrase (frozen contract = each SKILL.md `description:` verbatim) has ≥1 non-paraphrase positive case whose input contains it:
 
 ```
-OK  /polylane
-OK  /lanes
-OK  split this into prompts
-OK  parallel terminals
-OK  make lane prompts
-OK  orchestrate builders
+polylane:      OK /polylane · OK /lanes · OK split this into prompts · OK parallel terminals · OK make lane prompts · OK orchestrate builders
+polylane-run:  OK /polylane-run · OK run the lanes · OK launch the terminals · OK execute the plan · OK start the builders
+polylane-auto: OK /polylane-auto · OK plan and run · OK do the whole thing · OK autopilot the lanes · OK interview and launch · OK build it end to end
 ```
 
-## 4. Case → expected outcome
+Validator asserted `trigger_phrases` arrays equal the frozen contract exactly — no invented phrases; no missing phrases to escalate in `docs/parallel-status.md`.
 
-| Case | Class | should_fire | Expected |
-|---|---|---|---|
-| trigger_slash_polylane | trigger | true | skill activates; enters Phase 1 interview |
-| trigger_slash_lanes | trigger | true | activates; starts spec interview |
-| trigger_split_into_prompts | trigger | true | activates; no output before gates |
-| trigger_parallel_terminals | trigger | true | activates; interviews before lanes |
-| trigger_make_lane_prompts | trigger | true | activates; presents spec, waits yes |
-| trigger_orchestrate_builders | trigger | true | activates; orchestrator only |
-| negative_single_agent | trigger | false | NOT active — single agent |
-| negative_review_pr | trigger | false | NOT active — code review |
-| negative_install_skill | trigger | false | NOT active — skill install |
-| negative_plain_build | trigger | false | NOT active — single change, no lane cue |
-| negative_lanes_unrelated_word | trigger | false | NOT active — "lanes" is a highway, not /lanes |
-| single_goal_one_lane | scenario | — | 1 lane, no forced 3 |
-| three_disjoint_three_lanes | scenario | — | 3 lanes + integrator |
-| entangled_pair_carve_or_merge | scenario | — | merge or HARD CONTRACT, never shared file |
-| spec_gate_blocks | scenario | — | no prompts; explicit yes required |
-| behavior_preamble_mandatory_four | behavior | — | every prompt opens with mandatory-4 in order |
-| behavior_never_git_add_all | behavior | — | scoped `git add`; never `git add -A` / `git add .` |
+## 4. Hard negatives + disambiguation
 
-## 5. Behavior invariants asserted
+Shared hard negatives in all three files: "run one agent to fix this bug", "review my PR", "install a skill for me", single-task builds ("add a dark theme to the settings screen"). Per-skill lexical traps: highway "lanes" (polylane); "run the tests", "start the dev server", "execute the migration script" (polylane-run); "read the whole thing and summarize", "end to end test" (polylane-auto).
 
-- **Mandatory-4 preamble** (SKILL.md:36,42) — order `1) /graphify-auto · 2) caveman(full) · 3) /goal <lane goal> · 4) superpowers:using-superpowers`; none omitted/reordered.
-- **Never `git add -A`** (SKILL.md:47, references/prompt-blocks.md:68) — scoped stage of own paths only; wait+retry on index.lock. The string `git add -A` appears in the file 3× — all as *negative* assertions (2 in `behavior_never_git_add_all.expect`, 1 in `red_flags`), never as an emitted instruction.
+Plan vs run vs auto disambiguation matrix (`expected_skill` set on each):
 
-## 6. Contract note
+| Input | Fires | Must NOT fire (asserted in) |
+|---|---|---|
+| "make lane prompts …" | polylane | polylane-run.json, polylane-auto.json |
+| "run the lanes" | polylane-run | polylane.json, polylane-auto.json |
+| "execute the plan" | polylane-run | polylane-auto.json |
+| "plan and run …" | polylane-auto | polylane.json, polylane-run.json |
 
-All 6 description triggers are present and covered — no missing trigger to escalate to the SKILL.md owner.
+## 5. Behavior invariants (LOCKED-goal item 3) — coverage evidence
+
+```
+polylane       mandatory-4           -> behavior_preamble_mandatory_four
+polylane       never git add -A      -> behavior_never_git_add_all
+polylane       DONE marker exact     -> behavior_done_marker_exact
+polylane-run   dry-run before launch -> behavior_dry_run_before_launch, behavior_model_flags_compose_with_dry_run
+polylane-run   report to chat        -> behavior_report_relayed_to_chat
+polylane-auto  mandatory-4 + git add + DONE marker -> behavior_prompts_match_planner_invariants
+polylane-auto  dry-run before launch -> behavior_dry_run_record_then_yes, behavior_model_flags_compose
+polylane-auto  report to chat at end -> behavior_report_back_required (Phase 8 REQUIRED)
+```
+
+`git add -A` string counts: polylane.json 3×, polylane-auto.json 2×, polylane-run.json 0× — every occurrence is a *negative* assertion ("NEVER contains…" in `expect` or a `red_flags` entry), never an emitted instruction.
+
+## 6. Schema documentation
+
+Suite is multi-file → shared schema documented in `evals/README.md` (top-level fields, case fields incl. `paraphrase` + `expected_skill`, class semantics, how-to-run + validity snippet). Each JSON's `schema` field points there.
