@@ -6,11 +6,12 @@
 
 You stay in the loop for **decisions only** — a couple of click-through questions and two approval gates. Everything else is derived, generated, launched, and merged for you.
 
-**Three entry points:**
+**Four entry points:**
 
 - **`/polylane`** — plan only: interview → spec + plan gates → paste-ready prompts. You launch them.
 - **`/polylane-run`** — run an already-planned `.polylane/run.json`: launch tmux panes → poll → integrate → merge → clean up.
 - **`/polylane-auto`** — both in one command: interview and gates, then hands-off launch/poll/integrate/merge/cleanup after the plan gate.
+- **`/polylane-max`** — goal-driven loop: give one ultimate goal and it cycles (build → ~50-bullet report → deep-research next steps → recommended-default questions → repeat) until a critic judges the goal met or you stop.
 
 ---
 

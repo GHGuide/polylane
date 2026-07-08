@@ -30,6 +30,19 @@ cp -R polylane-auto/ ~/.claude/skills/polylane-auto/
 test -f ~/.claude/skills/polylane-auto/SKILL.md && echo installed || echo "polylane-auto/ not found — run from the polylane repo root"
 ```
 
+### Install the polylane-max skill (one-time, optional)
+
+`polylane-max/` is the goal-driven loop (`/polylane-max`): give one ultimate goal
+and it cycles build → ~50-bullet report → deep-research → recommended-default
+questions → repeat, until a critic judges the goal met. It drives `polylane-auto`
+each cycle and uses `bin/polylane-digest.sh` for the report, so it needs the
+installs above plus the `deep-research` skill.
+
+```bash
+cp -R polylane-max/ ~/.claude/skills/polylane-max/
+test -f ~/.claude/skills/polylane-max/SKILL.md && echo installed || echo "polylane-max/ not found — run from the polylane repo root"
+```
+
 ### Runtime dependencies
 
 The runner drives lanes through tmux and reads its manifest with jq. Install both once:
