@@ -20,8 +20,12 @@ Flags (any position):
 
 Each result prints  id  [label]  file:line  (cN)  so you can then Read the exact
 file:line if you truly need the source — a targeted read, not a blind grep.
+
+Matching: exact id first, then case-insensitive substring over id/label/file.
+Zero hits → a fuzzy "did you mean:" list (max 5) so typos self-correct.
 """
 import argparse
+import difflib
 import json
 import os
 import sys
@@ -46,8 +50,15 @@ def load(path):
             g = json.load(f)
     except (OSError, ValueError) as e:
         die(f"could not read graph at {path}: {e}")
-    nodes = {n["id"]: n for n in g.get("nodes", [])}
-    return nodes, g.get("links", []), g.get("built_at_commit", "?")
+    try:
+        nodes = {n["id"]: n for n in g.get("nodes", [])}
+        links = g.get("links", [])
+        commit = g.get("built_at_commit", "?")
+    except (AttributeError, TypeError, KeyError):
+        die(f"graph at {path} has unexpected shape "
+            f"(expected object with 'nodes'/'links'). "
+            f"Rebuild with /graphify-auto.")
+    return nodes, links, commit
 
 
 def loc(n):
@@ -94,6 +105,35 @@ def resolve(term, nodes):
             or t in str(n.get("source_file", "")).lower()]
 
 
+def suggest(term, nodes, limit=5):
+    """Fuzzy 'did you mean' candidates for a term with zero substring hits."""
+    t = term.lower()
+    cands = {}  # lowercase candidate string -> node id
+    for nid in nodes:
+        cands.setdefault(nid.lower(), nid)
+        tail = nid.replace("::", ".").replace("/", ".").rsplit(".", 1)[-1]
+        cands.setdefault(tail.lower(), nid)
+    close = difflib.get_close_matches(t, cands, n=limit * 3, cutoff=0.5)
+    out = []
+    for c in close:
+        nid = cands[c]
+        if nid not in out:
+            out.append(nid)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def miss(term, nodes, as_json, text_msg):
+    """Report a resolve miss: JSON stays parseable, text gets suggestions."""
+    sugg = suggest(term, nodes)
+    if as_json:
+        emit_json({"error": f"no match for '{term}'", "did_you_mean": sugg})
+        sys.exit(1)
+    extra = f"\ndid you mean: {', '.join(sugg)}" if sugg else ""
+    die(text_msg + extra)
+
+
 def emit_json(obj):
     print(json.dumps(obj, indent=2))
 
@@ -101,13 +141,19 @@ def emit_json(obj):
 def cmd_search(term, nodes, commit, cap, as_json):
     hits = resolve(term, nodes)
     shown = hits[:cap]
+    sugg = suggest(term, nodes) if not hits else []
     if as_json:
-        emit_json({"query": term, "count": len(hits),
-                   "results": [node_dict(nodes[h]) for h in shown]})
+        obj = {"query": term, "count": len(hits),
+               "results": [node_dict(nodes[h]) for h in shown]}
+        if sugg:
+            obj["did_you_mean"] = sugg
+        emit_json(obj)
         return
     for h in shown:
         print(fmt(nodes[h]))
     print(f"[{len(hits)} matches for '{term}'; showing {len(shown)}] (graph@{commit[:8]})")
+    if sugg:
+        print(f"did you mean: {', '.join(sugg)}")
 
 
 def cmd_file(sub, nodes, commit, cap, as_json):
@@ -128,9 +174,13 @@ def cmd_community(ref, nodes, commit, cap, as_json):
     else:
         r = resolve(ref, nodes)
         if not r:
-            die("no match — try `q.py <term>` first, or pass a community number")
+            miss(ref, nodes, as_json,
+                 "no match — try `q.py <term>` first, or pass a community number")
         target = nodes[r[0]].get("community")
     if target is None:
+        if as_json:
+            emit_json({"error": "no community found for that node"})
+            sys.exit(1)
         die("no community found for that node")
     mem = [n for n in nodes.values() if n.get("community") == target]
     shown = mem[:cap]
@@ -146,7 +196,8 @@ def cmd_community(ref, nodes, commit, cap, as_json):
 def cmd_edges(cmd, ref, nodes, links, commit, cap, as_json):
     r = resolve(ref, nodes)
     if not r:
-        die("no match — try a broader term or `q.py <term>` first")
+        miss(ref, nodes, as_json,
+             "no match — try a broader term or `q.py <term>` first")
     nid = r[0]
     ins = [l for l in links if l.get("target") == nid]
     outs = [l for l in links if l.get("source") == nid]
