@@ -1,13 +1,7 @@
 {
   "skill": "polylane",
   "purpose": "Verify polylane fires on its 6 documented trigger phrases (and NOT on unrelated prompts), interviews to a locked spec, derives correct lane count from file overlap, recommends token-efficient model/effort, and that every generated lane prompt opens with the mandatory-4 preamble and never emits `git add -A`.",
-  "schema": {
-    "skill": "string — canonical skill name under test",
-    "purpose": "string — what this eval set verifies",
-    "trigger_phrases": "string[] — the exact phrases SKILL.md's description declares as triggers (source of truth)",
-    "cases": "object[] — each: { name, class, input, should_fire?, expect[] }. class ∈ {trigger, scenario, behavior}. should_fire is a boolean present only on class=trigger cases.",
-    "red_flags": "string[] — behaviors that must never appear"
-  },
+  "schema": "Shared schema for all eval files documented in evals/README.md.",
   "trigger_phrases": [
     "/polylane",
     "/lanes",
@@ -75,6 +69,59 @@
       "expect": [
         "polylane skill activates",
         "acts as orchestrator only, never implements"
+      ]
+    },
+    {
+      "name": "paraphrase_split_for_terminals",
+      "class": "trigger",
+      "input": "here are five goals — carve them up into prompts I can paste into separate Claude Code terminals",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane skill activates (paraphrase of 'split this into prompts' + 'parallel terminals')",
+        "starts interview, no prompts before gates"
+      ]
+    },
+    {
+      "name": "paraphrase_isolated_lanes",
+      "class": "trigger",
+      "input": "take this feature list and derive file-isolated lanes with a builder prompt for each",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane skill activates (paraphrase of 'make lane prompts')",
+        "lane count derived from file overlap, not assumed"
+      ]
+    },
+    {
+      "name": "paraphrase_many_claudes_at_once",
+      "class": "trigger",
+      "input": "I want several Claude terminals building these in parallel — set that up for me",
+      "should_fire": true,
+      "paraphrase": true,
+      "expect": [
+        "polylane skill activates (paraphrase of 'parallel terminals' / 'orchestrate builders')",
+        "acts as orchestrator only, never implements"
+      ]
+    },
+    {
+      "name": "negative_disambiguation_run_the_lanes",
+      "class": "trigger",
+      "input": "run the lanes",
+      "should_fire": false,
+      "expected_skill": "polylane-run",
+      "expect": [
+        "polylane (planner) does NOT activate — 'run the lanes' is a polylane-run trigger; the plan already exists, execution is wanted"
+      ]
+    },
+    {
+      "name": "negative_disambiguation_plan_and_run",
+      "class": "trigger",
+      "input": "plan and run the whole build end to end",
+      "should_fire": false,
+      "expected_skill": "polylane-auto",
+      "expect": [
+        "polylane (plan-only) does NOT activate — full pipeline wanted, polylane-auto owns 'plan and run' / 'build it end to end'"
       ]
     },
     {
@@ -184,6 +231,16 @@
         "prompt NEVER contains `git add -A` or `git add .`",
         "prompt tells builder to wait + retry on index.lock (shared tree, other lanes have uncommitted work)"
       ]
+    },
+    {
+      "name": "behavior_done_marker_exact",
+      "class": "behavior",
+      "input": "generate a lane prompt for a lane named 'backend' and show its done-signal block",
+      "expect": [
+        "prompt instructs lane to write `docs/status-backend.md` whose FIRST LINE is exactly `STATUS: backend DONE`",
+        "no variant wording (no 'Done', 'FINISHED', trailing text, or different file name)",
+        "`docs/parallel-status.md` is NOT used as the done signal — reserved for cross-lane requests / NEEDS DECISION"
+      ]
     }
   ],
   "red_flags": [
@@ -195,6 +252,8 @@
     "recommends Fable on every lane",
     "auto-installs a third-party skill without approval",
     "generated prompt omits or reorders any of the mandatory-4 preamble steps",
-    "generated prompt contains `git add -A` or `git add .`"
+    "generated prompt contains `git add -A` or `git add .`",
+    "generated prompt's done-signal deviates from first line exactly `STATUS: <lane> DONE` in `docs/status-<lane>.md`",
+    "grabs a polylane-run or polylane-auto trigger ('run the lanes', 'plan and run') instead of deferring to the owning skill"
   ]
 }
