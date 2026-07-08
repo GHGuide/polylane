@@ -387,11 +387,27 @@ add_worktree() {
   fi
 }
 
+# clear_stale_markers WT NAME : a fresh worktree checks out BASE and thus inherits
+# ANY status/verify file committed on BASE by an earlier run — a stale "DONE" that
+# makes the poll return instantly, or a stale "GO" the gate would trust. Delete the
+# lane's own markers so THIS run must write them fresh. (Real-run bug: a committed
+# docs/status-integrator.md + verify-integration.md made a fresh integrator poll
+# return in 0s and the gate read an old GO.) No-op in dry-run.
+clear_stale_markers() {
+  local wt="$1" name="$2"
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would clear any stale $wt/docs/status-$name.md"
+    return 0
+  fi
+  rm -f "$wt/docs/status-$name.md"
+}
+
 split_worktrees() {
   local i
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
     add_worktree "${LANE_WORKTREES[$i]}" "${LANE_BRANCHES[$i]}"
+    clear_stale_markers "${LANE_WORKTREES[$i]}" "${LANE_NAMES[$i]}"
   done
 }
 
@@ -887,6 +903,13 @@ poll_done() {
 run_integrator() {
   assert_prompt "$INT_PROMPT" "$INT_NAME"
   add_worktree "$INT_WORKTREE" "$INT_BRANCH"
+  # a fresh integrator worktree must NOT inherit a prior run's committed DONE/verdict
+  clear_stale_markers "$INT_WORKTREE" "$INT_NAME"
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would clear any stale $INT_WORKTREE/docs/verify-integration.md"
+  else
+    rm -f "$INT_WORKTREE/docs/verify-integration.md"   # gate must read THIS run's verdict
+  fi
   local pc
   echo "lane $INT_NAME: model=$INT_MODEL effort=${INT_EFFORT:-(default)}"
   pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
