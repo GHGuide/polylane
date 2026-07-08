@@ -12,7 +12,8 @@ launches the panes, polls them, integrates, merges on GO, and cleans up.
 
 **Two interactive gates remain (the interview): the spec gate and the plan gate.
 After you approve the plan, the run is fully hands-off** — launch, poll, integrate,
-merge, and scratch-delete all proceed without stopping.
+merge, and scratch-delete all proceed without stopping. One exception: a lane
+stalled on a **usage limit** pauses for your decision — see "Stall + halts" below.
 
 ## How it composes the two skills
 
@@ -50,23 +51,65 @@ done
 dry-run readable.)
 
 ### Phase 7 — run hands-off (drive the runner)
-Resolve the runner once (portable — works in any project), preview, then launch
-**with `--yes`** so the run needs no further confirmation (the plan gate already
-approved it):
+Resolve the runner once (portable — works in any project), doctor-check, preview,
+then launch **with `--yes`** so the run needs no further confirmation (the plan
+gate already approved it):
 ```
 RUNNER="$(command -v polylane-run.sh 2>/dev/null || echo "$HOME/.claude/skills/polylane/bin/polylane-run.sh")"
 test -x "$RUNNER" || { echo "runner not found at $RUNNER — reinstall polylane"; exit 1; }
 for t in tmux jq claude; do command -v "$t" >/dev/null || { echo "$t MISSING — install it"; exit 1; }; done
 
+DOCTOR="$(dirname "$RUNNER")/polylane-doctor.sh"
+"$DOCTOR" .polylane/run.json                    # doctor first — before the dry-run
+
 "$RUNNER" .polylane/run.json --dry-run          # for the record — show the panes
 "$RUNNER" .polylane/run.json --yes              # hands-off: launch → poll → integrate → merge → delete
 ```
+**Doctor preflight:** CLI `bin/polylane-doctor.sh [manifest]` — the manifest
+argument is optional; pass it so this run's plan is checked too. Exit code is
+the contract: **exit 0 = healthy, exit 1 = problem found**. On exit 1, relay
+the doctor's output, fix what it reports, and only then dry-run. Hands-off
+never means launching over a failed doctor.
+
+**Offer the dashboard at launch:** right after the launch command, offer the
+live status pane so the user can watch the run:
+```
+DASHBOARD="$(dirname "$RUNNER")/polylane-dashboard.sh"
+tmux split-window -h "$DASHBOARD .polylane/run.json"
+```
+CLI: `bin/polylane-dashboard.sh <manifest> [--interval N]` — `--interval N`
+sets the refresh interval in seconds; it can be closed and reopened anytime.
+
 `--yes` pre-approves the runner's launch and final scratch-delete prompts. The
-runner then, on its own: opens one tmux pane per lane, auto-polls each
-`<worktree>/docs/status-<lane>.md` until all DONE, runs the integrator over the
-finished branches, merges on GO (re-merge of current HEADs), and deletes worktrees
-+ branches + `.polylane` scratch while keeping `docs/verify-*.md`. When it finishes
-it writes `docs/polylane-report.md` — the plain-terms digest of the whole run.
+runner then, on its own:
+- opens one tmux pane per lane and auto-polls each
+  `<worktree>/docs/status-<lane>.md` until all DONE;
+- **auto-retries transient errors** — every 5 min it scans each unfinished pane
+  for an API 500 / overloaded / network error and respawns that lane, up to 3×
+  (tune via `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES`); past the cap
+  the run halts and writes the report instead of hanging;
+- runs the integrator over the finished branches and merges on GO (re-merge of
+  current HEADs);
+- **notifies on milestones** via `bin/polylane-notify.sh <event> <msg>` —
+  events `done | go | no-go | halt | stall` — so outcomes reach the user
+  without watching panes;
+- **keeps per-lane logs** at `docs/lane-logs/<lane>.log` — they survive cleanup
+  as the audit trail of what each lane did;
+- deletes worktrees + branches + `.polylane` scratch while keeping
+  `docs/verify-*.md`. When it finishes it writes `docs/polylane-report.md` —
+  the plain-terms digest of the whole run.
+
+### Stall + halts (the one manual moment)
+A lane stalled on a **usage limit** is NOT auto-retried — retrying can't help
+until the limit resets. The runner fires a `stall` notification and waits.
+Relay it and ask the user: wait the limit out, or halt now. After any halt —
+stall cut short, a lane failed past its retry cap, or the runner was
+interrupted — relaunch with `--resume` to continue where it left off instead
+of starting over:
+```
+"$RUNNER" .polylane/run.json --resume --yes
+```
+`--resume` composes with every other flag; preview with `--resume --dry-run`.
 
 ### Phase 8 — report back to the chat (REQUIRED — do not skip)
 The run happens in tmux, out of the user's sight. **When it finishes you MUST
@@ -86,14 +129,36 @@ jargon:
 Keep it to a few lines. If NO-GO: say plainly what blocked it and that the worktrees
 are still there to fix.
 
-## Runtime model controls (optional, same as /polylane-run)
-Both override flags still compose onto the launch call — layer them on and dry-run
-first:
+## Runtime run controls (optional, same as /polylane-run)
+All flags compose onto the launch call — layer them on and dry-run first. The
+base CLI stays `<manifest> [--dry-run] [--yes]`, extended by
+`[--push] [--resume] [--intensity <economy|balanced|performance|max>]
+[--model <lane=model_id>]...`.
 - `--intensity <economy|balanced|performance|max>` — remap the whole run at launch.
 - `--model <lane=model_id>` — pin one lane (repeatable).
+- `--push` — auto-push the merged result once the integrator issues GO. Without
+  it the merge stays local and the report suggests pushing by hand. On NO-GO
+  nothing is pushed.
+- `--resume` — continue a halted run where it left off (see "Stall + halts").
 ```
-"$RUNNER" .polylane/run.json --intensity performance --model docs=claude-fable-5 --yes
+"$RUNNER" .polylane/run.json --intensity performance --model docs=claude-fable-5 --push --yes
 ```
+
+**Parallel runs:** the tmux session is named `polylane` by default. To run two
+or more runs side by side, give each its own session via the environment —
+everything tmux-related stays inside that session, so runs never collide:
+```
+POLYLANE_SESSION=myrun "$RUNNER" .polylane/run.json --yes
+```
+
+## Environment knobs
+
+| Variable | Default | What it does |
+|---|---|---|
+| `POLYLANE_SESSION` | `polylane` | tmux session name — set one per run for parallel runs |
+| `POLYLANE_POLL_INTERVAL` | `15` | seconds between DONE-file polls |
+| `POLYLANE_HEALTH_INTERVAL` | `300` | seconds between error-scans that auto-retry a lane stuck on a transient API/network error |
+| `POLYLANE_MAX_RETRIES` | `3` | retries per lane before it is marked failed |
 
 ## What stays interactive vs automatic
 | Step | Interactive? |
@@ -102,7 +167,10 @@ first:
 | Recon (orphan protection) | Auto (surfaces orphans if any) |
 | Lane derivation + models | Auto |
 | Plan gate + per-lane override | **Yes** — you approve the plan |
+| Doctor preflight | Auto (exit 1 stops the launch) |
 | Worktrees, launch, poll, integrate, merge, delete | **Auto** (`--yes`) |
+| Transient-error retries, notifications, lane logs, report | Auto |
+| Usage-limit stall | **Yes** — manual decision: wait it out, or halt + relaunch with `--resume` |
 
 ## Requirements
 Same as `/polylane-run`: **tmux**, **jq**, **claude** on PATH, and the polylane
