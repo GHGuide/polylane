@@ -66,6 +66,19 @@ EOF
 # tmux session name — POLYLANE_SESSION lets parallel runs coexist (default: polylane).
 TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
 
+# dir this script lives in — the notify hook is resolved as a sibling.
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)
+
+# notify_event EVENT MSG : best-effort hook into bin/polylane-notify.sh (a
+# sibling script another lane may install). Fires ONLY if it exists and is
+# executable; missing/broken hook is never fatal to the run.
+# Events: done | go | no-go | halt | stall.
+notify_event() {
+  local hook="${SCRIPT_DIR:-.}/polylane-notify.sh"
+  [ -x "$hook" ] || return 0
+  run "$hook" "$1" "$2" 2>/dev/null || true
+}
+
 # run CMD... : in dry-run print it; otherwise execute it (argv form, no eval).
 run() {
   if [ "${DRY_RUN:-0}" = "1" ]; then
@@ -540,10 +553,15 @@ merge_gate() {
   v=$(parse_verdict "$f")
   VERDICT_RESULT="$v"
   case "$v" in
-    GO) echo "Integrator verdict: GO — proceeding."; return 0 ;;
+    GO)
+      echo "Integrator verdict: GO — proceeding."
+      notify_event go "integrator verdict GO — merging + cleanup"
+      return 0
+      ;;
     *)
       echo "Integrator verdict: $v — NOT a GO. Nothing deleted." >&2
       [ -f "$f" ] && { echo "--- $f ---" >&2; cat "$f" >&2; }
+      notify_event no-go "integrator verdict $v — nothing merged, worktrees intact"
       return 1
       ;;
   esac
@@ -705,8 +723,10 @@ main() {
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
     echo "All builders DONE."
+    notify_event "done" "all ${#LANE_NAMES[@]} lane(s) DONE — starting integrator"
   else
     echo "Halt: lane(s) failed after retries: ${FAILED_LANES:-?}. Not integrating." >&2
+    notify_event halt "lane(s) failed after retries: ${FAILED_LANES:-?}"
     capture_stats
     write_report "HALTED" || true
     echo "Report written: $REPO_ROOT/docs/polylane-report.md"
@@ -717,6 +737,7 @@ main() {
   run_integrator
   if ! poll_done "$INT_NAME:$INT_WORKTREE"; then
     echo "Halt: integrator failed after retries. Nothing merged." >&2
+    notify_event halt "integrator failed after retries — nothing merged"
     capture_stats
     write_report "HALTED" || true
     echo "Report written: $REPO_ROOT/docs/polylane-report.md"
