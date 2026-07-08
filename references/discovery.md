@@ -11,6 +11,14 @@ and filling the gaps they can't answer with research + sensible defaults.
   2–4 concrete options with a recommended default (first, "(Recommended)"). One click
   answers. Unanswered → take the recommended default and note it. Momentum over
   interrogation.
+- **Every question has a "go deeper" escape hatch.** Include, on EVERY discovery
+  question, a final option **"🔍 Go deeper — ask me more about this next round"**.
+  Picking it means the user wants finer-grained questions on THAT dimension before
+  committing. Collect all dimensions flagged "go deeper" in a round, and open the
+  next round with 2–4 drill-down questions on each (informed by research), each of
+  which ALSO carries its own "go deeper" — so the user can escalate any topic to
+  arbitrary depth. Only close a dimension once the user picks a concrete answer (or
+  accepts a default); never force a decision they wanted to explore first.
 - **Research fills the gaps.** Before/between rounds, use `deep-research` to propose a
   feature set, a stack, look-and-feel references, and competitor norms — so the user
   is choosing from informed options, not inventing them.
@@ -39,6 +47,24 @@ and filling the gaps they can't answer with research + sensible defaults.
     (these become the goal tree's `criteria`).
 
 Skip a dimension that's obviously N/A; collapse rounds when answers are implied.
+
+## "Go deeper" drill-down mechanics
+When the user picks 🔍 Go deeper on a dimension, the NEXT round replaces that one
+top-level question with a small batch of finer questions that decompose it — each
+still recommended-default + each still offering "go deeper". Examples:
+- **MVP features → deeper:** one question per candidate feature ("include X now /
+  later / never"), or "which of these 6 (researched) does 'the one thing' actually
+  need?" → then deeper on a single feature's behavior/edge cases.
+- **Look & feel → deeper:** colour direction → typography feel → density/whitespace →
+  a specific reference screen to match.
+- **Platform → deeper:** web vs mobile → if web: SPA vs SSR, which framework, which
+  component kit → responsive breakpoints.
+- **Integrations → deeper:** which services → for each: which provider, free tier vs
+  paid, do you have the key.
+Depth is unbounded — a user can escalate one topic several levels while accepting
+defaults on the rest. Track how deep each dimension went in `STRATEGY.md` so the
+build reflects the detail the user cared about. A dimension the user never deepens
+just takes its recommended default — depth is opt-in, never forced.
 
 ## Half-satisfiable — flag early, don't surprise the final GO
 Anything the system canNOT do for the user alone: a paid service / API key, an app-

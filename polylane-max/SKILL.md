@@ -58,7 +58,10 @@ them, run discovery FIRST — follow `references/discovery.md`:
   (problem · audience · the one thing · MVP features · platform · look & feel ·
   accounts/data · integrations · business model · constraints · ambition · done).
   Every option is concrete with a recommended default first — one click answers, no
-  answer takes the default. Re-present the growing strategy after each round.
+  answer takes the default. **Every question also carries a final "🔍 Go deeper — ask
+  me more about this next round" option**; picking it opens a finer drill-down round
+  on that dimension (unbounded depth), so the user can explore any topic as far as
+  they want before committing. Re-present the growing strategy after each round.
 - **Research the gaps.** Use `deep-research` to propose the feature set, stack, design
   references, and competitor norms, so the user chooses from informed options rather
   than inventing them. Name the riskiest assumption.
@@ -196,8 +199,11 @@ From the research suggestions + critic gaps + the tree's next open sub-goal, for
 the next cycle's direction:
 - Ask a batch of questions via AskUserQuestion (multiple rounds of ≤4 if needed —
   "numerous"). **Every question's FIRST option is the recommended next step**, so a
-  single click (or no answer) advances the loop. Questions steer scope/priority/
-  tradeoffs — they never block the loop from continuing on defaults.
+  single click (or no answer) advances the loop. **Every question also carries a final
+  "🔍 Go deeper — more questions on this next round" option** (same drill-down
+  mechanics as discovery — `references/discovery.md`), so the user can steer any
+  decision to arbitrary depth. Questions steer scope/priority/tradeoffs — they never
+  block the loop from continuing on defaults.
 - Synthesize the chosen (or recommended) answers + top research suggestions +
   `"$MEM" "$STATE" next` into the next cycle's numbered INTEGRATION SPEC (each item
   one line + a testable outcome), exactly as `/polylane` Phase 1 produces. Skip any
