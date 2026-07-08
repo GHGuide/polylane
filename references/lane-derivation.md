@@ -81,6 +81,9 @@ Two preconditions before any worktree/branch op (both from SKILL.md Phase 3 reco
 
 ## Sanity checks before presenting
 
+- Every lane has a concrete write-set (files it will edit). **No speculative/discovery/
+  exploration lanes** — exploration belongs in single-agent recon, not a parallel lane; a
+  "lane" with nothing to write is not a lane. Fan out for real, isolatable work only.
 - Every spec item maps to exactly one lane.
 - No file appears in two lanes' OWN lists.
 - Every FORBIDDEN list names the other lanes' OWN globs.
