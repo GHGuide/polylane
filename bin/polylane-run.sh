@@ -29,7 +29,7 @@ usage() {
 polylane-run.sh — parallel-lane build engine (worktrees · tmux · git · claude)
 
 USAGE:
-  bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]
+  bin/polylane-run.sh <manifest.json> [--dry-run] [--yes] [--resume] [--push]
                       [--intensity <economy|balanced|performance|max>]
                       [--model <lane=model_id>]...
 
@@ -39,6 +39,9 @@ ARGS:
 OPTIONS:
   --dry-run              print every git/tmux command without executing anything
   --yes                  skip the final delete-confirmation prompt
+  --resume               skip lanes whose DONE file is already valid (no respawn);
+                         launch only the unfinished lanes
+  --push                 after a GO verdict + cleanup, git push the current branch
   --intensity <preset>   remap EVERY lane + integrator to the preset's model
                          (resolved against the manifest's available_models) and
                          effort. preset: economy|balanced|performance|max.
@@ -108,6 +111,8 @@ safe_rm() {
 parse_args() {
   DRY_RUN=0
   YES=0
+  RESUME=0
+  PUSH=0
   MANIFEST=""
   INTENSITY=""
   MODEL_OVERRIDES=()
@@ -117,6 +122,8 @@ parse_args() {
       -h|--help) usage; exit 0 ;;
       --dry-run) DRY_RUN=1 ;;
       --yes)     YES=1 ;;
+      --resume)  RESUME=1 ;;
+      --push)    PUSH=1 ;;
       --intensity)   shift; [ $# -gt 0 ] || { echo "polylane-run: --intensity requires a value (economy|balanced|performance|max)" >&2; exit 2; }; INTENSITY="$1" ;;
       --intensity=*) INTENSITY="${1#*=}" ;;
       --model)       shift; [ $# -gt 0 ] || { echo "polylane-run: --model requires lane=model_id" >&2; exit 2; }; MODEL_OVERRIDES+=("$1") ;;
@@ -201,6 +208,8 @@ load_manifest() {
   done < <(jq -r '.available_models // [] | .[]' "$MANIFEST")
 
   LANE_NAMES=(); LANE_MODELS=(); LANE_EFFORTS=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
+  LANE_PANE_IDX=(); LANE_RESUMED=()
+  INT_PANE_IDX=-1; NEXT_PANE_IDX=0; SESSION_STARTED=0
   local n i
   n=$(jq '.lanes | length' "$MANIFEST")
   for ((i = 0; i < n; i++)); do
@@ -211,6 +220,7 @@ load_manifest() {
     LANE_WORKTREES+=("$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
     LANE_PROMPTS+=("$(abs_prompt "$(jq -r ".lanes[$i].prompt_file" "$MANIFEST")")")
     LANE_POLLSPEC+=("$(jq -r ".lanes[$i].name" "$MANIFEST"):$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
+    LANE_PANE_IDX+=(-1); LANE_RESUMED+=(0)
   done
 
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
@@ -333,7 +343,29 @@ add_worktree() {
 split_worktrees() {
   local i
   for i in "${!LANE_NAMES[@]}"; do
+    lane_resumed "$i" && continue
     add_worktree "${LANE_WORKTREES[$i]}" "${LANE_BRANCHES[$i]}"
+  done
+}
+
+# ---------------------------------------------------------------------------
+# resume — skip lanes whose DONE file is already valid
+# ---------------------------------------------------------------------------
+
+# lane_resumed IDX : 0 iff lane IDX was marked resumed (skip launch, no pane).
+lane_resumed() { [ "${LANE_RESUMED[$1]:-0}" = "1" ]; }
+
+# mark_resumed : with --resume, flag every lane whose DONE file is already
+# valid so split/launch skip it. Runs BEFORE any worktree/pane side effect.
+# A missing worktree or a stale/invalid status file simply relaunches the lane.
+mark_resumed() {
+  local i
+  [ "${RESUME:-0}" = "1" ] || return 0
+  for i in "${!LANE_NAMES[@]}"; do
+    if lane_done "${LANE_WORKTREES[$i]}" "${LANE_NAMES[$i]}"; then
+      LANE_RESUMED[i]=1
+      echo "resume: lane '${LANE_NAMES[$i]}' already DONE — skipping launch"
+    fi
   done
 }
 
@@ -376,26 +408,58 @@ assert_prompt() {
   fi
 }
 
+# pipe_pane_log IDX NAME : mirror pane IDX's full transcript to
+# docs/lane-logs/<NAME>.log (repo root; dir created; cleanup KEEPS it).
+# -o = only open a pipe if none exists, so re-issuing after a respawn is safe.
+# The log path is %q-escaped — the pipe command runs through a shell.
+pipe_pane_log() {
+  local idx="$1" name="$2" dir="$REPO_ROOT/docs/lane-logs" qlog
+  run mkdir -p "$dir"
+  qlog=$(printf '%q' "$dir/$name.log")
+  run tmux pipe-pane -o -t "$TMUX_SESSION:0.$idx" "cat >> $qlog"
+}
+
+# new_pane WINDOW_NAME : create the next pane (new-session for the first,
+# split-window after) and set NEW_PANE_IDX. Panes are targeted by EXPLICIT
+# index ($TMUX_SESSION:0.N) everywhere, so health-check/respawn/stats stay
+# correct when --resume skips lanes (positional index != lane order then).
+new_pane() {
+  if [ "${SESSION_STARTED:-0}" != "1" ]; then
+    run tmux new-session -d -s "$TMUX_SESSION" -n "${1:-lanes}"
+    SESSION_STARTED=1
+  else
+    run tmux split-window -t "$TMUX_SESSION"
+    run tmux select-layout -t "$TMUX_SESSION" tiled
+  fi
+  NEW_PANE_IDX="${NEXT_PANE_IDX:-0}"
+  NEXT_PANE_IDX=$(( NEW_PANE_IDX + 1 ))
+}
+
+# seed_pane IDX CMD : type the seeded launch command into pane IDX.
+# -l = literal: the command types as-is even if a chunk matches a tmux key name.
+seed_pane() {
+  run tmux send-keys -t "$TMUX_SESSION:0.$1" -l "$2"
+  run tmux send-keys -t "$TMUX_SESSION:0.$1" C-m
+}
+
 launch_panes() {
-  local i first=1 pc
+  local i pc
+  LAUNCHED=0
   # Preflight ALL prompts first — better to abort before opening a single pane
   # than to leave half a tmux session of empty claude sessions.
   for i in "${!LANE_NAMES[@]}"; do
+    lane_resumed "$i" && continue
     assert_prompt "${LANE_PROMPTS[$i]}" "${LANE_NAMES[$i]}"
   done
   for i in "${!LANE_NAMES[@]}"; do
+    lane_resumed "$i" && continue
     echo "lane ${LANE_NAMES[$i]}: model=${LANE_MODELS[$i]} effort=${LANE_EFFORTS[$i]:-(default)}"
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
-    if [ "$first" = "1" ]; then
-      run tmux new-session -d -s "$TMUX_SESSION" -n "${LANE_NAMES[$i]}"
-      first=0
-    else
-      run tmux split-window -t "$TMUX_SESSION"
-      run tmux select-layout -t "$TMUX_SESSION" tiled
-    fi
-    # -l = literal: the command types as-is even if a chunk matches a tmux key name
-    run tmux send-keys -t "$TMUX_SESSION" -l "$pc"
-    run tmux send-keys -t "$TMUX_SESSION" C-m
+    new_pane "${LANE_NAMES[$i]}"
+    LANE_PANE_IDX[i]="$NEW_PANE_IDX"
+    seed_pane "$NEW_PANE_IDX" "$pc"
+    pipe_pane_log "$NEW_PANE_IDX" "${LANE_NAMES[$i]}"
+    LAUNCHED=$(( LAUNCHED + 1 ))
   done
 }
 
@@ -419,14 +483,15 @@ lane_done() {
 # is marked failed so the run halts with a report instead of hanging.
 # bash-3.2 safe: indexed arrays only (LANE_RETRIES keyed by pane index), no assoc.
 
-# pane_index_for NAME : tmux pane index for a lane (its position) or the integrator
-# (last pane). -1 if unknown.
+# pane_index_for NAME : tmux pane index for a lane / the integrator, from the
+# explicit mapping assigned at launch. -1 if unknown or never launched (e.g.
+# a lane skipped by --resume has no pane).
 pane_index_for() {
   local name="$1" i
   for i in "${!LANE_NAMES[@]}"; do
-    [ "${LANE_NAMES[$i]}" = "$name" ] && { printf '%s' "$i"; return; }
+    [ "${LANE_NAMES[$i]}" = "$name" ] && { printf '%s' "${LANE_PANE_IDX[$i]:--1}"; return; }
   done
-  [ "$name" = "${INT_NAME:-}" ] && { printf '%s' "${#LANE_NAMES[@]}"; return; }
+  [ "$name" = "${INT_NAME:-}" ] && { printf '%s' "${INT_PANE_IDX:--1}"; return; }
   printf '%s' "-1"
 }
 
@@ -517,10 +582,11 @@ run_integrator() {
   local pc
   echo "lane $INT_NAME: model=$INT_MODEL effort=${INT_EFFORT:-(default)}"
   pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
-  run tmux split-window -t "$TMUX_SESSION"
-  run tmux select-layout -t "$TMUX_SESSION" tiled
-  run tmux send-keys -t "$TMUX_SESSION" -l "$pc"
-  run tmux send-keys -t "$TMUX_SESSION" C-m
+  # new_pane also handles the all-lanes-resumed case (no session yet).
+  new_pane "$INT_NAME"
+  INT_PANE_IDX="$NEW_PANE_IDX"
+  seed_pane "$NEW_PANE_IDX" "$pc"
+  pipe_pane_log "$NEW_PANE_IDX" "$INT_NAME"
 }
 
 # ---------------------------------------------------------------------------
@@ -630,10 +696,18 @@ cleanup() {
 capture_stats() {
   LANE_STATS=()
   [ "${DRY_RUN:-0}" = "1" ] && return 0
-  local i line
+  local i idx line
   for i in "${!LANE_NAMES[@]}"; do
-    line=$(tmux capture-pane -t "$TMUX_SESSION:0.$i" -p 2>/dev/null \
-           | grep -oE 'Goal achieved \([^)]*\)' | tail -1 || true)
+    if lane_resumed "$i"; then
+      LANE_STATS+=("DONE (resumed — prior run)")
+      continue
+    fi
+    idx="${LANE_PANE_IDX[$i]:--1}"
+    line=""
+    if [ "$idx" -ge 0 ] 2>/dev/null; then
+      line=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null \
+             | grep -oE 'Goal achieved \([^)]*\)' | tail -1 || true)
+    fi
     LANE_STATS+=("${line:-completed}")
   done
   return 0
@@ -712,13 +786,14 @@ main() {
   preflight
   load_manifest
   apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
+  mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
 
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees
 
   echo "== launch: tmux session '$TMUX_SESSION' =="
   launch_panes
-  echo "Launched ${#LANE_NAMES[@]} lane(s). Attach with: tmux attach -t $TMUX_SESSION"
+  echo "Launched ${LAUNCHED:-0} of ${#LANE_NAMES[@]} lane(s). Attach with: tmux attach -t $TMUX_SESSION"
 
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
@@ -734,7 +809,11 @@ main() {
   fi
 
   echo "== integrator: $INT_NAME =="
-  run_integrator
+  if [ "${RESUME:-0}" = "1" ] && lane_done "$INT_WORKTREE" "$INT_NAME"; then
+    echo "resume: integrator already DONE — skipping launch"
+  else
+    run_integrator
+  fi
   if ! poll_done "$INT_NAME:$INT_WORKTREE"; then
     echo "Halt: integrator failed after retries. Nothing merged." >&2
     notify_event halt "integrator failed after retries — nothing merged"
@@ -750,6 +829,10 @@ main() {
     assert_no_conflict "$INT_WORKTREE"
     echo "== cleanup =="
     cleanup
+    if [ "${PUSH:-0}" = "1" ]; then
+      echo "== push: current branch =="
+      run git -C "$REPO_ROOT" push
+    fi
   fi
 
   echo "== report =="
