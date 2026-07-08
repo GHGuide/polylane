@@ -11,7 +11,8 @@
 #   manifest .polylane/run.json:
 #     {base, integrator:{name,model,branch,worktree,prompt_file},
 #      lanes:[{name,model,branch,worktree,prompt_file,own_globs}]}
-#   CLI:  bin/polylane-run.sh <manifest.json> [--dry-run] [--yes]
+#   CLI:  bin/polylane-run.sh <manifest.json> [--dry-run] [--yes] [--resume]
+#         [--push] [--intensity economy|balanced|performance|max] [--model lane=id]...
 #   DONE: <worktree>/docs/status-<name>.md  first line == "STATUS: <name> DONE"
 #
 # SAFETY: never `git add -A`; never `git branch -D`; never rm outside the
@@ -66,6 +67,15 @@ ENV:
   POLYLANE_HEALTH_INTERVAL  seconds between error-scans that auto-retry a lane
                             stuck on a transient API/network error (default 300 = 5 min)
   POLYLANE_MAX_RETRIES      retries per lane before it is marked failed (default 3)
+  POLYLANE_ON_LIMIT         what to do when a lane hits a usage-limit paywall, so
+                            an unattended run never hangs on it:
+                              fallback (default) respawn on the next model down the
+                                        ladder (fable->opus->sonnet->haiku) that is
+                                        in the manifest's available_models
+                              credits  auto-select "switch to usage credits"
+                              wait     hold POLYLANE_STALL_MAX health-cycles, then
+                                        mark the lane failed (halt with a report)
+  POLYLANE_STALL_MAX        wait-policy: health-cycles to hold before failing (default 6)
 EOF
 }
 
@@ -390,9 +400,14 @@ pane_cmd() {
   local qwt qmodel qpf
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf")
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
+  # NEVER fall back to a bare `claude` with no prompt: that starts an amnesiac
+  # session with no locked goal (the "pane sits at an empty input" bug). If the
+  # seeded claude exits for ANY reason (crash, limit, /exit) the pane drops to a
+  # shell and prints a marker; the health-check owns recovery — it re-seeds THIS
+  # same command. So a dead/limited pane is always re-seeded, never blanked.
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
-  printf 'cd %s && %sclaude --model %s "$(cat %s)" || { pbcopy < %s 2>/dev/null || xclip -selection clipboard < %s 2>/dev/null; echo "SEED FAILED — prompt copied to clipboard; paste it into claude"; %sclaude --model %s; }' \
-    "$qwt" "$pfx" "$qmodel" "$qpf" "$qpf" "$qpf" "$pfx" "$qmodel"
+  printf 'cd %s && %sclaude --model %s "$(cat %s)"; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
+    "$qwt" "$pfx" "$qmodel" "$qpf"
 }
 
 # assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
@@ -557,6 +572,129 @@ stall_check() {
 retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
 retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[i]="$2"; }
 
+# --- walk-away recovery: dead panes + usage-limit fallback --------------------
+# For a TRULY unattended run every not-DONE lane must keep making progress with
+# zero human input. Three recovery paths, all owned by the health-check:
+#   errored  -> respawn same seed (transient API/network)         [existing]
+#   dead     -> pane dropped to a shell (claude exited) -> respawn same seed
+#   stalled  -> usage-limit paywall -> POLYLANE_ON_LIMIT policy (below)
+
+# pane_dead IDX : 0 iff the pane's foreground process is a plain shell (claude
+# exited) rather than claude/node. Unknown command -> not dead (no false respawn).
+pane_dead() {
+  local idx="$1" cmd
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  cmd=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_current_command}' 2>/dev/null || echo "")
+  case "$cmd" in
+    ""|*claude*|*node*) return 1 ;;   # still running (or unknown) — leave it
+    *sh|*zsh|bash|-*)   return 0 ;;   # back at a shell prompt = the lane exited
+    *)                  return 1 ;;
+  esac
+}
+
+# unstall NAME : drop NAME from the sticky STALLED_LANES set.
+unstall() {
+  local out="" x
+  for x in ${STALLED_LANES:-}; do [ "$x" = "$1" ] || out="${out:+$out }$x"; done
+  STALLED_LANES="$out"
+}
+
+# lane_model_get/set NAME : the live model for a lane / the integrator (mutated
+# by a usage-limit fallback so pane_cmd_for + the report reflect the downgrade).
+lane_model_get() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do [ "${LANE_NAMES[$i]}" = "$1" ] && { printf '%s' "${LANE_MODELS[$i]}"; return; }; done
+  [ "$1" = "${INT_NAME:-}" ] && printf '%s' "${INT_MODEL:-}"
+}
+lane_model_set() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do [ "${LANE_NAMES[$i]}" = "$1" ] && { LANE_MODELS[i]="$2"; return; }; done
+  [ "$1" = "${INT_NAME:-}" ] && INT_MODEL="$2"
+}
+
+stallwait_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_STALLWAIT[$i]:-0}" || printf '0'; }
+stallwait_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_STALLWAIT[i]="$2"; }
+
+# next_fallback_model CURRENT : echo the next model DOWN the fallback ladder that
+# is in AVAILABLE_MODELS. Ladder is ordered by likelihood of a plan limit
+# (Fable first — it burns weekly limits fastest), so fallback walks fable ->
+# opus -> sonnet -> haiku. rc 1 when nothing is left below CURRENT (=> lane fails).
+FALLBACK_LADDER="claude-fable-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5"
+next_fallback_model() {
+  local cur="$1" past=0 m
+  for m in $FALLBACK_LADDER; do
+    if [ "$past" = "1" ]; then model_available "$m" && { printf '%s' "$m"; return 0; }; fi
+    [ "$m" = "$cur" ] && past=1
+  done
+  # CURRENT not on the ladder: offer the first available model that isn't CURRENT.
+  if [ "$past" = "0" ]; then
+    for m in $FALLBACK_LADDER; do
+      [ "$m" != "$cur" ] && model_available "$m" && { printf '%s' "$m"; return 0; }
+    done
+  fi
+  return 1
+}
+
+# respawn_lane IDX NAME WT : checkpoint WIP then re-seed the pane with the CURRENT
+# (possibly downgraded) model. Used by both dead-pane recovery and stall fallback.
+respawn_lane() {
+  local idx="$1" name="$2" wt="$3" cmd
+  checkpoint_lane "$wt" "$name"
+  cmd=$(pane_cmd_for "$name")
+  if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
+    run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
+    run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
+    run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
+  fi
+  pipe_pane_log "$idx" "$name"
+}
+
+# resolve_stalls SPEC... : act on each usage-limit-stalled lane per POLYLANE_ON_LIMIT
+# (default fallback). Every branch is terminating — a stalled lane ends up either
+# working again (fallback/credits) or failed (no model left / wait exhausted) — so
+# an unattended run never hangs on a paywall.
+resolve_stalls() {
+  local policy="${POLYLANE_ON_LIMIT:-fallback}" s name wt idx cur nxt w wmax
+  for s in "$@"; do
+    name="${s%%:*}"; wt="${s#*:}"
+    lane_stalled "$name" || continue
+    lane_done "$wt" "$name" && { unstall "$name"; continue; }
+    idx=$(pane_index_for "$name")
+    case "$policy" in
+      wait)
+        w=$(stallwait_get "$name"); w=$((w + 1)); stallwait_set "$name" "$w"
+        wmax="${POLYLANE_STALL_MAX:-6}"
+        if [ "$w" -ge "$wmax" ]; then
+          echo "stall: lane '$name' still limited after $w checks — marking failed (POLYLANE_ON_LIMIT=wait)." >&2
+          FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"; unstall "$name"
+        else
+          echo "stall: lane '$name' limited — waiting ($w/$wmax, POLYLANE_ON_LIMIT=wait)"
+        fi
+        ;;
+      credits)
+        echo "stall: lane '$name' limited — selecting 'usage credits' (POLYLANE_ON_LIMIT=credits)"
+        run tmux send-keys -t "$TMUX_SESSION:0.$idx" Down 2>/dev/null || true
+        run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
+        unstall "$name"   # gave it credits; if it re-stalls it re-marks next poll
+        ;;
+      fallback|*)
+        cur=$(lane_model_get "$name")
+        if nxt=$(next_fallback_model "$cur"); then
+          echo "stall: lane '$name' limited on $cur — falling back to $nxt (POLYLANE_ON_LIMIT=fallback)"
+          notify_event stall "lane '$name': $cur limited — retrying on $nxt"
+          lane_model_set "$name" "$nxt"
+          respawn_lane "$idx" "$name" "$wt"
+          unstall "$name"
+        else
+          echo "stall: lane '$name' limited on $cur, no fallback model left — marking failed." >&2
+          notify_event halt "lane '$name': usage limited, no fallback model available"
+          FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"; unstall "$name"
+        fi
+        ;;
+    esac
+  done
+}
+
 # checkpoint_lane WT NAME : commit tracked WIP on the lane branch BEFORE a
 # respawn, so a retry can never lose work (a fresh claude session may reset or
 # rewrite files). `commit -am` covers tracked edits only — untracked files
@@ -575,28 +713,27 @@ checkpoint_lane() {
 
 # health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
 health_check() {
-  local specs=("$@") s name wt idx max n cmd
+  local specs=("$@") s name wt idx max n why
   max="${POLYLANE_MAX_RETRIES:-3}"
+  resolve_stalls "${specs[@]}"   # usage-limit paywalls first (fallback/credits/wait)
   for s in "${specs[@]}"; do
     name="${s%%:*}"; wt="${s#*:}"
     lane_done "$wt" "$name" && continue
     lane_failed "$name" && continue
-    lane_stalled "$name" && continue   # paywall: human decision, never respawn
+    lane_stalled "$name" && continue   # still mid-resolution this cycle
     idx=$(pane_index_for "$name")
-    pane_errored "$idx" || continue
+    # respawn a lane that is either showing a transient error OR has died back to
+    # a shell (claude exited without writing DONE — the amnesia case).
+    if pane_errored "$idx"; then why="a transient error"
+    elif pane_dead "$idx"; then why="a dead pane (claude exited)"
+    else continue
+    fi
     n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
     if [ "$n" -le "$max" ]; then
-      echo "health: lane '$name' hit a transient error — retry $n/$max, respawning pane $idx"
-      checkpoint_lane "$wt" "$name"   # WIP survives the respawn
-      cmd=$(pane_cmd_for "$name")
-      if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
-        run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
-        run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
-        run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
-      fi
-      pipe_pane_log "$idx" "$name"   # -o: no-op if the pipe survived the respawn
+      echo "health: lane '$name' — $why — retry $n/$max, respawning pane $idx"
+      respawn_lane "$idx" "$name" "$wt"
     else
-      echo "health: lane '$name' still erroring after $max retries — marking failed." >&2
+      echo "health: lane '$name' still unrecovered after $max retries — marking failed." >&2
       FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
     fi
   done
@@ -667,6 +804,14 @@ run_integrator() {
 parse_verdict() {
   local f="$1" line
   [ -f "$f" ] || { echo "UNKNOWN"; return; }
+  # Prefer an explicit machine sentinel the integrator writes on its OWN line —
+  # immune to prose that merely mentions "GO"/"NO-GO" and to stray fixture files.
+  line=$(grep -E '^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)' "$f" | tail -1)
+  if [ -n "$line" ]; then
+    printf '%s' "$line" | grep -q 'NO-GO' && { echo "NO-GO"; return; }
+    echo "GO"; return
+  fi
+  # Back-compat fallback: last GO/NO-GO token in prose.
   line=$(grep -E 'NO-GO|GO' "$f" | tail -1)
   if printf '%s' "$line" | grep -q 'NO-GO'; then
     echo "NO-GO"
@@ -734,6 +879,26 @@ cleanup() {
     esac
   fi
 
+  # preserve integrator evidence BEFORE its worktree is force-removed. The
+  # integrator writes docs/verify-integration.md inside its OWN worktree and it
+  # does NOT merge to main on its own (the integrator branch isn't a merged
+  # lane), so `git worktree remove --force` would discard it. Copy it out — only
+  # if main doesn't already carry it (a committed one wins).
+  if [ -f "$INT_WORKTREE/docs/verify-integration.md" ] \
+     && [ ! -f "$REPO_ROOT/docs/verify-integration.md" ]; then
+    run cp "$INT_WORKTREE/docs/verify-integration.md" "$REPO_ROOT/docs/verify-integration.md"
+  fi
+
+  # PRESERVE the integrator's evidence at the repo root before its worktree is
+  # gone. If the integrator merged its branch the file is already on main; if it
+  # only wrote-but-didn't-commit (seen in real runs), this copy is the only save.
+  if [ "${DRY_RUN:-0}" != "1" ]; then
+    local ivf="$INT_WORKTREE/docs/verify-integration.md"
+    [ -f "$ivf" ] && { mkdir -p "$REPO_ROOT/docs"; cp "$ivf" "$REPO_ROOT/docs/verify-integration.md" 2>/dev/null || true; }
+  else
+    echo "+ (dry-run) would copy integrator verify-integration.md to repo docs/ before removal"
+  fi
+
   # remove worktrees (never a raw rm on a worktree dir)
   for i in "${!LANE_NAMES[@]}"; do
     run git worktree remove --force "${LANE_WORKTREES[$i]}"
@@ -748,6 +913,9 @@ cleanup() {
 
   # remove scratch — .polylane and the DONE status files only
   safe_rm "$REPO_ROOT/.polylane"
+  # .polylane/ is scratch EXCEPT git-tracked files (e.g. SCHEMA.md); restore those
+  # from HEAD so cleanup never deletes committed content.
+  run git -C "$REPO_ROOT" checkout -q -- .polylane || true
   for i in "${!LANE_NAMES[@]}"; do
     run rm -f "$REPO_ROOT/docs/status-${LANE_NAMES[$i]}.md"
   done
@@ -821,6 +989,11 @@ est_cost() { awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000000}'; }
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
 write_report() {
   local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps
+  # dry-run must never touch the tree — print the intent, write nothing.
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
+    return 0
+  fi
   when=$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo "?")
   mkdir -p "$REPO_ROOT/docs" 2>/dev/null || true
 

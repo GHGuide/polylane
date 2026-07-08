@@ -11,9 +11,19 @@ the lanes, generates the prompts + manifest, then — with no further command �
 launches the panes, polls them, integrates, merges on GO, and cleans up.
 
 **Two interactive gates remain (the interview): the spec gate and the plan gate.
-After you approve the plan, the run is fully hands-off** — launch, poll, integrate,
-merge, and scratch-delete all proceed without stopping. One exception: a lane
-stalled on a **usage limit** pauses for your decision — see "Stall + halts" below.
+After you approve the plan, the run is TRULY walk-away** — launch, poll, integrate,
+merge, and scratch-delete all proceed without stopping, and every stuck-lane case
+self-recovers so nothing hangs waiting for you:
+- **A lane that dies** (claude exits / crashes) is re-seeded with its locked prompt
+  — never blanked to an amnesiac session.
+- **A lane hitting the usage limit** follows `POLYLANE_ON_LIMIT` (default
+  `fallback`: respawn on the next model down the ladder — fable→opus→sonnet→haiku —
+  from the manifest's `available_models`). Alternatives: `credits` (auto-select
+  paid credits) or `wait` (hold, then fail). No decision blocks the run.
+- **A lane that truly can't recover** (no fallback model left, retries exhausted)
+  is marked failed and the run **halts with a report** rather than hanging.
+Set `POLYLANE_ON_LIMIT=credits` at launch if you'd rather spend credits than
+downgrade models. Everything lands in `docs/polylane-report.md` either way.
 
 ## How it composes the two skills
 
