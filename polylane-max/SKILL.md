@@ -35,6 +35,19 @@ forward; your answers only steer.
   API key, small $), it becomes the cycle's PRIMARY deliverable — surfaced at the top
   of the report and preferred over another planning cycle. Planning serves the next
   action, not the archive.
+- **Context-bounded (never blow the window):** the loop's memory lives ON DISK
+  (`max-state.json` + digests + research), NOT in conversation. Start every cycle by
+  reading the compact brief (`polylane-memory.sh <state> brief`, ~a few hundred bytes)
+  + only the files that cycle needs. NEVER rely on remembering earlier cycles from the
+  transcript — re-read the brief/tree/digests. If context is getting long, that is
+  fine: dump anything new to disk and keep going from the brief. This is what lets the
+  loop run many cycles without dying on the context window.
+- **Budgeted (never unbounded spend):** honor a hard cycle cap and a token budget.
+  `POLYLANE_MAX_CYCLES` (default 8) caps total cycles; `POLYLANE_BUDGET` (optional,
+  tokens or $) caps cumulative cost. Default each cycle's build to the CHEAPEST models
+  that clear the viability gate (`--intensity economy`; only bump a lane when a
+  sub-goal genuinely needs it). Track cumulative cost in `progress.md` from each run's
+  report; if the cap or budget is hit, STOP with the wrap-up instead of another cycle.
 
 ## Phase 0 — lock the ultimate goal + build the goal tree (once)
 Capture the ULTIMATE GOAL from the user's prompt in one crisp paragraph + 3–5
@@ -59,7 +72,16 @@ Record the loop baseline: `git rev-parse HEAD` → this is `cycle-1` baseline. F
 here every phase reads/writes `$STATE` (the blackboard + tree).
 
 ## Phase 1 — build a cycle (polylane-auto, no re-interview after cycle 1)
-Run the full polylane-auto pipeline for THIS cycle's spec:
+**Start every cycle from the compact brief + a budget check — not from memory:**
+```
+"$MEM" "$STATE" brief          # the few-hundred-byte resume state: goal, progress, NEXT, blocked
+# STOP the loop instead of building another cycle if either cap is hit:
+#   cycle count >= POLYLANE_MAX_CYCLES (default 8), or cumulative cost >= POLYLANE_BUDGET.
+```
+Read the brief (and only the specific digests/research the cycle needs) — do NOT
+rely on the transcript for earlier cycles. Then run the full polylane-auto pipeline
+for THIS cycle's spec, defaulting to the cheapest models that clear the viability
+gate (`--intensity economy`, bump only a sub-goal that needs it):
 - **Cycle 1:** derive the first concrete spec from the ultimate goal (a short
   deep-research pass to scope it), present it at the plan gate, then build.
 - **Cycle N>1:** the spec is already synthesized from the prior cycle (Phase 5) —
@@ -133,9 +155,16 @@ criterion's status:
 "$MEM" "$STATE" progress            # X/Y sub-goals · A/B criteria · %
 "$MEM" "$STATE" dump >> docs/polylane-max/progress.md
 ```
-Run the critic ONCE per cycle. **The tree decides termination — no vibes:**
-- `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal done) → write the
-  final wrap-up (tree dump + all cycle digests + what's left), post it, STOP.
+**Ensemble critic — not a single lenient judge (LLMs skew optimistic on "done").**
+Score the goal with an ODD panel (≥3) of INDEPENDENT critics, each judging "goal
+met?" against the tree's criteria + sub-goals from the digests/evidence, and at
+least ONE adversarial (told to prove it is NOT done — find the criterion with weak
+or missing evidence, the sub-goal marked done without proof). A sub-goal/criterion
+counts as `done` only on the MAJORITY vote; a tie or an unrebutted "not done" keeps
+it open. This runs ONCE per cycle (the panel votes together, not a repeated
+council). Then reconcile the tree from the vote and check termination — no vibes:
+- `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal done, per the panel)
+  → write the final wrap-up (tree dump + all cycle digests + what's left), STOP.
 - Otherwise → continue to Phase 5. (A blocked-and-unblockable sub-goal → mark it
   `blocked`, surface it, and either stop or route around it.)
 

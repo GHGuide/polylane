@@ -109,6 +109,26 @@ case "$CMD" in
       and (all(.milestones[].subgoals[]; .status=="done"))' "$F" >/dev/null
     ;;
 
+  brief)
+    # Compact resume brief (~a few lines) — the CONTEXT-COMPACTION primitive. Each
+    # cycle reads THIS from disk instead of carrying the whole conversation, so a
+    # long loop stays context-bounded. Everything needed to resume: goal, progress,
+    # next target, open criteria, blocked items, and the last few log entries.
+    _need
+    jq -r '
+      ([.milestones[].subgoals[]]) as $sg
+      | ([.criteria[]]) as $cr
+      | ($sg|length) as $sn | ($sg|map(select(.status=="done"))|length) as $sd
+      | ($cr|length) as $cn | ($cr|map(select(.status=="done"))|length) as $cd
+      | ($sg|map(select(.status=="open"))|sort_by(-.weight)|.[0]) as $next
+      | "GOAL: \(.ultimate)",
+        "PROGRESS: subgoals \($sd)/\($sn) · criteria \($cd)/\($cn)",
+        "NEXT: \(if $next then "\($next.id) — \($next.text)" else "(no open sub-goal)" end)",
+        "OPEN CRITERIA:", (($cr[]|select(.status!="done")|"  - \(.id): \(.text)") // "  (none)"),
+        "BLOCKED:", (($sg[]|select(.status=="blocked")|"  - \(.id): \(.text)") // "  (none)"),
+        "RECENT:", (.log[-6:][]|"  c\(.cycle) \(.kind): \(.text)")' "$F"
+    ;;
+
   dump)
     _need
     jq -r '

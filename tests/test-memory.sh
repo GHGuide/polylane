@@ -40,4 +40,10 @@ assert_eq   "next-empty-when-done" "" "$("$MEM" "$S" next)"
 # unknown command exits 2
 assert_rc   "unknown-cmd-rc2" 2 "$MEM" "$S" bogus
 
+# brief: compact resume string carrying the essentials (context-compaction primitive)
+B=$("$MEM" "$S" brief)
+assert_contains "brief-goal"     "GOAL: Publish polylane" "$B"
+assert_contains "brief-progress" "PROGRESS: subgoals"     "$B"
+assert_contains "brief-next"     "NEXT:"                  "$B"
+
 finish
