@@ -6,7 +6,7 @@ Emit ONE of these per lane, as: a launch line + a fenced paste block. Order the 
 ```
 cd "<WORKTREE_ABS_PATH>" && claude --model <MODEL_ID>
 ```
-(`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `<MODEL_ID>` (`claude-fable-5` or `claude-opus-4-8`) and the lane's effort both come from the Phase 4 resolution of the `intensity` preset against `available_models` per model-selection.md — or the user's Phase 5 per-lane override. Effort is instructed in-prompt via block B — there is no verifiable CLI effort flag.)
+(`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `<MODEL_ID>` is whatever id the Phase 4 resolution of the `intensity` preset against `available_models` produced per model-selection.md — any rank-map model (`claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) — or the user's Phase 5 per-lane override; the lane's effort resolves the same way. Effort is instructed in-prompt via block B; when launched by the runner it is also surfaced to the pane as the `POLYLANE_EFFORT` env var — there is no CLI effort flag.)
 
 ## Paste block skeleton (fill and inline the blocks)
 ```
@@ -100,7 +100,7 @@ VERIFY with evidence — no claim without it. Write docs/verify-dark-theme.md co
 
 Use docs/parallel-status.md ONLY for cross-lane requests: a shared-file edit ask addressed to the owning lane, or a NEEDS DECISION: line if you hit a fork only the user can resolve (then continue other work, don't stall). It is not a general status log and not the done signal.
 
-Commit often. Stage ONLY your paths (git add src/styles src/components tailwind.config.*) — NEVER git add -A or git add . (scope every add to your own paths). On index.lock, wait + retry.
+Commit often. Stage ONLY your paths (git add src/styles src/components tailwind.config.*) — NEVER git add -A or git add . (scope every add to your own paths; on a shared tree you'd sweep other lanes' staged work). On index.lock, wait + retry.
 
 DONE-SIGNAL: on completion write docs/status-dark-theme.md, first line EXACTLY `STATUS: dark-theme DONE` — the runner reads this to know the lane finished.
 

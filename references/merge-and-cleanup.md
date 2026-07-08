@@ -11,6 +11,13 @@ bin/polylane-run.sh <manifest> [--dry-run] [--yes]
 - `<manifest>` — the run manifest polylane wrote when it generated the lanes. It declares the integration branch, and each lane's worktree path + branch name. The runner reads it; you don't hand-list worktrees.
 - `--dry-run` — print exactly what would be verified and removed, then stop. Deletes nothing. Run this first when unsure.
 - `--yes` — skip the interactive confirmation (for non-interactive / CI use). Without it, the runner asks once (see step 3).
+- The runner also takes `--intensity` / `--model` launch-time model overrides — documented in `polylane-run/SKILL.md`; they don't change cleanup behavior.
+
+Environment variables the runner honors:
+
+- `POLYLANE_SESSION` — tmux session name (default `polylane`); set it so parallel runs coexist without colliding.
+- `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default 15).
+- `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES` — the health check that auto-retries a lane stuck on a transient API/network error (default: scan every 300 s, 3 retries; past the cap the lane is marked failed and the run writes the report instead of hanging).
 
 Run it ONLY after the integrator's GO on a **re-merge of current branch HEADs** (not a stale prior GO). If NO-GO, don't run cleanup.
 
@@ -46,24 +53,25 @@ Then it clears its own scratch:
 
 - remove `.polylane/` (the runner's working state)
 - remove `docs/status-*.md` (the DONE markers — scratch, their job is finished once merged)
-- `git worktree prune`
 
 ### 5. Keep the evidence
 The runner KEEPS, always:
 
 - `docs/verify-*.md` — the per-lane proof files. These are the audit trail of what each lane verified; they are NOT scratch.
 - `docs/parallel-status.md` — the coordination log.
+- `docs/polylane-report.md` — the end-of-run digest (step 6).
+- `docs/lane-logs/` — per-lane pane logs, when present.
 
 Deleting the status markers but keeping the verify files is the point: the transient DONE signal goes, the durable evidence stays.
 
 ### 6. Report
-The runner prints: worktrees removed, branches deleted, scratch cleared, lanes skipped (if any were unmerged). Exactly one folder remains — the main project tree.
+The runner writes `docs/polylane-report.md` — a plain-language digest (outcome GO/NO-GO, per-lane results table, recent commits, suggested next steps) — on **both** GO and NO-GO, and prints: worktrees removed, branches deleted, scratch cleared, lanes skipped (if any were unmerged). The orchestrator reads the report and relays a simple summary to the user in the chat. Exactly one folder remains — the main project tree.
 
 ## Safety rules (invariants the runner holds)
 
 - **Verify before remove.** No worktree or branch is removed until its lane branch shows 0 commits at risk (step 2). `git branch -d` (not `-D`) is a second guard — it refuses to delete an unmerged branch.
 - **Conflict → abort, delete nothing.** If merging a lane into the integration branch hits a conflict, the runner aborts the whole cleanup and deletes nothing. Resolve the conflict (keep BOTH lane sections verbatim in doc files like `docs/parallel-status.md`), re-run the integrator to GO, then re-run the runner.
-- **Never `rm` outside worktrees + `.polylane/` + status scratch.** The runner only ever calls `git worktree remove`, `git branch -d`, and removes `.polylane/` + `docs/status-*.md`. It never `rm`s the main tree, `docs/verify-*.md`, `docs/parallel-status.md`, or any path outside that fixed set.
+- **Never `rm` outside worktrees + `.polylane/` + status scratch.** The runner only ever calls `git worktree remove`, `git branch -d`, and removes `.polylane/` + `docs/status-*.md`. It never `rm`s the main tree, `docs/verify-*.md`, `docs/parallel-status.md`, `docs/polylane-report.md`, `docs/lane-logs/`, or any path outside that fixed set.
 
 ## Permissions note
 Removing worktrees may be gated by the harness auto-mode (destructive). If blocked, the runner surfaces the exact `git worktree remove` / `git branch -d` commands for the user to run or approve — it does not work around the guard.

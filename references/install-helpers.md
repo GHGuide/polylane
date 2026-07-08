@@ -44,6 +44,11 @@ Verify:
 command -v tmux >/dev/null && command -v jq >/dev/null && echo "deps ok" || echo "install tmux + jq"
 ```
 
+The runner's tmux session is named `polylane` by default. For parallel runs on the same
+machine, set `POLYLANE_SESSION=<name>` per run so the sessions coexist (see
+`references/merge-and-cleanup.md` for the full env-var list: poll interval, health-check
+auto-retry).
+
 ### Optional: live model probing
 
 The runner's model controls (`--intensity` / `--model`, documented in

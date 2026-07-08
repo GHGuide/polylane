@@ -28,6 +28,7 @@ Then refine N downward with the caps below (caps can only *lower* N, never raise
    - One physical device / simulator / deploy target / DB → at most one lane uses it at a time; add the mutex block to those lanes and prefer merging lanes that both need it heavily.
    - Human review bandwidth: >5 lanes is rarely reviewable — merge the smallest clusters.
    - A lane smaller than ~half a session of work → merge into the nearest cluster (spawn overhead + coordination cost exceeds parallelism gain).
+   - **Disk space:** each lane worktree is a full checkout, so N lanes ≈ (N+1) × repo size plus per-lane build artifacts. Check `df -h .` during recon; if free space won't cover it comfortably, merge lanes (or flag it at the plan gate) rather than letting a mid-run `ENOSPC` kill the fleet.
 2. **Name each lane** by its subsystem (Fetch, UI, Siri, Efficiency…), not by spec-item number.
 3. **Write the carve explicitly.** For every shared file: which lane OWNS it, what the frozen public API is, and the request path for the non-owner (status-file entry, owner applies the edit).
 4. **Integrator lane (recommended, runs LAST).** If ≥2 lanes or any shared resource: add a final integrator/verifier lane that merges state, builds everything together, runs cross-lane end-to-end verification, acts as completeness critic, and issues GO/NO-GO. It fixes only cross-lane regressions (logged), never feature code. Two hard rules:
@@ -72,9 +73,11 @@ Six spec items, with the files each must edit (write-sets):
 
 ## Isolation mode
 
-Ask the user at the plan gate:
-- **Shared tree + scoped `git add`** — simplest; requires the never-`add -A` rule; risk: index.lock races, visible WIP.
-- **Git worktrees** (one branch per lane, `superpowers:using-git-worktrees`) — real isolation, merge at the end; recommended for ≥3 lanes or when lanes rebuild the same artifacts.
+**Default = one git worktree per lane** (one branch per lane, `superpowers:using-git-worktrees`): each lane gets its own index + checkout, so scoped commits stay scoped and branches stay independent. On a shared working tree every lane shares ONE git index — any lane's `git add` + commit can sweep in another lane's already-staged files (the shared-index race, observed in a real run). Present the default at the plan gate; fall back to a **shared tree + scoped `git add`** only if the user explicitly opts out (e.g. worktrees unavailable) — it requires the never-`add -A` rule and still risks index.lock races and visible WIP.
+
+Two preconditions before any worktree/branch op (both from SKILL.md Phase 3 recon):
+- **Orphan protection:** all uncommitted/untracked work not owned by a planned lane is committed/stashed (or assigned to a lane) first — a checkout can wipe it.
+- **Disk space:** the Step-2 disk cap above has been checked (`df -h .`) against (N+1) full checkouts.
 
 ## Sanity checks before presenting
 

@@ -11,7 +11,7 @@ Before anything else, in order:
 3. /goal <one-line lock of THIS lane's goal>   # Anthropic built-in: set the objective, keep working until it's met; do not re-scope. (The GOAL block below documents the same lock in-prompt.)
 4. superpowers:using-superpowers               # then this lane's specific superpowers (block D)
 ```
-All four are real on this install (graphify + caveman + superpowers skills; /goal built-in command). Fallbacks only if a project genuinely lacks one: caveman → the terse instruction in block C; graphify → the Explore-agent fallback in block E. Never omit the intent.
+All four are real on this install (graphify + caveman + superpowers skills; /goal built-in command). The caveman LEVEL in step 2 follows the round's intensity — write `(ultra)` when the round is `economy`, `(full)` otherwise (per `model-selection.md`); the step itself is never dropped or reordered. Fallbacks only if a project genuinely lacks one: caveman → the terse instruction in block C; graphify → the Explore-agent fallback in block E. Never omit the intent.
 
 ## A. Identity + context
 ```
@@ -60,21 +60,21 @@ VERIFY with evidence — no claim without it. Write docs/verify-<lane>.md contai
 
 ## H. Coordination + resource mutex
 ```
-Append your lane's status to docs/parallel-status.md: what changed (your paths only), what's now stable, any shared-file request, and a NEEDS DECISION: line if you hit a fork only the user can resolve (then continue other work, don't stall). <If shared resource:> Before using <device/DB/deploy>, claim it: append "IN USE — @<lane> <time>"; release when done. Never use it while another lane holds it.
+Use docs/parallel-status.md ONLY for cross-lane requests: a shared-file edit ask addressed to the owning lane, or a NEEDS DECISION: line if you hit a fork only the user can resolve (then continue other work, don't stall). It is not a general status log and not the done signal. <If shared resource:> Before using <device/DB/deploy>, claim it in docs/parallel-status.md: append "IN USE — @<lane> <time>"; release when done. Never use it while another lane holds it.
 ```
 
 ## I. Scoped git
 ```
-Commit often. Stage ONLY your paths (git add <your files>) — NEVER git add -A or git add . (other Claudes have uncommitted work in this tree). On index.lock, wait + retry.
+Commit often. Stage ONLY your paths (git add <your files>) — NEVER git add -A or git add . (scope every add to your own paths; on a shared tree you'd sweep other lanes' staged work). On index.lock, wait + retry.
 ```
 
 ## J. Done checklist
 ```
-DONE = all true: <per-lane observable criteria> + docs/verify-<lane>.md has proof + parallel-status.md updated + no new errors. Drive with the skills; no generic output.
+DONE = all true: <per-lane observable criteria> + docs/verify-<lane>.md has proof + docs/status-<lane>.md written with first line `STATUS: <lane> DONE` + no new errors. Drive with the skills; no generic output.
 ```
 
 ## Integrator lane (append when used)
-Compose A/B(Opus 4.8 xhigh)/C/E + a merge-build-install-verify-critic body:
+Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
 - **Re-merge current HEADs first — never trust a prior GO.** For each lane branch, merge its CURRENT tip; if a prior GO exists but commits followed it, it's stale — re-verify from scratch.
 - Read all verify-*.md + status, build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in status.
 - **Batch the human device/voice/visual sign-off here** (diff-aware — only re-verify surfaces changed since last sign-off; note each re-install invalidates prior voice/visual proof).
