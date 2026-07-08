@@ -780,6 +780,40 @@ capture_stats() {
   return 0
 }
 
+# parse_tokens STAT : token count (integer) from a "Goal achieved (…)" stats
+# line — accepts "32.5k tokens", "1.2M tokens", "4567 tokens". Empty if absent.
+parse_tokens() {
+  printf '%s' "$1" | awk '
+    match(tolower($0), /[0-9]+(\.[0-9]+)?[km]? *tokens/) {
+      s = substr(tolower($0), RSTART, RLENGTH)
+      sub(/ *tokens/, "", s)
+      mult = 1
+      if (s ~ /k$/) { mult = 1000;    sub(/k$/, "", s) }
+      else if (s ~ /m$/) { mult = 1000000; sub(/m$/, "", s) }
+      printf "%d", s * mult
+      exit
+    }'
+}
+
+# model_out_price MODEL : $ per 1M OUTPUT tokens. Price table cached from
+# references/model-selection.md (confirmed 2026-07): Fable 5 $10/$50,
+# Opus 4.8 $5/$25, Sonnet 5 $3/$15, Haiku 4.5 $1/$5 (in/out per 1M).
+# Estimates use the OUTPUT rate — builder panes report a single token count
+# and lanes are output-dominated, so this is a rough upper-band figure.
+# Unknown model -> empty (reported as "?").
+model_out_price() {
+  case "$1" in
+    claude-fable-5*)   echo 50 ;;
+    claude-opus-4-8*)  echo 25 ;;
+    claude-sonnet-5*)  echo 15 ;;
+    claude-haiku-4-5*) echo 5 ;;
+    *)                 echo "" ;;
+  esac
+}
+
+# est_cost TOKENS PRICE_PER_MTOK : dollars, two decimals (awk — bash has no floats).
+est_cost() { awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000000}'; }
+
 # write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
 write_report() {
@@ -799,15 +833,26 @@ write_report() {
     echo
     echo "## Lanes"
     echo
-    echo "| Lane | Model | Branch | Result |"
-    echo "|---|---|---|---|"
+    echo "| Lane | Model | Branch | Result | Tokens | Est. \$ |"
+    echo "|---|---|---|---|---|---|"
+    local _total="0.00" _tok _price _cost
     for i in "${!LANE_NAMES[@]}"; do
       local _r="${LANE_STATS[$i]:-completed}"
       lane_failed "${LANE_NAMES[$i]}" && _r="FAILED — errored after retries"
       lane_stalled "${LANE_NAMES[$i]}" && _r="STALLED — usage limit (human decision needed)"
-      printf '| %s | %s | %s | %s |\n' \
-        "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "$_r"
+      _tok=$(parse_tokens "$_r"); _price=$(model_out_price "${LANE_MODELS[$i]}")
+      _cost="?"
+      if [ -n "$_tok" ] && [ -n "$_price" ]; then
+        _cost=$(est_cost "$_tok" "$_price")
+        _total=$(awk -v a="$_total" -v b="$_cost" 'BEGIN{printf "%.2f", a + b}')
+        _cost="\$$_cost"
+      fi
+      printf '| %s | %s | %s | %s | %s | %s |\n' \
+        "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "$_r" \
+        "${_tok:-?}" "$_cost"
     done
+    echo
+    echo "**Estimated total: \$${_total}** — rough, output-rate pricing from \`references/model-selection.md\`; lanes without a token count are excluded."
     echo
     echo "## Integrator verdict"
     echo
