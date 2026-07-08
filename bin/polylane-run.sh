@@ -413,10 +413,11 @@ assert_prompt() {
 # -o = only open a pipe if none exists, so re-issuing after a respawn is safe.
 # The log path is %q-escaped — the pipe command runs through a shell.
 pipe_pane_log() {
-  local idx="$1" name="$2" dir="$REPO_ROOT/docs/lane-logs" qlog
-  run mkdir -p "$dir"
+  local idx="$1" name="$2" dir="${REPO_ROOT:-.}/docs/lane-logs" qlog
+  # best-effort: transcript logging must never break the run itself
+  run mkdir -p "$dir" 2>/dev/null || { echo "pipe-pane: cannot create $dir — no transcript for '$name'" >&2; return 0; }
   qlog=$(printf '%q' "$dir/$name.log")
-  run tmux pipe-pane -o -t "$TMUX_SESSION:0.$idx" "cat >> $qlog"
+  run tmux pipe-pane -o -t "$TMUX_SESSION:0.$idx" "cat >> $qlog" 2>/dev/null || true
 }
 
 # new_pane WINDOW_NAME : create the next pane (new-session for the first,
