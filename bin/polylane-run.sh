@@ -553,6 +553,22 @@ stall_check() {
 retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
 retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[i]="$2"; }
 
+# checkpoint_lane WT NAME : commit tracked WIP on the lane branch BEFORE a
+# respawn, so a retry can never lose work (a fresh claude session may reset or
+# rewrite files). `commit -am` covers tracked edits only — untracked files
+# survive a respawn anyway (the pane process dies, the tree doesn't) and bulk-
+# adding them would violate the never-`git add -A` rule. Best-effort: a failed
+# commit (e.g. missing identity) warns but never blocks the retry.
+checkpoint_lane() {
+  local wt="$1" name="$2"
+  if git -C "$wt" diff --quiet 2>/dev/null && git -C "$wt" diff --cached --quiet 2>/dev/null; then
+    return 0
+  fi
+  echo "health: checkpointing lane '$name' WIP before retry"
+  run git -C "$wt" commit -am "WIP checkpoint (polylane auto-retry: $name)" \
+    || echo "health: WIP checkpoint failed in $wt — continuing with retry" >&2
+}
+
 # health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
 health_check() {
   local specs=("$@") s name wt idx max n cmd
@@ -567,12 +583,14 @@ health_check() {
     n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
     if [ "$n" -le "$max" ]; then
       echo "health: lane '$name' hit a transient error — retry $n/$max, respawning pane $idx"
+      checkpoint_lane "$wt" "$name"   # WIP survives the respawn
       cmd=$(pane_cmd_for "$name")
       if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
         run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
         run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
         run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
       fi
+      pipe_pane_log "$idx" "$name"   # -o: no-op if the pipe survived the respawn
     else
       echo "health: lane '$name' still erroring after $max retries — marking failed." >&2
       FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
