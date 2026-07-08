@@ -1,0 +1,31 @@
+{
+  "base": "main",
+  "available_models": ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-4-8"],
+  "integrator": {
+    "name": "integrator",
+    "model": "claude-opus-4-8",
+    "branch": "lane/integration",
+    "worktree": ".polylane/wt/integration",
+    "prompt_file": "/abs/prompts/integrator.txt",
+    "effort": "high"
+  },
+  "lanes": [
+    {
+      "name": "alpha",
+      "model": "claude-sonnet-5",
+      "branch": "lane/alpha",
+      "worktree": ".polylane/wt/alpha",
+      "prompt_file": ".polylane/lanes/alpha.txt",
+      "effort": "medium",
+      "own_globs": ["src/alpha/**"]
+    },
+    {
+      "name": "beta",
+      "model": "claude-haiku-4-5",
+      "branch": "lane/beta",
+      "worktree": ".polylane/wt/beta",
+      "prompt_file": ".polylane/lanes/beta.txt",
+      "own_globs": ["src/beta/**"]
+    }
+  ]
+}
