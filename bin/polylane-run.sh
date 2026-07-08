@@ -988,6 +988,37 @@ assert_no_conflict() {
 }
 
 # ---------------------------------------------------------------------------
+# promote — on GO only, advance the base branch to the integrator's branch
+# ---------------------------------------------------------------------------
+
+# promote_to_main : the integrator merges the lanes into its OWN branch and
+# verifies THERE — it never touches the base branch. So a NO-GO can't pollute
+# the base. On GO the runner fast-forwards the base ($BASE) to the integrator
+# branch, which already contains base + every lane + the integrator's evidence.
+# A fast-forward keeps history linear; if the base moved meanwhile, fall back to
+# a real merge. Runs on the base worktree ($REPO_ROOT), which is on $BASE.
+promote_to_main() {
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would fast-forward $BASE to $INT_BRANCH (integrator branch), only because verdict=GO"
+    return 0
+  fi
+  local cur
+  cur=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
+  if [ "$cur" != "$BASE" ]; then
+    echo "promote: base worktree is on '$cur', not '$BASE' — merging $INT_BRANCH into '$cur'" >&2
+  fi
+  if run git -C "$REPO_ROOT" merge --ff-only "$INT_BRANCH"; then
+    echo "promote: $BASE fast-forwarded to $INT_BRANCH (GO)"
+  else
+    echo "promote: $cur diverged from $INT_BRANCH — non-ff merge" >&2
+    run git -C "$REPO_ROOT" merge --no-ff -m "polylane: integrate verified lanes (GO)" "$INT_BRANCH" || {
+      echo "promote: merge FAILED — base left as-is, nothing deleted. Resolve manually." >&2
+      return 1
+    }
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # cleanup — one confirm, then remove worktrees + merged branches + scratch
 # ---------------------------------------------------------------------------
 
@@ -1236,6 +1267,12 @@ main() {
   capture_stats                        # panes still alive — grab per-lane tokens/time
   if merge_gate; then
     assert_no_conflict "$INT_WORKTREE"
+    echo "== promote: base -> integrator branch (GO only) =="
+    if ! promote_to_main; then
+      write_report "${VERDICT_RESULT:-GO}" || true
+      echo "Promote failed — base intact, worktrees kept. See report." >&2
+      exit 1
+    fi
     echo "== cleanup =="
     cleanup
     if [ "${PUSH:-0}" = "1" ]; then

@@ -2,6 +2,8 @@
 
 Parallel worktrees leave a confusing pile of sibling folders + branches. After the integrator issues GO, one command consolidates to the single project tree and removes the rest. The runner is destructive by design, so every removal is gated: it verifies each lane is fully merged first, asks for one confirmation, and only ever deletes worktrees, branches, and its own scratch — never anything outside them.
 
+**The base branch is only ever touched on GO.** The integrator merges every lane into its OWN branch and verifies the combined tree there — it never checks out or merges into the base (`main`). On a GO verdict the runner `promote_to_main` **fast-forwards the base to the integrator branch** (base + all lanes + the integrator's evidence), then cleans up. On NO-GO, promote never runs — the base is untouched and the worktrees stay put for fixing. This is why a NO-GO can never pollute `main`.
+
 ## The runner
 
 ```bash
