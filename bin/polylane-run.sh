@@ -76,6 +76,13 @@ ENV:
                               wait     hold POLYLANE_STALL_MAX health-cycles, then
                                         mark the lane failed (halt with a report)
   POLYLANE_STALL_MAX        wait-policy: health-cycles to hold before failing (default 6)
+  POLYLANE_MAX_REPAIRS      Reflexion repairs before a lane is failed: once retries
+                            are exhausted the lane respawns with a "reflect on your
+                            prior transcript, then take a DIFFERENT approach" prompt
+                            instead of failing outright (default 1; 0 disables)
+  POLYLANE_MIN_DISK_GB      free-space floor in GB (default 2). Preflight ABORTS below
+                            it; a run that dips below it mid-flight HALTS gracefully
+                            (worktrees intact, resumable) instead of ENOSPC-crashing.
 EOF
 }
 
@@ -115,6 +122,24 @@ safe_rm() {
     "$root"/*) run rm -rf "$p" ;;
     *) echo "safe_rm REFUSED (outside repo root $root): $p" >&2; return 1 ;;
   esac
+}
+
+# disk_free_gb DIR : whole GB free on the volume holding DIR (empty if unreadable).
+disk_free_gb() {
+  df -Pk "${1:-.}" 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}'
+}
+
+# disk_guard : 0 if free space is at/above POLYLANE_MIN_DISK_GB; else warn + return 1.
+# Cheap df — lets the poll loop HALT gracefully (worktrees intact, resumable) rather
+# than let a lane ENOSPC-crash mid-task. Unreadable df => pass (never a false halt).
+disk_guard() {
+  local floor="${POLYLANE_MIN_DISK_GB:-2}" free
+  free=$(disk_free_gb "${REPO_ROOT:-.}")
+  [ -n "$free" ] || return 0
+  [ "$free" -ge "$floor" ] && return 0
+  echo "polylane-run: DISK LOW — only ${free}GB free (< ${floor}GB floor). Halting before" >&2
+  echo "  ENOSPC; worktrees left intact — free space, then re-run with --resume." >&2
+  return 1
 }
 
 # ---------------------------------------------------------------------------
@@ -177,6 +202,15 @@ preflight() {
   fi
   if ! jq empty "$MANIFEST" 2>/dev/null; then
     echo "polylane-run: manifest is not valid JSON: $MANIFEST" >&2
+    exit 1
+  fi
+  # disk floor — worktrees + tmux pane logs grow during a run; abort BEFORE
+  # launching rather than ENOSPC-crash mid-lane. Reads the manifest's volume.
+  local floor="${POLYLANE_MIN_DISK_GB:-2}" free
+  free=$(disk_free_gb "$(dirname "$MANIFEST")")
+  if [ -n "$free" ] && [ "$free" -lt "$floor" ]; then
+    echo "polylane-run: only ${free}GB free (< ${floor}GB floor) — free space or lower POLYLANE_MIN_DISK_GB." >&2
+    echo "  worktrees + pane logs grow during a run; starting now risks an ENOSPC crash mid-lane." >&2
     exit 1
   fi
 }
@@ -649,6 +683,58 @@ respawn_lane() {
   pipe_pane_log "$idx" "$name"
 }
 
+# --- Reflexion: reflect-then-repair before giving up on a lane ----------------
+# When transient retries are exhausted the lane has likely failed on APPROACH,
+# not luck — so a plain respawn of the SAME prompt just fails again. Instead we
+# respawn ONCE more with an augmented prompt that makes the lane read its own
+# prior transcript (docs/lane-logs/<name>.log), write a 3-line reflection, and
+# take a DIFFERENT approach. Cheap (no extra model call from bash — the lane does
+# the reflection itself) and high-leverage. Capped by POLYLANE_MAX_REPAIRS.
+lane_prompt_get() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do [ "${LANE_NAMES[$i]}" = "$1" ] && { printf '%s' "${LANE_PROMPTS[$i]}"; return; }; done
+  [ "$1" = "${INT_NAME:-}" ] && printf '%s' "${INT_PROMPT:-}"
+}
+lane_prompt_set() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do [ "${LANE_NAMES[$i]}" = "$1" ] && { LANE_PROMPTS[i]="$2"; return; }; done
+  [ "$1" = "${INT_NAME:-}" ] && INT_PROMPT="$2"
+}
+repairs_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_REPAIRS[$i]:-0}" || printf '0'; }
+repairs_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_REPAIRS[i]="$2"; }
+
+# build_repair_prompt SRC NAME K -> stdout : original prompt + a reflect-then-fix
+# addendum. Kept as a pure function so it is unit-testable without tmux.
+build_repair_prompt() {
+  local src="$1" name="$2" k="$3"
+  cat "$src" 2>/dev/null
+  printf '\n\n── REPAIR ATTEMPT %s (a prior attempt did NOT reach DONE) ──────────────\n' "$k"
+  printf 'FIRST, before any new work: read the tail of docs/lane-logs/%s.log (your own\n' "$name"
+  printf 'prior transcript) and any docs/verify-%s.md. Write a 3-line reflection into\n' "$name"
+  printf 'docs/verify-%s.md — (1) what went wrong (2) the root cause (3) the DIFFERENT\n' "$name"
+  printf 'approach you will now take. THEN fix and drive to DONE. Do NOT repeat the\n'
+  printf 'failed approach. Your locked goal is unchanged.\n'
+}
+
+# reflect_and_repair NAME WT IDX : write the augmented prompt, point the lane at
+# it, reset the transient-retry budget, and respawn. rc 1 if the file cannot be
+# written (caller then marks the lane failed).
+reflect_and_repair() {
+  local name="$1" wt="$2" idx="$3" k src dir repair
+  k=$(repairs_get "$name"); k=$((k + 1))
+  dir="$REPO_ROOT/.polylane/lanes"; run mkdir -p "$dir" 2>/dev/null || true
+  src=$(lane_prompt_get "$name")
+  repair="$dir/$name.repair.txt"
+  build_repair_prompt "$src" "$name" "$k" > "$repair" 2>/dev/null \
+    || { echo "reflexion: could not write $repair for '$name'" >&2; return 1; }
+  lane_prompt_set "$name" "$repair"   # future respawns use the repaired prompt
+  repairs_set "$name" "$k"
+  retry_set "$name" 0                  # fresh transient budget after a repair
+  echo "reflexion: lane '$name' — repair attempt $k (reflect-then-fix), respawning pane $idx"
+  notify_event stall "lane '$name': repair attempt $k (reflect + retry)"
+  respawn_lane "$idx" "$name" "$wt"
+}
+
 # resolve_stalls SPEC... : act on each usage-limit-stalled lane per POLYLANE_ON_LIMIT
 # (default fallback). Every branch is terminating — a stalled lane ends up either
 # working again (fallback/credits) or failed (no model left / wait exhausted) — so
@@ -733,8 +819,17 @@ health_check() {
       echo "health: lane '$name' — $why — retry $n/$max, respawning pane $idx"
       respawn_lane "$idx" "$name" "$wt"
     else
-      echo "health: lane '$name' still unrecovered after $max retries — marking failed." >&2
-      FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+      # transient retries exhausted — a plain respawn keeps failing the same way.
+      # Try ONE Reflexion repair (reflect on the transcript, take a new approach)
+      # before giving up; only mark failed once repairs are also exhausted.
+      local rmax rc
+      rmax="${POLYLANE_MAX_REPAIRS:-1}"; rc=$(repairs_get "$name")
+      if [ "$rc" -lt "$rmax" ] && reflect_and_repair "$name" "$wt" "$idx"; then
+        :   # repaired — fresh budget, new approach
+      else
+        echo "health: lane '$name' failed after $max retries + $rc repair(s) — marking failed." >&2
+        FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+      fi
     fi
   done
 }
@@ -757,6 +852,10 @@ poll_done() {
   while :; do
     local done=0 settled=0 total=${#specs[@]} s name wt state
     stall_check "${specs[@]}"   # every poll: stalls need timely human attention
+    if ! disk_guard; then       # low disk mid-run: halt (resumable), don't crash
+      notify_event halt "disk below ${POLYLANE_MIN_DISK_GB:-2}GB — halted; free space, then --resume"
+      return 3
+    fi
     elapsed=$(fmt_elapsed $(( $(date +%s) - t0 )))
     for s in "${specs[@]}"; do
       name="${s%%:*}"; wt="${s#*:}"
@@ -877,16 +976,6 @@ cleanup() {
       y|Y|yes|YES) ;;
       *) echo "Aborted. Nothing deleted."; exit 0 ;;
     esac
-  fi
-
-  # preserve integrator evidence BEFORE its worktree is force-removed. The
-  # integrator writes docs/verify-integration.md inside its OWN worktree and it
-  # does NOT merge to main on its own (the integrator branch isn't a merged
-  # lane), so `git worktree remove --force` would discard it. Copy it out — only
-  # if main doesn't already carry it (a committed one wins).
-  if [ -f "$INT_WORKTREE/docs/verify-integration.md" ] \
-     && [ ! -f "$REPO_ROOT/docs/verify-integration.md" ]; then
-    run cp "$INT_WORKTREE/docs/verify-integration.md" "$REPO_ROOT/docs/verify-integration.md"
   fi
 
   # PRESERVE the integrator's evidence at the repo root before its worktree is
