@@ -54,6 +54,14 @@ OWN (edited): `assets/q.py`, `assets/graphify-nudge.sh`, `docs/verify-graph-tool
 - NEEDS DECISION: none.
 - FOR INTEGRATOR: `graphify-out/` is an untracked build artifact (AST graph for local verification) — do NOT commit it; not staged by this lane.
 
+## LANE: engine — bin/polylane-run.sh (run 2026-07-08)
+Model: Fable 5, high effort. Caveman: full.
+
+- Status: DONE. Proof: docs/verify-engine.md. Contracts intact (CLI/DONE/report/manifest frozen; flags added are the two pre-approved additive ones: `--resume`, `--push`).
+- FOR DOCS LANE (doc-sync, no decision needed): `.polylane/SCHEMA.md` is now stale in three cosmetic spots I may not edit — (1) CLI table lacks `--resume`/`--push`; (2) Environment line lacks `POLYLANE_HEALTH_INTERVAL`/`POLYLANE_MAX_RETRIES`/`POLYLANE_SESSION`; (3) "Pane command" example shows single-quoted interpolation, engine now emits `printf %q`-escaped (same semantics, quote-safe). `bin/polylane-run.sh --help` is the current source of truth.
+- FOR INTEGRATOR: engine emits lane transcripts to `docs/lane-logs/<lane>.log` (kept by cleanup) and calls `bin/polylane-notify.sh <done|go|no-go|halt|stall>` only if executable — no-op until the notify lane lands.
+- NEEDS DECISION: none.
+
 ## LANE: integration — SKILL.md, docs/verify-integration.md (runs last)
 Model: Opus 4.8, XHIGH effort. Caveman: full.
 

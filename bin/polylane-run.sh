@@ -50,11 +50,14 @@ OPTIONS:
   -h, --help             show this help and exit 0
 
 FLOW:
-  split worktrees -> launch seeded claude panes (tmux session 'polylane')
-  -> poll each <worktree>/docs/status-<name>.md for DONE
+  split worktrees -> launch seeded claude panes (tmux session 'polylane';
+  each pane's transcript mirrors to docs/lane-logs/<lane>.log — kept)
+  -> poll each <worktree>/docs/status-<name>.md for DONE (per-lane status line;
+     transient errors auto-retry with a WIP checkpoint; usage-limit paywalls
+     stall the lane and wait for a human — never auto-answered)
   -> run integrator -> gate on GO in <int-worktree>/docs/verify-integration.md
   -> one confirm -> remove worktrees + merged branches + .polylane scratch
-     (keeps docs/verify-*.md and docs/parallel-status.md)
+     (keeps docs/verify-*.md, docs/parallel-status.md, docs/lane-logs/)
 
 DEPS: tmux, claude, jq, git
 
