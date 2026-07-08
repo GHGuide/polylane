@@ -11,7 +11,7 @@ You stay in the loop for **decisions only** — a couple of click-through questi
 - **`/polylane`** — plan only: interview → spec + plan gates → paste-ready prompts. You launch them.
 - **`/polylane-run`** — run an already-planned `.polylane/run.json`: launch tmux panes → poll → integrate → merge → clean up.
 - **`/polylane-auto`** — both in one command: interview and gates, then hands-off launch/poll/integrate/merge/cleanup after the plan gate.
-- **`/polylane-max`** — goal-driven loop: give one ultimate goal and it cycles (build → ~50-bullet report → deep-research next steps → recommended-default questions → repeat) until a critic judges the goal met or you stop.
+- **`/polylane-max`** — goal-driven loop, and the flagship path: give a **vague one-line app idea** and it runs a product-discovery interview (numerous easy recommended-default questions + research) to strategize it *with* you, locks a strategy + goal tree, then cycles (build → ~50-bullet report → deep-research → ensemble critic → questions → repeat) until the goal is met or you stop. Near-zero knowledge required — you click a handful of choices, it derives, builds, verifies, and merges the rest.
 
 ---
 

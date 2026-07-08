@@ -1,6 +1,6 @@
 ---
 name: polylane-max
-description: Use when the user gives an ULTIMATE GOAL and wants polylane to drive toward it autonomously over many build cycles — each cycle builds a chunk (via polylane-auto), merges, then immediately reports ~50 bullets of what it made, deep-researches the best next steps toward the goal, asks a batch of recommended-default questions, and continues into the next cycle on its own until a critic judges the goal met (or the user stops). Triggers on "/polylane-max", "polylane max", "drive to the goal", "keep building toward", "autonomous build loop", "iterate to the ultimate goal".
+description: Use when the user gives an ULTIMATE GOAL — or even just a VAGUE one-line app/product idea they want fully strategized and built for them — and wants polylane to drive it autonomously. It opens with a product-discovery interview (numerous easy recommended-default questions + research) that turns a fuzzy idea into a locked strategy + goal tree, then loops build → ~50-bullet report → deep-research → critic → questions → continue, until the goal is met or the user stops. Triggers on "/polylane-max", "polylane max", "build my app idea", "I have an idea, build it all", "strategize and build", "drive to the goal", "keep building toward", "autonomous build loop", "turn my idea into an app".
 ---
 
 # /polylane-max — goal-driven autonomous build loop
@@ -49,9 +49,32 @@ forward; your answers only steer.
   sub-goal genuinely needs it). Track cumulative cost in `progress.md` from each run's
   report; if the cap or budget is hit, STOP with the wrap-up instead of another cycle.
 
+## Phase 00 — Discovery & Strategy (when the idea is vague — the flagship path)
+If the user handed you a crisp goal + criteria, skip to Phase 0. If they gave a
+BRIEF, fuzzy idea ("an app that helps me X") and want it strategized + built for
+them, run discovery FIRST — follow `references/discovery.md`:
+- **Strategize like a product partner, extract through easy questions.** Batched
+  AskUserQuestion rounds (2–4 at a time, "numerous") across the discovery dimensions
+  (problem · audience · the one thing · MVP features · platform · look & feel ·
+  accounts/data · integrations · business model · constraints · ambition · done).
+  Every option is concrete with a recommended default first — one click answers, no
+  answer takes the default. Re-present the growing strategy after each round.
+- **Research the gaps.** Use `deep-research` to propose the feature set, stack, design
+  references, and competitor norms, so the user chooses from informed options rather
+  than inventing them. Name the riskiest assumption.
+- **Flag NEEDS FROM YOU early** — anything the system can't do alone (API key, app-
+  store account, domain, payment processor, a real product call) goes in the strategy
+  so the final GO isn't a surprise.
+- **Lock the PRODUCT STRATEGY** (save `docs/polylane-max/STRATEGY.md`): one-liner ·
+  problem/audience/the-one-thing · MVP scope (deferred marked) · platform+stack ·
+  look & feel · integrations · business model · NEEDS FROM YOU · success criteria ·
+  riskiest assumption. Confirm once (recommended = "yes, build this"); edits loop.
+Then hand the locked strategy to Phase 0 — its success criteria become the tree's
+`criteria` and its MVP scope becomes the milestones → sub-goals.
+
 ## Phase 0 — lock the ultimate goal + build the goal tree (once)
-Capture the ULTIMATE GOAL from the user's prompt in one crisp paragraph + 3–5
-measurable success criteria. Confirm it once (single AskUserQuestion, recommended
+Capture the ULTIMATE GOAL — from the user's prompt, or synthesized from the Phase 00
+strategy — in one crisp paragraph + 3–5 measurable success criteria. Confirm it once (single AskUserQuestion, recommended
 = "yes, this is the goal"). Persist it, then **decompose it into an HTN goal tree +
 open a shared blackboard** — a structured state file that turns "score progress by
 vibes" into "score against a real tree", and stops the loop from ever repeating a
