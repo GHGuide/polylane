@@ -23,4 +23,12 @@ assert_eq "verdict-go-word-boundary" "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/go
 printf 'earlier: NO-GO\nfinal verdict: GO\n' > "$TEST_TMPDIR/last-wins.md"
 assert_eq "verdict-last-line-wins" "GO" "$(parse_verdict "$TEST_TMPDIR/last-wins.md")"
 
+# sentinel line wins over prose (kills the false-GO): prose says NO-GO, sentinel GO
+printf 'discussion mentions NO-GO risks everywhere\nPOLYLANE-VERDICT: GO\n' > "$TEST_TMPDIR/sentinel.md"
+assert_eq "verdict-sentinel-beats-prose" "GO" "$(parse_verdict "$TEST_TMPDIR/sentinel.md")"
+
+# sentinel NO-GO is authoritative even if prose gushes GO
+printf 'everything is a GO, great GO, GO GO\nPOLYLANE-VERDICT: NO-GO\n' > "$TEST_TMPDIR/sentinel-nogo.md"
+assert_eq "verdict-sentinel-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/sentinel-nogo.md")"
+
 finish
