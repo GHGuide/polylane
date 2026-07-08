@@ -85,11 +85,15 @@ fmt_dur() {
 
 # abs_path PATH : anchor a relative manifest path at PROJECT_ROOT (the dir
 # that contains .polylane/) — same convention as the runner's abs_prompt.
+# Trailing slash stripped so paths compare equal to tmux pane_current_path.
 abs_path() {
-  case "$1" in
-    /*|'') printf '%s' "$1" ;;
-    *)     printf '%s/%s' "$PROJECT_ROOT" "$1" ;;
+  local p="$1"
+  case "$p" in
+    '')  printf '%s' "$p"; return 0 ;;
+    /*)  : ;;
+    *)   p="$PROJECT_ROOT/$p" ;;
   esac
+  printf '%s' "${p%/}"
 }
 
 C_RESET='' C_DIM='' C_BLD='' C_GRN='' C_RED='' C_YLW='' C_CYN=''
@@ -209,9 +213,33 @@ lane_done() {
   [ "$first" = "STATUS: $name DONE" ]
 }
 
-# pane_text IDX : the lane's tmux pane contents ('' if no tmux/session/pane).
+# refresh_panes : cache the session's "win.pane cwd" list once per frame.
+refresh_panes() {
+  PANE_LIST=$(tmux list-panes -s -t "$TMUX_SESSION" \
+    -F '#{window_index}.#{pane_index} #{pane_current_path}' 2>/dev/null || true)
+}
+
+# pane_loc IDX : tmux target for a row — the pane whose cwd is the lane's
+# worktree (robust to reordered panes and window-per-lane layouts), falling
+# back to the runner's positional window-0 order.
+pane_loc() {
+  local i="$1" loc=""
+  if [ -n "${PANE_LIST:-}" ]; then
+    loc=$(printf '%s\n' "$PANE_LIST" | awk -v wt="${L_WTS[$i]}" '$2 == wt {print $1; exit}')
+  fi
+  [ -n "$loc" ] || loc="0.$i"
+  printf '%s' "$loc"
+}
+
+# pane_text LOC : the pane's visible contents ('' if no tmux/session/pane).
 pane_text() {
-  tmux capture-pane -t "$TMUX_SESSION:0.$1" -p 2>/dev/null || true
+  tmux capture-pane -t "$TMUX_SESSION:$1" -p 2>/dev/null || true
+}
+
+# pane_text_hist LOC : visible contents + recent scrollback (token counters
+# are transient — scan history so "last-seen" survives a redraw).
+pane_text_hist() {
+  tmux capture-pane -t "$TMUX_SESSION:$1" -p -S -300 2>/dev/null || true
 }
 
 # log_text NAME : tail of docs/lane-logs/<name>.log if present (fallback
@@ -232,11 +260,11 @@ text_tokens() {
   fi
 }
 
-# launch_epoch IDX : best-effort lane launch time — tmux pane_start_time if
-# the pane exists, else the worktree dir mtime, else the dashboard start.
+# launch_epoch IDX LOC : best-effort lane launch time — tmux pane_start_time
+# if the pane exists, else the worktree dir mtime, else the dashboard start.
 launch_epoch() {
-  local i="$1" t
-  t=$(tmux display-message -p -t "$TMUX_SESSION:0.$i" '#{pane_start_time}' 2>/dev/null)
+  local i="$1" loc="$2" t
+  t=$(tmux display-message -p -t "$TMUX_SESSION:$loc" '#{pane_start_time}' 2>/dev/null)
   case "$t" in *[!0-9]*|'') t="" ;; esac
   if [ -z "$t" ] && [ -d "${L_WTS[$i]}" ]; then
     t=$(stat -f %m "${L_WTS[$i]}" 2>/dev/null || stat -c %Y "${L_WTS[$i]}" 2>/dev/null)
@@ -250,13 +278,18 @@ launch_epoch() {
 # DONE > FAILED > STALL > working > waiting. Missing worktree/status with no
 # pane signal -> waiting (lane not launched yet).
 state_for() {
-  local i="$1" name wt txt sig
+  local i="$1" name wt txt sig hist tok
   name="${L_NAMES[$i]}"; wt="${L_WTS[$i]}"
-  ROW_TOKENS='-'
+  ROW_LOC=$(pane_loc "$i")
 
-  txt=$(pane_text "$i")
+  txt=$(pane_text "$ROW_LOC")
   [ -n "$txt" ] || txt=$(log_text "$name")
-  [ -n "$txt" ] && ROW_TOKENS=$(text_tokens "$txt")
+
+  # tokens are sticky: remember the last count ever seen for this row
+  hist=$(pane_text_hist "$ROW_LOC")
+  tok=$(text_tokens "${hist:-$txt}")
+  [ "$tok" != "-" ] && L_TOK[$i]="$tok"
+  ROW_TOKENS="${L_TOK[$i]:--}"
 
   if lane_done "$wt" "$name"; then
     ROW_STATE="DONE"
@@ -319,18 +352,20 @@ render() {
 
 live_loop() {
   local i epoch
-  L_SIG=(); L_SIGAT=()
+  L_SIG=(); L_SIGAT=(); L_TOK=()
+  PANE_LIST=""
   RUN_START=""
   SRC_LABEL="$MANIFEST"
   while :; do
     NOW=$(date +%s)
+    refresh_panes
     R_NAME=(); R_MODEL=(); R_STATE=(); R_ELAPSED=(); R_TOKENS=()
     for i in "${!L_NAMES[@]}"; do
       state_for "$i"
       if [ "$ROW_STATE" = "waiting" ]; then
         R_ELAPSED+=('-')
       else
-        epoch=$(launch_epoch "$i")
+        epoch=$(launch_epoch "$i" "$ROW_LOC")
         if [ -z "$RUN_START" ] || [ "$epoch" -lt "$RUN_START" ]; then
           RUN_START="$epoch"
         fi
