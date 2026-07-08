@@ -139,6 +139,25 @@ jargon:
 Keep it to a few lines. If NO-GO: say plainly what blocked it and that the worktrees
 are still there to fix.
 
+### Phase 9 — auto-recover, don't ask (CONTINUE by default)
+A halt, NO-GO, or stuck poll is a problem to SOLVE, not a question to ask. When the
+run ends short of a clean GO, **diagnose → fix → re-run, autonomously** — do not stop
+to ask permission for a step you can take yourself:
+- **Poll hung but lanes look done** → check `<worktree>/docs/status-<name>.md` vs the
+  manifest `name`; a naming drift or an inherited stale marker is the usual cause.
+  Reconcile and let the poll advance (the runner now clears inherited markers itself).
+- **Integrator NO-GO / failed** → read `docs/verify-integration.md`, fix the specific
+  cross-lane problem it names, then re-run with `--resume` (finished lanes are skipped).
+- **A lane failed after retries + repair** → the runner already tried Reflexion; read
+  its `docs/lane-logs/<lane>.log`, address the root cause, `--resume`.
+- **Cleanup errored on unmerged branches** → the work is safe in the branches; merge
+  the verified-green ones yourself, then clean up.
+Loop this (fix → re-run) until GO or until you hit something only a human can decide.
+**Only surface a decision to the user when it is genuinely theirs** — a paid/irreversible
+action, a spend policy, a missing secret, or a product-direction fork. A bug, a stale
+file, a naming mismatch, a mechanical merge — you fix and continue. Report what you
+did in Phase 8; don't ask whether to do it.
+
 ## Runtime run controls (optional, same as /polylane-run)
 All flags compose onto the launch call — layer them on and dry-run first. The
 base CLI stays `<manifest> [--dry-run] [--yes]`, extended by
