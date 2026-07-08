@@ -548,21 +548,34 @@ health_check() {
   done
 }
 
+# fmt_elapsed SECS : "12m03s" (minutes never truncated to hours — poll spans
+# are short enough that raw minutes read fine).
+fmt_elapsed() { printf '%dm%02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
+
 # poll_done SPEC... : each SPEC is "name:worktree". Returns 0 when all DONE, or 3
 # if the only remaining lanes have failed past the retry cap (halt, don't hang).
+# Every poll prints one status line per lane: name · state · elapsed.
 poll_done() {
   local specs=("$@") interval="${POLYLANE_POLL_INTERVAL:-15}"
-  local hinterval="${POLYLANE_HEALTH_INTERVAL:-300}" since=0
+  local hinterval="${POLYLANE_HEALTH_INTERVAL:-300}" since=0 t0 elapsed
+  t0=$(date +%s)
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would poll for DONE (auto-retry errored lanes every ${hinterval}s): ${specs[*]}"
     return 0
   fi
   while :; do
-    local done=0 settled=0 total=${#specs[@]} s name wt
+    local done=0 settled=0 total=${#specs[@]} s name wt state
+    elapsed=$(fmt_elapsed $(( $(date +%s) - t0 )))
     for s in "${specs[@]}"; do
       name="${s%%:*}"; wt="${s#*:}"
-      if lane_done "$wt" "$name"; then done=$((done + 1)); settled=$((settled + 1))
-      elif lane_failed "$name"; then settled=$((settled + 1)); fi
+      if lane_done "$wt" "$name"; then
+        state="DONE"; done=$((done + 1)); settled=$((settled + 1))
+      elif lane_failed "$name"; then
+        state="failed"; settled=$((settled + 1))
+      else
+        state="working"
+      fi
+      echo "  $name · $state · $elapsed"
     done
     echo "poll: $done/$total DONE${FAILED_LANES:+ (failed: $FAILED_LANES)}"
     [ "$done" -eq "$total" ] && return 0
