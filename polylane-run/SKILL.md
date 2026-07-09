@@ -212,6 +212,29 @@ notification and leaves the decision to the user — wait the limit out, or halt
 the run and pick it back up later with `--resume`. Manual decision by design;
 relay the notification and ask the user which way to go.
 
+## Approval relay (permission prompts)
+
+Lanes launch in **`--permission-mode acceptEdits`**, so a lane editing its own
+files in its own worktree never hangs on an edit prompt. A lane can still hit a
+permission prompt for a **non-edit** tool (a bash command, etc.). Every poll the
+runner runs an **approval relay** that triages it:
+- **SAFE** (local test/build, `git add`/`commit` of its own files, `mkdir`, `ls`,
+  `node` — the isolated-worktree common case) → **auto-approved** (the runner sends
+  the approve key). The run keeps moving with no human input.
+- **CRITICAL** (network: `curl`/`npm install`; destructive: `rm -rf`; `git push`/
+  `--force`; secrets/`.env`; anything reaching outside the worktree) → **NOT
+  auto-answered**. The runner fires an **`approval`** notification and PARKS the lane,
+  exactly like a usage stall.
+
+**Your job when an `approval` notification fires:** read the parked pane
+(`tmux capture-pane -t <session>:0.<idx> -p | tail -20`), see what it's asking, then:
+- if on reflection it is genuinely safe → send the approve key
+  (`tmux send-keys -t <session>:0.<idx> '1'`, or `'2'` for "don't ask again");
+- if it is a real decision (spend, irreversible, a product call) → **ask the user in
+  the main chat**, get their answer, then relay it back to the lane with `send-keys`.
+Never blanket-approve a critical prompt on the user's behalf. Override the launch
+mode with `POLYLANE_PERMISSION_MODE` if a run needs stricter/looser defaults.
+
 ## Lane logs — audit trail
 
 Each lane's output is captured to `docs/lane-logs/<lane>.log`, and the logs

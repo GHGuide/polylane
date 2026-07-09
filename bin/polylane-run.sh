@@ -455,9 +455,15 @@ pane_cmd() {
   # seeded claude exits for ANY reason (crash, limit, /exit) the pane drops to a
   # shell and prints a marker; the health-check owns recovery — it re-seeds THIS
   # same command. So a dead/limited pane is always re-seeded, never blanked.
+  # --permission-mode acceptEdits: lanes edit ONLY their own files in an isolated
+  # worktree, so file edits are always safe — auto-accept them instead of hanging on
+  # a "Do you want to make this edit?" prompt (the walk-away design can't block on
+  # per-edit approval). Non-edit prompts (bash, etc.) still surface and are handled by
+  # the approval-relay in the health loop. Override with POLYLANE_PERMISSION_MODE.
+  local pmode="${POLYLANE_PERMISSION_MODE:-acceptEdits}"
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
-  printf 'cd %s && %sclaude --model %s "$(cat %s)"; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
-    "$qwt" "$pfx" "$qmodel" "$qpf"
+  printf 'cd %s && %sclaude --permission-mode %s --model %s "$(cat %s)"; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
+    "$qwt" "$pfx" "$(printf '%q' "$pmode")" "$qmodel" "$qpf"
 }
 
 # assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
@@ -623,6 +629,62 @@ stall_check() {
 }
 retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
 retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[i]="$2"; }
+
+# --- approval relay: auto-approve SAFE prompts, escalate CRITICAL ones ---------
+# Lanes run in acceptEdits mode, so file edits never prompt. A lane can still hit a
+# permission prompt for a NON-edit tool (a bash command, etc.). A walk-away run must
+# not hang on it, but must not blindly approve something destructive either. So:
+#   - SAFE (default in an isolated worktree: local test/build/git-add/mkdir/…) -> auto-approve.
+#   - CRITICAL (network, destructive, secrets, force-push, outside the worktree)
+#     -> DO NOT auto-answer; fire an 'approval' notification (once) and PARK it for a
+#        human decision, exactly like a usage stall. The orchestrator relays it to the
+#        user and sends the chosen keystroke.
+
+# pane_awaiting_approval IDX : 0 iff the pane shows a permission menu.
+pane_awaiting_approval() {
+  local idx="$1" txt
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  printf '%s' "$txt" | grep -qiE 'Do you want to (run|proceed|make|create|delete|allow)|Do you want to proceed\?' \
+    && printf '%s' "$txt" | grep -qE '❯?[[:space:]]*1\.[[:space:]]*Yes'
+}
+
+# approval_is_critical "<pane text>" : 0 iff the requested action looks dangerous —
+# then it is escalated instead of auto-approved. Conservative: anything network,
+# destructive, secret-touching, force-pushing, or reaching outside the worktree.
+approval_is_critical() {
+  printf '%s' "$1" | grep -qiE \
+    'rm +-[a-z]*f|git +push|--force|force-with-lease|curl |wget |sudo |ssh |scp |npm +(i|install|publish)|yarn +add|pnpm +add|pip +install|( |^)brew |( |^)apt |>[[:space:]]*/|/etc/|/usr/|/bin/|~/\.|\.env|secret|password|api[_-]?key|token|credential|( |^)kill |chmod +7|( |^)eval |mkfs|( |^)dd '
+}
+
+# approval_check SPEC... : per unfinished lane, auto-approve a safe prompt or escalate.
+approval_check() {
+  local s name wt idx txt
+  for s in "$@"; do
+    name="${s%%:*}"; wt="${s#*:}"
+    lane_done "$wt" "$name" && continue
+    lane_failed "$name" && continue
+    lane_stalled "$name" && continue
+    idx=$(pane_index_for "$name")
+    pane_awaiting_approval "$idx" || continue
+    txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p -S -20 2>/dev/null || true)
+    if approval_is_critical "$txt"; then
+      lane_needs_decision "$name" && continue        # already escalated — leave parked
+      NEEDS_DECISION_LANES="${NEEDS_DECISION_LANES:+$NEEDS_DECISION_LANES }$name"
+      echo "approval: lane '$name' needs a DECISION (critical action) — parked for a human"
+      notify_event approval "lane '$name' asks approval for a critical action — decide in chat"
+    else
+      # safe (isolated worktree, local op) — approve + stop re-asking for its kind
+      if printf '%s' "$txt" | grep -qE '2\.[[:space:]]*Yes'; then
+        tmux send-keys -t "$TMUX_SESSION:0.$idx" '2' 2>/dev/null   # "…don't ask again / allow all"
+      else
+        tmux send-keys -t "$TMUX_SESSION:0.$idx" '1' 2>/dev/null   # "Yes"
+      fi
+      echo "approval: auto-approved a safe prompt for lane '$name'"
+    fi
+  done
+}
+lane_needs_decision() { case " ${NEEDS_DECISION_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 # --- walk-away recovery: dead panes + usage-limit fallback --------------------
 # For a TRULY unattended run every not-DONE lane must keep making progress with
@@ -869,7 +931,8 @@ poll_done() {
   fi
   while :; do
     local done=0 settled=0 total=${#specs[@]} s name wt state
-    stall_check "${specs[@]}"   # every poll: stalls need timely human attention
+    stall_check "${specs[@]}"      # every poll: stalls need timely human attention
+    approval_check "${specs[@]}"   # every poll: auto-approve safe prompts, escalate critical
     if ! disk_guard; then       # low disk mid-run: halt (resumable), don't crash
       notify_event halt "disk below ${POLYLANE_MIN_DISK_GB:-2}GB — halted; free space, then --resume"
       return 3
