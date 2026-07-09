@@ -36,9 +36,28 @@ shift 2
 
 command -v jq >/dev/null 2>&1 || { echo "polylane-memory: jq required" >&2; exit 1; }
 
-# _save : read jq program from stdin, apply to $F, write back atomically.
-_save() { local tmp; tmp="$F.tmp.$$"; jq "$@" "$F" > "$tmp" && mv "$tmp" "$F"; }
-_need() { [ -f "$F" ] || { echo "polylane-memory: no state at $F (run 'init' first)" >&2; exit 1; }; }
+# _save : apply a jq program to $F and write back. mkdir is atomic on all POSIX
+# filesystems, so it serializes the read-modify-write against a concurrent writer
+# (no lost updates); the final mv is atomic (no torn/corrupt file). A stale lock
+# from a crashed writer is reclaimed after a short wait so a run never wedges.
+_save() {
+  local tmp lock="$F.lock" tries=0 rc
+  while ! mkdir "$lock" 2>/dev/null; do
+    tries=$((tries + 1))
+    [ "$tries" -ge 50 ] && { rmdir "$lock" 2>/dev/null || true; mkdir "$lock" 2>/dev/null || true; break; }
+    sleep 0.1 2>/dev/null || sleep 1
+  done
+  tmp="$F.tmp.$$"
+  jq "$@" "$F" > "$tmp" && mv "$tmp" "$F"; rc=$?
+  rmdir "$lock" 2>/dev/null || true
+  return $rc
+}
+_need() {
+  [ -f "$F" ] || { echo "polylane-memory: no state at $F (run 'init' first)" >&2; exit 1; }
+  # a truncated/corrupt state file otherwise leaks a raw jq parse error mid-command;
+  # catch it once, up front, with an actionable message.
+  jq -e . "$F" >/dev/null 2>&1 || { echo "polylane-memory: state at $F is not valid JSON (corrupt/truncated) — restore from git or re-init" >&2; exit 1; }
+}
 
 case "$CMD" in
   init)

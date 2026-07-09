@@ -59,4 +59,14 @@ assert_contains "resume-next"     "NEXT ACTION: resume at cycle 5" "$R"
 assert_fail "set-status-bad-id"   "$MEM" "$S" set-status NOSUCH done
 assert_fail "add-subgoal-bad-mid" "$MEM" "$S" add-subgoal NOSUCHM sX "text"
 
+# corrupt/truncated state → clean error, not a raw jq dump
+BAD="$TEST_TMPDIR/corrupt.json"; printf '{trunc' > "$BAD"
+assert_fail "corrupt-state-fails" "$MEM" "$BAD" next
+assert_contains "corrupt-state-msg" "not valid JSON" "$("$MEM" "$BAD" next 2>&1)"
+
+# concurrent writers must not lose updates (mkdir lock serializes RMW)
+C="$TEST_TMPDIR/conc.json"; "$MEM" "$C" init "x" >/dev/null; "$MEM" "$C" add-milestone m1 M >/dev/null
+i=1; while [ "$i" -le 12 ]; do "$MEM" "$C" add-subgoal m1 "s$i" "sg$i" & i=$((i+1)); done; wait 2>/dev/null
+assert_eq "concurrent-no-lost-update" "12" "$(jq '.milestones[0].subgoals | length' "$C")"
+
 finish

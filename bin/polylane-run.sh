@@ -391,6 +391,12 @@ apply_overrides() {
       echo "polylane-run: --model names unknown lane '$name' (not a lane or the integrator)" >&2
       exit 2
     fi
+    # Warn (don't die) if the id isn't in available_models — the list may be a stale
+    # probe and the user may know a model it can't see; but a typo'd id would only
+    # surface as a per-lane launch failure minutes later, so flag it now.
+    if [ "${#AVAILABLE_MODELS[@]}" -gt 0 ] && ! model_available "$id"; then
+      echo "polylane-run: WARNING — override model '$id' is not in available_models; launching anyway (typo? the lane will fail if the CLI can't reach it)" >&2
+    fi
     echo "== model override: $name -> $id =="
   done
 }
