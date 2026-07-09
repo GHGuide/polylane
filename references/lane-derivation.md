@@ -18,6 +18,15 @@ N falls out of a mechanical procedure. Follow it in order; do not eyeball a lane
    - **Light overlap** (1–2 files behind a clean interface) → **CARVE.** Stays two lanes: one lane OWNS the shared file, the other gets a HARD CONTRACT ("public API of X is frozen; request changes via the status file").
    - **Producer/consumer** (item A's output is item B's input) → **SEQUENCE.** One lane, A before B — or B's lane starts only after A publishes its contract.
 
+3a. **Check for HIDDEN couplings — interfaces that share NO file.** The matrix only counts files both lanes *edit*, so it misses couplings where two lanes touch different files but must agree on a name across the seam. These read as INDEPENDENT and get wrongly split — the classic failure is a **UI feature carved into a markup lane and a behaviour lane**: the JS does `getElementById('export-btn')` in `app.js` while the button lives in `index.html` — zero shared files, but the JS is dead if the id never lands (a real NO-GO this cost, twice). Before finalizing, scan every INDEPENDENT pair for a shared **name interface**:
+   - **DOM hooks** — element ids / `data-*` / classes one lane queries and another must render.
+   - **Route/URL paths, event names, message channels** — emitted in one lane, handled in another.
+   - **Shared data shapes** — a JSON/record schema one writes and another reads.
+   - **Config keys / env var names** — set in one place, read in another.
+   Verdict for a hidden coupling:
+   - **Prefer CO-LOCATE.** A single user-facing UI feature (its markup AND the logic bound to it) is ONE lane by default — never split HTML from the JS that queries it. Vertical feature slice beats horizontal markup/logic split.
+   - **If genuinely must split, treat the interface as a frozen contract** exactly like a shared file: list the exact ids / paths / schema in BOTH lanes' contracts, owned by one, consumed verbatim by the other. Add a MERGE edge in Step 4 when co-locating.
+
 4. **Collapse to components — this yields N.** Draw an edge between any two items marked MERGE or SEQUENCE-into-one-lane. Each connected group of items becomes one candidate lane; items joined only by INDEPENDENT or CARVE edges stay separate. **Raw N = the number of connected components.** CARVE does *not* merge lanes — it keeps two lanes joined by a contract, not by shared ownership.
 
 Then refine N downward with the caps below (caps can only *lower* N, never raise it).
@@ -30,7 +39,7 @@ Then refine N downward with the caps below (caps can only *lower* N, never raise
    - A lane smaller than ~half a session of work → merge into the nearest cluster (spawn overhead + coordination cost exceeds parallelism gain).
    - **Disk space:** each lane worktree is a full checkout, so N lanes ≈ (N+1) × repo size plus per-lane build artifacts. Check `df -h .` during recon; if free space won't cover it comfortably, merge lanes (or flag it at the plan gate) rather than letting a mid-run `ENOSPC` kill the fleet.
 2. **Name each lane** by its subsystem (Fetch, UI, Siri, Efficiency…), not by spec-item number.
-3. **Write the carve explicitly.** For every shared file: which lane OWNS it, what the frozen public API is, and the request path for the non-owner (status-file entry, owner applies the edit).
+3. **Write the carve explicitly.** For every shared file: which lane OWNS it, what the frozen public API is, and the request path for the non-owner (status-file entry, owner applies the edit). **Do the same for every hidden interface from Step 3a** — a carve across DOM ids / routes / schemas names those hooks in both lanes' contracts, verbatim, even though no file is shared.
 4. **Integrator lane (recommended, runs LAST).** If ≥2 lanes or any shared resource: add a final integrator/verifier lane that merges state, builds everything together, runs cross-lane end-to-end verification, acts as completeness critic, and issues GO/NO-GO. It fixes only cross-lane regressions (logged), never feature code. Two hard rules:
    - **Never trust a prior GO.** Re-merge the CURRENT HEAD of every lane branch first; a GO with commits after it is stale — re-verify from scratch.
    - **On GO, run merge + cleanup** (`references/merge-and-cleanup.md`): verify each branch merged, remove merged worktrees, delete merged branches, quarantine strays into `<project>-useless/`. Consolidate to one project folder.
