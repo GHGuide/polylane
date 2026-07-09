@@ -46,7 +46,46 @@ and filling the gaps they can't answer with research + sensible defaults.
 12. **Definition of done** — the 3–5 measurable things that mean "this is finished"
     (these become the goal tree's `criteria`).
 
+### Creative dimensions (ask these too — this is where "more creative" lives)
+These aren't spec-gathering; they push the product somewhere interesting. Ask them
+with BOLD options, not safe ones:
+13. **North-star / 10× vision** — "if this were the best in the world at one thing,
+    what?" Offer an ambitious framing the user didn't state.
+14. **Differentiation** — "why would someone pick this over [the obvious incumbent]?"
+    Name the incumbent (from research) and propose 2–3 angles of attack.
+15. **Signature moment / delight** — the ONE interaction people screenshot and share.
+    Propose a few (a surprising animation, a clever default, a zero-effort win).
+16. **Anti-goals** — what it must deliberately NOT be / NOT do. Sharpens identity;
+    each anti-goal is also a scope-saver.
+17. **Personality & tone** — voice of the product (calm · playful · blunt · luxe ·
+    nerdy). Shapes copy, colour, motion.
+18. **Wildcard feature** — one non-obvious, research-surfaced capability that could
+    make it remarkable (offer 2–3 the user never mentioned, clearly marked optional).
+19. **Constraint-as-fuel** — pick a bold constraint that forces creativity
+    ("no text", "one screen", "works offline", "60-second first win").
+
 Skip a dimension that's obviously N/A; collapse rounds when answers are implied.
+
+## Creative divergence — PROPOSE, don't just elicit
+"More creative" means the pipeline brings ideas, not only questions. Two mechanics:
+
+1. **Concept bake-off (do this EARLY, right after the first spec round).** Use
+   `superpowers:brainstorming` + `deep-research` to generate **2–3 genuinely distinct
+   product CONCEPTS** from the same brief — not tweaks, real forks (e.g. "dead-simple
+   solo tool" vs "social/shared" vs "AI-native assistant"). Give each a name, a
+   one-line pitch, its signature moment, and what it trades off. Present them side by
+   side and let the user pick one, merge two, or say "none — here's what I actually
+   want" (which is itself gold). The winner seeds the strategy; graft the best bits of
+   the runners-up. This is the single biggest creativity lever — the user reacts to
+   concrete visions instead of inventing from scratch.
+2. **Every question carries a BOLD option, not just safe defaults.** Alongside the
+   recommended default and the alternatives, include one **"✨ Surprise me / go bold"**
+   option that names an ambitious, non-obvious choice (a wildcard feature, a striking
+   visual direction, a contrarian scope cut). Picking it commits to the bold path;
+   ignoring it costs nothing. Boldness is always on the menu, never forced.
+
+Run the concept bake-off ONCE per discovery; the BOLD option is on every question.
+When the user keeps taking bold/deeper options, lean further in — match their appetite.
 
 ## "Go deeper" drill-down mechanics
 When the user picks 🔍 Go deeper on a dimension, the NEXT round replaces that one
@@ -75,9 +114,13 @@ and the user isn't blindsided at the end.
 ## Output — the PRODUCT STRATEGY (present once, one confirmation)
 A short, skimmable doc (save to `docs/polylane-max/STRATEGY.md`):
 - **One-liner** — the product in a sentence.
+- **Chosen concept** — which bake-off concept won + the bits grafted from the others.
+- **North-star / signature moment** — the 10× vision + the one shareable moment.
 - **Problem / audience / the one thing.**
 - **MVP scope** — the feature list, must-have-now marked; explicitly what's deferred.
+- **Personality & anti-goals** — the voice, and what it deliberately is NOT.
 - **Platform + stack** (researched recommendation) · **look & feel.**
+- **Wildcard(s)** — the bold, non-obvious feature(s) the user opted into (if any).
 - **Accounts/data · integrations · business model.**
 - **NEEDS FROM YOU** — the half-satisfiable items.
 - **Success criteria** — the measurable definition of done.

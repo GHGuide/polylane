@@ -73,17 +73,29 @@ If the user handed you a crisp goal + criteria, skip to Phase 0. If they gave a
 BRIEF, fuzzy idea ("an app that helps me X") and want it strategized + built for
 them, run discovery FIRST — follow `references/discovery.md`:
 - **Strategize like a product partner, extract through easy questions.** Batched
-  AskUserQuestion rounds (2–4 at a time, "numerous") across the discovery dimensions
-  (problem · audience · the one thing · MVP features · platform · look & feel ·
-  accounts/data · integrations · business model · constraints · ambition · done).
-  Every option is concrete with a recommended default first — one click answers, no
-  answer takes the default. **Every question also carries a final "🔍 Go deeper — ask
-  me more about this next round" option**; picking it opens a finer drill-down round
-  on that dimension (unbounded depth), so the user can explore any topic as far as
-  they want before committing. Re-present the growing strategy after each round.
-- **Research the gaps.** Use `deep-research` to propose the feature set, stack, design
-  references, and competitor norms, so the user chooses from informed options rather
-  than inventing them. Name the riskiest assumption.
+  AskUserQuestion rounds (2–4 at a time, "numerous") across the discovery dimensions —
+  the SPEC set (problem · audience · the one thing · MVP features · platform · look &
+  feel · accounts/data · integrations · business model · constraints · ambition · done)
+  AND the CREATIVE set (north-star/10× · differentiation · signature moment · anti-goals
+  · personality/tone · wildcard feature · constraint-as-fuel). Every option is concrete
+  with a recommended default first — one click answers, no answer takes the default.
+- **Every question carries TWO escape hatches**, always:
+  - **"🔍 Go deeper — ask me more about this next round"** → opens a finer drill-down
+    round on that dimension (unbounded depth).
+  - **"✨ Surprise me / go bold"** → commits to an ambitious, non-obvious choice you
+    name (a wildcard feature, a striking visual direction, a contrarian scope cut).
+  So the user can always go deeper OR bolder on anything; both are opt-in, never forced.
+  When they keep taking deeper/bold options, lean further in — match their appetite.
+- **Concept bake-off (do it early — the biggest creativity lever).** Right after the
+  first spec round, use `superpowers:brainstorming` + `deep-research` to generate 2–3
+  genuinely DISTINCT product concepts from the brief (real forks, not tweaks — each
+  named, with a one-line pitch, its signature moment, its trade-off). Present them side
+  by side; the user picks one, merges two, or rejects all (also gold). The winner seeds
+  the strategy; graft the best of the rest. `references/discovery.md` has the full play.
+- **Research the gaps AND surface the non-obvious.** Use `deep-research` to propose the
+  feature set, stack, design references, and competitor norms — and to surface wildcard
+  capabilities the user never mentioned, so they choose from informed + surprising
+  options, not just what they already knew. Name the riskiest assumption.
 - **Flag NEEDS FROM YOU early** — anything the system can't do alone (API key, app-
   store account, domain, payment processor, a real product call) goes in the strategy
   so the final GO isn't a surprise.
@@ -222,11 +234,15 @@ From the research suggestions + critic gaps + the tree's next open sub-goal, for
 the next cycle's direction:
 - Ask a batch of questions via AskUserQuestion (multiple rounds of ≤4 if needed —
   "numerous"). **Every question's FIRST option is the recommended next step**, so a
-  single click (or no answer) advances the loop. **Every question also carries a final
-  "🔍 Go deeper — more questions on this next round" option** (same drill-down
-  mechanics as discovery — `references/discovery.md`), so the user can steer any
-  decision to arbitrary depth. Questions steer scope/priority/tradeoffs — they never
-  block the loop from continuing on defaults.
+  single click (or no answer) advances the loop. **Every question also carries BOTH a
+  "🔍 Go deeper — more questions on this next round" AND a "✨ Surprise me / go bold"
+  option** (same mechanics as discovery — `references/discovery.md`): the first opens a
+  finer round, the second commits to an ambitious next feature you name from the
+  research. Questions steer scope/priority/tradeoffs — they never block the loop.
+- **Bring a creative proposal each cycle, don't just fill gaps.** From the deep-research,
+  surface at least ONE non-obvious "what would make this remarkable" idea (a wildcard
+  feature, a signature-moment upgrade, a bold direction) as a real option — so the loop
+  keeps getting MORE interesting over cycles, not just more complete.
 - Synthesize the chosen (or recommended) answers + top research suggestions +
   `"$MEM" "$STATE" next` into the next cycle's numbered INTEGRATION SPEC (each item
   one line + a testable outcome), exactly as `/polylane` Phase 1 produces. Skip any
