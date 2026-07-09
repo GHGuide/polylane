@@ -101,11 +101,15 @@ strategy — in one crisp paragraph + 3–5 measurable success criteria. Confirm
 open a shared blackboard** — a structured state file that turns "score progress by
 vibes" into "score against a real tree", and stops the loop from ever repeating a
 failed approach or re-litigating a settled decision:
+**The loop's state lives in `docs/polylane-max/`, NEVER in `.polylane/`.** `.polylane/`
+is the RUNNER's per-cycle scratch — it is wiped on every cycle's cleanup, so a
+`max-state.json` placed there is destroyed after cycle 1 (found by a real run). Keep
+all cross-cycle memory under `docs/polylane-max/`, which cleanup preserves.
 ```
-mkdir -p .polylane docs/polylane-max
-cat > .polylane/ULTIMATE_GOAL.md   # the goal paragraph + success criteria
+mkdir -p docs/polylane-max
+cat > docs/polylane-max/ULTIMATE_GOAL.md   # the goal paragraph + success criteria
 MEM="$(dirname "$(command -v polylane-run.sh || echo "$HOME/.claude/skills/polylane/bin/x")")/polylane-memory.sh"
-STATE=.polylane/max-state.json
+STATE=docs/polylane-max/max-state.json     # durable — survives the runner's cleanup
 "$MEM" "$STATE" init "<ultimate goal, one line>"
 # success criteria -> the tree's measures:
 "$MEM" "$STATE" add-criterion c1 "<criterion>" <weight>   # repeat per criterion
@@ -230,10 +234,11 @@ the next cycle's direction:
 - Record the decision in the blackboard (`log <N> decision ...`), set the new
   baseline (`git rev-parse HEAD`), increment N, and GOTO Phase 1.
 
-## Artifacts (persist across cycles)
-- `.polylane/ULTIMATE_GOAL.md` — the north star (never deleted by cleanup).
-- `.polylane/max-state.json` — the HTN goal tree + blackboard (criteria, sub-goals,
-  decisions, learnings, attempts). The loop's memory across cycles.
+## Artifacts (persist across cycles — ALL under docs/polylane-max/, which cleanup keeps)
+- `docs/polylane-max/ULTIMATE_GOAL.md` — the north star.
+- `docs/polylane-max/max-state.json` — the HTN goal tree + blackboard (criteria,
+  sub-goals, decisions, learnings, attempts). The loop's memory across cycles. NEVER
+  put this in `.polylane/` — that is the runner's scratch and is wiped each cleanup.
 - `docs/polylane-max/cycle-<N>-digest.md` — the ~50 bullets per cycle.
 - `docs/polylane-max/cycle-<N>-research.md` — deep-research + ranked suggestions.
 - `docs/polylane-max/progress.md` — critic scores + tree dumps across cycles.
