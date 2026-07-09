@@ -40,6 +40,7 @@ lanes L2/L3/L4 depend on them.
 | Key | Type | Meaning |
 |---|---|---|
 | `base` | string | Branch each lane/integrator worktree is created from (e.g. `main`). |
+| `agent` | string | *(optional, default `claude`)* Which agent CLI each pane launches: `claude` \| `codex`/`gpt` \| `aider`. Env `POLYLANE_AGENT` overrides this; `POLYLANE_AGENT_CMD` (a template with `{model}` and `{prompt}`) overrides both for any other CLI. The pipeline is agent-agnostic (file-based done-signal + verdict); only the launch command differs. For a non-claude agent, the manifest `model` ids and the prompt style must match that agent (see SKILL.md). |
 | `intensity` | string | *(optional)* Preset the generator tuned this manifest for: `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** — records provenance; the per-lane `model`/`effort` are already baked to match it. The engine does **not** re-resolve from this at runtime; use the `--intensity` flag to remap live. `custom` = hand-tuned, no preset. |
 | `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh`). Required only if you pass `--intensity`; empty/absent then → error. |
 | `integrator` | object | The lane that runs **last**: merges lane branches, writes the verdict. |
@@ -50,7 +51,7 @@ Each **lane** object (and the **integrator** object) has:
 | Key | Type | Meaning |
 |---|---|---|
 | `name` | string | Lane id. Used in the DONE file name and tmux window name. Keep it filesystem-safe. |
-| `model` | string | Model id passed to `claude --model` (e.g. `claude-opus-4-8`, `claude-fable-5`). |
+| `model` | string | Model id passed to the agent's `--model` (e.g. `claude-opus-4-8`, `claude-fable-5`, or `gpt-5-codex` for the codex agent). |
 | `branch` | string | Branch created for this lane (`git worktree add -b <branch> <base>`). |
 | `worktree` | string | Path of the lane's git worktree. Relative paths resolve from the repo root. |
 | `prompt_file` | string | File whose contents seed the lane's `claude` pane. Read at pane runtime. |

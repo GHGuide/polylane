@@ -237,6 +237,9 @@ die() { echo "polylane-run: $*" >&2; exit 2; }
 
 load_manifest() {
   BASE=$(jq -r '.base' "$MANIFEST")
+  # which agent CLI each pane launches — claude (default), codex/gpt, aider, or a
+  # custom POLYLANE_AGENT_CMD template. Env POLYLANE_AGENT overrides the manifest.
+  AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
   # PROJECT_ROOT = parent of the manifest's own dir (.polylane) = the project root
   # where .polylane/lanes/*.txt actually live. Robust even outside a git checkout.
   local _mdir
@@ -287,6 +290,13 @@ load_manifest() {
 validate_manifest() {
   local i nm seen=""
   [ "${#LANE_NAMES[@]}" -ge 1 ] || die "manifest has no lanes — nothing to run"
+  # agent must be a known profile unless a custom command template is supplied
+  if [ -z "${POLYLANE_AGENT_CMD:-}" ]; then
+    case "$(agent_selected)" in
+      claude|codex|gpt|openai|aider) : ;;
+      *) die "unknown agent '$(agent_selected)' — use claude|codex|gpt|aider, or set POLYLANE_AGENT_CMD with {model} {prompt}" ;;
+    esac
+  fi
   for field in INT_NAME INT_MODEL INT_BRANCH INT_WORKTREE; do
     [ "${!field}" = "null" ] && die "integrator.$(printf '%s' "$field" | tr 'A-Z_' 'a-z ' ) is missing in the manifest"
   done
@@ -479,25 +489,57 @@ mark_resumed() {
 # Every interpolated value is %q-escaped: a worktree/prompt path (or model id)
 # containing spaces or quotes stays one shell word instead of splitting the
 # command or escaping its quoting.
+# --- agent adapter -----------------------------------------------------------
+# polylane's pipeline (worktrees, poll, verdict, promote, cleanup) is agent-
+# AGNOSTIC — it only watches files + panes. The ONE Claude-specific thing is how a
+# pane launches its agent. agent_template makes that pluggable so a lane can run
+# GPT (OpenAI codex), aider, or any CLI. Resolution order:
+#   1. $POLYLANE_AGENT_CMD — a full custom template (highest priority).
+#   2. the selected profile: $POLYLANE_AGENT (env) or `.agent` in the manifest.
+#   3. claude (default — unchanged behavior).
+# The template MUST contain {model} and {prompt}; pane_cmd substitutes both,
+# %q-quoted. Effort is passed to EVERY agent as the POLYLANE_EFFORT env var (agents
+# that don't use it are unaffected), so the template needn't mention it.
+agent_selected() { printf '%s' "${POLYLANE_AGENT:-${AGENT:-claude}}"; }
+
+agent_template() {
+  if [ -n "${POLYLANE_AGENT_CMD:-}" ]; then printf '%s' "$POLYLANE_AGENT_CMD"; return; fi
+  local pmode="${POLYLANE_PERMISSION_MODE:-acceptEdits}"
+  case "$(agent_selected)" in
+    # acceptEdits: lanes edit only their own files in an isolated worktree, so edits
+    # are always safe to auto-accept; the walk-away design can't block per-edit.
+    claude)            printf 'claude --permission-mode %s --model {model} "$(cat {prompt})"' "$(printf '%q' "$pmode")" ;;
+    codex|gpt|openai)  printf 'codex exec --full-auto --model {model} "$(cat {prompt})"' ;;
+    aider)             printf 'aider --model {model} --message-file {prompt} --yes-always --no-auto-commits' ;;
+    *) echo "polylane-run: unknown agent '$(agent_selected)' — set POLYLANE_AGENT_CMD to a template containing {model} and {prompt}" >&2; return 2 ;;
+  esac
+}
+
+# agent_procs : process names that mean "the agent is still working" (for pane_dead).
+agent_procs() {
+  case "$(agent_selected)" in
+    claude)            printf 'claude node' ;;
+    codex|gpt|openai)  printf 'codex node' ;;
+    aider)             printf 'aider python python3' ;;
+    *)                 printf 'claude node codex aider python python3  node' ;;  # custom: permissive
+  esac
+}
+
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" pfx=""
-  local qwt qmodel qpf
+  local qwt qmodel qpf tmpl
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf")
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
-  # NEVER fall back to a bare `claude` with no prompt: that starts an amnesiac
-  # session with no locked goal (the "pane sits at an empty input" bug). If the
-  # seeded claude exits for ANY reason (crash, limit, /exit) the pane drops to a
-  # shell and prints a marker; the health-check owns recovery — it re-seeds THIS
-  # same command. So a dead/limited pane is always re-seeded, never blanked.
-  # --permission-mode acceptEdits: lanes edit ONLY their own files in an isolated
-  # worktree, so file edits are always safe — auto-accept them instead of hanging on
-  # a "Do you want to make this edit?" prompt (the walk-away design can't block on
-  # per-edit approval). Non-edit prompts (bash, etc.) still surface and are handled by
-  # the approval-relay in the health loop. Override with POLYLANE_PERMISSION_MODE.
-  local pmode="${POLYLANE_PERMISSION_MODE:-acceptEdits}"
+  # NEVER launch an agent with no prompt: that starts an amnesiac session with no
+  # locked goal (the "pane sits at an empty input" bug). If the seeded agent exits
+  # for ANY reason (crash, limit, /exit) the pane drops to a shell and prints a
+  # marker; the health-check owns recovery — it re-seeds THIS same command.
+  tmpl=$(agent_template) || tmpl='claude --model {model} "$(cat {prompt})"'
+  tmpl=${tmpl//'{model}'/$qmodel}
+  tmpl=${tmpl//'{prompt}'/$qpf}
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
-  printf 'cd %s && %sclaude --permission-mode %s --model %s "$(cat %s)"; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
-    "$qwt" "$pfx" "$(printf '%q' "$pmode")" "$qmodel" "$qpf"
+  printf 'cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
+    "$qwt" "$pfx" "$tmpl"
 }
 
 # assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
@@ -727,16 +769,20 @@ lane_needs_decision() { case " ${NEEDS_DECISION_LANES:-} " in *" $1 "*) return 0
 #   dead     -> pane dropped to a shell (claude exited) -> respawn same seed
 #   stalled  -> usage-limit paywall -> POLYLANE_ON_LIMIT policy (below)
 
-# pane_dead IDX : 0 iff the pane's foreground process is a plain shell (claude
-# exited) rather than claude/node. Unknown command -> not dead (no false respawn).
+# pane_dead IDX : 0 iff the pane's foreground process is a plain shell (the agent
+# exited) rather than a live agent process. Agent-aware (agent_procs), so it works
+# for claude, codex/gpt, aider, or a custom agent. Unknown cmd -> not dead.
 pane_dead() {
-  local idx="$1" cmd
+  local idx="$1" cmd p
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
   cmd=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_current_command}' 2>/dev/null || echo "")
+  [ -z "$cmd" ] && return 1                              # unknown -> leave it
+  for p in $(agent_procs); do
+    case "$cmd" in *"$p"*) return 1 ;; esac              # a live agent process
+  done
   case "$cmd" in
-    ""|*claude*|*node*) return 1 ;;   # still running (or unknown) — leave it
-    *sh|-*)             return 0 ;;   # a shell prompt (sh/bash/zsh/fish/login-*) = lane exited
-    *)                  return 1 ;;
+    *sh|-*) return 0 ;;                                  # shell prompt = agent exited
+    *)      return 1 ;;                                  # unknown -> no false respawn
   esac
 }
 
