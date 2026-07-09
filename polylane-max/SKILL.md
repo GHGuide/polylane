@@ -117,6 +117,13 @@ them, run discovery FIRST — follow `references/discovery.md`:
   problem/audience/the-one-thing · MVP scope (deferred marked) · platform+stack ·
   look & feel · integrations · business model · NEEDS FROM YOU · success criteria ·
   riskiest assumption. Confirm once (recommended = "yes, build this"); edits loop.
+- **Write the NORTH-STAR + first decision records.** On lock, write the anchor doc
+  `docs/polylane-max/NORTHSTAR.md` — a SHORT, punchy statement of the vision, the one
+  thing, the wedge, the signature moment, the personality, and the anti-goals. This is
+  the doc every cycle and every lane re-reads to stay true. Then record each BIG call
+  from discovery as a decision record (see "North-star docs" below): the chosen concept,
+  the stack, any pivotal trade-off or scope cut. These persist and are re-read — the
+  loop never silently contradicts a settled call.
 Then hand the locked strategy to Phase 0 — its success criteria become the tree's
 `criteria` and its MVP scope becomes the milestones → sub-goals.
 
@@ -147,14 +154,21 @@ Record the loop baseline: `git rev-parse HEAD` → this is `cycle-1` baseline. F
 here every phase reads/writes `$STATE` (the blackboard + tree).
 
 ## Phase 1 — build a cycle (polylane-auto, no re-interview after cycle 1)
-**Start every cycle from the compact brief + a budget check — not from memory:**
+**Start every cycle from the compact brief + the north-star + a budget check — not
+from memory:**
 ```
-"$MEM" "$STATE" brief          # the few-hundred-byte resume state: goal, progress, NEXT, blocked
+"$MEM" "$STATE" brief                       # goal, progress, NEXT, blocked (a few hundred bytes)
+cat docs/polylane-max/NORTHSTAR.md          # the anchor — stay true to the vision
+"$DEC" docs/polylane-max/decisions context  # the settled decisions — never contradict them
 # STOP the loop instead of building another cycle if either cap is hit:
 #   cycle count >= POLYLANE_MAX_CYCLES (default 8), or cumulative cost >= POLYLANE_BUDGET.
 ```
-Read the brief (and only the specific digests/research the cycle needs) — do NOT
-rely on the transcript for earlier cycles. Then run the full polylane-auto pipeline
+(`DEC="$(dirname "$MEM")/polylane-decision.sh"`.) Read the brief + north-star +
+settled decisions (and only the specific digests/research the cycle needs) — do NOT
+rely on the transcript for earlier cycles. **Inject the north-star one-liner + the
+settled-decisions digest into every lane prompt** (a short "NORTH-STAR — stay true;
+SETTLED — do not contradict" block), so parallel builders never drift from the vision
+or re-open a closed call. Then run the full polylane-auto pipeline
 for THIS cycle's spec, defaulting to the cheapest models that clear the viability
 gate (`--intensity economy`, bump only a sub-goal that needs it):
 - **Cycle 1:** derive the first concrete spec from the ultimate goal (a short
@@ -269,8 +283,31 @@ the next cycle's direction:
 - Record the decision in the blackboard (`log <N> decision ...`), set the new
   baseline (`git rev-parse HEAD`), increment N, and GOTO Phase 1.
 
+## North-star docs — write after every BIG decision, keep them in mind
+The blackboard `log` is a terse machine index; north-star docs are the readable
+anchors the loop and every lane re-read so nothing drifts or re-opens a settled call.
+- **`NORTHSTAR.md`** — one short doc: the vision, the one thing, the wedge, the
+  signature moment, the personality, the anti-goals. Written at strategy lock; updated
+  ONLY on a north-star-level pivot (and that pivot gets its own decision record).
+- **Decision records** — one Markdown file per BIG decision, via the helper:
+  ```
+  DEC="$(dirname "$MEM")/polylane-decision.sh"; DDIR=docs/polylane-max/decisions
+  "$DEC" "$DDIR" new "<title>" "<the decision>" "<why>" "<consequences>" <cycle>
+  "$DEC" "$DDIR" context     # the "do not contradict" digest to inject into cycles/lanes
+  ```
+  What counts as BIG: the chosen concept, the stack/architecture, a pivotal trade-off,
+  a scope cut/deferral, a north-star pivot, a hard constraint. Record it the moment it's
+  made — in discovery, at a plan gate, or mid-loop in Phase 5. Also mirror a one-line
+  `log <cycle> decision ...` into the blackboard so the machine index stays complete.
+- **How they're kept in mind:** every cycle START reads `NORTHSTAR.md` + `decision …
+  context` (Phase 1); every lane prompt carries the north-star one-liner + settled
+  decisions; the Phase-4 critic checks the cycle's output against them (work that
+  contradicts the north-star or a settled decision is a finding, not a pass).
+
 ## Artifacts (persist across cycles — ALL under docs/polylane-max/, which cleanup keeps)
-- `docs/polylane-max/ULTIMATE_GOAL.md` — the north star.
+- `docs/polylane-max/NORTHSTAR.md` — the vision anchor, re-read every cycle + lane.
+- `docs/polylane-max/decisions/NNN-*.md` + `INDEX.md` — the durable decision trail.
+- `docs/polylane-max/ULTIMATE_GOAL.md` — the goal paragraph + success criteria.
 - `docs/polylane-max/max-state.json` — the HTN goal tree + blackboard (criteria,
   sub-goals, decisions, learnings, attempts). The loop's memory across cycles. NEVER
   put this in `.polylane/` — that is the runner's scratch and is wiped each cleanup.
