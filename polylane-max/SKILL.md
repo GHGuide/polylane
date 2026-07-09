@@ -42,6 +42,25 @@ forward; your answers only steer.
   transcript — re-read the brief/tree/digests. If context is getting long, that is
   fine: dump anything new to disk and keep going from the brief. This is what lets the
   loop run many cycles without dying on the context window.
+- **Resumable across conversations:** the state file is the source of truth, so a
+  dead/compacted conversation is not a lost run. See "Resume" below — on entry, if a
+  `max-state.json` already exists, offer to continue from it instead of re-interviewing.
+
+## Resume — continue a loop from disk (FIRST thing on entry)
+Before Phase 00, check for an existing run:
+```
+STATE=docs/polylane-max/max-state.json
+test -f "$STATE" && "$MEM" "$STATE" resume
+```
+- **If it prints a RESUME packet:** a prior loop exists. Show its GOAL + CYCLE +
+  progress and ask once (recommended = "yes, continue"): resume, or start fresh?
+  On resume, **skip discovery entirely** — the packet IS the context. Jump straight
+  to the build phase for the next open sub-goal at `CYCLE+1`. This is how a run that
+  died mid-loop (context blown, crash, closed terminal) picks up with zero re-work.
+- **If there is no state file:** brand-new run → start at Phase 00 (Discovery).
+The `resume` packet is self-contained (goal, cycle, every open sub-goal/criterion,
+blocked items, recent decisions, next action) — you need nothing from the old
+transcript to continue correctly.
 - **Budgeted (never unbounded spend):** honor a hard cycle cap and a token budget.
   `POLYLANE_MAX_CYCLES` (default 8) caps total cycles; `POLYLANE_BUDGET` (optional,
   tokens or $) caps cumulative cost. Default each cycle's build to the CHEAPEST models

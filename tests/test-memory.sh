@@ -46,4 +46,13 @@ assert_contains "brief-goal"     "GOAL: Publish polylane" "$B"
 assert_contains "brief-progress" "PROGRESS: subgoals"     "$B"
 assert_contains "brief-next"     "NEXT:"                  "$B"
 
+# resume: full rehydration packet to continue the loop from disk after a dead convo
+"$MEM" "$S" log 4 decision "d" "" >/dev/null
+R=$("$MEM" "$S" resume)
+assert_contains "resume-header"   "POLYLANE-MAX RESUME" "$R"
+assert_contains "resume-goal"     "GOAL: Publish polylane" "$R"
+assert_contains "resume-cycle"    "CYCLE: 4"            "$R"     # max cycle seen in log
+assert_contains "resume-open-cr"  "OPEN CRITERIA:"      "$R"
+assert_contains "resume-next"     "NEXT ACTION: resume at cycle 5" "$R"
+
 finish

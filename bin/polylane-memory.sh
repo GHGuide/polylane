@@ -129,6 +129,30 @@ case "$CMD" in
         "RECENT:", (.log[-6:][]|"  c\(.cycle) \(.kind): \(.text)")' "$F"
     ;;
 
+  resume)
+    # Full rehydration packet — read after a dead/compacted conversation to CONTINUE
+    # the loop from disk with zero prior context: which cycle, what's done, every open
+    # sub-goal/criterion, blocked items, recent decisions, and the next action. This is
+    # what makes the max loop durable — the conversation can die and resume from here.
+    _need
+    jq -r '
+      ([.milestones[].subgoals[]]) as $sg
+      | ([.criteria[]]) as $cr
+      | ($sg|length) as $sn | ($sg|map(select(.status=="done"))|length) as $sd
+      | ($cr|length) as $cn | ($cr|map(select(.status=="done"))|length) as $cd
+      | ($sg|map(select(.status=="open"))|sort_by(-.weight)) as $open
+      | (([.log[].cycle]|max) // 0) as $cyc
+      | "=== POLYLANE-MAX RESUME ===",
+        "GOAL: \(.ultimate)",
+        "CYCLE: \($cyc)",
+        "PROGRESS: subgoals \($sd)/\($sn) · criteria \($cd)/\($cn)",
+        "OPEN SUBGOALS (by weight):", (($open[]|"  - \(.id) (w\(.weight)): \(.text)") // "  (none — check criteria)"),
+        "OPEN CRITERIA:", (([$cr[]|select(.status!="done")]|if length>0 then (.[]|"  - \(.id): \(.text)") else "  (none)" end)),
+        "BLOCKED:", (([$sg[]|select(.status=="blocked")]|if length>0 then (.[]|"  - \(.id): \(.text)") else "  (none)" end)),
+        "RECENT LOG:", (.log[-8:][]|"  c\(.cycle) \(.kind): \(.text)"),
+        "NEXT ACTION: resume at cycle \($cyc+1) — build the highest-weight open sub-goal; if none open and all criteria done, finalize and STOP."' "$F"
+    ;;
+
   dump)
     _need
     jq -r '
@@ -142,7 +166,7 @@ case "$CMD" in
 
   *)
     echo "polylane-memory: unknown command '$CMD'" >&2
-    echo "  commands: init add-criterion add-milestone add-subgoal set-status log next attempted progress met dump" >&2
+    echo "  commands: init add-criterion add-milestone add-subgoal set-status log next attempted progress met brief resume dump" >&2
     exit 2
     ;;
 esac
