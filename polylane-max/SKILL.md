@@ -96,6 +96,11 @@ them, run discovery FIRST — follow `references/discovery.md`:
   feature set, stack, design references, and competitor norms — and to surface wildcard
   capabilities the user never mentioned, so they choose from informed + surprising
   options, not just what they already knew. Name the riskiest assumption.
+- **Sharpen before locking — kill the generic.** Run an adversarial distinctiveness
+  gate (2–3 critics attacking blandness: "where's the WEDGE?", "the signature moment is
+  weak", "what's the boldest buildable version?"). Fold the upgrades in and present the
+  safe vs sharpened strategy as a final choice (recommended = sharpened). This is what
+  makes the output *better*, not just *more* — see `references/discovery.md`.
 - **Flag NEEDS FROM YOU early** — anything the system can't do alone (API key, app-
   store account, domain, payment processor, a real product call) goes in the strategy
   so the final GO isn't a surprise.

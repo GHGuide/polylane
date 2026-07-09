@@ -105,6 +105,23 @@ defaults on the rest. Track how deep each dimension went in `STRATEGY.md` so the
 build reflects the detail the user cared about. A dimension the user never deepens
 just takes its recommended default — depth is opt-in, never forced.
 
+## Sharpen — kill the generic (run BEFORE locking the strategy)
+Gathering lots of input still tends to a safe, average product. Before presenting the
+strategy for lock, run an adversarial **distinctiveness gate** — 2–3 independent
+critics whose job is to attack blandness, not praise:
+1. **"Generic" critic** — "a dozen apps already do this; what's the actual WEDGE?
+   Cut anything table-stakes from the pitch and name the one thing that's genuinely
+   different." If it can't find a wedge, that's the finding — surface it.
+2. **"Weak signature" critic** — "the shareable moment is forgettable; propose a
+   sharper one that costs little to build."
+3. **"Boldest buildable" critic** — "what's the most ambitious version still buildable
+   in the planned cycles? What bold cut makes it sharper, not just bigger?"
+Fold the surviving upgrades into the strategy, then present BOTH the safe version and
+the sharpened version as a final choice (recommended = sharpened). The user picks the
+altitude; the gate guarantees they're never handed something forgettable by default.
+This is the difference between "more" and "better" — it raises the ceiling, the
+concept bake-off widens the options, and go-deeper/go-bold let the user steer.
+
 ## Half-satisfiable — flag early, don't surprise the final GO
 Anything the system canNOT do for the user alone: a paid service / API key, an app-
 store account, a domain, a real payment processor, a product decision only they can
