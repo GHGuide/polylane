@@ -105,6 +105,51 @@ defaults on the rest. Track how deep each dimension went in `STRATEGY.md` so the
 build reflects the detail the user cared about. A dimension the user never deepens
 just takes its recommended default — depth is opt-in, never forced.
 
+## Follow-up engine — adaptive, not a fixed checklist
+The dimension list is the RAW MATERIAL, not a script. Great discovery reacts to each
+answer instead of marching a list. After every round, pick the follow-ups by these
+rules (in priority order):
+1. **Follow the biggest UNKNOWN, not the next item.** Ask whatever would most change
+   the build next — the highest-leverage gap given what's still unresolved. Skip
+   anything already implied by earlier answers (never re-ask what you can infer).
+2. **Branch on the answer.** Each choice unlocks answer-specific follow-ups: "social"
+   → who-invites-whom, moderation, network-effect loop; "AI-native" → which model,
+   cost ceiling, failure/hallucination UX; "offline" → sync/conflict, storage limits.
+   Don't ask social-app questions of a solo tool.
+3. **Reflect back every ~3 answers.** One question that mirrors what you've heard —
+   "So: <X> for <who> who care about <Y>, deliberately NOT <anti-goal> — right?" —
+   with options "yes / no, fix this / go deeper". Cheap correction of drift; users
+   sharpen fastest when reacting to a wrong summary.
+4. **Ask WHY on pivotal choices.** For the decisions with big downstream cost (the one
+   thing, platform, business model, the wedge), one follow-up on the reason — the WHY
+   changes the build more than the WHAT ("calm tone — because users are stressed, or
+   because rivals are loud?" leads to different products).
+5. **Catch contradictions.** When two answers pull opposite ways (bold north-star +
+   "throwaway prototype"; privacy-critical + social-sharing; "no external services" +
+   a maps feature), surface the tension as a follow-up rather than silently averaging.
+6. **Escalate on enthusiasm.** When the user keeps choosing go-bold / go-deeper on a
+   theme, that IS the signal — pour follow-ups there, ease off where they took defaults.
+7. **Converge, don't loop.** When new answers stop changing the strategy, stop asking —
+   offer "lock it in" as the recommended next step. More questions ≠ better past the
+   point of new information.
+
+## Creative provocation toolkit (use in the creative dimensions + concept bake-off)
+When generating bold options, don't free-associate — run the brief through these
+provocations and offer the sharpest results as concrete choices:
+- **Analogy transplant** — "the Duolingo / IKEA / Notion / Apple / speedrun version of
+  this?" Borrow a proven pattern from another domain (streaks, flat-pack simplicity,
+  blocks, one perfect default, leaderboards).
+- **Inversion** — "what if the main feature were removed, or did the opposite?" Often
+  reveals the real value or a sharper wedge.
+- **Forced constraint** — "one screen · no text · 10-second first win · works on a
+  flip phone · zero settings." Constraint breeds a distinct product.
+- **Extremes** — "the $1 throwaway and the $1M flagship of this — which parts survive
+  both?" Names what's essential vs decorative.
+- **Magic wand** — "if the single hardest part were free, what becomes possible?"
+  Surfaces the ambitious version worth engineering toward.
+Feed the survivors into the concept bake-off and the ✨ go-bold options — grounded,
+surprising choices beat generic "make it pop" every time.
+
 ## Sharpen — kill the generic (run BEFORE locking the strategy)
 Gathering lots of input still tends to a safe, average product. Before presenting the
 strategy for lock, run an adversarial **distinctiveness gate** — 2–3 independent

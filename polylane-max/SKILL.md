@@ -86,6 +86,15 @@ them, run discovery FIRST — follow `references/discovery.md`:
     name (a wildcard feature, a striking visual direction, a contrarian scope cut).
   So the user can always go deeper OR bolder on anything; both are opt-in, never forced.
   When they keep taking deeper/bold options, lean further in — match their appetite.
+- **Adaptive follow-ups, not a fixed checklist.** The dimension list is raw material.
+  After each round, pick follow-ups by the follow-up engine (`references/discovery.md`):
+  chase the biggest UNKNOWN not the next list item; branch on the answer (a "social"
+  pick unlocks different follow-ups than "solo tool"); reflect back every ~3 answers
+  ("so: X for Y who care about Z — right?") to catch drift cheaply; ask WHY on pivotal
+  choices; surface contradictions instead of averaging them; and CONVERGE — stop asking
+  once answers stop changing the strategy. Generate the bold/creative options with the
+  provocation toolkit (analogy transplant · inversion · forced constraint · extremes ·
+  magic wand), never generic "make it pop".
 - **Concept bake-off (do it early — the biggest creativity lever).** Right after the
   first spec round, use `superpowers:brainstorming` + `deep-research` to generate 2–3
   genuinely DISTINCT product concepts from the brief (real forks, not tweaks — each
@@ -246,8 +255,13 @@ the next cycle's direction:
   research. Questions steer scope/priority/tradeoffs — they never block the loop.
 - **Bring a creative proposal each cycle, don't just fill gaps.** From the deep-research,
   surface at least ONE non-obvious "what would make this remarkable" idea (a wildcard
-  feature, a signature-moment upgrade, a bold direction) as a real option — so the loop
-  keeps getting MORE interesting over cycles, not just more complete.
+  feature, a signature-moment upgrade, a bold direction) as a real option — run it
+  through the provocation toolkit (analogy · inversion · forced constraint · extremes ·
+  magic wand), so the loop keeps getting MORE interesting over cycles, not just complete.
+- **Adaptive + convergent follow-ups** (same engine as discovery): chase the biggest
+  unknown, branch on the last answer, reflect back the plan periodically, and STOP
+  asking once answers stop changing the next spec — don't loop questions for their own
+  sake.
 - Synthesize the chosen (or recommended) answers + top research suggestions +
   `"$MEM" "$STATE" next` into the next cycle's numbered INTEGRATION SPEC (each item
   one line + a testable outcome), exactly as `/polylane` Phase 1 produces. Skip any
