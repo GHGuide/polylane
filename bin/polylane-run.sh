@@ -232,6 +232,9 @@ abs_prompt() {
   esac
 }
 
+# die MSG : print a fatal error and stop before any side effect.
+die() { echo "polylane-run: $*" >&2; exit 2; }
+
 load_manifest() {
   BASE=$(jq -r '.base' "$MANIFEST")
   # PROJECT_ROOT = parent of the manifest's own dir (.polylane) = the project root
@@ -273,6 +276,31 @@ load_manifest() {
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
   # shellcheck disable=SC2034  # kept for sourcers (tests source this file's functions)
   BASE_WT="$REPO_ROOT"
+
+  validate_manifest
+}
+
+# validate_manifest : fail LOUD before any git/tmux side effect on a malformed plan.
+# jq -r turns a missing key into the literal string "null", so an under-specified
+# lane would otherwise `git worktree add null -b null` and a 0-lane manifest would
+# poll forever. Catch all of it here.
+validate_manifest() {
+  local i nm seen=""
+  [ "${#LANE_NAMES[@]}" -ge 1 ] || die "manifest has no lanes — nothing to run"
+  for field in INT_NAME INT_MODEL INT_BRANCH INT_WORKTREE; do
+    [ "${!field}" = "null" ] && die "integrator.$(printf '%s' "$field" | tr 'A-Z_' 'a-z ' ) is missing in the manifest"
+  done
+  for i in "${!LANE_NAMES[@]}"; do
+    nm="${LANE_NAMES[$i]}"
+    for f in "$nm" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "${LANE_WORKTREES[$i]}"; do
+      [ "$f" = "null" ] || [ -z "$f" ] && die "lane #$i ('$nm') is missing a required field (name/model/branch/worktree)"
+    done
+    # lane names must be unique — they key the poll, the status file, and the pane label
+    case " $seen " in *" $nm "*) die "duplicate lane name '$nm' — names must be unique" ;; esac
+    # and shell/path safe — they land in tmux commands, branch names, and file paths
+    case "$nm" in *[!A-Za-z0-9_-]*) die "lane name '$nm' has unsafe chars — use [A-Za-z0-9_-] only" ;; esac
+    seen="$seen $nm"
+  done
 }
 
 # ---------------------------------------------------------------------------
@@ -991,22 +1019,21 @@ run_integrator() {
 parse_verdict() {
   local f="$1" line
   [ -f "$f" ] || { echo "UNKNOWN"; return; }
-  # Prefer an explicit machine sentinel the integrator writes on its OWN line —
+  # The ONLY trusted verdict is an explicit machine sentinel on its OWN line —
   # immune to prose that merely mentions "GO"/"NO-GO" and to stray fixture files.
-  line=$(grep -E '^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)' "$f" | tail -1)
-  if [ -n "$line" ]; then
-    printf '%s' "$line" | grep -q 'NO-GO' && { echo "NO-GO"; return; }
+  # FAIL-SAFE: if ANY sentinel line says NO-GO, the verdict is NO-GO regardless of
+  # order (a GO written after a NO-GO must never override it). Only an all-GO set of
+  # sentinels is a GO.
+  local sentinels
+  sentinels=$(grep -E '^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)[[:space:]]*$' "$f")
+  if [ -n "$sentinels" ]; then
+    printf '%s' "$sentinels" | grep -q 'NO-GO' && { echo "NO-GO"; return; }
     echo "GO"; return
   fi
-  # Back-compat fallback: last GO/NO-GO token in prose.
-  line=$(grep -E 'NO-GO|GO' "$f" | tail -1)
-  if printf '%s' "$line" | grep -q 'NO-GO'; then
-    echo "NO-GO"
-  elif printf '%s' "$line" | grep -qw 'GO'; then
-    echo "GO"
-  else
-    echo "UNKNOWN"
-  fi
+  # NO sentinel = the integrator did not complete its contract (crash, stall, wrong
+  # format). Do NOT guess a verdict from prose — that risks a FALSE GO merging
+  # unverified work. UNKNOWN, which merge_gate treats as a non-GO (nothing merged).
+  echo "UNKNOWN"
 }
 
 # merge_gate : sets VERDICT_RESULT and returns 0 iff GO. Does NOT exit — the caller

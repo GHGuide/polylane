@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# parse_verdict FILE -> GO | NO-GO | UNKNOWN (frozen contract: NO-GO wins,
-# missing/none defaults UNKNOWN).
+# parse_verdict FILE -> GO | NO-GO | UNKNOWN. FROZEN FAIL-SAFE contract:
+#   * ONLY a `POLYLANE-VERDICT: GO|NO-GO` sentinel on its OWN line counts.
+#   * ANY NO-GO sentinel => NO-GO, regardless of order (a later GO can't override).
+#   * No sentinel (prose, crash, wrong format, missing file) => UNKNOWN — never a
+#     prose-guessed GO, which risked merging unverified work.
 
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 . "$RUNNER"
@@ -10,25 +13,30 @@ assert_eq "verdict-no-go"   "NO-GO"   "$(parse_verdict "$FIXTURES/verdicts/no-go
 assert_eq "verdict-unknown" "UNKNOWN" "$(parse_verdict "$FIXTURES/verdicts/unknown.md")"
 assert_eq "verdict-missing-file" "UNKNOWN" "$(parse_verdict "$FIXTURES/verdicts/does-not-exist.md")"
 
-# NO-GO wins over GO on the deciding (last matching) line
 make_tmpdir
-printf 'is it a GO? verdict: NO-GO\n' > "$TEST_TMPDIR/mixed.md"
-assert_eq "verdict-no-go-wins-same-line" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/mixed.md")"
 
-# GO must be a whole word — "GOING" alone is not a verdict
-printf 'GOING great, no verdict word here\n' > "$TEST_TMPDIR/going.md"
-assert_eq "verdict-go-word-boundary" "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/going.md")"
+# SAFETY: prose that merely says GO — NO sentinel — must NOT be a GO.
+printf 'we should GO with this, looks great\n' > "$TEST_TMPDIR/prose-go.md"
+assert_eq "verdict-prose-go-is-unknown" "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/prose-go.md")"
 
-# last matching line decides: earlier NO-GO overridden by later "GO" line
-printf 'earlier: NO-GO\nfinal verdict: GO\n' > "$TEST_TMPDIR/last-wins.md"
-assert_eq "verdict-last-line-wins" "GO" "$(parse_verdict "$TEST_TMPDIR/last-wins.md")"
+# SAFETY: sentinel must be on its OWN line — mid-line mention doesn't count.
+printf 'text POLYLANE-VERDICT: GO more text\n' > "$TEST_TMPDIR/midline.md"
+assert_eq "verdict-midline-is-unknown" "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/midline.md")"
 
-# sentinel line wins over prose (kills the false-GO): prose says NO-GO, sentinel GO
-printf 'discussion mentions NO-GO risks everywhere\nPOLYLANE-VERDICT: GO\n' > "$TEST_TMPDIR/sentinel.md"
-assert_eq "verdict-sentinel-beats-prose" "GO" "$(parse_verdict "$TEST_TMPDIR/sentinel.md")"
+# FAIL-SAFE: any NO-GO sentinel wins, EITHER order.
+printf 'POLYLANE-VERDICT: GO\nPOLYLANE-VERDICT: NO-GO\n' > "$TEST_TMPDIR/go-then-nogo.md"
+assert_eq "verdict-nogo-wins-after"  "NO-GO" "$(parse_verdict "$TEST_TMPDIR/go-then-nogo.md")"
+printf 'POLYLANE-VERDICT: NO-GO\nPOLYLANE-VERDICT: GO\n' > "$TEST_TMPDIR/nogo-then-go.md"
+assert_eq "verdict-nogo-wins-before" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/nogo-then-go.md")"
 
-# sentinel NO-GO is authoritative even if prose gushes GO
+# sentinel is authoritative over surrounding prose, both directions
+printf 'discussion mentions NO-GO risks everywhere\nPOLYLANE-VERDICT: GO\n' > "$TEST_TMPDIR/sentinel-go.md"
+assert_eq "verdict-sentinel-go"   "GO"    "$(parse_verdict "$TEST_TMPDIR/sentinel-go.md")"
 printf 'everything is a GO, great GO, GO GO\nPOLYLANE-VERDICT: NO-GO\n' > "$TEST_TMPDIR/sentinel-nogo.md"
 assert_eq "verdict-sentinel-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/sentinel-nogo.md")"
+
+# leading whitespace + trailing spaces on the sentinel line are tolerated
+printf '   POLYLANE-VERDICT: GO   \n' > "$TEST_TMPDIR/ws.md"
+assert_eq "verdict-whitespace-ok" "GO" "$(parse_verdict "$TEST_TMPDIR/ws.md")"
 
 finish

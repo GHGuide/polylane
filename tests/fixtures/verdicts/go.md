@@ -2,4 +2,4 @@
 
 All lanes merged clean.
 
-Verdict: GO
+POLYLANE-VERDICT: GO

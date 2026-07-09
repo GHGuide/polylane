@@ -55,4 +55,8 @@ assert_contains "resume-cycle"    "CYCLE: 4"            "$R"     # max cycle see
 assert_contains "resume-open-cr"  "OPEN CRITERIA:"      "$R"
 assert_contains "resume-next"     "NEXT ACTION: resume at cycle 5" "$R"
 
+# guards: mutating a nonexistent id/milestone must FAIL loud, not silently no-op
+assert_fail "set-status-bad-id"   "$MEM" "$S" set-status NOSUCH done
+assert_fail "add-subgoal-bad-mid" "$MEM" "$S" add-subgoal NOSUCHM sX "text"
+
 finish

@@ -59,13 +59,22 @@ case "$CMD" in
     ;;
 
   add-subgoal)
-    _need; _save --arg mid "$1" --arg id "$2" --arg t "$3" --argjson w "${4:-1}" \
+    _need
+    # fail loud if the milestone doesn't exist — else the sub-goal is silently dropped
+    # and the loop mis-tracks progress (a typo'd milestone id = lost work).
+    jq -e --arg mid "$1" 'any(.milestones[]; .id==$mid)' "$F" >/dev/null \
+      || { echo "polylane-memory: no milestone '$1' (add-milestone first)" >&2; exit 1; }
+    _save --arg mid "$1" --arg id "$2" --arg t "$3" --argjson w "${4:-1}" \
       '(.milestones[] | select(.id==$mid) | .subgoals) +=
          [{id:$id,text:$t,weight:$w,status:"open",cycle:null,evidence:""}]'
     ;;
 
   set-status)
     _need
+    # fail loud if the id matches no sub-goal AND no criterion — a silent no-op here
+    # means the tree never reaches `met` and the loop can't terminate (typo'd id).
+    jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id) or any(.criteria[]; .id==$id)' "$F" >/dev/null \
+      || { echo "polylane-memory: no sub-goal or criterion with id '$1'" >&2; exit 1; }
     _save --arg id "$1" --arg s "$2" --arg ev "${3:-}" --argjson cy "${4:-null}" '
       (.milestones[].subgoals[] | select(.id==$id))
         |= (.status=$s | (if $ev!="" then .evidence=$ev else . end) | (if $cy!=null then .cycle=$cy else . end))
