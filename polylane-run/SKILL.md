@@ -69,15 +69,33 @@ Relay the output to the user: how many panes, which lane in each, the model/effo
 per lane. This is the review gate — the user sees the plan before any terminal opens.
 
 ### 5. Launch on go-ahead
-Only after the user approves the dry-run, run the same command **without** `--dry-run`:
+Only after the user approves the dry-run. **For an unattended/walk-away run, launch
+through the supervisor** — it owns the runner's lifecycle: relaunches a crashed
+runner with `--resume` (DONE lanes skipped), drains SAFE approval prompts even while
+the runner is dead, parks + notifies CRITICAL ones, and writes a heartbeat. Runner
+death was the dominant failure mode of real long runs; the supervisor makes it a
+non-event:
+```
+SUPERVISOR="$(dirname "$RUNNER")/polylane-supervisor.sh"
+"$SUPERVISOR" .polylane/run.json            # implies --yes; extra runner args pass through
+```
+For an interactive run the user watches live, the bare runner is fine:
 ```
 "$RUNNER" .polylane/run.json
 ```
-The runner opens the tmux panes and starts every lane.
 (Optional: append `--yes` to pre-approve the runner's own prompts — including the
 final scratch-delete — for an unattended run. Default flow leaves them interactive.
 Optional: append `--push` to auto-push the merged result on GO — see
 "Push on GO" below. Offer the dashboard pane now too — see "Watch the run".)
+
+**Answer "are they done?" with ONE command — never by hand-capturing panes/git/files:**
+```
+"$(dirname "$RUNNER")/polylane-state.sh" .polylane/run.json   # or --json
+```
+Per lane: `done | likely-done(verify me) | awaiting-approval(safe|CRITICAL) | stalled |
+errored | working | no-pane` + branch HEAD + commits ahead, plus runner-alive /
+verdict / report / supervisor-heartbeat age. `likely-done` = the work exists but the
+done-signal is missing → verify + recover instead of waiting forever.
 
 ### 6. Explain what happens next
 Tell the user, once, what the runner now does on its own:

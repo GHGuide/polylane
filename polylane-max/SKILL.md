@@ -176,6 +176,18 @@ gate (`--intensity economy`, bump only a sub-goal that needs it):
 - **Cycle N>1:** the spec is already synthesized from the prior cycle (Phase 5) —
   skip the interview, go straight to recon → lanes → plan gate → hands-off run.
 
+**Gate 1b — skill scout (EVERY cycle, before launch — `references/skill-scout.md`):**
+Derive the cycle's concrete activities from its lanes, then check: already-installed
+skills → curated known-good list → GitHub search (`gh search repos "claude code
+skill <activity>" --sort stars`) for unmatched gaps only. Propose ≤3 as ONE
+recommended-default AskUserQuestion — each with a one-line WHY tied to THIS cycle
+("`xcode-build` — this cycle installs to a device; removes the #1 lane failure").
+Auto-continue on defaults; if no skill maps to a real gap, say so and skip the
+question. Install accepted skills to `~/.claude/skills/`, bake each trigger into
+ONLY the lane that has the gap, and record in `docs/polylane-max/skills-ledger.md`.
+The critic later scores each installed skill (used/helped/hurt) — unused 2 cycles →
+suggest removal; the scout reads the ledger first and never re-suggests removed ones.
+
 **Gate 1a — cheap checks BEFORE the wave (skip spend that won't pay):**
 - **Viability pre-gate:** one cheap agent (Haiku/Sonnet, single call) scores the
   synthesized spec against the goal — `advance` or `hold <why>` — from the goal +
@@ -188,12 +200,27 @@ gate (`--intensity economy`, bump only a sub-goal that needs it):
 - **Design-lock:** if the cycle produces UI/mockups, lock the design spec first (one
   brainstorm → lock), then generate; cap at ≤1 revision — no repeated mockup rounds.
 
-Launch with the walk-away runner so a cycle never blocks:
+Launch through the SUPERVISOR, never the bare runner (real 5,000+-message runs showed
+the dominant failure = the long-lived runner dying mid-run, stranding lanes on
+approvals for hours). The supervisor makes runner death a non-event: it relaunches
+with `--resume` (DONE lanes skipped), drains safe approval prompts itself (so a dead
+runner no longer blocks lanes), parks+notifies critical ones, and writes a heartbeat:
 ```
-RUNNER="$(command -v polylane-run.sh 2>/dev/null || echo "$HOME/.claude/skills/polylane/bin/polylane-run.sh")"
-POLYLANE_SESSION="polylane-max-c<N>" "$RUNNER" .polylane/run.json --yes
+BIN="$(dirname "$(command -v polylane-run.sh || echo "$HOME/.claude/skills/polylane/bin/x")")"
+POLYLANE_SESSION="polylane-max-c<N>" "$BIN/polylane-supervisor.sh" .polylane/run.json
 ```
-Wait for the run to finish (its report at `docs/polylane-report.md`, verdict GO/NO-GO).
+Print the tmux watch commands in chat (`tmux attach -t polylane-max-c<N>`), then wait
+for the finish notification. **Read run state through the state surface, never by
+hand-capturing panes + git + files** (that reconstruction was ~80% of orchestrator
+turns in real runs):
+```
+"$BIN/polylane-state.sh" .polylane/run.json          # or --json
+```
+One line per lane: `done | likely-done(verify me) | awaiting-approval(CRITICAL) |
+stalled | errored | working | no-pane` + branch HEAD + commits ahead + runner/verdict/
+report/heartbeat. `likely-done` = commits exist but no done-signal → verify + recover
+immediately instead of waiting. `awaiting-approval(CRITICAL)` → relay to the user with
+your recommendation, send the chosen keystroke to that pane, continue.
 
 ## Phase 2 — the ~50-bullet report (immediately, in chat)
 As soon as the cycle merges, gather the raw inventory and turn it into ~50 concrete
@@ -251,7 +278,16 @@ least ONE adversarial (told to prove it is NOT done — find the criterion with 
 or missing evidence, the sub-goal marked done without proof). A sub-goal/criterion
 counts as `done` only on the MAJORITY vote; a tie or an unrebutted "not done" keeps
 it open. This runs ONCE per cycle (the panel votes together, not a repeated
-council). Then reconcile the tree from the vote and check termination — no vibes:
+council). **The panel also audits two more things each cycle:**
+- **Drift audit:** did this cycle's output honor `NORTHSTAR.md` + the settled
+  decision records? Name any contradiction — a drift finding becomes a fix item in
+  the next spec, and repeated drift on the same theme means the north-star block in
+  the lane prompts needs strengthening (do it).
+- **Skills-ledger scoring (`docs/polylane-max/skills-ledger.md`):** for each skill
+  the scout installed, grep the lane logs/verify docs for its trigger/output and mark
+  `used+helped | unused | hurt`. `hurt` → remove now + log the learning; `unused`
+  2 cycles running → the next scout suggests removal.
+Then reconcile the tree from the vote and check termination — no vibes:
 - `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal done, per the panel)
   → write the final wrap-up (tree dump + all cycle digests + what's left), STOP.
 - Otherwise → continue to Phase 5. (A blocked-and-unblockable sub-goal → mark it
