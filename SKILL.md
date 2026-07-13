@@ -71,6 +71,18 @@ MEMDIR="${CLAUDE_MEMORY_DIR:-$HOME/.claude/projects/$(pwd | sed 's#/#-#g')/memor
   constraint discovered mid-build. The helper refuses anything that looks like a secret.
   Keep it to 1–3 facts per cycle — memory is signal, not a log.
 
+**Two memory layers — they complement, not compete:**
+- **Curated (above, `polylane-claudemem.sh`)** — YOU choose 1–3 high-signal durable facts.
+  Deliberate, secret-screened, always on.
+- **Automatic (`thedotmack/claude-mem`, optional)** — a hook-based plugin that captures
+  EVERY session (each lane is one) and auto-injects relevant prior context into new ones,
+  with zero prompt changes. If installed, the orchestrator can also `mem-search "<query>"`
+  at entry as an extra recall source. Recommend it via skill-scout. **Caveat:** its broad
+  auto-injection can add noise to a deliberately isolated lane — lanes still obey their
+  hard OWN/FORBIDDEN contract, so it's a noise risk not a correctness one; wrap anything a
+  lane must NOT persist in `<private>…</private>`. Use it for breadth, the curated bridge
+  for the facts that actually decide the next run.
+
 ## Resume — continue a loop from disk (FIRST thing on entry)
 Before Phase 00, check for an existing run:
 ```

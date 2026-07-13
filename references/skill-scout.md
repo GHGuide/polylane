@@ -22,6 +22,14 @@ migration", "video/demo asset". Each activity is a potential skill slot.
      absent. Install (two separate prompts): `/plugin marketplace add DietrichGebert/ponytail`
      then `/plugin install ponytail@ponytail`. Once installed, block 0 adds `/ponytail full`
      (`ultra` under economy) and the integrator can run `/ponytail-review` on the diff.
+   - `thedotmack/claude-mem` — automatic cross-session memory (hook-based): captures
+     every lane session and auto-injects relevant prior context into new ones, no prompt
+     change. High value for polylane (which spawns many sessions per run) — knowledge
+     compounds across runs for free. Install: `npx claude-mem install` (or
+     `/plugin marketplace add thedotmack/claude-mem` then `/plugin install claude-mem`).
+     Complements `polylane-claudemem.sh` (curated facts); orchestrator can `mem-search`
+     at entry. Caveat: broad auto-injection can add noise to isolated lanes — a noise
+     not correctness risk (lanes keep their OWN/FORBIDDEN contract); use `<private>` tags.
    - `anthropics/skills` — docx/pdf/pptx/xlsx output, artifacts-builder (report/design lanes)
    - graphify — code-graph navigation (any lane in an unfamiliar repo)
    - caveman — terse output (every lane, token savings)
