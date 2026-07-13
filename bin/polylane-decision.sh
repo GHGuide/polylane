@@ -2,11 +2,11 @@
 #
 # polylane-decision.sh <decisions-dir> <cmd> [args...]
 #
-# Durable, readable records of the BIG decisions a /polylane-max run makes — the
+# Durable, readable records of the BIG decisions a /polylane run makes — the
 # "north-star" trail. The blackboard (polylane-memory log) is a terse machine index;
 # THIS writes one human-readable Markdown file per major decision (ADR-style), so
 # every later cycle and every lane can re-read WHY a settled call was made and never
-# silently contradict it. Files live under docs/polylane-max/decisions/ (durable —
+# silently contradict it. Files live under the caller-supplied decisions dir, e.g. docs/polylane/decisions/ (durable —
 # the runner's cleanup never touches docs/).
 #
 # Commands:

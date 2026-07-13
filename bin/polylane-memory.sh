@@ -2,11 +2,11 @@
 #
 # polylane-memory.sh <state-file> <cmd> [args...]
 #
-# The blackboard + HTN goal-tree for /polylane-max. One JSON state file persists
+# The blackboard + HTN goal-tree for /polylane (the loop). One JSON state file persists
 # across build cycles so the loop NEVER re-litigates a settled decision or repeats
 # a failed approach, and always knows which sub-goal to attack next.
 #
-# State schema (.polylane/max-state.json):
+# State schema (docs/polylane/max-state.json — durable, survives cleanup):
 #   { "ultimate": "<goal>",
 #     "criteria":   [ {id,text,weight,status,score} ],           # success measures
 #     "milestones": [ {id,text,subgoals:[ {id,text,weight,status,cycle,evidence} ]} ],
