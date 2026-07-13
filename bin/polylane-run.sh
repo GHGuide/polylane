@@ -261,7 +261,7 @@ load_manifest() {
   done < <(jq -r '.available_models // [] | .[]' "$MANIFEST")
 
   LANE_NAMES=(); LANE_MODELS=(); LANE_EFFORTS=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
-  LANE_PANE_IDX=(); LANE_RESUMED=()
+  LANE_PANE_IDX=(); LANE_RESUMED=(); LANE_WHASH=(); LANE_WCNT=()
   INT_PANE_IDX=-1; NEXT_PANE_IDX=0; SESSION_STARTED=0
   local n i
   n=$(jq '.lanes | length' "$MANIFEST")
@@ -725,6 +725,36 @@ pane_awaiting_approval() {
     && printf '%s' "$txt" | grep -qE '❯?[[:space:]]*1\.[[:space:]]*Yes'
 }
 
+# --- startup unstick: answer the CLI's own onboarding prompts -----------------
+# The "workers initialize but never start" wedge: a fresh worktree is a NEW path,
+# so the agent CLI shows a folder-TRUST dialog ("Do you trust the files in this
+# folder?") before reading any input — the seeded prompt sits unread underneath.
+# That dialog matches none of the error/stall/approval signatures, the process is
+# alive, so the health loop saw a healthy pane doing nothing, forever. These
+# prompts are SAFE by construction (the worktree is polylane's own checkout of the
+# user's own repo), so answer them at poll frequency (15s), not health frequency.
+# startup_check SPEC... : per unfinished lane, clear trust/onboarding dialogs.
+startup_check() {
+  local s name wt idx txt
+  for s in "$@"; do
+    name="${s%%:*}"; wt="${s#*:}"
+    lane_done "$wt" "$name" && continue
+    lane_failed "$name" && continue
+    idx=$(pane_index_for "$name")
+    [ "$idx" -ge 0 ] 2>/dev/null || continue
+    txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+    if printf '%s' "$txt" | grep -qiE 'Do you trust the files in this (folder|directory)|Trust this (folder|workspace)'; then
+      # option 1 = "Yes, proceed" — our own worktree, always trusted
+      tmux send-keys -t "$TMUX_SESSION:0.$idx" '1' 2>/dev/null
+      tmux send-keys -t "$TMUX_SESSION:0.$idx" Enter 2>/dev/null
+      echo "startup: lane '$name' — answered folder-trust dialog"
+    elif printf '%s' "$txt" | grep -qiE 'Press Enter to continue|to get started'; then
+      tmux send-keys -t "$TMUX_SESSION:0.$idx" Enter 2>/dev/null
+      echo "startup: lane '$name' — cleared an onboarding banner"
+    fi
+  done
+}
+
 # approval_is_critical "<pane text>" : 0 iff the requested action looks dangerous —
 # then it is escalated instead of auto-approved. Conservative: anything network,
 # destructive, secret-touching, force-pushing, or reaching outside the worktree.
@@ -834,6 +864,9 @@ next_fallback_model() {
 respawn_lane() {
   local idx="$1" name="$2" wt="$3" cmd
   checkpoint_lane "$wt" "$name"
+  # fresh wedge window: a respawned pane gets full POLYLANE_WEDGE_CHECKS before it
+  # can be declared frozen again (otherwise the stale hash re-triggers instantly).
+  wedge_hash_set "$name" ""; wedge_cnt_set "$name" 0
   cmd=$(pane_cmd_for "$name")
   if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
@@ -957,6 +990,26 @@ checkpoint_lane() {
     || echo "health: WIP checkpoint failed in $wt — continuing with retry" >&2
 }
 
+# pane_wedged NAME IDX : 0 iff the pane's content has not changed across
+# POLYLANE_WEDGE_CHECKS consecutive health checks (default 2 ≈ 10 min) while the
+# lane is unfinished. Catch-all for the "initialized but never started" class the
+# other detectors miss: agent alive, no error text, no paywall, no menu — just
+# frozen (unsubmitted input, an unrecognized dialog, a hung tool call). Content
+# hash, not activity heuristics: ANY frozen screen qualifies.
+pane_wedged() {
+  local name="$1" idx="$2" h prev cnt
+  h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
+  [ -n "$h" ] || return 1
+  prev=$(wedge_hash_get "$name"); cnt=$(wedge_cnt_get "$name")
+  if [ "$h" = "$prev" ]; then cnt=$((cnt + 1)); else cnt=0; fi
+  wedge_hash_set "$name" "$h"; wedge_cnt_set "$name" "$cnt"
+  [ "$cnt" -ge "${POLYLANE_WEDGE_CHECKS:-2}" ]
+}
+wedge_hash_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_WHASH[$i]:-}" || printf ''; }
+wedge_hash_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_WHASH[i]="$2"; }
+wedge_cnt_get()  { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_WCNT[$i]:-0}" || printf '0'; }
+wedge_cnt_set()  { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_WCNT[i]="$2"; }
+
 # health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
 health_check() {
   local specs=("$@") s name wt idx max n why
@@ -968,10 +1021,11 @@ health_check() {
     lane_failed "$name" && continue
     lane_stalled "$name" && continue   # still mid-resolution this cycle
     idx=$(pane_index_for "$name")
-    # respawn a lane that is either showing a transient error OR has died back to
-    # a shell (claude exited without writing DONE — the amnesia case).
+    # respawn a lane that is showing a transient error, has died back to a shell
+    # (claude exited without DONE — amnesia), or is WEDGED (alive but frozen).
     if pane_errored "$idx"; then why="a transient error"
     elif pane_dead "$idx"; then why="a dead pane (claude exited)"
+    elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-2} * ${POLYLANE_HEALTH_INTERVAL:-300} / 60 ))+ min)"
     else continue
     fi
     n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
@@ -994,6 +1048,24 @@ health_check() {
   done
 }
 
+# verify_seeds : ~20s after launch, re-seed any pane whose seed was lost to the
+# send-keys race (keys typed before the pane's shell was ready → command vanished,
+# pane sits at a bare shell). Without this the first health check catches it, but
+# only after POLYLANE_HEALTH_INTERVAL (300s) of dead air. Free — not a retry.
+verify_seeds() {
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  local wait="${POLYLANE_SEED_VERIFY:-20}" i name
+  sleep "$wait"
+  for i in "${!LANE_NAMES[@]}"; do
+    lane_resumed "$i" && continue
+    name="${LANE_NAMES[$i]}"
+    if pane_dead "${LANE_PANE_IDX[$i]}"; then
+      echo "launch: lane '$name' seed did not take (pane at a shell) — re-seeding"
+      respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}"
+    fi
+  done
+}
+
 # fmt_elapsed SECS : "12m03s" (minutes never truncated to hours — poll spans
 # are short enough that raw minutes read fine).
 fmt_elapsed() { printf '%dm%02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
@@ -1012,6 +1084,7 @@ poll_done() {
   while :; do
     local done=0 settled=0 total=${#specs[@]} s name wt state
     stall_check "${specs[@]}"      # every poll: stalls need timely human attention
+    startup_check "${specs[@]}"    # every poll: clear trust/onboarding dialogs (fast unstick)
     approval_check "${specs[@]}"   # every poll: auto-approve safe prompts, escalate critical
     if ! disk_guard; then       # low disk mid-run: halt (resumable), don't crash
       notify_event halt "disk below ${POLYLANE_MIN_DISK_GB:-2}GB — halted; free space, then --resume"
@@ -1376,6 +1449,7 @@ main() {
   echo "== launch: tmux session '$TMUX_SESSION' =="
   launch_panes
   echo "Launched ${LAUNCHED:-0} of ${#LANE_NAMES[@]} lane(s). Attach with: tmux attach -t $TMUX_SESSION"
+  verify_seeds
 
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
