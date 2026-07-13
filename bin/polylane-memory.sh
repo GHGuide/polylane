@@ -19,6 +19,8 @@
 #   add-milestone  <id> <text>      add a milestone
 #   add-subgoal    <mid> <id> <text> [w]   add a sub-goal under milestone <mid>
 #   set-status     <id> <status> [evidence] [cycle]   set a sub-goal OR criterion status
+#   set-weight     <id> <w|top>     set a sub-goal's weight; "top" = current max + 1
+#                                    (so `next` returns it — the Phase-4 council's focus lever)
 #   log <cycle> <kind> <text> [meta]   append to the blackboard (kind: decision|learning|attempt)
 #   next                            print the highest-weight OPEN sub-goal ("<id>  <text>") or nothing
 #   attempted <text>                exit 0 iff this approach is already in the log as an attempt
@@ -98,6 +100,22 @@ case "$CMD" in
       (.milestones[].subgoals[] | select(.id==$id))
         |= (.status=$s | (if $ev!="" then .evidence=$ev else . end) | (if $cy!=null then .cycle=$cy else . end))
       | (.criteria[] | select(.id==$id)) |= (.status=$s)'
+    ;;
+
+  set-weight)
+    _need
+    # fail loud on a typo'd id — a silent no-op means the council's chosen focus never
+    # gets elevated and `next` returns the wrong sub-goal (loop works the wrong thing).
+    jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id)' "$F" >/dev/null \
+      || { echo "polylane-memory: no sub-goal with id '$1'" >&2; exit 1; }
+    if [ "${2:-}" = "top" ]; then
+      _save --arg id "$1" '
+        ([.milestones[].subgoals[].weight] | max // 0) as $mx
+        | (.milestones[].subgoals[] | select(.id==$id)) |= (.weight = ($mx + 1))'
+    else
+      _save --arg id "$1" --argjson w "${2:?usage: set-weight <id> <w|top>}" '
+        (.milestones[].subgoals[] | select(.id==$id)) |= (.weight = $w)'
+    fi
     ;;
 
   log)
@@ -194,7 +212,7 @@ case "$CMD" in
 
   *)
     echo "polylane-memory: unknown command '$CMD'" >&2
-    echo "  commands: init add-criterion add-milestone add-subgoal set-status log next attempted progress met brief resume dump" >&2
+    echo "  commands: init add-criterion add-milestone add-subgoal set-status set-weight log next attempted progress met brief resume dump" >&2
     exit 2
     ;;
 esac

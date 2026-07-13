@@ -37,6 +37,17 @@ assert_ok   "met-when-all-done"  "$MEM" "$S" met
 # after m1.2 is done, next has no open sub-goal left
 assert_eq   "next-empty-when-done" "" "$("$MEM" "$S" next)"
 
+# set-weight: the Phase-4 council's focus lever — "top" makes `next` return it
+W="$TEST_TMPDIR/weight.json"
+"$MEM" "$W" init g >/dev/null; "$MEM" "$W" add-milestone m1 M >/dev/null
+"$MEM" "$W" add-subgoal m1 sa "A" 2 >/dev/null; "$MEM" "$W" add-subgoal m1 sb "B" 5 >/dev/null
+assert_eq   "weight-next-before" "sb  B" "$("$MEM" "$W" next)"
+"$MEM" "$W" set-weight sa top >/dev/null
+assert_eq   "weight-top-elevates" "sa  A" "$("$MEM" "$W" next)"
+"$MEM" "$W" set-weight sb 1 >/dev/null
+assert_eq   "weight-numeric-set" "sa  A" "$("$MEM" "$W" next)"
+assert_fail "weight-bad-id-fails" "$MEM" "$W" set-weight NOPE top
+
 # unknown command exits 2
 assert_rc   "unknown-cmd-rc2" 2 "$MEM" "$S" bogus
 

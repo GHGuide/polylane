@@ -13,14 +13,15 @@ Each cycle **builds** (the parallel-lane pipeline in `references/planning.md`: r
 derive file-isolated lanes → generate prompts → run in tmux → merge on GO) then
 **reflects**: ~50-bullet report → deep-research → critic → questions → next spec.
 
-**Each cycle:** build → merge → **~50-bullet report of what it made**
-→ **deep-research the next steps toward the goal** → **critic scores progress** →
-**batch of recommended-default questions** → synthesize the next cycle's spec →
+**Each cycle:** build → merge → **on-disk digest** →
+**deep-research the next steps toward the goal** → **COUNCIL scores + elects where next** →
+**one-paragraph report + the Next line, then emergent questions** → synthesize the next spec →
 build again. It does not stop for you between cycles — recommended defaults carry it
 forward; your answers only steer.
 
 ## Locked behaviors (this mode's contract)
-- **Termination:** loop until the critic judges the ULTIMATE GOAL met (or blocked),
+- **Termination:** loop until the COUNCIL + the goal-tree BOTH judge the ULTIMATE GOAL met
+  AND a mechanical shippability gate passes (or it's blocked),
   or the user says stop. No fixed cycle count.
 - **Questions:** every question ships a pre-picked recommended answer. Ask, but if
   the user doesn't weigh in, take the recommended path and start the next cycle —
@@ -28,8 +29,18 @@ forward; your answers only steer.
 - **Research depth:** full `deep-research` skill each cycle (favor thoroughness over
   token thrift) — but scoped to NEW ground: each cycle reads prior
   `cycle-*-research.md` and never re-runs coverage already done.
-- **Report:** ~50 concrete bullets of what the cycle made, in the chat, immediately
-  after merge — before research.
+- **Report:** ONE short paragraph of what the cycle made + a single `Next:` line, in the
+  chat at the cycle CLOSE (Phase 5) — AFTER the council elects where to go next, so `Next`
+  is the council's actual decision, not a premature guess. The ~40–60 bullet digest is
+  written to disk (`cycle-<N>-digest.md`), never dumped into chat.
+- **Walk-away (autonomous) mode:** with `POLYLANE_AUTONOMOUS=1` the orchestrator NEVER
+  blocks on `AskUserQuestion` — for every question (skill scout, plan gate, emergent
+  questions) it takes the recommended default in-process, records the chosen defaults to
+  `docs/polylane/cycle-<N>-questions.md`, and proceeds. Interactive mode asks, but
+  recommended-first so a no-answer/one-click still advances. A cycle boundary never hangs.
+- **Question budget:** at most ONE consolidated scout round (≤4 lanes per `AskUserQuestion`
+  call) and ONE emergent-question round (≤4 per call; extra rounds only while answers keep
+  changing the spec) per cycle — never flood the user.
 - **Thorough, not redundant — gates before spend:** a cheap check always precedes an
   expensive fan-out. Never launch a full wave a 1-agent gate would reject; never fan
   out speculative/discovery lanes; never re-cover researched ground; run the critic
@@ -189,6 +200,14 @@ STATE=docs/polylane/max-state.json     # durable — survives the runner's clean
 "$MEM" "$STATE" add-milestone m1 "<milestone>"
 "$MEM" "$STATE" add-subgoal   m1 m1.1 "<sub-goal>" <weight>   # repeat
 ```
+**Always seed ≥1 success criterion** — `met` can never fire without one, so a crisp-goal
+run with zero criteria can never terminate; if the user gave none, synthesize 3–5
+measurable ones from the goal. **If `docs/polylane/NORTHSTAR.md` does not exist** (the
+crisp-goal path skipped Phase 00 discovery), synthesize a MINIMAL one now from the goal +
+criteria — a few punchy lines (vision · the one thing · anti-goals) — so every downstream
+feature that re-reads the north-star (lane prompts, the Phase-4 council, the Phase-5
+harvest) has its anchor.
+
 Record the loop baseline: `git rev-parse HEAD` → this is `cycle-1` baseline. From
 here every phase reads/writes `$STATE` (the blackboard + tree).
 
@@ -209,7 +228,7 @@ settled-decisions digest into every lane prompt** (a short "NORTH-STAR — stay 
 SETTLED — do not contradict" block), so parallel builders never drift from the vision
 or re-open a closed call. Then run the **parallel-lane build pipeline
 (`references/planning.md`)** for THIS cycle's spec — recon → derive the FEWEST
-file-isolated lanes real overlap allows → tune model/effort per lane → generate the
+file-isolated lanes real overlap allows → tune model/effort per lane → **per-lane skill scout (Gate 1b) — arm each lane before its prompt is written** → generate the
 paste-ready prompts → emit `.polylane/run.json` → launch (below) → merge on GO —
 defaulting to the cheapest models that clear the viability gate (`--intensity
 economy`, bump only a sub-goal that needs it):
@@ -218,17 +237,28 @@ economy`, bump only a sub-goal that needs it):
 - **Cycle N>1:** the spec is already synthesized from the prior cycle (Phase 5) —
   skip the interview, go straight to recon → lanes → plan gate → hands-off run.
 
-**Gate 1b — skill scout (EVERY cycle, before launch — `references/skill-scout.md`):**
-Derive the cycle's concrete activities from its lanes, then check: already-installed
-skills → curated known-good list → GitHub search (`gh search repos "claude code
-skill <activity>" --sort stars`) for unmatched gaps only. Propose ≤3 as ONE
-recommended-default AskUserQuestion — each with a one-line WHY tied to THIS cycle
-("`xcode-build` — this cycle installs to a device; removes the #1 lane failure").
-Auto-continue on defaults; if no skill maps to a real gap, say so and skip the
-question. Install accepted skills to `~/.claude/skills/`, bake each trigger into
-ONLY the lane that has the gap, and record in `docs/polylane/skills-ledger.md`.
-The critic later scores each installed skill (used/helped/hurt) — unused 2 cycles →
-suggest removal; the scout reads the ledger first and never re-suggests removed ones.
+**Gate 1b — PER-LANE skill scout (after lane derivation, BEFORE prompt generation —
+`references/skill-scout.md`):** the domain-agnostic base (graphify · caveman · ponytail ·
+superpowers · claude-mem) is already in block 0 of EVERY lane — the scout never re-suggests
+it. Walk each BUILDER lane (skip the integrator + every non-Claude lane): infer its domain
+from name + OWN globs + goal, list that lane's activities, and match each slot against
+already-installed skills → curated DOMAIN list → GitHub search for unfilled slots. For each
+lane with a real slot, add ONE question object (`multiSelect: true`) scoped to THAT lane —
+1–3 domain skills each with a one-line WHY tied to THIS lane ("`playwright` — drives the
+real dashboard + screenshots each view as verify evidence") + ALWAYS a final `None`
+(≤4 options, the tool cap); batch ≤4 lanes per `AskUserQuestion` call. **The recommended
+first option contains ONLY already-installed skills (they bake free); any skill needing
+install is a non-default option requiring an explicit YES, GitHub-searched skills are never
+the default, and NOTHING untrusted is auto-installed.** A lane with no slot gets no
+question. In autonomous mode, skip the call, take installed-only defaults, log to
+`cycle-<N>-questions.md`. Bake each accepted skill into ONLY that lane's block D `<lane
+skills>` slot AFTER a passing `test -f`, and write the per-lane picks to
+`.polylane/lane-skills.json` (Phase 6 reads it). Record per lane in
+`docs/polylane/skills-ledger.md` (`| cycle | lane | skill | why | used by lane? | verdict
+|`). The council later scores each (used/helped/hurt) — unused 2 cycles on the same kind of
+lane → suggest removal; the scout reads the ledger first and never re-suggests removed /
+unused / declined ones. The ponytail/claude-mem install-once offers (whole-run wins) fire
+only the first time they're absent, and a decline is logged so a resumed run won't re-nag.
 
 **Gate 1a — cheap checks BEFORE the wave (skip spend that won't pay):**
 - **Viability pre-gate:** one cheap agent (Haiku/Sonnet, single call) scores the
@@ -264,22 +294,22 @@ report/heartbeat. `likely-done` = commits exist but no done-signal → verify + 
 immediately instead of waiting. `awaiting-approval(CRITICAL)` → relay to the user with
 your recommendation, send the chosen keystroke to that pane, continue.
 
-## Phase 2 — the ~50-bullet report (immediately, in chat)
-As soon as the cycle merges, gather the raw inventory and turn it into ~50 concrete
-bullets of WHAT THIS CYCLE MADE — features, files, fixes, tests, docs, each one
-specific ("added X", "fixed Y", not "improved things"):
+## Phase 2 — build the on-disk digest (the record, not the chat report)
+As soon as the cycle merges, gather the raw inventory and turn it into the durable RECORD —
+but post NOTHING to chat yet. The visible one-paragraph report + `Next:` line is emitted at
+the cycle CLOSE (Phase 5), after the council has decided where to go next, so `Next` is the
+council's real call and not a premature guess.
 ```
 DIGEST="$(dirname "$RUNNER")/polylane-digest.sh"
 "$DIGEST" <this-cycle-baseline>          # commits + diffstat + new files + verify summaries
 ```
-Condense that inventory into ~40–60 bullets, grouped by area, and post them in the
-chat. Also save to `docs/polylane/cycle-<N>-digest.md`. This is a hard
-deliverable every cycle — the user sees exactly what got built.
-
-**Lead with the converting action.** If one action would realize the value of what's
-built (ship it, run the real thing, the one paid run behind an API key), put it at the
-TOP of the digest as "DO THIS TO CONVERT" — not buried under more planning. Prefer
-shipping that action over spending the next cycle on more artifacts.
+Condense the inventory into ~40–60 concrete bullets grouped by area, each specific ("added
+X", "fixed Y", not "improved things"), and save to `docs/polylane/cycle-<N>-digest.md`.
+That file is a hard deliverable every cycle — full detail lives there, on disk. A single
+terse chat ack is fine ("cycle N merged — <k> lanes; digest saved; scoring next"); never
+dump the bullets into chat. If one action would realize the value of what's built (ship it,
+run the real thing, the one paid run behind an API key), note it at the TOP of the digest
+as "DO THIS TO CONVERT" — it becomes the lead of the Phase-5 paragraph.
 
 ## Phase 3 — deep-research the next steps toward the goal
 First load prior `docs/polylane/cycle-*-research.md` and list the ground already
@@ -303,63 +333,155 @@ this cycle tried + learned + decided:
 "$MEM" "$STATE" log <N> decision "<what was chosen>"  "<why>"
 ```
 
-## Phase 4 — critic gate (goal met?) — scored against the tree
-Update the goal tree from this cycle's digest, then score against it — not vibes.
-Mark each sub-goal the cycle satisfied `done` (with evidence), and set each
-criterion's status:
+## Phase 4 — council gate (goal met? where next? shippable?) — scored against the tree
+Update the goal tree from this cycle's digest, then judge with a COUNCIL — not vibes, not a
+single lenient judge (LLMs skew optimistic on "done"). First reconcile the tree with
+evidence:
 ```
 "$MEM" "$STATE" set-status <subgoal-id> done "<evidence: commit / test / file>" <N>
 "$MEM" "$STATE" set-status <criterion-id> done|open
 "$MEM" "$STATE" progress            # X/Y sub-goals · A/B criteria · %
 "$MEM" "$STATE" dump >> docs/polylane/progress.md
 ```
-**Ensemble critic — not a single lenient judge (LLMs skew optimistic on "done").**
-Score the goal with an ODD panel (≥3) of INDEPENDENT critics, each judging "goal
-met?" against the tree's criteria + sub-goals from the digests/evidence, and at
-least ONE adversarial (told to prove it is NOT done — find the criterion with weak
-or missing evidence, the sub-goal marked done without proof). A sub-goal/criterion
-counts as `done` only on the MAJORITY vote; a tie or an unrebutted "not done" keeps
-it open. This runs ONCE per cycle (the panel votes together, not a repeated
-council). **The panel also audits two more things each cycle:**
-- **Drift audit:** did this cycle's output honor `NORTHSTAR.md` + the settled
-  decision records? Name any contradiction — a drift finding becomes a fix item in
-  the next spec, and repeated drift on the same theme means the north-star block in
-  the lane prompts needs strengthening (do it).
-- **Skills-ledger scoring (`docs/polylane/skills-ledger.md`):** for each skill
-  the scout installed, grep the lane logs/verify docs for its trigger/output and mark
-  `used+helped | unused | hurt`. `hurt` → remove now + log the learning; `unused`
-  2 cycles running → the next scout suggests removal.
-Then reconcile the tree from the vote and check termination — no vibes:
-- `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal done, per the panel)
-  → write the final wrap-up (tree dump + all cycle digests + what's left), STOP.
-- Otherwise → continue to Phase 5. (A blocked-and-unblockable sub-goal → mark it
-  `blocked`, surface it, and either stop or route around it.)
 
-## Phase 5 — batch questions + synthesize the next spec (auto-continue)
-From the research suggestions + critic gaps + the tree's next open sub-goal, form
-the next cycle's direction:
-- Ask a batch of questions via AskUserQuestion (multiple rounds of ≤4 if needed —
-  "numerous"). **Every question's FIRST option is the recommended next step**, so a
-  single click (or no answer) advances the loop. **Every question also carries BOTH a
-  "🔍 Go deeper — more questions on this next round" AND a "✨ Surprise me / go bold"
-  option** (same mechanics as discovery — `references/discovery.md`): the first opens a
-  finer round, the second commits to an ambitious next feature you name from the
-  research. Questions steer scope/priority/tradeoffs — they never block the loop.
-- **Bring a creative proposal each cycle, don't just fill gaps.** From the deep-research,
-  surface at least ONE non-obvious "what would make this remarkable" idea (a wildcard
-  feature, a signature-moment upgrade, a bold direction) as a real option — run it
-  through the provocation toolkit (analogy · inversion · forced constraint · extremes ·
-  magic wand), so the loop keeps getting MORE interesting over cycles, not just complete.
-- **Adaptive + convergent follow-ups** (same engine as discovery): chase the biggest
-  unknown, branch on the last answer, reflect back the plan periodically, and STOP
-  asking once answers stop changing the next spec — don't loop questions for their own
-  sake.
-- Synthesize the chosen (or recommended) answers + top research suggestions +
-  `"$MEM" "$STATE" next` into the next cycle's numbered INTEGRATION SPEC (each item
-  one line + a testable outcome), exactly as `references/planning.md` produces. Skip
-  any approach `attempted` already flagged as failed.
-- Record the decision in the blackboard (`log <N> decision ...`), set the new
-  baseline (`git rev-parse HEAD`), increment N, and GOTO Phase 1.
+**The council — an ODD panel of 5 INDEPENDENT members, distinct lenses, run ONCE.** Not a
+done/not-done vote — it decides WHERE the loop works next so the WHOLE vision lands, and
+stops only when the vision is truly whole + shippable. Fan the 5 out in parallel (they must
+NOT see each other's answers). Each reads the same packet — tree `dump` + all cycle digests
++ `NORTHSTAR.md` (or `ULTIMATE_GOAL.md` if absent) + this cycle's evidence + any
+high-original-weight sub-goal open ≥3 cycles (the STARVATION guard — force it into the
+packet so weight-inflation can't bury it) — and returns TWO things:
+- a **COMPLETE vote**: is the FULL vision truly done? `yes|no` + the single weakest/missing
+  piece if `no`.
+- a **NEXT-FOCUS proposal**: the one thing most worth building next toward the WHOLE vision,
+  from that lens, mapped to an existing sub-goal id OR `NEW: <text> under <milestone-id>`.
+
+The 5 lenses (each answers ONLY from its lens, no consensus-seeking):
+1. **USER-VALUE** — the single next focus that most helps a REAL user; the thing they'd hit
+   first that isn't there yet.
+2. **COMPLETENESS** — against `NORTHSTAR.md` + every criterion, the biggest MISSING piece.
+3. **QUALITY/RISK** — what shipped this cycle is fragile/unverified/unsafe; the focus that
+   most cuts the risk of the whole thing breaking.
+4. **EFFORT/ROI** — the CHEAPEST high-impact next step (informs the debate, never decides).
+5. **ADVERSARY** (mandatory) — told to PROVE the vision is NOT done: the criterion with
+   weak/missing evidence, the sub-goal marked done without proof, the north-star element
+   never actually delivered. Its NEXT-FOCUS is the gap it judges most damning.
+
+Log every member's vote + proposal:
+```
+"$MEM" "$STATE" log <N> decision "council/<lens>: complete=<yes|no> focus=<subgoal-id|NEW:...>" "<one-line why>"
+```
+
+**Synthesis (a) — Terminate?** STOP only when ALL THREE pass (each patches the others' blind
+spot):
+- a MAJORITY (≥3 of 5) votes `complete=yes`, AND
+- `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal `done`), AND
+- the **mechanical shippability gate** passes: from a FRESH checkout/clone, `install →
+  build → boot/smoke-run` all green (the integrator's per-cycle verify is incremental — this
+  is a from-zero certification), and every `NEEDS FROM YOU` in `STRATEGY.md` is resolved or
+  explicitly acknowledged. An LLM council can vote "complete" on code that doesn't compile;
+  only this gate catches that.
+Reconcile disagreement rather than trusting one signal:
+- `met`=0 but council majority says NOT complete → the tree is under-specified: turn each
+  dissenter's missing piece into a NEW sub-goal/criterion (`add-subgoal`/`add-criterion`) so
+  the tree reflects reality, then continue. **Scope-creep filter:** only add a criterion for
+  a genuine `NORTHSTAR.md` element — never gold-plating/polish, or the tree grows faster than
+  it closes and `met` never converges.
+- Council majority says complete but `met`≠0 → the tree is authoritative; do NOT stop.
+- Shippability gate fails → create a sub-goal for the failure, `set-weight <id> top`,
+  continue (this becomes next cycle's focus).
+- All three pass → write the final **runbook wrap-up** (how to run/deploy, env/secrets
+  needed, the one converting action, tree `dump` + all digests + an honest what's-left),
+  STOP.
+
+**Synthesis (b) — pick WHERE to work next (the council's real job, only if not stopping).**
+Tally the 5 NEXT-FOCUS proposals; group ones pointing at the same focus. **Always ground the
+tally in the tree, not raw LLM count:** first restrict to proposals that advance an OPEN
+criterion or OPEN sub-goal; a proposal advancing nothing open is dropped. **Anti-thrash
+completion bias:** if a focus with committed-but-incomplete work is still open, keep working
+it — do NOT switch off it unless it's `blocked` or a strictly higher-severity gap emerged.
+The most-backed surviving focus wins. **TIE → break toward the HIGHEST-VISION-ADVANCING
+option**, in strict order: (1) closes an OPEN success criterion, (2) delivers an undelivered
+`NORTHSTAR.md` element, (3) the COMPLETENESS pick, (4) the ADVERSARY pick. NEVER break toward
+the cheapest.
+
+Make the winner the loop's next target:
+```
+# winner = an existing OPEN sub-goal:
+"$MEM" "$STATE" set-weight <subgoal-id> top
+# winner = NEW (create under the closest milestone, then elevate):
+"$MEM" "$STATE" add-subgoal <milestone-id> <new-id> "<focus>" 1
+"$MEM" "$STATE" set-weight <new-id> top
+"$MEM" "$STATE" log <N> decision "council focus → <id>: <focus>" "<why it most advances the vision now>"
+```
+**Dead-end guard:** if `met`≠0 but `"$MEM" "$STATE" next` prints nothing (a criterion is
+open with no sub-goal mapping to it), you MUST `add-subgoal` + `set-weight top` a sub-goal
+that closes each still-open criterion — otherwise Phase 1 has no build target while `met`
+refuses to terminate.
+
+**The council also audits two things each cycle:**
+- **Drift audit:** did output honor `NORTHSTAR.md` + settled decisions? A contradiction
+  becomes a fix item in the next spec; repeated drift on a theme → strengthen the north-star
+  block in the lane prompts (do it).
+- **Skills-ledger scoring (per lane, `docs/polylane/skills-ledger.md`):** for each skill the
+  scout installed, grep THAT lane's logs/verify docs for its trigger/output and mark
+  `used+helped | unused | hurt`. `hurt` → remove now + log the learning; `unused` 2 cycles on
+  the same kind of lane → next scout suggests removal.
+
+A blocked-and-unblockable winning focus → `set-status <id> blocked`, surface it, and re-run
+(b) on the remaining proposals to route around it. If EVERY proposal is blocked, surface why
+and stop.
+
+## Phase 5 — close the cycle: report + Next, then emergent questions → next spec (auto-continue)
+The council (Phase 4) has already elected the focus and given it top weight, so
+`"$MEM" "$STATE" next` now returns the council's decision. Close the cycle in this order —
+report first (matches the user's "report, then what's next, then questions"):
+
+**1. Emit the ONE visible report (chat).** Exactly this shape, nothing else — the paragraph
+comes from the on-disk digest (Phase 2), the `Next` line from the council-elected focus:
+```
+<one short paragraph, 2–4 sentences, plain prose, no bullets: what THIS cycle actually
+built — the concrete features/systems the user can now touch — leading with the converting
+action if one is in reach, ending with: Full digest: docs/polylane/cycle-<N>-digest.md>
+
+Next: <what the loop builds next = the council-elected focus> — <why it's the highest-leverage move now, tied to the goal/tree>.
+```
+Name real things ("email+password auth", "the /dashboard route"), never categories. This
+paragraph + `Next` line IS the cycle's visible report; the ~40–60 bullets stay on disk.
+(Skill-scout and the emergent questions below are separate interactive surfaces — this
+"nothing else" rule scopes the REPORT, not the whole cycle.)
+
+**2. Harvest the OPEN decisions this cycle surfaced** (the questions are DISTILLED from what
+was just built, not a fixed script). Read, in order:
+- this cycle's digest + the diff/new files — shipped work makes new choices decidable;
+- each lane's `## DEFERRED` section in `docs/verify-<lane>.md` (guaranteed by block J) +
+  grep the reflections/verify docs for `TODO|for now|left as|stub|hardcoded|assume`;
+- Phase-4 council/adversary gaps + drift findings; Phase-3 research; and
+  `"$MEM" "$STATE" next` — the council's chosen focus.
+Distill into a SHORT list of REAL forks, each phrased "this cycle did X, so Y is now open."
+DROP anything the build did not actually make live — no generic backlog items.
+
+**3. Ask the emergent questions** (ranked by the council's focus first). `AskUserQuestion`,
+≤4 per round, extra rounds only while answers keep changing the spec. Every question:
+- NAMES the thing this cycle built that raised it ("You shipped device-only storage this
+  cycle …") — so it visibly EMERGED from the work;
+- FIRST option = the recommended next step, `(Recommended)` → one click or no answer advances;
+- carries a "🔍 Go deeper — more questions on this next round" option AND a "✨ Surprise me /
+  go bold" option (same engine as `references/discovery.md`);
+- steers scope/priority/tradeoffs, NEVER the top focus (the council owns that) — never blocks.
+In autonomous mode, skip the call, take recommended defaults, log to `cycle-<N>-questions.md`.
+
+**4. One emergent creative fork per cycle.** From what JUST shipped + the deep-research,
+surface ≥1 non-obvious "what would make THIS remarkable now" option the new surface makes
+newly possible — run through the provocation toolkit (analogy · inversion · forced
+constraint · extremes · magic wand). It rides as a real option in the batch.
+
+**5. Synthesize + close the loop.** Fold the chosen (or recommended) answers + top research
+suggestions + `"$MEM" "$STATE" next` (the council-elected focus — it LEADS the spec as item
+1) into the next cycle's numbered INTEGRATION SPEC (each item one line + a testable outcome),
+exactly as `references/planning.md` produces. Skip any approach `"$MEM" "$STATE" attempted`
+already flagged failed. Then record the decision (`"$MEM" "$STATE" log <N> decision "<what>"
+"<why>"`), set the new baseline (`git rev-parse HEAD`), increment N, and GOTO Phase 1.
 
 ## North-star docs — write after every BIG decision, keep them in mind
 The blackboard `log` is a terse machine index; north-star docs are the readable

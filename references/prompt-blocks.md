@@ -12,7 +12,7 @@ Before anything else, in order:
 4. /goal <one-line lock of THIS lane's goal>   # Anthropic built-in: set the objective, keep working until it's met; do not re-scope. (The GOAL block below documents the same lock in-prompt.)
 5. superpowers:using-superpowers               # then this lane's specific superpowers (block D)
 ```
-Steps 1, 2, 4, 5 are the non-negotiable core (graphify + caveman + superpowers skills; /goal built-in). **Step 3 `/ponytail full` is included ONLY when the ponytail plugin is installed** (check `ls ~/.claude/skills/ | grep ponytail` or the plugins cache during recon) — it enforces "build the minimum that meets the goal, the best code is the code you never wrote" (~54% less code, ~20% cheaper on real sessions), which is squarely polylane's token mission; omit the line cleanly if absent (skill-scout recommends installing it — see `skill-scout.md`). The caveman LEVEL in step 2 follows the round's intensity — write `(ultra)` when the round is `economy`, `(full)` otherwise (per `model-selection.md`); the step itself is never dropped or reordered. Ponytail level tracks the same: `ultra` under `economy`, `full` otherwise. Fallbacks only if a project genuinely lacks one: caveman → the terse instruction in block C; graphify → the Explore-agent fallback in block E. Never omit the intent.
+Steps 1, 2, 4, 5 are the non-negotiable core (graphify + caveman + superpowers skills; /goal built-in). **Step 3 `/ponytail full` is included ONLY when the ponytail plugin is installed** (check `ls ~/.claude/skills/ | grep ponytail` or the plugins cache during recon) — it enforces "build the minimum that meets the goal, the best code is the code you never wrote" (~54% less code, ~20% cheaper on real sessions), which is squarely polylane's token mission; omit the line cleanly if absent (skill-scout recommends installing it — see `skill-scout.md`). The caveman LEVEL in step 2 follows the round's intensity — write `(ultra)` when the round is `economy`, `(full)` otherwise (per `model-selection.md`); the step itself is never dropped or reordered. Ponytail level tracks the same: `ultra` under `economy`, `full` otherwise. Fallbacks only if a project genuinely lacks one: caveman → the terse instruction in block C; graphify → the Explore-agent fallback in block E. Never omit the intent. This block is the DOMAIN-AGNOSTIC base for EVERY lane; the per-lane skill scout (references/skill-scout.md) never re-suggests these — it layers only DOMAIN skills into block D on top.
 
 ## A. Identity + context
 ```
@@ -33,7 +33,10 @@ Keep output terse (caveman-style: drop articles/filler/hedging, fragments OK). W
 ```
 Invoke: superpowers:using-superpowers, then <lane skills>. Your goal is LOCKED (below) — do NOT open superpowers:brainstorming; go straight to writing-plans/execution.
 ```
-Lane-skill map: debugging/fix → `systematic-debugging` + `verification-before-completion`; build → `writing-plans` + `test-driven-development` + `verification-before-completion`; UI → design skills + `/design-critique`; anything → `verification-before-completion`.
+`<lane skills>` is filled in TWO layers, in order:
+1. **Static type-baseline** (always, per lane TYPE): debugging/fix → `systematic-debugging` + `verification-before-completion`; build → `writing-plans` + `test-driven-development` + `verification-before-completion`; UI → `design:design-critique`; anything → `verification-before-completion`.
+2. **Scouted DOMAIN skills** (this cycle's per-lane scout — `references/skill-scout.md`): read `.polylane/lane-skills.json` and append the skills listed under THIS lane's name. If the lane is absent or chose `None`, append nothing — layer 1 stands alone. Only append a skill whose `SKILL.md` exists (the scout bakes only after a passing `test -f`). Non-Claude lanes: drop block D entirely.
+The global base (graphify · caveman · ponytail · superpowers · claude-mem) lives in block 0, NOT here — never duplicate it into `<lane skills>`.
 
 ## E. Graphify-first (navigation) — MANDATORY, blocking Step 1 when graphify-out/ exists
 ```
@@ -73,6 +76,7 @@ Commit often. Stage ONLY your paths (git add <your files>) — NEVER git add -A 
 ```
 DONE = all true: <per-lane observable criteria> + docs/verify-<lane>.md has proof + docs/status-<lane>.md written with first line `STATUS: <lane> DONE` + no new errors. Drive with the skills; no generic output.
 ```
+Also write a `## DEFERRED` section at the END of docs/verify-<lane>.md: every fork/decision this lane PUNTED, each as `DEFERRED: <what> — <options left open>` (or `DEFERRED: none`). Phase 5's emergent-question harvest greps these — a missing section is a defect; an empty one is fine.
 
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
