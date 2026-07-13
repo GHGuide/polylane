@@ -48,6 +48,32 @@ assert_eq   "weight-top-elevates" "sa  A" "$("$MEM" "$W" next)"
 assert_eq   "weight-numeric-set" "sa  A" "$("$MEM" "$W" next)"
 assert_fail "weight-bad-id-fails" "$MEM" "$W" set-weight NOPE top
 
+# --- verify-FIRST acceptance checks (frozen executable graders) -------------
+A="$TEST_TMPDIR/accept.json"
+"$MEM" "$A" init "g" >/dev/null
+"$MEM" "$A" add-criterion c1 "x" >/dev/null
+"$MEM" "$A" add-milestone m1 M >/dev/null
+"$MEM" "$A" add-subgoal m1 s1 "A" >/dev/null
+"$MEM" "$A" add-subgoal m1 s2 "B" >/dev/null
+assert_ok   "accept-add"            "$MEM" "$A" add-accept s2 "exit 1"
+# a done sub-goal cannot receive a NEW (weaker) grader after the fact
+"$MEM" "$A" set-status s1 done >/dev/null
+assert_fail "accept-refused-when-done" "$MEM" "$A" add-accept s1 "true"
+# a registered-but-failing check blocks met even with every status=done
+"$MEM" "$A" set-status s2 done >/dev/null
+"$MEM" "$A" set-status c1 done >/dev/null
+assert_fail "accept-check-fails"    "$MEM" "$A" check-accept
+assert_fail "met-blocked-by-accept" "$MEM" "$A" met
+assert_contains "unmet-lists-failing" "s2: exit 1" "$("$MEM" "$A" unmet-accept)"
+# flip the grader to pass -> check + met both clear
+B="$TEST_TMPDIR/accept-ok.json"
+"$MEM" "$B" init g >/dev/null; "$MEM" "$B" add-criterion c1 x >/dev/null
+"$MEM" "$B" add-milestone m1 M >/dev/null; "$MEM" "$B" add-subgoal m1 s1 A >/dev/null
+"$MEM" "$B" add-accept s1 "true" >/dev/null
+"$MEM" "$B" set-status s1 done >/dev/null; "$MEM" "$B" set-status c1 done >/dev/null
+assert_ok   "accept-check-passes"   "$MEM" "$B" check-accept
+assert_ok   "met-when-accept-pass"  "$MEM" "$B" met
+
 # unknown command exits 2
 assert_rc   "unknown-cmd-rc2" 2 "$MEM" "$S" bogus
 

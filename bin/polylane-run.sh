@@ -237,6 +237,11 @@ die() { echo "polylane-run: $*" >&2; exit 2; }
 
 load_manifest() {
   BASE=$(jq -r '.base' "$MANIFEST")
+  # per-run nonce: markers are trusted ONLY when their run= tag equals THIS run's
+  # nonce, so a leftover DONE/verdict from any earlier run reads as not-done/UNKNOWN
+  # (an allowlist, vs the enumerate-every-path blocklist in clear_stale_markers).
+  # Absent -> "" -> legacy exact-match behavior (fully backward-compatible).
+  RUN_ID=$(jq -r '.run_id // ""' "$MANIFEST")
   # which agent CLI each pane launches — claude (default), codex/gpt, aider, or a
   # custom POLYLANE_AGENT_CMD template. Env POLYLANE_AGENT overrides the manifest.
   AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
@@ -625,7 +630,11 @@ lane_done() {
   local wt="$1" name="$2" f="$1/docs/status-$2.md" first
   [ -f "$f" ] || return 1
   IFS= read -r first < "$f" || return 1
-  [ "$first" = "STATUS: $name DONE" ]
+  if [ -n "${RUN_ID:-}" ]; then
+    [ "$first" = "STATUS: $name DONE run=$RUN_ID" ]   # nonce mode: only THIS run's marker
+  else
+    [ "$first" = "STATUS: $name DONE" ]               # legacy: unchanged frozen contract
+  fi
 }
 
 # --- health-check + auto-retry (transient API/network errors) ----------------
@@ -1149,8 +1158,18 @@ parse_verdict() {
   # FAIL-SAFE: if ANY sentinel line says NO-GO, the verdict is NO-GO regardless of
   # order (a GO written after a NO-GO must never override it). Only an all-GO set of
   # sentinels is a GO.
-  local sentinels
-  sentinels=$(grep -E '^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)[[:space:]]*$' "$f")
+  # a mechanical seam dangler (polylane-seams.sh appended it to the evidence) is an
+  # auto-NO-GO regardless of what the LLM wrote — non-wiring the prose verdict missed.
+  if grep -q '^SEAM-DANGLING:' "$f" 2>/dev/null; then echo "NO-GO"; return; fi
+  local sentinels pat
+  # nonce mode: only a sentinel tagged run=THIS-RUN counts (a committed stale GO from
+  # an earlier run reads as UNKNOWN). Absent RUN_ID -> legacy exact-match (backward-compat).
+  if [ -n "${RUN_ID:-}" ]; then
+    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)[[:space:]]+run='"$RUN_ID"'[[:space:]]*$'
+  else
+    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)[[:space:]]*$'
+  fi
+  sentinels=$(grep -E "$pat" "$f")
   if [ -n "$sentinels" ]; then
     printf '%s' "$sentinels" | grep -q 'NO-GO' && { echo "NO-GO"; return; }
     echo "GO"; return

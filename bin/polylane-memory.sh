@@ -25,7 +25,11 @@
 #   next                            print the highest-weight OPEN sub-goal ("<id>  <text>") or nothing
 #   attempted <text>                exit 0 iff this approach is already in the log as an attempt
 #   progress                        "subgoals: X/Y done · criteria: A/B done · N% "
-#   met                             exit 0 iff every sub-goal AND criterion is done (goal reached)
+#   met                             exit 0 iff every sub-goal AND criterion done AND every acceptance check passing
+#   add-accept   <sid> <cmd>       register a FROZEN acceptance command for sub-goal <sid>
+#                                    (refused once <sid> is done — author it BEFORE the build)
+#   check-accept                    run every registered command; stamp each pass|fail into state
+#   unmet-accept                    list every acceptance check not currently "pass"
 #   dump                            human-readable state summary (for the digest / critic)
 #
 # bash-3.2 safe; all mutation via jq.
@@ -59,6 +63,17 @@ _need() {
   # a truncated/corrupt state file otherwise leaks a raw jq parse error mid-command;
   # catch it once, up front, with an actionable message.
   jq -e . "$F" >/dev/null 2>&1 || { echo "polylane-memory: state at $F is not valid JSON (corrupt/truncated) — restore from git or re-init" >&2; exit 1; }
+}
+
+# _accept_run CMD : run CMD (bash -c) in the CURRENT dir with a wall-clock cap.
+# Uses timeout/gtimeout when present; otherwise runs uncapped (never wedges the
+# verb — a hung check is the check author's bug, surfaced by the orchestrator).
+_accept_run() {
+  local cmd="$1" to="${POLYLANE_ACCEPT_TIMEOUT:-60}" t=""
+  command -v timeout  >/dev/null 2>&1 && t=timeout
+  [ -z "$t" ] && command -v gtimeout >/dev/null 2>&1 && t=gtimeout
+  if [ -n "$t" ]; then "$t" "$to" bash -c "$cmd" >/dev/null 2>&1
+  else bash -c "$cmd" >/dev/null 2>&1; fi
 }
 
 case "$CMD" in
@@ -148,11 +163,50 @@ case "$CMD" in
 
   met)
     _need
-    # goal reached iff there is at least one criterion AND every criterion + sub-goal is done
+    # goal reached iff >=1 criterion AND every criterion + sub-goal done AND every
+    # pre-registered acceptance check passing (absent .accept -> vacuously satisfied).
     jq -e '
       (([.criteria[]]|length) > 0)
       and (all(.criteria[]; .status=="done"))
-      and (all(.milestones[].subgoals[]; .status=="done"))' "$F" >/dev/null
+      and (all(.milestones[].subgoals[]; .status=="done"))
+      and (all((.accept // [])[]; .status=="pass"))' "$F" >/dev/null
+    ;;
+
+  add-accept)
+    _need
+    jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id)' "$F" >/dev/null \
+      || { echo "polylane-memory: no sub-goal with id '$1'" >&2; exit 1; }
+    # FROZEN-BEFORE-BUILD: the grader must be registered while the sub-goal is still
+    # open, so the builder cannot author its own weaker success bar after the fact.
+    jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id and .status=="done")' "$F" >/dev/null \
+      && { echo "polylane-memory: sub-goal '$1' already done — acceptance must be registered BEFORE the build" >&2; exit 1; }
+    _save --arg sid "$1" --arg cmd "${2:?usage: add-accept <sid> <cmd>}" \
+      '.accept = ((.accept // []) + [{sid:$sid, cmd:$cmd, status:"unchecked"}])'
+    ;;
+
+  check-accept)
+    _need
+    # execute every registered command in the CURRENT dir (orchestrator cd's to the
+    # repo root first), collect a status per index, stamp them back in one write.
+    _n=$(jq '.accept // [] | length' "$F")
+    [ "$_n" = "0" ] && { echo "check-accept: no acceptance checks registered"; exit 0; }
+    _js="["; _i=0
+    while [ "$_i" -lt "$_n" ]; do
+      _cmd=$(jq -r ".accept[$_i].cmd" "$F")
+      if _accept_run "$_cmd"; then _st="pass"; else _st="fail"; fi
+      [ "$_i" -gt 0 ] && _js="$_js,"
+      _js="$_js\"$_st\""
+      _i=$((_i + 1))
+    done
+    _js="$_js]"
+    _save --argjson st "$_js" '.accept |= [ range(0; length) as $i | .[$i] + {status: ($st[$i])} ]'
+    # exit 0 iff EVERY check passed (usable as a gate on its own)
+    jq -e 'all((.accept // [])[]; .status=="pass")' "$F" >/dev/null
+    ;;
+
+  unmet-accept)
+    _need
+    jq -r '(.accept // []) | map(select(.status!="pass")) | .[] | "\(.sid): \(.cmd) [\(.status)]"' "$F"
     ;;
 
   brief)
@@ -212,7 +266,7 @@ case "$CMD" in
 
   *)
     echo "polylane-memory: unknown command '$CMD'" >&2
-    echo "  commands: init add-criterion add-milestone add-subgoal set-status set-weight log next attempted progress met brief resume dump" >&2
+    echo "  commands: init add-criterion add-milestone add-subgoal set-status set-weight log next attempted progress met add-accept check-accept unmet-accept brief resume dump" >&2
     exit 2
     ;;
 esac

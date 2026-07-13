@@ -39,4 +39,19 @@ assert_eq "verdict-sentinel-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/sentine
 printf '   POLYLANE-VERDICT: GO   \n' > "$TEST_TMPDIR/ws.md"
 assert_eq "verdict-whitespace-ok" "GO" "$(parse_verdict "$TEST_TMPDIR/ws.md")"
 
+# nonce: a committed stale `GO run=OLD` under a NEW run must never read as GO
+RUN_ID="55-3"
+printf 'POLYLANE-VERDICT: GO run=55-3\n'  > "$TEST_TMPDIR/nonce-go.md"
+assert_eq "verdict-nonce-match"  "GO"      "$(parse_verdict "$TEST_TMPDIR/nonce-go.md")"
+printf 'POLYLANE-VERDICT: GO run=00-0\n'  > "$TEST_TMPDIR/nonce-stale.md"
+assert_eq "verdict-nonce-stale"  "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/nonce-stale.md")"
+printf 'POLYLANE-VERDICT: GO\n'           > "$TEST_TMPDIR/nonce-bare.md"
+assert_eq "verdict-nonceless-unknown" "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/nonce-bare.md")"
+printf 'POLYLANE-VERDICT: NO-GO run=55-3\nPOLYLANE-VERDICT: GO run=55-3\n' > "$TEST_TMPDIR/nonce-nogo.md"
+assert_eq "verdict-nonce-nogo-wins" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/nonce-nogo.md")"
+# seam dangler is an auto-NO-GO even with a valid GO sentinel
+printf 'POLYLANE-VERDICT: GO run=55-3\nSEAM-DANGLING: dom-id export-btn\n' > "$TEST_TMPDIR/nonce-seam.md"
+assert_eq "verdict-seam-auto-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/nonce-seam.md")"
+unset RUN_ID   # legacy assertions above still hold
+
 finish

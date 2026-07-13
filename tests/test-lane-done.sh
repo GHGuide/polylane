@@ -28,4 +28,15 @@ assert_fail "done-trailing-text" lane_done "$TEST_TMPDIR" alpha
 printf 'STATUS: alpha DONE' > "$TEST_TMPDIR/docs/status-alpha.md"
 assert_fail "done-no-trailing-newline-not-done" lane_done "$TEST_TMPDIR" alpha
 
+# --- per-run nonce (allowlist trust) ---------------------------------------
+RUN_ID="99-7"
+printf 'STATUS: alpha DONE run=99-7\n' > "$TEST_TMPDIR/docs/status-alpha.md"
+assert_ok   "done-nonce-match"      lane_done "$TEST_TMPDIR" alpha
+printf 'STATUS: alpha DONE run=11-2\n' > "$TEST_TMPDIR/docs/status-alpha.md"
+assert_fail "done-nonce-stale"      lane_done "$TEST_TMPDIR" alpha
+printf 'STATUS: alpha DONE\n' > "$TEST_TMPDIR/docs/status-alpha.md"
+assert_fail "done-nonceless-in-nonce-mode" lane_done "$TEST_TMPDIR" alpha
+unset RUN_ID   # legacy path still exact-matches (guards backward compat)
+assert_ok   "done-legacy-when-no-nonce" lane_done "$TEST_TMPDIR" alpha
+
 finish
