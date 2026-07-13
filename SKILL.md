@@ -49,6 +49,28 @@ forward; your answers only steer.
   dead/compacted conversation is not a lost run. See "Resume" below — on entry, if a
   `max-state.json` already exists, offer to continue from it instead of re-interviewing.
 
+## Claude memory — recall + persist learnings ACROSS runs (do at entry + after decisions)
+`max-state.json` is per-run; Claude Code's memory persists across every run and
+project. `bin/polylane-claudemem.sh` bridges them so polylane gets smarter each run.
+Resolve the dir once (project auto-memory, else global):
+```
+CLM="$(dirname "$MEM")/polylane-claudemem.sh"
+MEMDIR="${CLAUDE_MEMORY_DIR:-$HOME/.claude/projects/$(pwd | sed 's#/#-#g')/memory}"
+```
+- **On entry (before discovery), RECALL:** `"$CLM" "$MEMDIR" relevant "<project name + goal + stack>"`
+  and read what comes back — a past run may already know this project's real build/test
+  command, a carving rule that bit, a recurring gotcha. Fold it into the strategy so you
+  don't relearn it the hard way.
+- **Inject into EVERY lane prompt:** put the matching facts in a short "Known project
+  facts (from prior runs)" block in each generated lane prompt — so all builders start
+  with the hard-won knowledge, not just the orchestrator.
+- **After a big decision, a NO-GO, or run end, PERSIST** the DURABLE, cross-run-useful,
+  non-secret learnings (not run-specific noise):
+  `"$CLM" "$MEMDIR" add <slug> "<one-line>" "<body>" <project|reference|feedback>`
+  e.g. the project's real test invocation, a lane-carving rule that caused a NO-GO, a
+  constraint discovered mid-build. The helper refuses anything that looks like a secret.
+  Keep it to 1–3 facts per cycle — memory is signal, not a log.
+
 ## Resume — continue a loop from disk (FIRST thing on entry)
 Before Phase 00, check for an existing run:
 ```
