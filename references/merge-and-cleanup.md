@@ -13,7 +13,7 @@ bin/polylane-run.sh <manifest> [--dry-run] [--yes]
 - `<manifest>` — the run manifest polylane wrote when it generated the lanes. It declares the integration branch, and each lane's worktree path + branch name. The runner reads it; you don't hand-list worktrees.
 - `--dry-run` — print exactly what would be verified and removed, then stop. Deletes nothing. Run this first when unsure.
 - `--yes` — skip the interactive confirmation (for non-interactive / CI use). Without it, the runner asks once (see step 3).
-- The runner also takes `--intensity` / `--model` launch-time model overrides — documented in `polylane-run/SKILL.md`; they don't change cleanup behavior.
+- The runner also takes `--intensity` / `--model` launch-time model overrides — documented in the runner `--help` / `.polylane/SCHEMA.md`; they don't change cleanup behavior.
 
 Environment variables the runner honors:
 

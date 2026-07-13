@@ -1,97 +1,379 @@
 ---
 name: polylane
-description: Use when the user describes several goals in plain lines and wants them built by parallel Claude Code terminals — polylane interviews until the spec is locked, derives the OPTIMAL number of file-isolated lanes from real file-overlap, tunes model + effort per lane (Fable/Opus/Sonnet/Haiku) for token efficiency, bakes graphify + caveman + superpowers into every generated prompt, recommends task-specific skills, and auto-merges + cleans up at the end. Triggers on "/polylane", "/lanes", "split this into prompts", "parallel terminals", "make lane prompts", "orchestrate builders".
+description: Use when the user gives a goal — or even just a VAGUE one-line app/product idea — and wants it strategized and BUILT for them by parallel Claude Code (or GPT/aider) terminals, autonomously. polylane opens with a product-discovery interview (numerous easy recommended-default questions + research) that turns a fuzzy idea into a locked strategy + goal tree, then loops: derive file-isolated lanes → build them in parallel → merge on GO → ~50-bullet report → deep-research → critic → questions → continue, until a critic judges the goal met or the user stops. Triggers on "/polylane", "/lanes", "polylane", "build my app idea", "I have an idea build it all", "strategize and build", "split this into prompts", "parallel terminals", "drive to the goal", "keep building toward", "autonomous build loop", "turn my idea into an app", "run the lanes", "plan and run".
 ---
 
-# /lanes — parallel-lane prompt orchestrator
+# /polylane — autonomous product build loop
 
-Turn a plain-line description into N paste-ready builder prompts for parallel Claude CLI terminals, with file isolation, forced verification, and per-lane model/effort tuned for token efficiency.
+**One command. Describe what you want; polylane strategizes it, derives the optimal
+parallel lanes, builds them, merges, reports, researches, and keeps going** — cycle
+after cycle toward a single ULTIMATE GOAL, until a critic judges it reached or you stop.
 
-**You are the orchestrator. You NEVER implement. Output = prompts + recommendations. Hard rule: no prompt generation until the user explicitly approves the spec (Phase 2) and the plan (Phase 5).**
+Each cycle **builds** (the parallel-lane pipeline in `references/planning.md`: recon →
+derive file-isolated lanes → generate prompts → run in tmux → merge on GO) then
+**reflects**: ~50-bullet report → deep-research → critic → questions → next spec.
 
-## Phases (in order, no skipping)
+**Each cycle:** build → merge → **~50-bullet report of what it made**
+→ **deep-research the next steps toward the goal** → **critic scores progress** →
+**batch of recommended-default questions** → synthesize the next cycle's spec →
+build again. It does not stop for you between cycles — recommended defaults carry it
+forward; your answers only steer.
 
-### 1. Interview → integration spec
-Read `references/interview.md`. Converse until you can present a complete numbered **INTEGRATION SPEC** — every feature/change the user expects, each one line with a testable outcome. Use batched AskUserQuestion (2-4 questions per round, options pre-recommended) so the user only clicks. Re-present the updated spec after every round. In an early round also ask the ONE intensity question (`economy | balanced | performance | max | custom`, `balanced` recommended) and the optional "which models do you have" step — default probe = assume the `model-selection.md` trio available. These set the global `intensity` + `available_models` consumed in Phase 4.
+## Locked behaviors (this mode's contract)
+- **Termination:** loop until the critic judges the ULTIMATE GOAL met (or blocked),
+  or the user says stop. No fixed cycle count.
+- **Questions:** every question ships a pre-picked recommended answer. Ask, but if
+  the user doesn't weigh in, take the recommended path and start the next cycle —
+  it "pops questions AND keeps working."
+- **Research depth:** full `deep-research` skill each cycle (favor thoroughness over
+  token thrift) — but scoped to NEW ground: each cycle reads prior
+  `cycle-*-research.md` and never re-runs coverage already done.
+- **Report:** ~50 concrete bullets of what the cycle made, in the chat, immediately
+  after merge — before research.
+- **Thorough, not redundant — gates before spend:** a cheap check always precedes an
+  expensive fan-out. Never launch a full wave a 1-agent gate would reject; never fan
+  out speculative/discovery lanes; never re-cover researched ground; run the critic
+  once per cycle. Spend thoroughness on NEW ground, not repetition.
+- **Action over artifacts:** when a converting action is within reach (one run, one
+  API key, small $), it becomes the cycle's PRIMARY deliverable — surfaced at the top
+  of the report and preferred over another planning cycle. Planning serves the next
+  action, not the archive.
+- **Context-bounded (never blow the window):** the loop's memory lives ON DISK
+  (`max-state.json` + digests + research), NOT in conversation. Start every cycle by
+  reading the compact brief (`polylane-memory.sh <state> brief`, ~a few hundred bytes)
+  + only the files that cycle needs. NEVER rely on remembering earlier cycles from the
+  transcript — re-read the brief/tree/digests. If context is getting long, that is
+  fine: dump anything new to disk and keep going from the brief. This is what lets the
+  loop run many cycles without dying on the context window.
+- **Resumable across conversations:** the state file is the source of truth, so a
+  dead/compacted conversation is not a lost run. See "Resume" below — on entry, if a
+  `max-state.json` already exists, offer to continue from it instead of re-interviewing.
 
-### 2. Spec gate (blocking)
-Present the full spec. Ask: "Is this everything?" Loop on edits. **Only an explicit yes advances.** No file edits, no prompts before this.
+## Resume — continue a loop from disk (FIRST thing on entry)
+Before Phase 00, check for an existing run:
+```
+STATE=docs/polylane/max-state.json
+# legacy runs stored state under docs/polylane-max/ — adopt it if present
+[ ! -f "$STATE" ] && [ -f docs/polylane-max/max-state.json ] && STATE=docs/polylane-max/max-state.json
+test -f "$STATE" && "$MEM" "$STATE" resume
+```
+- **If it prints a RESUME packet:** a prior loop exists. Show its GOAL + CYCLE +
+  progress and ask once (recommended = "yes, continue"): resume, or start fresh?
+  On resume, **skip discovery entirely** — the packet IS the context. Jump straight
+  to the build phase for the next open sub-goal at `CYCLE+1`. This is how a run that
+  died mid-loop (context blown, crash, closed terminal) picks up with zero re-work.
+- **If there is no state file:** brand-new run → start at Phase 00 (Discovery).
+The `resume` packet is self-contained (goal, cycle, every open sub-goal/criterion,
+blocked items, recent decisions, next action) — you need nothing from the old
+transcript to continue correctly.
+- **Budgeted (never unbounded spend):** honor a hard cycle cap and a token budget.
+  `POLYLANE_MAX_CYCLES` (default 8) caps total cycles; `POLYLANE_BUDGET` (optional,
+  tokens or $) caps cumulative cost. Default each cycle's build to the CHEAPEST models
+  that clear the viability gate (`--intensity economy`; only bump a lane when a
+  sub-goal genuinely needs it). Track cumulative cost in `progress.md` from each run's
+  report; if the cap or budget is hit, STOP with the wrap-up instead of another cycle.
 
-### 3. Recon
-First, `git status` + `git worktree list`: inventory ALL uncommitted/untracked work and existing worktrees. Any uncommitted work not owned by a planned lane is an **ORPHAN** — surface it and have the user commit/stash it (or assign it to a lane) BEFORE any worktree/branch op; a checkout can wipe it. Never generate lanes over uncommitted orphan work.
+## Phase 00 — Discovery & Strategy (when the idea is vague — the flagship path)
+If the user handed you a crisp goal + criteria, skip to Phase 0. If they gave a
+BRIEF, fuzzy idea ("an app that helps me X") and want it strategized + built for
+them, run discovery FIRST — follow `references/discovery.md`:
+- **Strategize like a product partner, extract through easy questions.** Batched
+  AskUserQuestion rounds (2–4 at a time, "numerous") across the discovery dimensions —
+  the SPEC set (problem · audience · the one thing · MVP features · platform · look &
+  feel · accounts/data · integrations · business model · constraints · ambition · done)
+  AND the CREATIVE set (north-star/10× · differentiation · signature moment · anti-goals
+  · personality/tone · wildcard feature · constraint-as-fuel). Every option is concrete
+  with a recommended default first — one click answers, no answer takes the default.
+- **Every question carries TWO escape hatches**, always:
+  - **"🔍 Go deeper — ask me more about this next round"** → opens a finer drill-down
+    round on that dimension (unbounded depth).
+  - **"✨ Surprise me / go bold"** → commits to an ambitious, non-obvious choice you
+    name (a wildcard feature, a striking visual direction, a contrarian scope cut).
+  So the user can always go deeper OR bolder on anything; both are opt-in, never forced.
+  When they keep taking deeper/bold options, lean further in — match their appetite.
+- **Adaptive follow-ups, not a fixed checklist.** The dimension list is raw material.
+  After each round, pick follow-ups by the follow-up engine (`references/discovery.md`):
+  chase the biggest UNKNOWN not the next list item; branch on the answer (a "social"
+  pick unlocks different follow-ups than "solo tool"); reflect back every ~3 answers
+  ("so: X for Y who care about Z — right?") to catch drift cheaply; ask WHY on pivotal
+  choices; surface contradictions instead of averaging them; and CONVERGE — stop asking
+  once answers stop changing the strategy. Generate the bold/creative options with the
+  provocation toolkit (analogy transplant · inversion · forced constraint · extremes ·
+  magic wand), never generic "make it pop".
+- **Concept bake-off (do it early — the biggest creativity lever).** Right after the
+  first spec round, use `superpowers:brainstorming` + `deep-research` to generate 2–3
+  genuinely DISTINCT product concepts from the brief (real forks, not tweaks — each
+  named, with a one-line pitch, its signature moment, its trade-off). Present them side
+  by side; the user picks one, merges two, or rejects all (also gold). The winner seeds
+  the strategy; graft the best of the rest. `references/discovery.md` has the full play.
+- **Research the gaps AND surface the non-obvious.** Use `deep-research` to propose the
+  feature set, stack, design references, and competitor norms — and to surface wildcard
+  capabilities the user never mentioned, so they choose from informed + surprising
+  options, not just what they already knew. Name the riskiest assumption.
+- **Sharpen before locking — kill the generic.** Run an adversarial distinctiveness
+  gate (2–3 critics attacking blandness: "where's the WEDGE?", "the signature moment is
+  weak", "what's the boldest buildable version?"). Fold the upgrades in and present the
+  safe vs sharpened strategy as a final choice (recommended = sharpened). This is what
+  makes the output *better*, not just *more* — see `references/discovery.md`.
+- **Flag NEEDS FROM YOU early** — anything the system can't do alone (API key, app-
+  store account, domain, payment processor, a real product call) goes in the strategy
+  so the final GO isn't a surprise.
+- **Lock the PRODUCT STRATEGY** (save `docs/polylane/STRATEGY.md`): one-liner ·
+  problem/audience/the-one-thing · MVP scope (deferred marked) · platform+stack ·
+  look & feel · integrations · business model · NEEDS FROM YOU · success criteria ·
+  riskiest assumption. Confirm once (recommended = "yes, build this"); edits loop.
+- **Write the NORTH-STAR + first decision records.** On lock, write the anchor doc
+  `docs/polylane/NORTHSTAR.md` — a SHORT, punchy statement of the vision, the one
+  thing, the wedge, the signature moment, the personality, and the anti-goals. This is
+  the doc every cycle and every lane re-reads to stay true. Then record each BIG call
+  from discovery as a decision record (see "North-star docs" below): the chosen concept,
+  the stack, any pivotal trade-off or scope cut. These persist and are re-read — the
+  loop never silently contradicts a settled call.
+Then hand the locked strategy to Phase 0 — its success criteria become the tree's
+`criteria` and its MVP scope becomes the milestones → sub-goals.
 
-Next, install the graph query helpers so builders actually use the graph (biggest realized token saving) — follow `references/install-helpers.md`: copy `assets/q.py` → `<project>/graphify-out/q.py` and `assets/graphify-nudge.sh` → `<project>/.claude/hooks/`, add the CLAUDE.md nav rule, and HAND the user `assets/settings-hook-snippet.json` for `.claude/settings.json` (you cannot write settings.json under auto-mode). Skip if no `graphify-out/graph.json` exists.
+## Phase 0 — lock the ultimate goal + build the goal tree (once)
+Capture the ULTIMATE GOAL — from the user's prompt, or synthesized from the Phase 00
+strategy — in one crisp paragraph + 3–5 measurable success criteria. Confirm it once (single AskUserQuestion, recommended
+= "yes, this is the goal"). Persist it, then **decompose it into an HTN goal tree +
+open a shared blackboard** — a structured state file that turns "score progress by
+vibes" into "score against a real tree", and stops the loop from ever repeating a
+failed approach or re-litigating a settled decision:
+**The loop's state lives in `docs/polylane/`, NEVER in `.polylane/`.** `.polylane/`
+is the RUNNER's per-cycle scratch — it is wiped on every cycle's cleanup, so a
+`max-state.json` placed there is destroyed after cycle 1 (found by a real run). Keep
+all cross-cycle memory under `docs/polylane/`, which cleanup preserves.
+```
+mkdir -p docs/polylane
+cat > docs/polylane/ULTIMATE_GOAL.md   # the goal paragraph + success criteria
+MEM="$(dirname "$(command -v polylane-run.sh || echo "$HOME/.claude/skills/polylane/bin/x")")/polylane-memory.sh"
+STATE=docs/polylane/max-state.json     # durable — survives the runner's cleanup
+"$MEM" "$STATE" init "<ultimate goal, one line>"
+# success criteria -> the tree's measures:
+"$MEM" "$STATE" add-criterion c1 "<criterion>" <weight>   # repeat per criterion
+# decompose the goal into milestones -> sub-goals (weight = leverage toward the goal):
+"$MEM" "$STATE" add-milestone m1 "<milestone>"
+"$MEM" "$STATE" add-subgoal   m1 m1.1 "<sub-goal>" <weight>   # repeat
+```
+Record the loop baseline: `git rev-parse HEAD` → this is `cycle-1` baseline. From
+here every phase reads/writes `$STATE` (the blackboard + tree).
 
-Then map spec items → files. If `graphify-out/` exists: run `/graphify-auto`, then query via `python graphify-out/q.py <symbol>` per subsystem — do not grep to discover. Else: one read-only Explore agent. Output: file-set per spec item. Also read the project's CLAUDE.md + any `docs/parallel-status.md` for constraints (shared devices, broken tooling, contracts).
+## Phase 1 — build a cycle (the parallel-lane pipeline, no re-interview after cycle 1)
+**Start every cycle from the compact brief + the north-star + a budget check — not
+from memory:**
+```
+"$MEM" "$STATE" brief                       # goal, progress, NEXT, blocked (a few hundred bytes)
+cat docs/polylane/NORTHSTAR.md          # the anchor — stay true to the vision
+"$DEC" docs/polylane/decisions context  # the settled decisions — never contradict them
+# STOP the loop instead of building another cycle if either cap is hit:
+#   cycle count >= POLYLANE_MAX_CYCLES (default 8), or cumulative cost >= POLYLANE_BUDGET.
+```
+(`DEC="$(dirname "$MEM")/polylane-decision.sh"`.) Read the brief + north-star +
+settled decisions (and only the specific digests/research the cycle needs) — do NOT
+rely on the transcript for earlier cycles. **Inject the north-star one-liner + the
+settled-decisions digest into every lane prompt** (a short "NORTH-STAR — stay true;
+SETTLED — do not contradict" block), so parallel builders never drift from the vision
+or re-open a closed call. Then run the **parallel-lane build pipeline
+(`references/planning.md`)** for THIS cycle's spec — recon → derive the FEWEST
+file-isolated lanes real overlap allows → tune model/effort per lane → generate the
+paste-ready prompts → emit `.polylane/run.json` → launch (below) → merge on GO —
+defaulting to the cheapest models that clear the viability gate (`--intensity
+economy`, bump only a sub-goal that needs it):
+- **Cycle 1:** derive the first concrete spec from the ultimate goal (a short
+  deep-research pass to scope it), present it at the plan gate, then build.
+- **Cycle N>1:** the spec is already synthesized from the prior cycle (Phase 5) —
+  skip the interview, go straight to recon → lanes → plan gate → hands-off run.
 
-### 4. Derive lanes + models + skills
-- Lane count/carving: `references/lane-derivation.md`. N is computed from file-overlap, never assumed. **Also check hidden couplings that share no file** (DOM ids, routes, schemas, config keys) — a UI feature's markup and the JS bound to it are ONE lane by default; splitting them reads as INDEPENDENT in the file matrix but leaves the JS wired to an element that never lands (a real repeat NO-GO). Co-locate the vertical slice, or name the interface in both contracts.
-- **Candidate-plan bake-off (multi-plan selection — a bad carving costs a whole run).** Generate 2–3 CANDIDATE carvings of the same spec (e.g. finer-grained vs coarser; grouped-by-subsystem vs grouped-by-change-type), then score each on: file-isolation cleanliness (zero source overlap = best), parallelism (independent lanes), contract simplicity (fewer frozen APIs between lanes = less coupling), and risk (a lane that could stall/conflict). Pick the highest-scoring plan; note in one line why it beat the runners-up. This is cheap (orchestrator reasoning, no builder spend) and prevents the expensive failure mode of committing to a collision-prone decomposition.
-- Per-lane model + effort: resolve each lane from the chosen `intensity` preset against `available_models` using the rank map in `references/model-selection.md` (Fable 5 / Opus 4.8 / Sonnet 5 / Haiku 4.5, effort level, token-efficiency rules). When a preset's ideal model isn't in `available_models`, degrade gracefully to the best available rank. If `intensity` = `custom`, skip auto-resolution — the user sets model + effort per lane at the Phase 5 gate.
-- Skill recommendations: `references/skill-catalog.md` — check installed skills first, then search the awesome-lists for gaps. Output a **GitHub repo/skill suggestion list** (name, purpose, install command). Recommend only — NEVER install third-party skills without explicit user approval (untrusted skill = prompt-injection surface).
+**Gate 1b — skill scout (EVERY cycle, before launch — `references/skill-scout.md`):**
+Derive the cycle's concrete activities from its lanes, then check: already-installed
+skills → curated known-good list → GitHub search (`gh search repos "claude code
+skill <activity>" --sort stars`) for unmatched gaps only. Propose ≤3 as ONE
+recommended-default AskUserQuestion — each with a one-line WHY tied to THIS cycle
+("`xcode-build` — this cycle installs to a device; removes the #1 lane failure").
+Auto-continue on defaults; if no skill maps to a real gap, say so and skip the
+question. Install accepted skills to `~/.claude/skills/`, bake each trigger into
+ONLY the lane that has the gap, and record in `docs/polylane/skills-ledger.md`.
+The critic later scores each installed skill (used/helped/hurt) — unused 2 cycles →
+suggest removal; the scout reads the ledger first and never re-suggests removed ones.
 
-### 5. Plan gate (blocking)
-Present: lane table (name, model+effort, OWN globs, contracts, goals, **est. cost**), the skill-suggestion list, and the isolation choice. The model+effort column is the value **resolved from the `intensity` preset** in Phase 4 (or the user's picks when `intensity` = `custom`).
+**Gate 1a — cheap checks BEFORE the wave (skip spend that won't pay):**
+- **Viability pre-gate:** one cheap agent (Haiku/Sonnet, single call) scores the
+  synthesized spec against the goal — `advance` or `hold <why>` — from the goal +
+  prior digests + research. `hold` → do NOT launch the wave; return to Phase 5 with
+  the reason and re-synthesize. Turns an "N-lane run the critic later scores 'do not
+  advance'" into one agent's cost.
+- **No discovery/speculative lanes:** every lane maps to concrete files (`own_globs`);
+  exploration stays in single-agent recon, never a parallel lane. Derive the FEWEST
+  lanes real file-overlap allows — never fan out for coverage's sake.
+- **Design-lock:** if the cycle produces UI/mockups, lock the design spec first (one
+  brainstorm → lock), then generate; cap at ≤1 revision — no repeated mockup rounds.
 
-**Cost-estimate row — REQUIRED.** The table MUST include a per-lane cost estimate plus a **TOTAL** row, so the user sees the dollars before approving: tokens-guess × the lane's resolved-model rates from the `references/model-selection.md` price table (that table is canonical for costs), computed per its "Cost-per-lane estimation" formula, and always labelled **rough** (±2× is normal). Never present the plan gate without it. Before approving, the user may override ANY single lane — bump it up or drop it down (model and/or effort), independent of the global preset. Apply the overrides, re-present the table, then take the batched approval. **Default isolation = one git worktree per lane.** On a shared working tree every lane shares ONE git index, so any lane's `git add` + commit sweeps in every other lane's already-staged files — the shared-index race (observed in a prior run: one lane's commit co-committed another lane's staged, unrelated files). A worktree per lane gives each its own index + checkout, so scoped commits stay scoped and branches stay independent. Fall back to a shared tree only if the user explicitly opts out (e.g. worktrees unavailable). One batched AskUserQuestion. Wait for approval.
+Launch through the SUPERVISOR, never the bare runner (real 5,000+-message runs showed
+the dominant failure = the long-lived runner dying mid-run, stranding lanes on
+approvals for hours). The supervisor makes runner death a non-event: it relaunches
+with `--resume` (DONE lanes skipped), drains safe approval prompts itself (so a dead
+runner no longer blocks lanes), parks+notifies critical ones, and writes a heartbeat:
+```
+BIN="$(dirname "$(command -v polylane-run.sh || echo "$HOME/.claude/skills/polylane/bin/x")")"
+POLYLANE_SESSION="polylane-c<N>" "$BIN/polylane-supervisor.sh" .polylane/run.json
+```
+Print the tmux watch commands in chat (`tmux attach -t polylane-c<N>`), then wait
+for the finish notification. **Read run state through the state surface, never by
+hand-capturing panes + git + files** (that reconstruction was ~80% of orchestrator
+turns in real runs):
+```
+"$BIN/polylane-state.sh" .polylane/run.json          # or --json
+```
+One line per lane: `done | likely-done(verify me) | awaiting-approval(CRITICAL) |
+stalled | errored | working | no-pane` + branch HEAD + commits ahead + runner/verdict/
+report/heartbeat. `likely-done` = commits exist but no done-signal → verify + recover
+immediately instead of waiting. `awaiting-approval(CRITICAL)` → relay to the user with
+your recommendation, send the chosen keystroke to that pane, continue.
 
-### 6. Generate prompts + emit run manifest
-**Target agent (Claude by default; GPT/codex/aider supported).** polylane's pipeline is agent-agnostic — the done-signal + verdict are file-based, so any CLI can drive a lane. Set the agent via the manifest `agent` field (`claude` | `codex`/`gpt` | `aider`) or `POLYLANE_AGENT`, or a full `POLYLANE_AGENT_CMD` template with `{model}`/`{prompt}`. **When the agent is NOT claude, the mandatory-4 preamble below does NOT apply** — `/graphify-auto`, the caveman skill, `/goal`, and `superpowers:*` are Claude-Code-only and a GPT/aider CLI would choke on them. For a non-claude agent, generate prompts in **plain instructions**: state the locked goal in prose, "keep output terse", "query the graph via `python graphify-out/q.py <symbol>` instead of grepping", and the same OWN/FORBIDDEN + contract + forced-verify + done-signal blocks (those are all agent-neutral). Use non-claude model ids in the manifest (e.g. `gpt-5-codex`).
+## Phase 2 — the ~50-bullet report (immediately, in chat)
+As soon as the cycle merges, gather the raw inventory and turn it into ~50 concrete
+bullets of WHAT THIS CYCLE MADE — features, files, fixes, tests, docs, each one
+specific ("added X", "fixed Y", not "improved things"):
+```
+DIGEST="$(dirname "$RUNNER")/polylane-digest.sh"
+"$DIGEST" <this-cycle-baseline>          # commits + diffstat + new files + verify summaries
+```
+Condense that inventory into ~40–60 bullets, grouped by area, and post them in the
+chat. Also save to `docs/polylane/cycle-<N>-digest.md`. This is a hard
+deliverable every cycle — the user sees exactly what got built.
 
-Fill `references/lane-template.md` per lane using the blocks in `references/prompt-blocks.md`. **For Claude lanes**, every prompt MUST OPEN with the mandatory-4 preamble (block 0), in order: **1) `/graphify-auto`, 2) caveman skill (full), 3) `/goal <one-line lane goal>` (Anthropic built-in — sets + locks the objective), 4) `superpowers:using-superpowers`** — these four are non-negotiable in every Claude prompt. (The caveman step is fixed; only its LEVEL follows the round's intensity — `ultra` under `economy`, `full` otherwise, per `references/model-selection.md`.) The LOCKED-GOAL block also restates the goal in-prompt (belt-and-suspenders with `/goal`). Then include: OWN/FORBIDDEN + contracts, the graphify-first query block (E), the lane's specific superpowers (D), forced-verify evidence file, coordination/status block, scoped git, LOCKED goal, done-checklist.
+**Lead with the converting action.** If one action would realize the value of what's
+built (ship it, run the real thing, the one paid run behind an API key), put it at the
+TOP of the digest as "DO THIS TO CONVERT" — not buried under more planning. Prefer
+shipping that action over spending the next cycle on more artifacts.
 
-**Done-signal — bake into EVERY generated prompt:** on completion each lane writes `docs/status-<lane>.md` whose FIRST LINE is exactly `STATUS: <lane> DONE`. **`<lane>` MUST be the lane's `name` in the manifest, character-for-character** — the runner polls `<worktree>/docs/status-<name>.md` for `STATUS: <name> DONE`, so any drift (e.g. prompt says `foo-tests` while the manifest name is `foo`) makes the poll hang forever on work that is actually finished. Emit the manifest `name` and the status marker from the SAME string; never decorate one. This per-lane file is worktree-safe (each lane owns its own status file — no shared-index collision) and is the machine-readable completion marker the runner consumes. `docs/parallel-status.md` is NOT the done signal; it stays only for cross-lane requests (shared-file edit asks, NEEDS DECISION).
+## Phase 3 — deep-research the next steps toward the goal
+First load prior `docs/polylane/cycle-*-research.md` and list the ground already
+covered (competitors, markets, options already evaluated). Scope this cycle's research
+to EXCLUDE it — research only NEW leverage points. Thorough on new ground, never a re-run.
 
-Brainstorming is orchestrator-only — builders get the LOCKED goal. Print each prompt as: launch command + fenced paste block. Offer the integrator lane (runs last) by default.
+Invoke the `deep-research` skill scoped to: *"We are building toward <ULTIMATE
+GOAL>. So far we have built <cycle digests>. What are the highest-leverage next
+steps, the biggest risks/gaps, and the strongest options to move forward?"* Produce
+a ranked suggestion set (each: what, why it advances the goal, rough effort).
+Save to `docs/polylane/cycle-<N>-research.md`.
 
-**Then emit two machine-readable outputs the runner consumes:**
-1. Write each lane's full paste block (and the integrator's) to `.polylane/lanes/<lane>.txt` — one file per lane, so the runner launches from files instead of copy-paste.
-2. Emit the run manifest `.polylane/run.json`, conforming EXACTLY to this frozen schema — do NOT add, drop, or rename keys:
-
-```json
-{
-  "base": "<base branch lanes fork from>",
-  "intensity": "<economy|balanced|performance|max|custom>",
-  "available_models": ["<model id>", "..."],
-  "integrator": {
-    "name": "<integrator lane name>",
-    "model": "<model id>",
-    "effort": "<low|medium|high|xhigh>",
-    "branch": "<integrator branch>",
-    "worktree": "<integrator worktree path>",
-    "prompt_file": ".polylane/lanes/<integrator>.txt"
-  },
-  "lanes": [
-    {
-      "name": "<lane name>",
-      "model": "<model id>",
-      "effort": "<low|medium|high|xhigh>",
-      "branch": "<lane branch>",
-      "worktree": "<lane worktree path>",
-      "prompt_file": ".polylane/lanes/<lane>.txt",
-      "own_globs": ["<glob>", "..."]
-    }
-  ]
-}
+Before building each cycle (in Phase 1) pick the target from the tree, not from
+scratch: `"$MEM" "$STATE" next` prints the highest-leverage OPEN sub-goal — that
+sub-goal is the cycle's focus. And `"$MEM" "$STATE" attempted "<approach>"` tells
+you whether an approach already failed, so the loop never repeats it. Record what
+this cycle tried + learned + decided:
+```
+"$MEM" "$STATE" log <N> attempt  "<approach taken>"   "<outcome>"
+"$MEM" "$STATE" log <N> learning "<insight from a lane reflection / verify file>"
+"$MEM" "$STATE" log <N> decision "<what was chosen>"  "<why>"
 ```
 
-Global `intensity` is the Phase 1 preset; `available_models` is the resolved-against set; per-object `effort` is the Phase 4-resolved (or user-overridden) effort, carried on every lane object and the integrator exactly as `model` is — matching Lc's `.polylane/SCHEMA.md`. Each `prompt_file` points at the `.polylane/lanes/<lane>.txt` written in step 1; `worktree` is the per-lane worktree from the Phase 5 default. The integrator object omits `own_globs` (it edits only its own verify/glue files); every lane object includes it. Then STOP.
+## Phase 4 — critic gate (goal met?) — scored against the tree
+Update the goal tree from this cycle's digest, then score against it — not vibes.
+Mark each sub-goal the cycle satisfied `done` (with evidence), and set each
+criterion's status:
+```
+"$MEM" "$STATE" set-status <subgoal-id> done "<evidence: commit / test / file>" <N>
+"$MEM" "$STATE" set-status <criterion-id> done|open
+"$MEM" "$STATE" progress            # X/Y sub-goals · A/B criteria · %
+"$MEM" "$STATE" dump >> docs/polylane/progress.md
+```
+**Ensemble critic — not a single lenient judge (LLMs skew optimistic on "done").**
+Score the goal with an ODD panel (≥3) of INDEPENDENT critics, each judging "goal
+met?" against the tree's criteria + sub-goals from the digests/evidence, and at
+least ONE adversarial (told to prove it is NOT done — find the criterion with weak
+or missing evidence, the sub-goal marked done without proof). A sub-goal/criterion
+counts as `done` only on the MAJORITY vote; a tie or an unrebutted "not done" keeps
+it open. This runs ONCE per cycle (the panel votes together, not a repeated
+council). **The panel also audits two more things each cycle:**
+- **Drift audit:** did this cycle's output honor `NORTHSTAR.md` + the settled
+  decision records? Name any contradiction — a drift finding becomes a fix item in
+  the next spec, and repeated drift on the same theme means the north-star block in
+  the lane prompts needs strengthening (do it).
+- **Skills-ledger scoring (`docs/polylane/skills-ledger.md`):** for each skill
+  the scout installed, grep the lane logs/verify docs for its trigger/output and mark
+  `used+helped | unused | hurt`. `hurt` → remove now + log the learning; `unused`
+  2 cycles running → the next scout suggests removal.
+Then reconcile the tree from the vote and check termination — no vibes:
+- `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal done, per the panel)
+  → write the final wrap-up (tree dump + all cycle digests + what's left), STOP.
+- Otherwise → continue to Phase 5. (A blocked-and-unblockable sub-goal → mark it
+  `blocked`, surface it, and either stop or route around it.)
 
-### 7. Merge + cleanup (automatic, after the integrator issues GO)
-When the run finishes and the integrator issues GO on a **re-merge of current branch HEADs** (never a stale prior GO), consolidate to ONE project folder — follow `references/merge-and-cleanup.md`. (During the run the runner also auto-retries lanes stuck on transient API errors — `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES` — so a stalled pane is not automatically a failed lane.) The runner then writes `docs/polylane-report.md` (plain-terms digest: outcome, per-lane results, suggested next steps) on GO or NO-GO; the orchestrator MUST read it and relay a simple summary back to the user in the chat (the run happened in tmux, out of sight): verify each lane branch is merged (0 commits at risk), remove merged worktrees (`git worktree remove --force`), delete merged lane branches (`git branch -d`), and MOVE stray / duplicate / non-canonical dirs into `<project>-useless/` (never `rm` what you didn't create; never touch the main tree's uncommitted work or the harness cwd). Cleanup removes only scratch (`.polylane/`, `docs/status-*.md`) and KEEPS the evidence: `docs/verify-*.md`, `docs/parallel-status.md`, `docs/polylane-report.md`, and `docs/lane-logs/`. One project folder remains. If auto-mode blocks a destructive step, hand the user the exact commands.
+## Phase 5 — batch questions + synthesize the next spec (auto-continue)
+From the research suggestions + critic gaps + the tree's next open sub-goal, form
+the next cycle's direction:
+- Ask a batch of questions via AskUserQuestion (multiple rounds of ≤4 if needed —
+  "numerous"). **Every question's FIRST option is the recommended next step**, so a
+  single click (or no answer) advances the loop. **Every question also carries BOTH a
+  "🔍 Go deeper — more questions on this next round" AND a "✨ Surprise me / go bold"
+  option** (same mechanics as discovery — `references/discovery.md`): the first opens a
+  finer round, the second commits to an ambitious next feature you name from the
+  research. Questions steer scope/priority/tradeoffs — they never block the loop.
+- **Bring a creative proposal each cycle, don't just fill gaps.** From the deep-research,
+  surface at least ONE non-obvious "what would make this remarkable" idea (a wildcard
+  feature, a signature-moment upgrade, a bold direction) as a real option — run it
+  through the provocation toolkit (analogy · inversion · forced constraint · extremes ·
+  magic wand), so the loop keeps getting MORE interesting over cycles, not just complete.
+- **Adaptive + convergent follow-ups** (same engine as discovery): chase the biggest
+  unknown, branch on the last answer, reflect back the plan periodically, and STOP
+  asking once answers stop changing the next spec — don't loop questions for their own
+  sake.
+- Synthesize the chosen (or recommended) answers + top research suggestions +
+  `"$MEM" "$STATE" next` into the next cycle's numbered INTEGRATION SPEC (each item
+  one line + a testable outcome), exactly as `references/planning.md` produces. Skip
+  any approach `attempted` already flagged as failed.
+- Record the decision in the blackboard (`log <N> decision ...`), set the new
+  baseline (`git rev-parse HEAD`), increment N, and GOTO Phase 1.
 
-## Non-negotiables
-- Every generated prompt opens with the mandatory-4 preamble, in order: `/graphify-auto` · caveman (full) · `/goal <lane goal>` · `superpowers:using-superpowers`. All four are real on this install; never omit one.
-- Recon runs `git status` + `git worktree list` FIRST; orphan uncommitted work is surfaced + protected (commit/stash) before any worktree/branch op.
-- The integrator NEVER trusts a prior GO — it re-merges current branch HEADs; any GO with commits after it is stale and re-verified.
-- Human device / voice / visual verification batches to the FINAL gate only, and is diff-aware (re-verify only surfaces that changed). Each re-install invalidates prior voice/visual sign-off — say so in the spec.
-- After GO: auto merge + cleanup per `references/merge-and-cleanup.md` — verify merges before removing; quarantine (move), don't delete; leave one project folder.
-- Never `git add -A` in any generated prompt.
-- Every lane's "done" requires evidence in `docs/verify-<lane>.md`.
-- Every generated prompt bakes the done-signal: the lane writes `docs/status-<lane>.md` with first line exactly `STATUS: <lane> DONE` (per-lane, worktree-safe). `docs/parallel-status.md` is for cross-lane requests only — never the done signal.
-- Phase 5 defaults to one git worktree per lane (shared-index race — a shared tree lets one lane's commit bundle another's staged files); shared-tree only on explicit user opt-out.
-- The Phase 5 plan gate always shows the rough per-lane + total cost estimate computed from the `references/model-selection.md` price table (canonical for costs) — never ask for approval without the $ visible.
-- Phase 6 emits `.polylane/run.json` (frozen schema: `base` · `intensity` · `available_models[]` · `integrator{name,model,effort,branch,worktree,prompt_file}` · `lanes[]{name,model,effort,branch,worktree,prompt_file,own_globs}`) plus `.polylane/lanes/<lane>.txt` per lane, alongside the printed paste blocks. New keys (`intensity`, `available_models`, per-object `effort`) match Lc's `.polylane/SCHEMA.md`.
-- Shared file between lanes → one lane owns it; the other requests edits via `docs/parallel-status.md`, never edits directly.
-- Exactly one lane may hold any shared physical resource (device/simulator/deploy target) — mutex via status file.
-- Project-specific facts (build recipes, device UDIDs, quirks) come from the project's CLAUDE.md — keep this skill generic.
+## North-star docs — write after every BIG decision, keep them in mind
+The blackboard `log` is a terse machine index; north-star docs are the readable
+anchors the loop and every lane re-read so nothing drifts or re-opens a settled call.
+- **`NORTHSTAR.md`** — one short doc: the vision, the one thing, the wedge, the
+  signature moment, the personality, the anti-goals. Written at strategy lock; updated
+  ONLY on a north-star-level pivot (and that pivot gets its own decision record).
+- **Decision records** — one Markdown file per BIG decision, via the helper:
+  ```
+  DEC="$(dirname "$MEM")/polylane-decision.sh"; DDIR=docs/polylane/decisions
+  "$DEC" "$DDIR" new "<title>" "<the decision>" "<why>" "<consequences>" <cycle>
+  "$DEC" "$DDIR" context     # the "do not contradict" digest to inject into cycles/lanes
+  ```
+  What counts as BIG: the chosen concept, the stack/architecture, a pivotal trade-off,
+  a scope cut/deferral, a north-star pivot, a hard constraint. Record it the moment it's
+  made — in discovery, at a plan gate, or mid-loop in Phase 5. Also mirror a one-line
+  `log <cycle> decision ...` into the blackboard so the machine index stays complete.
+- **How they're kept in mind:** every cycle START reads `NORTHSTAR.md` + `decision …
+  context` (Phase 1); every lane prompt carries the north-star one-liner + settled
+  decisions; the Phase-4 critic checks the cycle's output against them (work that
+  contradicts the north-star or a settled decision is a finding, not a pass).
+
+## Artifacts (persist across cycles — ALL under docs/polylane/, which cleanup keeps)
+- `docs/polylane/NORTHSTAR.md` — the vision anchor, re-read every cycle + lane.
+- `docs/polylane/decisions/NNN-*.md` + `INDEX.md` — the durable decision trail.
+- `docs/polylane/ULTIMATE_GOAL.md` — the goal paragraph + success criteria.
+- `docs/polylane/max-state.json` — the HTN goal tree + blackboard (criteria,
+  sub-goals, decisions, learnings, attempts). The loop's memory across cycles. NEVER
+  put this in `.polylane/` — that is the runner's scratch and is wiped each cleanup.
+- `docs/polylane/cycle-<N>-digest.md` — the ~50 bullets per cycle.
+- `docs/polylane/cycle-<N>-research.md` — deep-research + ranked suggestions.
+- `docs/polylane/progress.md` — critic scores + tree dumps across cycles.
+
+## Requirements
+- **tmux + jq** — the runner opens one pane per lane and reads its manifest with jq.
+- **claude** (default agent) on PATH — or set `agent`/`POLYLANE_AGENT` to `codex`/`gpt`/
+  `aider`, or `POLYLANE_AGENT_CMD` to any CLI template (`{model}`/`{prompt}`).
+- **`deep-research`** skill for Phase 3; **`superpowers`** for the concept bake-off +
+  verification; **caveman** + **graphify** are baked into Claude lane prompts for token
+  thrift (all degrade gracefully if absent).
+Each cycle uses the walk-away runner behind the supervisor, so usage-limit stalls,
+dead panes, and wedged/never-started panes self-recover — a cycle never hangs on a
+human. The whole engine ships in `bin/` and the knowledge in `references/`.
+
+## Install
+```
+git clone https://github.com/GHGuide/polylane ~/.claude/skills/polylane
+brew install tmux jq            # runner deps (Debian/Ubuntu: apt-get install tmux jq)
+```
+Then just describe what you want: `/polylane <your idea or ultimate goal>` — or
+"build my app idea", "keep building toward <goal>". One command does the rest.

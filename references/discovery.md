@@ -1,6 +1,6 @@
 # Discovery & Strategy — vague idea → concrete product strategy → goal tree
 
-Used by `/polylane-max` Phase 00 when the user gives a BRIEF, fuzzy idea ("an app
+Used by `/polylane` Phase 00 when the user gives a BRIEF, fuzzy idea ("an app
 that helps me X") and wants the system to strategize + build the whole thing. Goal:
 go from one line to a locked PRODUCT STRATEGY and an HTN goal tree the build loop
 can execute — extracting everything from the user through easy, batched questions,
@@ -174,7 +174,7 @@ make. Surface these in the strategy as "NEEDS FROM YOU" so the loop plans around
 and the user isn't blindsided at the end.
 
 ## Output — the PRODUCT STRATEGY (present once, one confirmation)
-A short, skimmable doc (save to `docs/polylane-max/STRATEGY.md`):
+A short, skimmable doc (save to `docs/polylane/STRATEGY.md`):
 - **One-liner** — the product in a sentence.
 - **Chosen concept** — which bake-off concept won + the bits grafted from the others.
 - **North-star / signature moment** — the 10× vision + the one shareable moment.

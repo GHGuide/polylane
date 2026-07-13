@@ -4,44 +4,25 @@ Goal: make the graph the path of least resistance so fresh builder CLIs actually
 
 Assets live beside this skill: `assets/q.py`, `assets/graphify-nudge.sh`, `assets/settings-hook-snippet.json`. This skill's base dir is provided at invocation — reference assets from there.
 
-## Install the polylane-run skill (one-time, per machine)
+## Install polylane (one-time, per machine)
 
-The automated merge + cleanup runner (`bin/polylane-run.sh`, see `references/merge-and-cleanup.md`) ships as its own skill in `polylane-run/`. Install it once so `/polylane-run` and the runner are available:
+polylane is **one** skill — the whole engine (`bin/*.sh`), knowledge (`references/`),
+and the `SKILL.md` loop — installed at `~/.claude/skills/polylane`:
 
 ```bash
-# Copy the runner skill into place (idempotent — overwrites an older copy).
-cp -R polylane-run/ ~/.claude/skills/polylane-run/
+git clone https://github.com/GHGuide/polylane ~/.claude/skills/polylane
+# or, from a checkout: cp -R . ~/.claude/skills/polylane/
 ```
 
 Verify:
 ```bash
-test -f ~/.claude/skills/polylane-run/SKILL.md && echo installed || echo "polylane-run/ not found — run from the polylane repo root"
+test -f ~/.claude/skills/polylane/SKILL.md && echo installed || echo "not found — clone the repo to ~/.claude/skills/polylane"
 ```
 
-### Install the polylane-auto skill (one-time, optional)
-
-`polylane-auto/` fuses plan + run into one command (`/polylane-auto`): interview →
-spec gate → plan gate → generate + emit manifest → then hands-off launch, poll,
-integrate, merge, and clean up. It drives the same runner, so it needs the
-`polylane-run` install above plus the deps below.
-
-```bash
-cp -R polylane-auto/ ~/.claude/skills/polylane-auto/
-test -f ~/.claude/skills/polylane-auto/SKILL.md && echo installed || echo "polylane-auto/ not found — run from the polylane repo root"
-```
-
-### Install the polylane-max skill (one-time, optional)
-
-`polylane-max/` is the goal-driven loop (`/polylane-max`): give one ultimate goal
-and it cycles build → ~50-bullet report → deep-research → recommended-default
-questions → repeat, until a critic judges the goal met. It drives `polylane-auto`
-each cycle and uses `bin/polylane-digest.sh` for the report, so it needs the
-installs above plus the `deep-research` skill.
-
-```bash
-cp -R polylane-max/ ~/.claude/skills/polylane-max/
-test -f ~/.claude/skills/polylane-max/SKILL.md && echo installed || echo "polylane-max/ not found — run from the polylane repo root"
-```
+There are no sub-skills to install — the old `/polylane-run`, `/polylane-auto`, and
+`/polylane-max` are all folded into this single `/polylane`. The build mechanics they
+used live in `references/planning.md`; the runner is `bin/polylane-run.sh` (driven via
+`bin/polylane-supervisor.sh`).
 
 ### Runtime dependencies
 
@@ -65,7 +46,7 @@ auto-retry).
 ### Optional: live model probing
 
 The runner's model controls (`--intensity` / `--model`, documented in
-`polylane-run/SKILL.md`) resolve model IDs through the probe helper
+the runner `--help`) resolve model IDs through the probe helper
 `bin/polylane-models.sh`. Setting `ANTHROPIC_API_KEY` is **optional**:
 
 - **With `ANTHROPIC_API_KEY` set** — `bin/polylane-models.sh` probes the Anthropic

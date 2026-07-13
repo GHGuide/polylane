@@ -1,6 +1,6 @@
 # Skill scout — before EVERY cycle, arm the lanes with the right skills
 
-Run by `/polylane-max` right before each cycle's build launch (cycle 1 included).
+Run by `/polylane` right before each cycle's build launch (cycle 1 included).
 Goal: the coming cycle's lanes should never lack a tool that a known Claude Code
 skill already provides — but never install skill-spam either. A skill is suggested
 ONLY when it maps to a concrete gap in THIS cycle's lanes.
@@ -45,7 +45,7 @@ gap — not blanket). Claude lanes get the `/skill` or skill-name trigger line i
 their preamble; non-claude agents skip (skills are Claude-Code-only).
 
 ## 5. Ledger — prove they actually help (the feedback loop)
-Append to `docs/polylane-max/skills-ledger.md` per cycle:
+Append to `docs/polylane/skills-ledger.md` per cycle:
 ```
 | cycle | skill | why installed | used by lane? | verdict |
 ```

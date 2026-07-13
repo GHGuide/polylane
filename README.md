@@ -1,43 +1,33 @@
 # polylane
 
-**Describe what you want in plain English. polylane splits it into file-isolated lanes, builds them in parallel Claude Code terminals — and, if you want, launches, watches, merges, and cleans up the whole run while you walk away.**
+**Describe what you want in plain English. polylane strategizes it with you, splits it into file-isolated lanes, builds them in parallel Claude Code (or GPT/aider) terminals, merges on GO, reports, researches the next step, and keeps going — one autonomous loop toward your goal.**
 
-`polylane` is a set of three [Claude Code](https://docs.claude.com/en/docs/claude-code) skills that turn a plain-line description of several goals into **N optimized, file-isolated builder prompts** — and then run them. It interviews you until the spec is locked, works out the *right* number of lanes from how the code actually overlaps, tunes the model and effort per lane, bakes your best skills into every prompt, and cleans up the mess at the end.
+`polylane` is **one** [Claude Code](https://docs.claude.com/en/docs/claude-code) skill. Give it a goal — or even a vague one-line app idea — and it runs a product-discovery interview (numerous easy recommended-default questions + research) to strategize *with* you, locks a strategy + goal tree, then loops: derive the *right* number of file-isolated lanes from how the code actually overlaps → build them in parallel → merge on GO → **~50-bullet report** → deep-research the next step → **ensemble critic** → questions → repeat, until a critic judges the goal met or you stop.
 
-You stay in the loop for **decisions only** — a couple of click-through questions and two approval gates. Everything else is derived, generated, launched, and merged for you.
-
-**Four entry points:**
-
-- **`/polylane`** — plan only: interview → spec + plan gates → paste-ready prompts. You launch them.
-- **`/polylane-run`** — run an already-planned `.polylane/run.json`: launch tmux panes → poll → integrate → merge → clean up.
-- **`/polylane-auto`** — both in one command: interview and gates, then hands-off launch/poll/integrate/merge/cleanup after the plan gate.
-- **`/polylane-max`** — goal-driven loop, and the flagship path: give a **vague one-line app idea** and it runs a product-discovery interview (numerous easy recommended-default questions + research) to strategize it *with* you, locks a strategy + goal tree, then cycles (build → ~50-bullet report → deep-research → ensemble critic → questions → repeat) until the goal is met or you stop. Near-zero knowledge required — you click a handful of choices, it derives, builds, verifies, and merges the rest.
+You stay in the loop for **decisions only** — a handful of click-through questions with recommended defaults. Everything else is derived, generated, launched, verified, merged, and cleaned up for you. It's resumable across conversations, budget-capped, and self-recovers from stalls, dead panes, and never-started workers.
 
 ---
 
 ## Quickstart
 
-Install the three skills and the two tools the runner needs:
+One skill, two runner deps:
 
 ```bash
 git clone https://github.com/GHGuide/polylane ~/.claude/skills/polylane
-cp -r ~/.claude/skills/polylane/polylane-run  ~/.claude/skills/polylane-run
-cp -r ~/.claude/skills/polylane/polylane-auto ~/.claude/skills/polylane-auto
-
-brew install tmux jq   # runner deps; shellcheck optional (only for hacking on the runner itself)
+brew install tmux jq   # runner deps (Debian/Ubuntu: apt-get install -y tmux jq)
 ```
 
-Then the whole happy path is five lines:
+Then the whole happy path is three lines:
 
 ```
 cd your-project && claude
-> /polylane-auto
-# answer the click-through interview, approve the spec gate, approve the plan gate…
-# …walk away — lanes build in tmux, integrate, merge on GO, clean up.
-# come back to docs/polylane-report.md for the plain-terms digest.
+> /polylane build me an app that <your idea>
+# answer a handful of click-through questions (each has a recommended default and
+# "🔍 go deeper" / "✨ go bold" escape hatches) — then walk away.
+# it strategizes, builds in tmux, merges, reports ~50 bullets, researches, and loops.
 ```
 
-Prefer more control? `/polylane` to plan and stop at paste-ready prompts, `/polylane-run` when you're ready to launch. (See [install-helpers](references/install-helpers.md) for details.)
+Prefer to just plan and stop at paste-ready prompts? Say "only plan the lanes, don't run them" — polylane will stop at the plan gate. (See [install-helpers](references/install-helpers.md) for details.)
 
 **Works best with** (polylane recommends/installs them for you where relevant):
 - graphify — code knowledge graph (query instead of grep)
@@ -99,7 +89,7 @@ The result: a big feature set built in parallel, with the token profile of a car
 3. **Derive lanes.** Optimal count + carving from file-overlap. Per-lane model, effort, and skill recommendations.
 4. **Plan gate.** You approve the lane table, models, isolation mode (worktrees vs shared tree), and which suggested skills to install.
 5. **Generate prompts.** One paste-ready prompt per lane — each opens with the graphify/caveman/`/goal`/superpowers preamble, then OWN/FORBIDDEN + contracts, forced-verify, coordination, scoped git, done-checklist. Plus an optional **integrator** lane that runs last. `/polylane` also emits the run manifest `.polylane/run.json`.
-6. **Launch + watch.** `/polylane-run` (or the tail of `/polylane-auto`) opens one tmux pane per lane, polls each to completion, auto-retries transient errors, and runs the integrator over the finished branches. Or launch the prompts yourself in separate terminals — they coordinate through a shared status file either way (with a device/DB/deploy **mutex** so only one lane touches a shared resource at a time).
+6. **Launch + watch.** The runner (via `bin/polylane-supervisor.sh`) opens one tmux pane per lane, polls each to completion, auto-retries transient errors, and runs the integrator over the finished branches. Or launch the prompts yourself in separate terminals — they coordinate through a shared status file either way (with a device/DB/deploy **mutex** so only one lane touches a shared resource at a time).
 7. **Merge + cleanup + report.** After the integrator's GO (on a re-merge of current HEADs — never a stale prior GO), consolidate to one project folder, remove merged worktrees/branches, quarantine strays — and write `docs/polylane-report.md`.
 
 ---
@@ -204,7 +194,7 @@ tail -f docs/lane-logs/backend.log
 
 - **Claude Code CLI** (`claude` on PATH).
 - **A git repository** for the target project — worktree/branch isolation and the merge/cleanup phase need one.
-- **tmux + jq** — only for `/polylane-run` and `/polylane-auto`. Plain `/polylane` (plan-only) needs neither.
+- **tmux + jq** — needed to launch + run lanes; a plan-only run (stops at the plan gate) needs neither.
 - **macOS for notifications** — `polylane-notify.sh` uses `osascript`; elsewhere it silently no-ops.
 - **shellcheck** — optional, and only if you hack on the runner scripts themselves.
 
