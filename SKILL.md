@@ -386,8 +386,9 @@ anchors the loop and every lane re-read so nothing drifts or re-opens a settled 
 - **claude** (default agent) on PATH — or set `agent`/`POLYLANE_AGENT` to `codex`/`gpt`/
   `aider`, or `POLYLANE_AGENT_CMD` to any CLI template (`{model}`/`{prompt}`).
 - **`deep-research`** skill for Phase 3; **`superpowers`** for the concept bake-off +
-  verification; **caveman** + **graphify** are baked into Claude lane prompts for token
-  thrift (all degrade gracefully if absent).
+  verification; **caveman** + **graphify** + **ponytail** (anti-over-engineering,
+  `DietrichGebert/ponytail`) are baked into Claude lane prompts for token thrift, and
+  the integrator runs `/ponytail-review` on the diff (all degrade gracefully if absent).
 Each cycle uses the walk-away runner behind the supervisor, so usage-limit stalls,
 dead panes, and wedged/never-started panes self-recover — a cycle never hangs on a
 human. The whole engine ships in `bin/` and the knowledge in `references/`.

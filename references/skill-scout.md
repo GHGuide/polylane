@@ -15,6 +15,13 @@ migration", "video/demo asset". Each activity is a potential skill slot.
    trigger into the lane prompts (no install step). Never re-suggest.
 2. **Curated known-good** (fast path, no search):
    - `obra/superpowers` — TDD / debugging / verification discipline (builder lanes)
+   - `DietrichGebert/ponytail` — anti-over-engineering mode (**every builder lane**,
+     token savings): "build the minimum that meets the goal; the best code is the code
+     you never wrote" — ~54% less code, ~20% cheaper, ~27% faster on measured Claude
+     sessions. Squarely polylane's mission; recommend it FIRST alongside caveman when
+     absent. Install (two separate prompts): `/plugin marketplace add DietrichGebert/ponytail`
+     then `/plugin install ponytail@ponytail`. Once installed, block 0 adds `/ponytail full`
+     (`ultra` under economy) and the integrator can run `/ponytail-review` on the diff.
    - `anthropics/skills` — docx/pdf/pptx/xlsx output, artifacts-builder (report/design lanes)
    - graphify — code-graph navigation (any lane in an unfamiliar repo)
    - caveman — terse output (every lane, token savings)
