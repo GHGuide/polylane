@@ -583,7 +583,10 @@ pipe_pane_log() {
 # correct when --resume skips lanes (positional index != lane order then).
 new_pane() {
   if [ "${SESSION_STARTED:-0}" != "1" ]; then
-    run tmux new-session -d -s "$TMUX_SESSION" -n "${1:-lanes}"
+    # size the detached session generously: the default 80x24 can't tile a 3rd+ pane
+    # ("no space for new pane" -> a later seed_pane hits "can't find pane: N"). tmux
+    # resizes to the real client on attach, so a big virtual size is free.
+    run tmux new-session -d -s "$TMUX_SESSION" -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}"
     SESSION_STARTED=1
   else
     run tmux split-window -t "$TMUX_SESSION"

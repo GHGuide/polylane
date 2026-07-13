@@ -276,6 +276,14 @@ doctor_main() {
   local explicit=0
   case "${1:-}" in
     -h|--help) usage; exit 0 ;;
+    --rehearse)
+      # the "dry-run the whole flow" button: run the hermetic mock-agent canary
+      # end-to-end (GO + NO-GO) with the REAL runner, catching marker/nonce seam drift.
+      local rh; rh="$(dirname "$0")/polylane-rehearse.sh"
+      [ -x "$rh" ] || { echo "polylane-doctor: rehearse helper not found at $rh" >&2; exit 1; }
+      echo "== rehearse: GO =="; "$rh" go || { echo "REHEARSE GO FAILED" >&2; exit 1; }
+      echo "== rehearse: NO-GO =="; "$rh" nogo || { echo "REHEARSE NO-GO FAILED" >&2; exit 1; }
+      echo "rehearse: both cases passed — pipeline plumbing is sound"; exit 0 ;;
     -*)        echo "polylane-doctor: unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
 

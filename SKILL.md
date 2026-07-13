@@ -271,6 +271,16 @@ only the first time they're absent, and a decline is logged so a resumed run won
   put two lanes on a collision course) before spending a single pane. After a lane commits,
   `check-lane .polylane/run.json <lane> $(git -C <wt> diff --name-only $BASE..HEAD)` catches
   silent scope creep (a same-file double-write git merges with no conflict marker).
+- **History-based risk predictor (learns across runs):** `bin/polylane-outcomes.sh predict
+  .polylane/run.json` (`OUTC="$(dirname "$MEM")/polylane-outcomes.sh"`) — scores each proposed
+  lane's NO-GO rate among past lanes of the same mechanical SHAPE (`b<globs>:hub<k>:crowd`,
+  where hub-files are auto-learned from prior `SEAM-DANGLING`/bisect culprits). `RISK <lane>
+  <pct> (hub file '<f>')` at rc 5 → isolate that hub file or re-carve before spending. In
+  Phase 4, feed it: `"$OUTC" record <lane> "$("$OUTC" signature <globs>)" <model> <GO|NO-GO>`
+  for every lane, and `"$OUTC" hub add <file>` for each seam/bisect culprit — so the recurring
+  "two lanes both need the router/entrypoint/global-CSS" carving mistake becomes a free
+  pre-spend static check next run. `"$OUTC" tune "$sig"` returns the cheapest model that has
+  historically CLEARED that shape — default a lane's model to it instead of re-deriving.
 - **Best-of-N for ONE high-uncertainty lane** (the signature moment, a gnarly algorithm, a
   bold visual): give that lane `"variants": K` — K worktrees build it in parallel, each
   emits `POLYLANE-SCORE: <int>` in its verify file; `bin/polylane-select.sh pick …` merges
