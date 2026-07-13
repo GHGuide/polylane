@@ -27,7 +27,7 @@ WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [I scoped git]
 [J done checklist]
 
-DONE-SIGNAL: on completion write docs/status-<lane>.md, first line EXACTLY `STATUS: <lane> DONE` — per-lane + worktree-safe; the runner reads this file to know the lane finished.
+DONE-SIGNAL: on completion write docs/status-<lane>.md, first line EXACTLY `STATUS: <lane> DONE run=<RUN_ID>` — per-lane + worktree-safe; the runner reads this file to know the lane finished.
 ```
 
 ## After all lane prompts — emit the run manifest (planner action, not the builder's)
@@ -102,9 +102,9 @@ Use docs/parallel-status.md ONLY for cross-lane requests: a shared-file edit ask
 
 Commit often. Stage ONLY your paths (git add src/styles src/components tailwind.config.*) — NEVER git add -A or git add . (scope every add to your own paths; on a shared tree you'd sweep other lanes' staged work). On index.lock, wait + retry.
 
-DONE-SIGNAL: on completion write docs/status-dark-theme.md, first line EXACTLY `STATUS: dark-theme DONE` — the runner reads this to know the lane finished.
+DONE-SIGNAL: on completion write docs/status-dark-theme.md, first line EXACTLY `STATUS: dark-theme DONE run=<RUN_ID>` — the runner reads this to know the lane finished.
 
-DONE = all true: both GOAL items observably met + docs/verify-dark-theme.md has proof + docs/status-dark-theme.md written with first line `STATUS: dark-theme DONE` + no new errors. Drive with the skills; no generic output.
+DONE = all true: both GOAL items observably met + docs/verify-dark-theme.md has proof + docs/status-dark-theme.md written with first line `STATUS: dark-theme DONE run=<RUN_ID>` + no new errors. Drive with the skills; no generic output.
 ```
 
-Reading top to bottom: A (identity) → B (model header) → 0 (mandatory-4 preamble) → C (terse) → D (skills) → E (graphify-first) → F (ownership + contract) → GOAL (locked, verbatim from spec) → WORKFLOW → G (verify) → H (coordination) → I (scoped git) → J (done) → DONE-SIGNAL (docs/status-<lane>.md, first line `STATUS: <lane> DONE`). Same order the skeleton above prescribes.
+Reading top to bottom: A (identity) → B (model header) → 0 (mandatory-4 preamble) → C (terse) → D (skills) → E (graphify-first) → F (ownership + contract) → GOAL (locked, verbatim from spec) → WORKFLOW → G (verify) → H (coordination) → I (scoped git) → J (done) → DONE-SIGNAL (docs/status-<lane>.md, first line `STATUS: <lane> DONE run=<RUN_ID>`). Same order the skeleton above prescribes.

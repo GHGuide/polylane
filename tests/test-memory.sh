@@ -74,6 +74,43 @@ B="$TEST_TMPDIR/accept-ok.json"
 assert_ok   "accept-check-passes"   "$MEM" "$B" check-accept
 assert_ok   "met-when-accept-pass"  "$MEM" "$B" met
 
+# --- temporal regression guard (#3) -----------------------------------------
+RS="$TEST_TMPDIR/regstate.json"
+"$MEM" "$RS" init "goal" >/dev/null
+"$MEM" "$RS" add-milestone m1 "m" >/dev/null
+"$MEM" "$RS" add-subgoal m1 g1 "sub" >/dev/null
+FLAG="$TEST_TMPDIR/ok"; : > "$FLAG"
+"$MEM" "$RS" add-accept g1 "test -f '$FLAG'" >/dev/null
+# cycle 5: passes -> no regression
+"$MEM" "$RS" check-accept --cycle 5 >/dev/null
+assert_eq "reg-none-when-pass" "" "$("$MEM" "$RS" regressions)"
+# cycle 6: dep removed -> fail -> regressed_cycle stamped 6
+rm -f "$FLAG"
+"$MEM" "$RS" check-accept --cycle 6 >/dev/null 2>&1 || true
+assert_contains "reg-stamps-cycle" "REGRESSED c6" "$("$MEM" "$RS" regressions)"
+# restore + re-pass clears it
+: > "$FLAG"
+"$MEM" "$RS" check-accept --cycle 7 >/dev/null
+assert_eq "reg-clears-on-repass" "" "$("$MEM" "$RS" regressions)"
+
+# --- acceptance memoization (#4) --------------------------------------------
+MD="$TEST_TMPDIR/memo"; mkdir -p "$MD"; ( cd "$MD" && git init -q . )
+MS="$MD/state.json"; "$MEM" "$MS" init g >/dev/null
+"$MEM" "$MS" add-milestone m1 m >/dev/null
+"$MEM" "$MS" add-subgoal m1 g1 s >/dev/null
+( cd "$MD" && echo "v1" > graded.txt )
+# a check that WRITES a side-effect marker each time it actually runs
+"$MEM" "$MS" add-accept g1 "test -f graded.txt && echo ran >> ran.log" "graded.txt" >/dev/null
+( cd "$MD" && "$MEM" "$MS" check-accept >/dev/null )        # run 1 (no fp yet) -> runs
+( cd "$MD" && "$MEM" "$MS" check-accept >/dev/null )        # run 2: deps unchanged -> CACHED
+assert_eq "memo-skips-when-unchanged" "1" "$(wc -l < "$MD/ran.log" | tr -d ' ')"
+# change a dep byte -> re-runs
+( cd "$MD" && echo "v2" > graded.txt && "$MEM" "$MS" check-accept >/dev/null )
+assert_eq "memo-reruns-on-change" "2" "$(wc -l < "$MD/ran.log" | tr -d ' ')"
+# a no-op touch (mtime only, same content) must NOT invalidate
+( cd "$MD" && touch graded.txt && "$MEM" "$MS" check-accept >/dev/null )
+assert_eq "memo-content-not-mtime" "2" "$(wc -l < "$MD/ran.log" | tr -d ' ')"
+
 # unknown command exits 2
 assert_rc   "unknown-cmd-rc2" 2 "$MEM" "$S" bogus
 

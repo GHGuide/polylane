@@ -26,7 +26,7 @@ Run it ONLY after the integrator's GO on a **re-merge of current branch HEADs** 
 ## What the runner does, in order
 
 ### 1. Collect DONE lanes
-Each lane signals completion by writing `docs/status-<lane>.md` with a first line `STATUS: <lane> DONE`. The runner reads these markers to know which lanes claim done. A lane with no `STATUS: … DONE` marker is treated as not-done and is left untouched.
+Each lane signals completion by writing `docs/status-<lane>.md` with a first line `STATUS: <lane> DONE run=<RUN_ID>`. The runner reads these markers to know which lanes claim done. A lane with no `STATUS: … DONE run=<RUN_ID>` marker is treated as not-done and is left untouched.
 
 ### 2. Verify merged — never lose work
 For every lane branch, the runner checks it is fully merged into the integration branch:

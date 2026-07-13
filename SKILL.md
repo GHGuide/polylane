@@ -397,10 +397,25 @@ Log every member's vote + proposal:
 "$MEM" "$STATE" log <N> decision "council/<lens>: complete=<yes|no> focus=<subgoal-id|NEW:...>" "<one-line why>"
 ```
 
-First run the frozen graders — `"$MEM" "$STATE" check-accept` executes every
-pre-registered acceptance check and stamps pass/fail; `met` (below) then REQUIRES every
+First run the frozen graders — `"$MEM" "$STATE" check-accept --cycle <N>` executes every
+pre-registered acceptance check (skipping any whose graded files are byte-identical since
+last pass — cheap on long runs) and stamps pass/fail; `met` (below) then REQUIRES every
 one green, so a sub-goal marked `done` whose executable check fails cannot terminate the
-loop. `"$MEM" "$STATE" unmet-accept` lists any that block it.
+loop. `"$MEM" "$STATE" unmet-accept` lists any that block it. Then the TEMPORAL guard —
+`REG=$("$MEM" "$STATE" regressions)`: any output means a check that PASSED in an earlier
+cycle now FAILS (this cycle silently broke earlier verified work — a temporal seam the
+spatial seam-scanner can't see). Non-empty `$REG` is an auto-NO-GO/revert of THIS cycle,
+same as a `SEAM-DANGLING`; fix the regression before the council can vote complete.
+
+**Ledger the spend (mechanical money gates the council can't rationalize past).** The
+runner already appended a row to `docs/polylane/spend-ledger.jsonl` with `subgoals 0 0`;
+re-stamp it with the real counts (`"$MEM" "$STATE" progress`) via a corrected `LED record`
+(`LED="$(dirname "$MEM")/polylane-ledger.sh"`). Then two gates before the next cycle:
+`"$LED" trend` (rc 3 = spend with ZERO tree progress → a semantic stall the pane-level
+detector misses → STOP with the wrap-up) and `"$LED" roi <next-weight> <open-weight-sum>
+<budget>` (rc 4 = the next sub-goal costs more than its share of remaining value warrants →
+STOP on the diminishing tail). At lane-carve, `N=$("$LED" fit <budget> <N>)` trims the wave
+to what the budget affords before any pane spawns.
 
 **Synthesis (a) — Terminate?** STOP only when ALL THREE pass (each patches the others' blind
 spot):

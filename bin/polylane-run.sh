@@ -1408,6 +1408,14 @@ write_report() {
     done
     echo
     echo "**Estimated total: \$${_total}** — rough, output-rate pricing from \`references/model-selection.md\`; lanes without a token count are excluded."
+    # durable spend ledger (best-effort; never fails the report). The orchestrator
+    # (Phase 4) re-stamps subgoals_done/total from $STATE, which run.sh cannot see.
+    if [ -x "$(dirname "$0")/polylane-ledger.sh" ]; then
+      "$(dirname "$0")/polylane-ledger.sh" record --file "$REPO_ROOT/docs/polylane/spend-ledger.jsonl" \
+        --cycle "${POLYLANE_CYCLE:-0}" --verdict "$verdict" --tokens 0 --cost "${_total:-0}" \
+        --subdone 0 --subtotal 0 --nogo "$([ "$verdict" = GO ] && echo 0 || echo 1)" \
+        --lanes "${#LANE_NAMES[@]}" --wall "${SECONDS:-0}" >/dev/null 2>&1 || true
+    fi
     echo
     echo "## Integrator verdict"
     echo
