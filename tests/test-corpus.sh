@@ -28,4 +28,17 @@ if [ "$bytes" -le 2500 ]; then pass "corpus-under-cap"; else fail "corpus-under-
 assert_contains "corpus-newest-intact" "===== cycle 30 =====" "$(cat "$C")"
 if grep -q 'cycle 1:' "$C"; then fail "corpus-oldest-dropped" "cycle 1 survived the cap"; else pass "corpus-oldest-dropped"; fi
 
+# REGRESSION: fewer cycles than the window (cutoff=0) — the common early-cycles case.
+# BSD/macOS `head -n 0` errors, so corpus.md was never written. Must succeed + be verbatim.
+D2="$TEST_TMPDIR/few"; mkdir -p "$D2"
+printf '# only cycle\n- did a thing\n' > "$D2/cycle-1-digest.md"
+out=$(POLYLANE_CORPUS_DIR="$D2" "$CORPUS" compact 2>&1) && rc=0 || rc=$?
+assert_eq       "corpus-fewer-than-window-rc" "0" "$rc"
+assert_ok       "corpus-single-cycle-written" test -s "$D2/corpus.md"
+assert_contains "corpus-single-cycle-verbatim" "===== cycle 1 =====" "$(cat "$D2/corpus.md" 2>/dev/null)"
+# exactly-window (cutoff=0 boundary): 3 cycles, window 3
+i=1; while [ "$i" -le 3 ]; do printf '# c%s\n' "$i" > "$D2/cycle-$i-digest.md"; i=$((i+1)); done
+POLYLANE_CORPUS_DIR="$D2" "$CORPUS" compact 3 >/dev/null 2>&1
+assert_eq "corpus-exactly-window-count" "3" "$(grep -c '=====' "$D2/corpus.md")"
+
 finish

@@ -58,7 +58,9 @@ cmd_compact() {
   all=$(_cycles); [ -z "$all" ] && { : > "$OUT"; echo "corpus: no digests"; return 0; }
   n=$(printf '%s\n' "$all" | grep -c .)
   cutoff=$(( n - WINDOW )); [ "$cutoff" -lt 0 ] && cutoff=0
-  early=$(printf '%s\n' "$all" | head -n "$cutoff")
+  # BSD/macOS `head -n 0` is an error (GNU accepts it), so NEVER call head with 0 —
+  # the common case (#cycles <= window) has cutoff=0 and everything is "recent".
+  if [ "$cutoff" -gt 0 ]; then early=$(printf '%s\n' "$all" | head -n "$cutoff"); else early=""; fi
   recent=$(printf '%s\n' "$all" | tail -n +"$((cutoff + 1))")
   _render > "$OUT"
   # cap: drop oldest EARLY one-liners first, then oldest RECENT blocks; keep >=1 recent
