@@ -46,11 +46,12 @@ Brainstorming is orchestrator-only — builders get the LOCKED goal. Print each 
 
 **Then emit two machine-readable outputs the runner consumes:**
 1. Write each lane's full paste block (and the integrator's) to `.polylane/lanes/<lane>.txt` — one file per lane, so the runner launches from files instead of copy-paste.
-2. Emit the run manifest `.polylane/run.json`, conforming EXACTLY to this frozen schema — do NOT add, drop, or rename keys:
+2. Emit the run manifest `.polylane/run.json`, conforming EXACTLY to this frozen schema — do NOT add, drop, or rename keys. **Generate a fresh `run_id` nonce every run** (`date +%s-$RANDOM`) and **bake it literally into every generated prompt** (block J DONE line + integrator verdict sentinel — see `references/prompt-blocks.md`): the runner trusts a DONE/verdict marker only when its `run=` tag equals this nonce, so no stale marker from a prior run can be mistaken for this one's (allowlist, not blocklist):
 
 ```json
 {
   "base": "<base branch lanes fork from>",
+  "run_id": "<unique per-run nonce, e.g. $(date +%s-$RANDOM) — digits + '-' only>",
   "intensity": "<economy|balanced|performance|max|custom>",
   "available_models": ["<model id>", "..."],
   "integrator": {

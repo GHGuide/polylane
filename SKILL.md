@@ -199,6 +199,10 @@ STATE=docs/polylane/max-state.json     # durable — survives the runner's clean
 # decompose the goal into milestones -> sub-goals (weight = leverage toward the goal):
 "$MEM" "$STATE" add-milestone m1 "<milestone>"
 "$MEM" "$STATE" add-subgoal   m1 m1.1 "<sub-goal>" <weight>   # repeat
+# VERIFY-FIRST: register a FROZEN, executable acceptance check per sub-goal NOW,
+# while it is still open — the grader is authored before the build, so a lane can't
+# weaken its own bar. Phase 4 runs `check-accept` and `met` requires every one green.
+"$MEM" "$STATE" add-accept    m1.1 'cd "$REPO" && <a command that EXITS 0 iff m1.1 truly works>'
 ```
 **Always seed ≥1 success criterion** — `met` can never fire without one, so a crisp-goal
 run with zero criteria can never terminate; if the user gave none, synthesize 3–5
@@ -260,6 +264,24 @@ lane → suggest removal; the scout reads the ledger first and never re-suggests
 unused / declined ones. The ponytail/claude-mem install-once offers (whole-run wins) fire
 only the first time they're absent, and a decline is logged so a resumed run won't re-nag.
 
+**Gate 1c — mechanical isolation + best-of-N + salvage (cheap, catches what LLMs miss):**
+- **Isolation pre-check (free, before launch):** `bin/polylane-scope.sh check-static
+  .polylane/run.json` — asserts every lane has non-empty `own_globs` and no two lanes'
+  globs can match the same path. On `SCOPE-OVERLAP`/`SCOPE-EMPTY`, RE-CARVE (the derivation
+  put two lanes on a collision course) before spending a single pane. After a lane commits,
+  `check-lane .polylane/run.json <lane> $(git -C <wt> diff --name-only $BASE..HEAD)` catches
+  silent scope creep (a same-file double-write git merges with no conflict marker).
+- **Best-of-N for ONE high-uncertainty lane** (the signature moment, a gnarly algorithm, a
+  bold visual): give that lane `"variants": K` — K worktrees build it in parallel, each
+  emits `POLYLANE-SCORE: <int>` in its verify file; `bin/polylane-select.sh pick …` merges
+  the winner (tie → fewer LOC), discards the rest. Reserve for a genuinely uncertain lane —
+  it's K× the spend.
+- **Salvage on NO-GO (≥3 lanes):** don't discard four good lanes for one bad neighbour —
+  `bin/polylane-bisect.sh salvage <lanes…>` (with a verify callback that merges a subset into
+  a throwaway branch + runs the integrator smoke) delta-debugs the minimal failing subset,
+  promotes the maximal GREEN subset, and maps each culprit → `"$MEM" "$STATE" set-status
+  <lane> blocked` so the next cycle routes around it.
+
 **Gate 1a — cheap checks BEFORE the wave (skip spend that won't pay):**
 - **Viability pre-gate:** one cheap agent (Haiku/Sonnet, single call) scores the
   synthesized spec against the goal — `advance` or `hold <why>` — from the goal +
@@ -305,6 +327,9 @@ DIGEST="$(dirname "$RUNNER")/polylane-digest.sh"
 ```
 Condense the inventory into ~40–60 concrete bullets grouped by area, each specific ("added
 X", "fixed Y", not "improved things"), and save to `docs/polylane/cycle-<N>-digest.md`.
+Then rebuild the bounded corpus so the council + research read O(1), not every digest:
+`"$(dirname "$RUNNER")/polylane-corpus.sh" compact` (recent cycles verbatim, older
+one-lined, hard byte cap — this is what keeps a long run context-bounded).
 That file is a hard deliverable every cycle — full detail lives there, on disk. A single
 terse chat ack is fine ("cycle N merged — <k> lanes; digest saved; scoring next"); never
 dump the bullets into chat. If one action would realize the value of what's built (ship it,
@@ -372,10 +397,15 @@ Log every member's vote + proposal:
 "$MEM" "$STATE" log <N> decision "council/<lens>: complete=<yes|no> focus=<subgoal-id|NEW:...>" "<one-line why>"
 ```
 
+First run the frozen graders — `"$MEM" "$STATE" check-accept` executes every
+pre-registered acceptance check and stamps pass/fail; `met` (below) then REQUIRES every
+one green, so a sub-goal marked `done` whose executable check fails cannot terminate the
+loop. `"$MEM" "$STATE" unmet-accept` lists any that block it.
+
 **Synthesis (a) — Terminate?** STOP only when ALL THREE pass (each patches the others' blind
 spot):
 - a MAJORITY (≥3 of 5) votes `complete=yes`, AND
-- `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal `done`), AND
+- `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal `done`, AND every acceptance check `pass`), AND
 - the **mechanical shippability gate** passes: from a FRESH checkout/clone, `install →
   build → boot/smoke-run` all green (the integrator's per-cycle verify is incremental — this
   is a from-zero certification), and every `NEEDS FROM YOU` in `STRATEGY.md` is resolved or

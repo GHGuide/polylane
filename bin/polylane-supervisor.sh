@@ -43,6 +43,10 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
 SUP_INTERVAL="${POLYLANE_SUP_INTERVAL:-20}"
 SUP_MAX_RESTARTS="${POLYLANE_SUP_MAX_RESTARTS:-10}"
+# per-run nonce: the sourced lane_done must trust markers by the SAME run= tag the
+# runner uses, else nonce-tagged DONE lanes read as not-done and get needlessly revived.
+# shellcheck disable=SC2034  # consumed by the sourced runner's lane_done
+RUN_ID=$(jq -r '.run_id // ""' "$SUP_MANIFEST")
 
 MDIR=$(cd "$(dirname "$SUP_MANIFEST")" && pwd)
 PROJECT_ROOT=$(cd "$MDIR/.." && pwd)

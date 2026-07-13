@@ -41,6 +41,10 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
 BASE=$(jq -r '.base // "main"' "$MANIFEST")
+# per-run nonce: the sourced lane_done/parse_verdict trust markers only when run=
+# matches. MUST match the runner's, or a nonce-tagged DONE reads here as not-done.
+# shellcheck disable=SC2034  # consumed by the sourced runner's lane_done/parse_verdict
+RUN_ID=$(jq -r '.run_id // ""' "$MANIFEST")
 # shellcheck disable=SC2034  # consumed by the sourced runner's agent_procs/pane_dead
 AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
 MDIR=$(cd "$(dirname "$MANIFEST")" && pwd)
