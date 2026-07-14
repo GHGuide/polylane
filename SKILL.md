@@ -311,7 +311,7 @@ with `--resume` (DONE lanes skipped), drains safe approval prompts itself (so a 
 runner no longer blocks lanes), parks+notifies critical ones, and writes a heartbeat:
 ```
 BIN="$(dirname "$(command -v polylane-run.sh || echo "$HOME/.claude/skills/polylane/bin/x")")"
-POLYLANE_SESSION="polylane-c<N>" "$BIN/polylane-supervisor.sh" .polylane/run.json
+POLYLANE_CYCLE=<N> POLYLANE_SESSION="polylane-c<N>" "$BIN/polylane-supervisor.sh" .polylane/run.json
 ```
 Print the tmux watch commands in chat (`tmux attach -t polylane-c<N>`), then wait
 for the finish notification. **Read run state through the state surface, never by

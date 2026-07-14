@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    # matrix over BOTH coreutils families — macOS (BSD) catches bugs like the
+    # `head -n 0` corpus bug that GNU/ubuntu silently accepts.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y jq shellcheck tmux
+      - name: Install deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install jq shellcheck tmux
+      - name: Shellcheck all helpers
+        run: |
+          rc=0
+          for f in bin/*.sh; do shellcheck -S warning "$f" || rc=1; done
+          exit $rc
+      - name: Run the test suite
+        run: tests/run.sh
