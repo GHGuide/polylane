@@ -174,6 +174,11 @@ them, run discovery FIRST — follow `references/discovery.md`:
   from discovery as a decision record (see "North-star docs" below): the chosen concept,
   the stack, any pivotal trade-off or scope cut. These persist and are re-read — the
   loop never silently contradicts a settled call.
+- **Scaffold the built app's `AGENTS.md`** (root of the project being built — the
+  cross-agent context anchor Claude Code + Codex both read). Write a TIGHT first version
+  from the strategy: Mission · Stack + key decisions · Run/build/test (fill in as they
+  become real) · Status. Refreshed every cycle (Phase 5); kept short + curated per
+  `references/documentation.md` — bloated context files measurably hurt.
 Then hand the locked strategy to Phase 0 — its success criteria become the tree's
 `criteria` and its MVP scope becomes the milestones → sub-goals.
 
@@ -438,8 +443,10 @@ spot):
 - `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal `done`, AND every acceptance check `pass`), AND
 - the **mechanical shippability gate** passes: from a FRESH checkout/clone, `install →
   build → boot/smoke-run` all green (the integrator's per-cycle verify is incremental — this
-  is a from-zero certification), and every `NEEDS FROM YOU` in `STRATEGY.md` is resolved or
-  explicitly acknowledged. An LLM council can vote "complete" on code that doesn't compile;
+  is a from-zero certification), a root **`AGENTS.md` exists with real run/build/test commands**
+  (context a fresh agent needs — a build with no entry doc isn't shippable), and every
+  `NEEDS FROM YOU` in `STRATEGY.md` is resolved or explicitly acknowledged. An LLM council
+  can vote "complete" on code that doesn't compile;
   only this gate catches that.
 Reconcile disagreement rather than trusting one signal:
 - `met`=0 but council majority says NOT complete → the tree is under-specified: turn each
@@ -531,12 +538,29 @@ DROP anything the build did not actually make live — no generic backlog items.
 - steers scope/priority/tradeoffs, NEVER the top focus (the council owns that) — never blocks.
 In autonomous mode, skip the call, take recommended defaults, log to `cycle-<N>-questions.md`.
 
-**4. One emergent creative fork per cycle.** From what JUST shipped + the deep-research,
-surface ≥1 non-obvious "what would make THIS remarkable now" option the new surface makes
-newly possible — run through the provocation toolkit (analogy · inversion · forced
-constraint · extremes · magic wand). It rides as a real option in the batch.
+**4. Ask ONE idea-improvement question per cycle — RELEVANT-ONLY, to make the whole product
+better, not just close the last cycle's forks.** Each cycle, from what JUST shipped + the
+deep-research + the north-star, ask: is there a genuine way to make the WHOLE idea better —
+a signature moment, a sharper wedge, a "what would make this remarkable" upgrade the new
+surface makes newly possible? Run it through the provocation toolkit (analogy · inversion ·
+forced constraint · extremes · magic wand) and offer it as a real recommended-default option
+(with go-deeper / surprise-me). ONLY ask when there's a real improvement on the table — if
+the honest answer this cycle is "just finish what's planned," say so and skip it (never
+manufacture a question). This is the "keep making it better and better" loop — but gated on
+relevance so it stays signal, not nagging.
 
-**5. Synthesize + close the loop.** Fold the chosen (or recommended) answers + top research
+**5. Maintain the built app's living docs (context always current).** The built project's
+root **`AGENTS.md`** (the cross-agent context anchor — Claude Code, Codex, and every other
+agent read it) is a LIVING SPEC, refreshed each cycle so a fresh agent (or the next polylane
+run) never loses context. Keep it TIGHT and human-curated — research shows bloated,
+LLM-sprawl context files HURT (−3% success, +20% cost); a few sharp sections beat a wall of
+prose. Update per `references/documentation.md`: Mission (the north-star one-liner) · Stack +
+key decisions (from the decision records — the "do not contradict" digest) · Run/build/test
+commands (the real ones, verified) · Conventions · What's done / what's next (from the tree).
+Update the spec (STRATEGY.md + tree) BEFORE the next build when scope changed — spec first,
+then code; never let it go stale.
+
+**6. Synthesize + close the loop.** Fold the chosen (or recommended) answers + top research
 suggestions + `"$MEM" "$STATE" next` (the council-elected focus — it LEADS the spec as item
 1) into the next cycle's numbered INTEGRATION SPEC (each item one line + a testable outcome),
 exactly as `references/planning.md` produces. Skip any approach `"$MEM" "$STATE" attempted`
