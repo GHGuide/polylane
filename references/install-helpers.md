@@ -19,6 +19,15 @@ Verify:
 test -f ~/.claude/skills/polylane/SKILL.md && echo installed || echo "not found — clone the repo to ~/.claude/skills/polylane"
 ```
 
+### Codex (OpenAI CLI) — same engine, Codex skill layout
+The engine is agent-agnostic, so polylane installs as a **Codex skill** too. From a
+checkout: `codex/install.sh` (user scope `~/.agents/skills/polylane`) or
+`codex/install.sh --repo` (repo scope `.agents/skills/polylane`). It lays out
+`SKILL.md` + `scripts/` (the `bin/*.sh` helpers) + `references/` + `assets/`. Invoke in
+Codex with `$polylane` or `/skills`. Lanes run via `codex exec` (`agent:"codex"` in the
+manifest); prompts are plain instructions (no Claude preamble). Deps: `tmux` + `jq` +
+`codex` on PATH. See `codex/SKILL.md` for the Codex deltas.
+
 There are no sub-skills to install — the old `/polylane-run`, `/polylane-auto`, and
 `/polylane-max` are all folded into this single `/polylane`. The build mechanics they
 used live in `references/planning.md`; the runner is `bin/polylane-run.sh` (driven via
