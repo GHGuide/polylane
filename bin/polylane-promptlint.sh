@@ -29,8 +29,10 @@ lint_run() {
   local mf="$1" rc=0 lane pf dir
   command -v jq >/dev/null 2>&1 || { echo "polylane-promptlint: jq required for lint-run" >&2; return 2; }
   dir=$(cd "$(dirname "$mf")/.." && pwd)   # .polylane/ -> project root
-  for lane in $(jq -r '.lanes[].name, .integrator.name' "$mf"); do
+  # `// empty`: a manifest with no integrator yields no phantom "null" lane
+  for lane in $(jq -r '.lanes[].name, (.integrator.name // empty)' "$mf"); do
     pf=$(jq -r --arg n "$lane" '(.lanes[],.integrator) | select(.name==$n) | .prompt_file' "$mf" | head -1)
+    [ -n "$pf" ] && [ "$pf" != "null" ] || { echo "PROMPT-LINT: $lane no prompt_file"; rc=6; continue; }
     case "$pf" in /*) : ;; *) pf="$dir/$pf" ;; esac
     lint_one "$pf" "$lane" || rc=6
   done

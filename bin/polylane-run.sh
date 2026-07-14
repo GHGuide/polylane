@@ -630,9 +630,12 @@ launch_panes() {
 
 # lane_done WORKTREE NAME : 0 iff first line of the status file == the DONE line.
 lane_done() {
-  local wt="$1" name="$2" f="$1/docs/status-$2.md" first
+  local wt="$1" name="$2" f="$1/docs/status-$2.md" first=""
   [ -f "$f" ] || return 1
-  IFS= read -r first < "$f" || return 1
+  # `|| true`: read returns non-zero at EOF-before-newline but STILL populates $first,
+  # so a marker written without a trailing newline (markers.sh done emits none) is read
+  # correctly instead of reading as not-done forever. Empty file -> first="" -> != DONE.
+  IFS= read -r first < "$f" || true
   if [ -n "${RUN_ID:-}" ]; then
     [ "$first" = "STATUS: $name DONE run=$RUN_ID" ]   # nonce mode: only THIS run's marker
   else
@@ -1365,7 +1368,7 @@ model_out_price() {
 }
 
 # est_cost TOKENS PRICE_PER_MTOK : dollars, two decimals (awk — bash has no floats).
-est_cost() { awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000000}'; }
+est_cost() { LC_ALL=C awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000000}'; }
 
 # write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
@@ -1402,7 +1405,7 @@ write_report() {
       _cost="?"
       if [ -n "$_tok" ] && [ -n "$_price" ]; then
         _cost=$(est_cost "$_tok" "$_price")
-        _total=$(awk -v a="$_total" -v b="$_cost" 'BEGIN{printf "%.2f", a + b}')
+        _total=$(LC_ALL=C awk -v a="$_total" -v b="$_cost" 'BEGIN{printf "%.2f", a + b}')
         _cost="\$$_cost"
       fi
       printf '| %s | %s | %s | %s | %s | %s |\n' \

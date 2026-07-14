@@ -93,7 +93,8 @@ assert_contains "reg-stamps-cycle" "REGRESSED c6" "$("$MEM" "$RS" regressions)"
 "$MEM" "$RS" check-accept --cycle 7 >/dev/null
 assert_eq "reg-clears-on-repass" "" "$("$MEM" "$RS" regressions)"
 
-# --- acceptance memoization (#4) --------------------------------------------
+# --- acceptance memoization (#4, OPT-IN via POLYLANE_ACCEPT_MEMO=1) ----------
+export POLYLANE_ACCEPT_MEMO=1
 MD="$TEST_TMPDIR/memo"; mkdir -p "$MD"; ( cd "$MD" && git init -q . )
 MS="$MD/state.json"; "$MEM" "$MS" init g >/dev/null
 "$MEM" "$MS" add-milestone m1 m >/dev/null
@@ -110,6 +111,10 @@ assert_eq "memo-reruns-on-change" "2" "$(wc -l < "$MD/ran.log" | tr -d ' ')"
 # a no-op touch (mtime only, same content) must NOT invalidate
 ( cd "$MD" && touch graded.txt && "$MEM" "$MS" check-accept >/dev/null )
 assert_eq "memo-content-not-mtime" "2" "$(wc -l < "$MD/ran.log" | tr -d ' ')"
+# DEFAULT (memo off): a check ALWAYS re-runs even with unchanged deps (B5 correctness)
+unset POLYLANE_ACCEPT_MEMO
+( cd "$MD" && "$MEM" "$MS" check-accept >/dev/null )
+assert_eq "memo-off-by-default-reruns" "3" "$(wc -l < "$MD/ran.log" | tr -d ' ')"
 
 # unknown command exits 2
 assert_rc   "unknown-cmd-rc2" 2 "$MEM" "$S" bogus

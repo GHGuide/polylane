@@ -22,11 +22,13 @@ assert_fail "done-leading-space" lane_done "$TEST_TMPDIR" alpha
 printf 'STATUS: alpha DONE (almost)\n' > "$TEST_TMPDIR/docs/status-alpha.md"
 assert_fail "done-trailing-text" lane_done "$TEST_TMPDIR" alpha
 
-# current behavior: a DONE line with NO trailing newline is NOT detected
-# (`read -r` hits EOF -> rc 1 -> lane_done returns 1). Pinned as-is; flagged
-# to the engine lane in docs/parallel-status.md.
+# a DONE line with NO trailing newline IS detected — markers.sh `done` emits no
+# newline, so read (|| true) must still see the fully-populated first line.
 printf 'STATUS: alpha DONE' > "$TEST_TMPDIR/docs/status-alpha.md"
-assert_fail "done-no-trailing-newline-not-done" lane_done "$TEST_TMPDIR" alpha
+assert_ok "done-no-trailing-newline-detected" lane_done "$TEST_TMPDIR" alpha
+# empty file is still NOT done (first="" != DONE line)
+: > "$TEST_TMPDIR/docs/status-alpha.md"
+assert_fail "done-empty-file-not-done" lane_done "$TEST_TMPDIR" alpha
 
 # --- per-run nonce (allowlist trust) ---------------------------------------
 RUN_ID="99-7"

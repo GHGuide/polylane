@@ -14,8 +14,10 @@ for s in "$DIR"/docs/status-*.md; do
   [ -f "$s" ] || continue
   head -1 "$s" 2>/dev/null | grep -q 'DONE' || continue
   lane=$(basename "$s" .md); lane=${lane#status-}
-  if [ ! -s "$DIR/docs/verify-$lane.md" ]; then
-    echo "polylane verify-gate: lane '$lane' claims DONE in $s but docs/verify-$lane.md is missing/empty. Write the verification evidence (what you built + proof it works) before finishing." >&2
+  # the integrator's evidence file is verify-integration.md, not verify-integrator.md
+  ev="verify-$lane.md"; [ "$lane" = integrator ] && ev="verify-integration.md"
+  if [ ! -s "$DIR/docs/$ev" ]; then
+    echo "polylane verify-gate: lane '$lane' claims DONE in $s but docs/$ev is missing/empty. Write the verification evidence (what you built + proof it works) before finishing." >&2
     exit 2
   fi
 done

@@ -69,8 +69,10 @@ predict() {
   local mf="$1" lane sig pct rc=0 globs hub reason
   for lane in $(jq -r '.lanes[].name' "$mf"); do
     globs=$(jq -r --arg n "$lane" '.lanes[]|select(.name==$n)|.own_globs[]?' "$mf")
+    # set -f: the globs are PATTERNS, not paths — without noglob, `src/**` expands
+    # against the cwd and the computed signature stops matching the recorded one.
     # shellcheck disable=SC2086
-    sig=$(signature $globs)
+    set -f; sig=$(signature $globs); set +f
     # an UNSEEN/thinly-seen shape is UNKNOWN, not risky — needs real history to flag
     # (else the Laplace prior alone reports ~50% and trips the gate on brand-new shapes).
     [ "$(_count "$sig")" -ge "$RISK_MIN_SAMPLES" ] || continue

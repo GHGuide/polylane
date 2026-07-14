@@ -35,4 +35,16 @@ assert_contains "lint-names-gap" "nonce(run=" "$out"
 : > "$TEST_TMPDIR/empty.txt"
 assert_fail "lint-empty" lint_one "$TEST_TMPDIR/empty.txt" e
 
+# B13: an integrator-less manifest must not phantom-lint a "null" lane / grep a dir
+if command -v jq >/dev/null 2>&1; then
+  mkdir -p "$TEST_TMPDIR/.polylane/lanes"
+  cp "$GOOD" "$TEST_TMPDIR/.polylane/lanes/only.txt"
+  cat > "$TEST_TMPDIR/.polylane/run.json" <<'JSON'
+{"base":"main","lanes":[{"name":"only","prompt_file":".polylane/lanes/only.txt"}]}
+JSON
+  out=$("$LINT" lint-run "$TEST_TMPDIR/.polylane/run.json" 2>&1); rc=$?
+  assert_eq "lint-run-no-integrator-rc0" "0" "$rc"
+  if printf '%s' "$out" | grep -qiE 'Is a directory|null'; then fail "lint-run-clean-stderr" "$out"; else pass "lint-run-clean-stderr"; fi
+else pass "lint-run-skipped-no-jq"; fi
+
 finish

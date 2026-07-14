@@ -408,8 +408,10 @@ Log every member's vote + proposal:
 ```
 
 First run the frozen graders — `"$MEM" "$STATE" check-accept --cycle <N>` executes every
-pre-registered acceptance check (skipping any whose graded files are byte-identical since
-last pass — cheap on long runs) and stamps pass/fail; `met` (below) then REQUIRES every
+pre-registered acceptance check (ALWAYS re-run for correctness — a check often reads files
+outside its declared deps, so caching a stale pass would hide broken work; opt into
+content-hash memoization only via `POLYLANE_ACCEPT_MEMO=1` when a check provably reads
+only its deps) and stamps pass/fail; `met` (below) then REQUIRES every
 one green, so a sub-goal marked `done` whose executable check fails cannot terminate the
 loop. `"$MEM" "$STATE" unmet-accept` lists any that block it. Then the TEMPORAL guard —
 `REG=$("$MEM" "$STATE" regressions)`: any output means a check that PASSED in an earlier
@@ -420,11 +422,13 @@ same as a `SEAM-DANGLING`; fix the regression before the council can vote comple
 **Ledger the spend (mechanical money gates the council can't rationalize past).** The
 runner already appended a row to `docs/polylane/spend-ledger.jsonl` with `subgoals 0 0`;
 re-stamp it with the real counts (`"$MEM" "$STATE" progress`) via a corrected `LED record`
-(`LED="$(dirname "$MEM")/polylane-ledger.sh"`). Then two gates before the next cycle:
-`"$LED" trend` (rc 3 = spend with ZERO tree progress → a semantic stall the pane-level
-detector misses → STOP with the wrap-up) and `"$LED" roi <next-weight> <open-weight-sum>
-<budget>` (rc 4 = the next sub-goal costs more than its share of remaining value warrants →
-STOP on the diminishing tail). At lane-carve, `N=$("$LED" fit <budget> <N>)` trims the wave
+(`LED="$(dirname "$MEM")/polylane-ledger.sh"`). Then the gates before the next cycle:
+`"$LED" cap` (rc 5 = hit `POLYLANE_MAX_CYCLES` or `POLYLANE_BUDGET` → the HARD "never
+unbounded spend" stop, enforced mechanically not by discretion → STOP), `"$LED" trend`
+(rc 3 = spend with ZERO tree progress → a semantic stall the pane-level detector misses →
+STOP with the wrap-up), and `"$LED" roi <next-weight> <open-weight-sum> <budget>` (rc 4 =
+the next sub-goal costs more than its share of remaining value warrants → STOP on the
+diminishing tail). At lane-carve, `N=$("$LED" fit <budget> <N>)` trims the wave
 to what the budget affords before any pane spawns.
 
 **Synthesis (a) — Terminate?** STOP only when ALL THREE pass (each patches the others' blind

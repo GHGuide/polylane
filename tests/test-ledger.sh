@@ -33,4 +33,21 @@ assert_rc "roi-stop-rc4" "4" "$LED" roi 1 1000 1 --file "$F"
 # history total cost = 7.50 over 9 lane-slots -> ~0.833/lane; budget 2 -> ceil 2
 assert_eq "fit-trims" "2" "$("$LED" fit 2 5 --file "$F")"
 assert_eq "fit-passthru-when-affordable" "3" "$("$LED" fit 100 3 --file "$F")"
+# B8: two rows per cycle (stub + re-stamp) must NOT fool trend — dedup to last-per-cycle
+G="$TEST_TMPDIR/dedup.jsonl"
+"$LED" record --file "$G" --cycle 1 --cost 1 --subdone 0 --lanes 2 >/dev/null
+"$LED" record --file "$G" --cycle 1 --cost 1 --subdone 3 --lanes 2 >/dev/null   # re-stamp
+"$LED" record --file "$G" --cycle 2 --cost 5 --subdone 0 --lanes 2 >/dev/null   # stub
+"$LED" record --file "$G" --cycle 2 --cost 5 --subdone 3 --lanes 2 >/dev/null   # cost+4, sub flat vs c1
+assert_rc "ledger-dedup-stall-rc3" 3 "$LED" trend --file "$G"
+
+# I1: mechanical cap on cycle count + budget
+assert_rc "ledger-cap-maxcycles" 5 env POLYLANE_MAX_CYCLES=2 "$LED" cap --file "$G"
+assert_ok "ledger-cap-under"           env POLYLANE_MAX_CYCLES=9 "$LED" cap --file "$G"
+assert_rc "ledger-cap-budget"     5 env POLYLANE_MAX_CYCLES=9 POLYLANE_BUDGET=3 "$LED" cap --file "$G"
+
+# B2: dotty cost -> 0, row still written (no jq crash); comma-locale handled by LC_ALL=C at source
+"$LED" record --file "$G" --cycle 9 --cost 1.2.3 >/dev/null
+assert_ok "ledger-dotty-no-crash" test -s "$G"
+
 finish

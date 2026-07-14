@@ -19,7 +19,9 @@ command -v jq >/dev/null 2>&1 || { echo "polylane-ledger: jq required" >&2; exit
 
 DEFAULT_F="docs/polylane/spend-ledger.jsonl"
 
-_num() { case "${1:-}" in ''|*[!0-9.]*) printf '0' ;; *) printf '%s' "$1" ;; esac; }
+# reject non-numeric AND multi-dot garbage (1.2.3 / ..) to 0 — else --argjson crashes
+# jq and drops the whole cycle row under set -e. "1." still passes (jq accepts it).
+_num() { case "${1:-}" in ''|.|*[!0-9.]*|*.*.*) printf '0' ;; *) printf '%s' "$1" ;; esac; }
 
 record() {
   local f="$DEFAULT_F" cycle=0 verdict="?" tokens=0 cost=0 subdone=0 subtotal=0 nogo=0 lanes=0 wall=0 ts row
@@ -47,8 +49,11 @@ record() {
   printf '%s\n' "$row" >> "$f"
 }
 
-# slurp the JSONL into a jq array on stdin-safe path
-_rows() { local f="$1"; [ -s "$f" ] && jq -s '.' "$f" || printf '[]'; }
+# slurp the JSONL, keeping only the LAST row per distinct cycle. run.sh appends a
+# stub row (subdone 0) and the orchestrator re-stamps via a second append, so raw
+# rows are two-per-cycle -> .[-1] vs .[-2] compares a cycle to its own stub (Δ=0,
+# stall never fires). Collapsing per cycle makes trend/roi/fit see one true row each.
+_rows() { local f="$1"; [ -s "$f" ] && jq -s 'group_by(.cycle) | map(.[-1])' "$f" || printf '[]'; }
 
 trend() {
   local f="$DEFAULT_F"; [ "${1:-}" = "--file" ] && { f="$2"; shift 2; }
@@ -103,12 +108,29 @@ fit() {
   printf '%s\n' "$out"
 }
 
+# cap [--file F] : the "never unbounded spend" hard stop. Exit 5 iff distinct cycles
+# recorded >= POLYLANE_MAX_CYCLES (default 8) OR total cost >= POLYLANE_BUDGET (if set).
+# Unlike trend/roi (progress-relative), this halts even a run that keeps making progress.
+cap() {
+  local f="$DEFAULT_F"; [ "${1:-}" = "--file" ] && { f="$2"; shift 2; }
+  local rows n cost maxc="${POLYLANE_MAX_CYCLES:-8}" budget="${POLYLANE_BUDGET:-}"
+  rows=$(_rows "$f")
+  n=$(printf '%s' "$rows" | jq 'length')
+  cost=$(printf '%s' "$rows" | jq '[.[].cost] | add // 0')
+  if [ "$n" -ge "$maxc" ]; then echo "CAP: $n cycles >= POLYLANE_MAX_CYCLES=$maxc — STOP" >&2; return 5; fi
+  if [ -n "$budget" ] && [ "$(awk -v c="$cost" -v b="$budget" 'BEGIN{print (c>=b)}')" = 1 ]; then
+    echo "CAP: cost $cost >= POLYLANE_BUDGET=$budget — STOP" >&2; return 5
+  fi
+  return 0
+}
+
 if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
   case "${1:-}" in
     record) shift; record "$@" ;;
     trend)  shift; trend  "$@" ;;
     roi)    shift; roi    "$@" ;;
     fit)    shift; fit    "$@" ;;
-    *) echo "usage: polylane-ledger.sh record …|trend|roi <nw> <ow> <budget>|fit <budget> <n>" >&2; exit 2 ;;
+    cap)    shift; cap    "$@" ;;
+    *) echo "usage: polylane-ledger.sh record …|trend|roi <nw> <ow> <budget>|fit <budget> <n>|cap" >&2; exit 2 ;;
   esac
 fi

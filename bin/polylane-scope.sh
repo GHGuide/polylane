@@ -13,11 +13,32 @@ set -euo pipefail
 # shellcheck disable=SC2254  # $g is DELIBERATELY a glob pattern here — that's the matcher
 _match() { local p="$1" g="${2//\*\*/*}"; case "$p" in $g) return 0 ;; *) return 1 ;; esac; }
 path_in_any() { local p="$1"; shift; local g rc=1; for g in "$@"; do if _match "$p" "$g"; then rc=0; break; fi; done; return $rc; }
-_probe() { printf '%s' "${1//\*/X}"; }   # concrete witness path: every * / ** -> literal X
+# _pair_overlap GLOB GLOB : 0 iff a path exists matching BOTH. Walks path segments —
+# ** absorbs all remaining segments; * matches one; a literal must fnmatch the other
+# side. Catches cross-wildcard collisions a single all-*→X witness misses
+# (src/a/** vs src/*/shared.ts on src/a/shared.ts). Conservative: errs toward overlap.
+_pair_overlap() {
+  local sa sb i=0
+  local -a A B
+  # read -ra splits on '/' and never glob-expands (so ** stays literal) — no set -f needed
+  IFS=/ read -ra A <<<"$1"
+  IFS=/ read -ra B <<<"$2"
+  while :; do
+    sa="${A[$i]:-}"; sb="${B[$i]:-}"
+    [ -z "$sa" ] && [ -z "$sb" ] && return 0          # both exhausted, same depth
+    case "$sa" in '**') return 0 ;; esac              # ** absorbs the rest
+    case "$sb" in '**') return 0 ;; esac
+    { [ -z "$sa" ] || [ -z "$sb" ]; } && return 1     # different depth
+    if [ "$sa" != '*' ] && [ "$sb" != '*' ]; then     # both literal-ish -> must fnmatch
+      # shellcheck disable=SC2254  # $sa/$sb are intentional fnmatch patterns
+      case "$sa" in $sb) : ;; *) case "$sb" in $sa) : ;; *) return 1 ;; esac ;; esac
+    fi
+    i=$((i + 1))
+  done
+}
 globs_overlap() {                        # 0 iff some path could match BOTH glob sets
-  local A="$1" B="$2" ga gb pr
-  for ga in $A; do pr=$(_probe "$ga"); for gb in $B; do _match "$pr" "$gb" && return 0; done; done
-  for gb in $B; do pr=$(_probe "$gb"); for ga in $A; do _match "$pr" "$ga" && return 0; done; done
+  local setA="$1" setB="$2" ga gb
+  for ga in $setA; do for gb in $setB; do _pair_overlap "$ga" "$gb" && return 0; done; done
   return 1
 }
 

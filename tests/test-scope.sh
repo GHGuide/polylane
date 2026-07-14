@@ -33,4 +33,11 @@ cat > "$TEST_TMPDIR/empty.json" <<'JSON'
 {"lanes":[{"name":"a","own_globs":[]}]}
 JSON
 assert_fail "scope-static-empty"    "$SCOPE" check-static "$TEST_TMPDIR/empty.json"
+# B6: cross-wildcard collision (single-witness probe missed this) — MUST flag overlap
+assert_ok   "scope-overlap-cross-wildcard" globs_overlap "src/a/**" "src/*/shared.ts"
+cat > "$TEST_TMPDIR/xw.json" <<'JSON'
+{"lanes":[{"name":"a","own_globs":["src/a/**"]},{"name":"b","own_globs":["src/*/shared.ts"]}]}
+JSON
+assert_fail "scope-static-cross-wildcard" "$SCOPE" check-static "$TEST_TMPDIR/xw.json"
+
 finish

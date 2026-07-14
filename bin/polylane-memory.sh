@@ -52,7 +52,13 @@ _save() {
   local tmp lock="$F.lock" tries=0 rc
   while ! mkdir "$lock" 2>/dev/null; do
     tries=$((tries + 1))
-    [ "$tries" -ge 50 ] && { rmdir "$lock" 2>/dev/null || true; mkdir "$lock" 2>/dev/null || true; break; }
+    if [ "$tries" -ge 50 ]; then
+      # stale lock (crashed writer): reclaim, but break ONLY if THIS process actually
+      # re-acquired it — else every waiter breaks together and races the RMW (lost
+      # updates). The loser resets and keeps spinning until it wins the dir.
+      rmdir "$lock" 2>/dev/null || true
+      if mkdir "$lock" 2>/dev/null; then break; else tries=0; fi
+    fi
     sleep 0.1 2>/dev/null || sleep 1
   done
   tmp="$F.tmp.$$"
@@ -222,15 +228,20 @@ case "$CMD" in
       _oldfp=$(jq -r ".accept[$_i].fp // \"\"" "$F")
       _newfp=""
       if [ -n "$_deps" ]; then _newfp=$(_fingerprint $_deps); fi
-      if [ "$_prev" = "pass" ] && [ -n "$_deps" ] && [ -n "$_newfp" ] && [ "$_newfp" = "$_oldfp" ]; then
+      # memoization is OFF by default: a check often reads files outside its declared
+      # deps, so a byte-identical dep-set can falsely cache a pass over now-broken work
+      # (invisible to `met`). Correctness first; opt in with POLYLANE_ACCEPT_MEMO=1 only
+      # when a check provably reads ONLY its deps and re-running is measurably costly.
+      if [ "${POLYLANE_ACCEPT_MEMO:-0}" = "1" ] && [ "$_prev" = "pass" ] && [ -n "$_deps" ] && [ -n "$_newfp" ] && [ "$_newfp" = "$_oldfp" ]; then
         _st="pass"                                   # cached: command never runs
         printf 'check-accept[%s]: pass (cached)\n' "$_i" >&2
       else
         if _accept_run "$_cmd"; then _st="pass"; else _st="fail"; fi
       fi
-      # --- #3 temporal guard: first pass->fail flip records the cycle it broke
-      if [ "$_prev" = "pass" ] && [ "$_st" = "fail" ] && [ "$_rc" = "null" ] && [ "$_cyc" != "null" ]; then
-        _rc="$_cyc"
+      # --- #3 temporal guard: first pass->fail flip records the cycle it broke. Stamp
+      # even without --cycle (use "?") so a cycle-less call still surfaces the regression.
+      if [ "$_prev" = "pass" ] && [ "$_st" = "fail" ] && [ "$_rc" = "null" ]; then
+        [ "$_cyc" != "null" ] && _rc="$_cyc" || _rc="\"?\""
       fi
       [ "$_st" = "pass" ] && _rc="null"              # a re-pass clears the regression stamp
       [ "$_i" -gt 0 ] && _rows="$_rows,"
@@ -238,8 +249,10 @@ case "$CMD" in
       _i=$((_i + 1))
     done
     _rows="$_rows]"
+    # `$u[$i] // {}`: if a concurrent add-accept grew .accept past what we snapshotted,
+    # the extra entries merge nothing (stay unchanged) instead of writing status:null.
     _save --argjson u "$_rows" \
-      '.accept |= [ range(0; length) as $i | .[$i] + {status:($u[$i].status), regressed_cycle:($u[$i].regressed_cycle), fp:($u[$i].fp)} ]'
+      '.accept |= [ range(0; length) as $i | .[$i] + ($u[$i] // {}) ]'
     jq -e 'all((.accept // [])[]; .status=="pass")' "$F" >/dev/null
     ;;
 

@@ -23,4 +23,11 @@ assert_ok "gate-allows-with-verify" run_gate
 rm -f "$TEST_TMPDIR/docs/verify-alpha.md"
 assert_ok "gate-no-loop-when-active" sh -c "CLAUDE_PROJECT_DIR='$TEST_TMPDIR' bash '$GATE' <<<'{\"stop_hook_active\":true}'"
 
+# B11: integrator's evidence is verify-integration.md (not verify-integrator.md)
+rm -f "$TEST_TMPDIR/docs/"status-* "$TEST_TMPDIR/docs/"verify-*
+printf 'STATUS: integrator DONE run=r1\n' > "$TEST_TMPDIR/docs/status-integrator.md"
+assert_rc "gate-blocks-integrator-no-verify" 2 env CLAUDE_PROJECT_DIR="$TEST_TMPDIR" bash "$GATE" </dev/null
+printf 'evidence\n' > "$TEST_TMPDIR/docs/verify-integration.md"
+assert_ok "gate-allows-integrator-with-integration-md" run_gate
+
 finish
