@@ -80,8 +80,13 @@ PROJECT="/absolute/path/to/target/project"  # the repo builders will edit
 
    mkdir -p "$PROJECT/.claude/hooks"
    cp "$SKILL_DIR/assets/graphify-nudge.sh" "$PROJECT/.claude/hooks/graphify-nudge.sh"
-   chmod +x "$PROJECT/.claude/hooks/graphify-nudge.sh"
+   cp "$SKILL_DIR/assets/verify-gate.sh"    "$PROJECT/.claude/hooks/verify-gate.sh"
+   chmod +x "$PROJECT/.claude/hooks/"*.sh
    ```
+   `verify-gate.sh` is a **Stop hook**: it BLOCKS a lane that writes `STATUS: <lane> DONE run=<RUN_ID>`
+   without leaving a non-empty `docs/verify-<lane>.md` — deterministic
+   verification-before-completion (the prompt asks; the hook enforces). Registered by the
+   same settings snippet below.
    Verify:
    ```bash
    python "$PROJECT/graphify-out/q.py" 2>&1 | head -1   # prints usage → q.py runs
