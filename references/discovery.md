@@ -43,7 +43,14 @@ and filling the gaps they can't answer with research + sensible defaults.
 9. **Business model** — free · paid · freemium · ads · internal-tool (shapes features).
 10. **Constraints** — deadline, budget, must-use/avoid tech, hosting, compliance.
 11. **Ambition level** — throwaway prototype · solid MVP · production-ready · launch-ready.
-12. **Definition of done** — the 3–5 measurable things that mean "this is finished"
+12. **Build intensity (ALWAYS ASK — this is the model/effort/cost dial the user must pick,
+    not a silent default).** One AskUserQuestion: `economy` (cheapest models, medium effort —
+    recommended for most) · `balanced` (mid models, high effort) · `performance` (best
+    agentic, high→xhigh) · `max` (most capable, xhigh — warn on cost/usage-limit the moment
+    it's picked). This becomes the manifest's `intensity`, resolved per `model-selection.md`.
+    The loop must NOT silently pick economy — surface the choice; recommended default is
+    `economy` for a first build, `balanced` when quality matters more than spend.
+13. **Definition of done** — the 3–5 measurable things that mean "this is finished"
     (these become the goal tree's `criteria`).
 
 ### Creative dimensions (ask these too — this is where "more creative" lives)

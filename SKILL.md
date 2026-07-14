@@ -233,9 +233,10 @@ SETTLED — do not contradict" block), so parallel builders never drift from the
 or re-open a closed call. Then run the **parallel-lane build pipeline
 (`references/planning.md`)** for THIS cycle's spec — recon → derive the FEWEST
 file-isolated lanes real overlap allows → tune model/effort per lane → **per-lane skill scout (Gate 1b) — arm each lane before its prompt is written** → generate the
-paste-ready prompts → emit `.polylane/run.json` → launch (below) → merge on GO —
-defaulting to the cheapest models that clear the viability gate (`--intensity
-economy`, bump only a sub-goal that needs it):
+paste-ready prompts → emit `.polylane/run.json` (with the `intensity` the USER PICKED in
+discovery dimension 12 — never silently default; if somehow unset, ASK before launch) →
+launch (below) → merge on GO. The picked intensity sets each lane's model+effort per
+`references/model-selection.md`; you may still bump a single hard sub-goal a tier up:
 - **Cycle 1:** derive the first concrete spec from the ultimate goal (a short
   deep-research pass to scope it), present it at the plan gate, then build.
 - **Cycle N>1:** the spec is already synthesized from the prior cycle (Phase 5) —

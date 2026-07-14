@@ -7,6 +7,20 @@ the right DOMAIN skills. Cycle 1 included. Goal: every lane gets the tool a know
 Code skill already provides for ITS work — never skill-spam. A skill is suggested for a
 lane ONLY when it maps to a concrete gap in THAT lane's activities.
 
+## Mechanical helper — `bin/polylane-scout.sh` does the deterministic steps
+Don't eyeball these — the helper makes them consistent (the doc was pure discretion before):
+- `polylane-scout.sh domain <own_globs…>` → the lane's domain (ui/api/data/mobile/report/test).
+- `polylane-scout.sh suggest <domain>` → curated skills for it that are ALREADY installed
+  (so they bake free; uninstalled ones stay an explicit-YES offer per §3).
+- `polylane-scout.sh installed <skill>` → gate before recommending as a default.
+- `polylane-scout.sh bake .polylane/lane-skills.json <lane> <skill>…` → writes the per-lane
+  picks, dropping any not installed (never bakes a phantom skill).
+- `polylane-scout.sh lint .polylane/lane-skills.json <lane> <prompt-file>` → rc 5 if a baked
+  skill is MISSING from the generated prompt — run it at the pre-launch gate so a picked
+  skill that never made it into block D is caught before a pane spawns.
+The orchestrator still owns judgment: GitHub discovery for unknown domains, whether a
+suggestion truly fits, and the install YES/NO. The helper owns the mechanical, forgettable parts.
+
 ## 0. The base is already global — do NOT re-suggest it
 Block 0 of `references/prompt-blocks.md` already puts the DOMAIN-AGNOSTIC base in EVERY
 Claude lane prompt: `graphify`, `caveman`, `ponytail` (if installed),
