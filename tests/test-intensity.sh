@@ -6,11 +6,11 @@
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 . "$RUNNER"
 
-# preset_effort
-assert_eq "effort-economy"     "low"    "$(preset_effort economy)"
-assert_eq "effort-balanced"    "medium" "$(preset_effort balanced)"
+# preset_effort — MUST match references/model-selection.md's intensity table
+assert_eq "effort-economy"     "medium" "$(preset_effort economy)"
+assert_eq "effort-balanced"    "high"   "$(preset_effort balanced)"
 assert_eq "effort-performance" "high"   "$(preset_effort performance)"
-assert_eq "effort-max"         "max"    "$(preset_effort max)"
+assert_eq "effort-max"         "xhigh"  "$(preset_effort max)"
 assert_fail "effort-unknown-rc1" preset_effort turbo
 
 # model_available
@@ -46,14 +46,14 @@ assert_eq "ov-noop" \
   "claude-sonnet-5 claude-haiku-4-5|medium |claude-opus-4-8|high" \
   "$(ov_state ':')"
 
-# --intensity economy remaps EVERY lane + integrator to haiku/low
+# --intensity economy remaps lanes to haiku/medium; integrator effort clamped to xhigh
 assert_eq "ov-intensity-all" \
-  "claude-haiku-4-5 claude-haiku-4-5|low low|claude-haiku-4-5|low" \
+  "claude-haiku-4-5 claude-haiku-4-5|medium medium|claude-haiku-4-5|xhigh" \
   "$(ov_state 'INTENSITY=economy')"
 
-# --model wins over --intensity for the named lane; integrator overridable by name
+# --model wins over --intensity for the named lane; integrator overridable by name (effort stays xhigh)
 assert_eq "ov-model-beats-intensity" \
-  "claude-haiku-4-5 claude-opus-4-8|low low|claude-sonnet-5|low" \
+  "claude-haiku-4-5 claude-opus-4-8|medium medium|claude-sonnet-5|xhigh" \
   "$(ov_state 'INTENSITY=economy; MODEL_OVERRIDES=(beta=claude-opus-4-8 integrator=claude-sonnet-5)')"
 
 # error exits (documented): unknown preset 2, empty available_models 1, unknown lane 2, malformed 2

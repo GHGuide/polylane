@@ -333,11 +333,12 @@ model_available() {
 
 # preset_effort PRESET : echo the reasoning effort for a preset; rc 1 if unknown.
 preset_effort() {
+  # MUST match references/model-selection.md's intensity table (single source of truth).
   case "$1" in
-    economy)     echo low ;;
-    balanced)    echo medium ;;
+    economy)     echo medium ;;
+    balanced)    echo high ;;
     performance) echo high ;;
-    max)         echo max ;;
+    max)         echo xhigh ;;
     *) return 1 ;;
   esac
 }
@@ -383,8 +384,10 @@ apply_overrides() {
     for i in "${!LANE_NAMES[@]}"; do
       LANE_MODELS[i]="$mdl"; LANE_EFFORTS[i]="$eff"
     done
-    INT_MODEL="$mdl"; INT_EFFORT="$eff"
-    echo "== intensity '$INTENSITY' -> model=$mdl effort=$eff (all lanes + integrator) =="
+    # integrator effort is clamped to xhigh regardless of preset (spec: the integrator's
+    # cross-lane verify is the run's most critical judgment — never under-power it).
+    INT_MODEL="$mdl"; INT_EFFORT="xhigh"
+    echo "== intensity '$INTENSITY' -> lanes model=$mdl effort=$eff · integrator effort=xhigh =="
   fi
 
   for ov in "${MODEL_OVERRIDES[@]:-}"; do
