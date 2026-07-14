@@ -15,7 +15,14 @@ case "${1:-}" in
 esac
 
 mkdir -p "$DEST/scripts"
-cp "$REPO/codex/SKILL.md" "$DEST/SKILL.md"
+# installed SKILL.md = the Codex overlay (frontmatter + deltas) + the FULL Claude loop
+# verbatim (its frontmatter stripped, bin/ -> scripts/). Single source of truth: the
+# real SKILL.md — the Codex skill can never drift from the Claude one.
+{
+  cat "$REPO/codex/SKILL.md"
+  echo
+  awk 'f; /^---$/{c++; if (c==2) f=1}' "$REPO/SKILL.md" | sed 's#bin/polylane-#scripts/polylane-#g'
+} > "$DEST/SKILL.md"
 cp "$REPO"/bin/*.sh        "$DEST/scripts/" && chmod +x "$DEST/scripts/"*.sh
 cp -R "$REPO/references"   "$DEST/references"
 cp -R "$REPO/assets"       "$DEST/assets"
