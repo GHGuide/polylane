@@ -1,0 +1,6 @@
+interface:
+  display_name: "polylane"
+  short_description: "Build an app 0→100 from one prompt via parallel Codex lanes"
+  default_prompt: "polylane: build my app idea"
+policy:
+  allow_implicit_invocation: true

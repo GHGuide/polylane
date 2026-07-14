@@ -1,6 +1,8 @@
 ---
 name: polylane
 description: Use when the user gives a goal — or even a vague one-line app/product idea — and wants it strategized and BUILT autonomously by parallel Codex terminals. Opens a product-discovery interview (easy recommended-default questions + research) that turns a fuzzy idea into a locked strategy + goal tree, then loops: derive file-isolated lanes → build in parallel on Codex → integrator merges on GO → digest → research → council picks where-next → report + questions → continue, until the goal is met and shippable or the user stops. Triggers on "polylane", "build my app idea", "strategize and build", "split this into parallel prompts", "run the lanes", "autonomous build loop", "turn my idea into an app".
+metadata:
+  short-description: Build an app 0→100 from one prompt via parallel Codex lanes
 ---
 
 # polylane (Codex) — the EXACT Claude Code build loop, on Codex models
