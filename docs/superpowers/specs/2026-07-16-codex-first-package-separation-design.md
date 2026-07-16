@@ -11,6 +11,11 @@ The Codex distribution must reliably launch actual Codex CLI processes in isolat
 tmux panes. It must fail closed when its manifest or runtime points at another agent,
 and it must not depend on Claude Code being installed.
 
+After initial core decisions, a persistent Codex controller must run the complete loop
+autonomously for hours or days, cycle quickly, recover from internal failures, continue
+through a bounded-scope perfection phase, and stop only at verified completion or when a
+genuine user decision is required.
+
 ## Current Problems
 
 The repository is Claude-first at its root and assembles the Codex skill as a thin
@@ -73,7 +78,11 @@ The shared core owns:
 - Manifest parsing and validation primitives.
 - DONE and integrator-verdict marker contracts.
 - Supervisor restart and resume behavior.
+- Persistent controller watchdog, terminal-state machine, stable tmux session, and
+  user-input handoff files.
 - Scope, seam, acceptance, ledger, goal-tree, report, and cleanup helpers.
+- Builder skill-kit selection, GitHub suggestion records, perfection convergence, and
+  next-idea generation.
 - Platform-neutral workflow and planning rules.
 
 The Codex adapter owns:
@@ -81,6 +90,7 @@ The Codex adapter owns:
 - The Codex skill frontmatter and Codex-specific instructions.
 - Codex installation paths and package assembly.
 - The fail-closed Codex launcher.
+- The persistent Codex controller launcher and controller prompt.
 - Codex CLI command construction and process/error recognition.
 - Codex model and reasoning-effort mapping.
 - Plain Codex lane prompts and inline-chat question behavior.
@@ -97,28 +107,140 @@ The Codex skill resolves its runtime directory from the exact installed `SKILL.m
 location. It never searches `PATH` for Polylane helpers and never falls back to a Claude
 directory.
 
-For each cycle:
+After the initial strategy and other core product decisions are locked in chat, the skill
+invokes `polylane-codex-loop.sh`. That launcher creates one stable tmux session named
+`polylane-<run-id>` and keeps it for the entire multi-cycle run:
 
-1. The skill emits `.polylane/run.json` with `"agent": "codex"`.
-2. The skill invokes the installed `polylane-codex.sh` launcher.
-3. The launcher rejects a missing or non-Codex manifest agent, exports
-   `POLYLANE_AGENT=codex`, verifies `codex`, `tmux`, `jq`, and `git`, and delegates to the
-   shared supervisor.
-4. The supervisor launches or resumes the shared runner.
-5. The runner creates one tmux pane per active lane and one later integrator pane.
-6. Each pane changes into its isolated worktree and runs:
+- A `controller` window runs a supervised Codex CLI orchestrator. Its prompt and compact
+  state are persisted under `docs/polylane/`, so the watchdog can resume it after a CLI,
+  shell, app, or network interruption without losing the loop.
+- A reusable `lanes` window contains the current cycle's isolated builders and later its
+  integrator. Completed-cycle panes are replaced rather than creating a new session.
+- The controller emits each `.polylane/run.json` with `"agent": "codex"` and invokes
+  `polylane-codex.sh` for the shared one-cycle supervisor/runner pipeline.
+- `polylane-codex.sh` rejects a missing or non-Codex manifest agent, exports
+  `POLYLANE_AGENT=codex`, verifies `codex`, `tmux`, `jq`, and `git`, and delegates to the
+  shared cycle supervisor.
+
+Each builder and integrator pane changes into its isolated worktree and runs:
 
    ```text
    codex exec --sandbox workspace-write --model <model> \
      -c model_reasoning_effort=<effort> - < /absolute/path/to/prompt-file
    ```
 
-7. The shared engine observes file markers and pane state, verifies the integrator
-   verdict, promotes only on GO, and preserves recovery state on failure.
+The shared engine observes file markers and pane state, verifies the integrator verdict,
+promotes only on GO, and returns control to the persistent orchestrator. The orchestrator
+closes the cycle, elects the next focus, and immediately starts the next one.
 
 `POLYLANE_AGENT_CMD` remains an explicit expert override. The Codex launcher still
 enforces the Codex manifest identity, but a supplied command template may replace the
 default executable command for testing or specialized Codex installations.
+
+## Persistent Autonomy and Terminal States
+
+The loop is designed to run for hours or days without the initiating chat remaining in
+the foreground. There is no fixed cycle cap, time cap, token cap, cost cap, ROI stop, or
+"diminishing returns" exit. Cost and usage remain visible in the ledger but are
+informational only.
+
+Only two terminal states exist:
+
+1. **`COMPLETE`** — the locked goal, perfection convergence, and final certification all
+   pass.
+2. **`WAITING_FOR_USER`** — a genuine product/strategy pivot, unavailable credential or
+   account, or irreversible externally visible action requires a user decision.
+
+An internal lane failure, runner crash, controller crash, transient outage, rate limit,
+failed approach, merge conflict, weak ROI, or elapsed time is never a terminal state.
+Recovery escalates through checkpointed retry, reflection repair, alternate model,
+re-carving, alternate implementation approach, and persisted exponential backoff. A
+repeated tactic is recorded and not retried unchanged. Temporary limits wait and resume;
+an account condition that cannot resolve without credentials becomes `WAITING_FOR_USER`.
+
+The controller writes a structured `docs/polylane/needs-input.json` only for genuine user
+input. Returning to the skill reads that request and supplies the answer without
+restarting or re-interviewing the run.
+
+## Fast Adaptive Cycles
+
+Ordinary cycles optimize wall-clock time without weakening final correctness:
+
+- Independent builder lanes run concurrently up to the approved machine/API concurrency.
+- Research, digest preparation, skill discovery, and non-dependent verification overlap
+  rather than running as a fully serial tail.
+- Ordinary next-focus decisions use a fast independent three-member council. Any risky,
+  regressed, or potentially final cycle uses the full five-member council including the
+  adversary.
+- Deep research is skipped when no new decision depends on external knowledge; previously
+  covered ground is never repeated.
+- Polling is event-responsive with a short adaptive fallback interval rather than fixed
+  15–20 second waits at every boundary.
+- The stable tmux session and controller are reused across cycles, avoiding repeated CLI,
+  session, and context bootstrap work.
+- User questions never block ordinary implementation choices. Recommended defaults are
+  taken automatically unless the issue meets the `WAITING_FOR_USER` definition.
+
+Potentially final cycles always run the exhaustive council, frozen acceptance suite,
+regression suite, and fresh checkout install/build/boot certification.
+
+## Tmux Watch Command Contract
+
+Whenever the run's tmux session is created, resumed, or recreated, Polylane writes the
+exact attach command to `.polylane/watch-command`, exposes it through
+`polylane-state.sh --watch`, and prints it into Codex chat as a standalone copyable line:
+
+```text
+tmux attach -t polylane-<run-id>
+```
+
+It appears once per launch/resume and again only if the session is recreated or its name
+changes. A single stable session contains controller and lane windows, so one command is
+enough to observe the whole run. If more than one Polylane run is active, chat displays
+one standalone command per active session.
+
+## Builder Skill Kits and GitHub Suggestions
+
+Every builder prompt contains exactly four required skill assignments:
+
+- Two predefined skills: `superpowers:test-driven-development` and
+  `superpowers:verification-before-completion`.
+- Two lane-specific installed skills selected from the lane's concrete activities and
+  domain, such as systematic debugging, accessibility, API security, design systems, or
+  data analysis.
+
+If a predefined skill is unavailable, the prompt includes its equivalent behavioral
+contract and the skill is offered for installation; the lane never starts with a missing
+quality gate. A deterministic prompt lint fails before launch unless all four assignments
+or approved equivalents are present. Each builder's verify file records which skills it
+used, the output they produced, and whether they helped. The council scores those results
+so repeatedly unused or harmful choices are not suggested again.
+
+The GitHub skill suggester runs after lane derivation and searches only for capabilities
+not covered by installed skills. Each suggestion includes repository URL, maintainer,
+recent activity, why it fits a named lane, and the permissions or tooling it introduces.
+External skills are never auto-installed; they are informational until the user approves
+them, and their absence never blocks the current cycle. Installed, previously approved
+lane-specific skills may be selected automatically.
+
+## Completion, Perfection, and Suggestions
+
+Passing the original acceptance tree begins a **perfection phase**; it does not stop the
+run. Perfection work remains limited to the locked north star and scope—new product ideas
+cannot make completion recede.
+
+The run reaches `COMPLETE` only after two consecutive exhaustive certifications discover
+no new in-scope actionable defect, stub, broken flow, regression, security issue,
+accessibility issue, performance failure, documentation/runbook gap, or shippability
+failure. Each certification includes the full five-member council, adversarial review,
+all frozen checks, and a fresh checkout install/build/boot test. Any new finding becomes a
+top-weight sub-goal, resets the consecutive-clean counter, and the loop continues.
+
+After each ordinary cycle, Polylane reports concrete work completed and a ranked set of
+possible next moves while automatically continuing with the council-elected focus. After
+`COMPLETE`, it produces exactly 30 ranked informational ideas beyond the locked scope.
+Those ideas are not defects, do not reopen the completed goal, and are never built
+automatically. Selecting one starts a new locked run.
 
 ## Shared Agent Contract
 
@@ -143,14 +265,16 @@ placeholders.
 Codex failures are classified before recovery:
 
 - Authentication, account, invalid-model, and permission failures are critical. The
-  lane is parked, the run is reported as blocked, and no blind respawn loop occurs.
-- Transient service, network, connection, and overload failures use the existing bounded
-  checkpoint-and-respawn flow.
+  controller first tries already-approved alternate models or approaches; if no internal
+  remedy exists, it enters `WAITING_FOR_USER` without terminating or discarding state.
+- Transient service, network, connection, and overload failures use checkpointed retry,
+  persisted backoff, and automatic resume.
 - Rate or usage limits never trigger a paid-credit decision automatically. They remain
-  visible and resumable.
+  visible, wait, and resume automatically when service becomes available.
 - A lane process that exits without a valid DONE marker is never considered successful.
 - A missing prompt, wrong agent, missing executable, malformed manifest, or tmux session
-  collision fails before token spend.
+  collision fails before token spend, is repaired or re-carved by the controller, and is
+  not treated as a completed run.
 - Supervisor restart preserves the original Codex identity and command contract.
 
 ## Packaging and Compatibility
@@ -182,6 +306,14 @@ Shared-core tests cover:
 - Agent-aware dependency selection and manifest validation.
 - Template substitution, including optional effort.
 - tmux pane construction, literal seeding, polling, recovery, resume, and promotion.
+- Persistent controller crash/resume, stable-session reuse, and on-disk input requests.
+- Proof that internal failures, cycle counts, ROI, and ledger totals cannot select a
+  terminal state.
+- Fast ordinary-cycle and exhaustive-final-cycle gate selection.
+- Exact standalone tmux watch-command emission on create, resume, and recreation.
+- Four-skill prompt assignment, prompt lint, evidence, and ledger scoring.
+- Perfection convergence requiring two consecutive clean exhaustive passes.
+- Per-cycle suggestion output and exactly 30 non-executing final suggestions.
 - Existing marker, scope, seam, ledger, memory, and report behavior.
 - Mock-agent GO and NO-GO rehearsals through real tmux.
 
@@ -221,12 +353,29 @@ The migration is complete when all of the following are demonstrated:
 9. The verified Codex package is installed into the active user Codex skill location.
 10. Existing root Claude Code entrypoints remain operational during the compatibility
     period.
+11. A persistent Codex controller survives a forced exit, resumes from disk, and starts
+    another cycle without chat intervention.
+12. The only terminal-state values reachable in tests are `COMPLETE` and
+    `WAITING_FOR_USER`; budget, cycle, ROI, and internal-failure fixtures never terminate.
+13. Ordinary cycles take the fast adaptive path while final candidates take the full
+    five-member and fresh-checkout certification path.
+14. Every created, resumed, or recreated active session makes the exact standalone
+    `tmux attach -t polylane-<run-id>` command available and surfaces it to chat.
+15. Every builder prompt passes a mechanical gate for two predefined and two
+    lane-specific skills, with usage evidence recorded after execution.
+16. The GitHub suggester emits attributed lane-specific candidates without installing
+    them or blocking the cycle.
+17. Completion requires two consecutive clean exhaustive certifications after the
+    original acceptance tree passes.
+18. Each cycle emits ranked next-move suggestions, and final completion emits exactly 30
+    informational ideas that do not execute or alter completed scope.
 
 ## Non-Goals
 
 - Redesigning Claude Code prompts or optimizing Claude model selection.
 - Supporting non-tmux execution in this migration.
 - Replacing the file-marker and integrator-verdict protocols.
-- Changing Polylane product discovery, goal-tree, council, or promotion semantics beyond
-  the minimum platform-neutral extraction required by the new boundaries.
 - Automatically purchasing usage credits or bypassing account-level restrictions.
+- Automatically building any of the 30 post-completion informational suggestions.
+- Treating cost, elapsed time, cycle count, or diminishing ROI as permission to stop an
+  incomplete run.
