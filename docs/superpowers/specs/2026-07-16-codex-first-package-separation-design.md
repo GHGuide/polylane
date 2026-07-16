@@ -14,7 +14,8 @@ and it must not depend on Claude Code being installed.
 After initial core decisions, a persistent Codex controller must run the complete loop
 autonomously for hours or days, cycle quickly, recover from internal failures, continue
 through a bounded-scope perfection phase, and stop only at verified completion or when a
-genuine user decision is required.
+genuine user decision is required. An incomplete run must never become silently idle:
+it must always be doing goal-directed work or executing an observable recovery action.
 
 ## Current Problems
 
@@ -184,6 +185,53 @@ Ordinary cycles optimize wall-clock time without weakening final correctness:
 Potentially final cycles always run the exhaustive council, frozen acceptance suite,
 regression suite, and fresh checkout install/build/boot certification.
 
+## Continuous Work and Progress Leases
+
+`WORKING` and `RECOVERING` are observable active phases, not terminal states. Until the
+run reaches `COMPLETE` or `WAITING_FOR_USER`, the controller enforces this invariant:
+
+> At least one goal-directed job is running, or at least one concrete recovery action is
+> scheduled with a persisted `next_action_at` deadline and an active guardian responsible
+> for executing it.
+
+Every controller and lane owns a renewable progress lease. A process heartbeat only
+proves that the process exists and never renews the lease by itself. Valid progress proof
+is one or more of:
+
+- New command, tool, pane, or structured event output.
+- A changed worktree, artifact, marker, test result, or queue position.
+- A declared long-running child process that is alive and still within its explicit
+  maximum deadline.
+- A completed diagnosis, retry, repair, re-carve, model switch, or provider probe.
+
+The default watchdog cadence is five seconds and the ordinary no-progress lease is 90
+seconds. Both are configurable for tests and constrained machines. A legitimately quiet
+long-running command declares its own deadline before launch; remaining alive counts only
+until that deadline, so a stuck child cannot renew forever. Lease and queue transitions
+are written atomically under `.polylane/runtime/` and include the current action, last
+progress proof, deadline, recovery attempt, and next action.
+
+On lease expiry the guardian captures diagnostics and escalates without waiting for chat:
+checkpoint and resume, retry, reflection repair, alternate approved model, task re-carve,
+alternate implementation approach, then persisted provider backoff. The same failed
+tactic and inputs are not repeated unchanged. The controller itself is supervised by a
+non-Codex guardian loop, so a dead, wedged, or falsely-heartbeating controller is restored
+from the persisted run state.
+
+Provider unavailability changes the active phase to `RECOVERING`. The controller drains a
+prepared offline queue—local tests, static analysis, diff and artifact review, merge
+preparation, task re-carving, prompt preparation, documentation, and cleanup—while
+periodically probing service recovery. If no offline job remains, the guardian still
+executes visible scheduled probes with bounded persisted backoff; it never enters an
+unreported shell sleep. Authentication, billing, permission, or account action that only
+the user can resolve produces `WAITING_FOR_USER`. A transient outage does not.
+
+Polling is event-driven. The short watchdog cadence is a safety fallback, not a mandatory
+delay between completed actions or cycles. The next runnable action starts immediately
+when its dependency or recovery probe completes. An incomplete empty runnable queue,
+missing recovery deadline, expired guardian heartbeat, or unexplained idle interval is a
+critical liveness fault and triggers automatic reconstruction from the goal tree.
+
 ## Tmux Watch Command Contract
 
 Whenever the run's tmux session is created, resumed, or recreated, Polylane writes the
@@ -270,7 +318,8 @@ Codex failures are classified before recovery:
 - Transient service, network, connection, and overload failures use checkpointed retry,
   persisted backoff, and automatic resume.
 - Rate or usage limits never trigger a paid-credit decision automatically. They remain
-  visible, wait, and resume automatically when service becomes available.
+  visible, activate the offline/recovery queue, and resume automatically when service
+  becomes available. Any backoff has a persisted next action and remains observable.
 - A lane process that exits without a valid DONE marker is never considered successful.
 - A missing prompt, wrong agent, missing executable, malformed manifest, or tmux session
   collision fails before token spend, is repaired or re-carved by the controller, and is
@@ -307,6 +356,12 @@ Shared-core tests cover:
 - Template substitution, including optional effort.
 - tmux pane construction, literal seeding, polling, recovery, resume, and promotion.
 - Persistent controller crash/resume, stable-session reuse, and on-disk input requests.
+- Progress leases that cannot be renewed by a heartbeat alone; declared quiet-command
+  deadlines; atomic runtime records; and immediate queue advancement.
+- Automatic recovery from a frozen lane, killed controller, stale marker, empty queue,
+  cycle-boundary crash, expired guardian heartbeat, and provider recovery.
+- Rate-limit and provider-outage fixtures that drain offline work, perform scheduled
+  probes, and never produce an unexplained idle interval or false user-input stop.
 - Proof that internal failures, cycle counts, ROI, and ledger totals cannot select a
   terminal state.
 - Fast ordinary-cycle and exhaustive-final-cycle gate selection.
@@ -334,6 +389,18 @@ one integrator pane using the locally configured Codex model. It must produce va
 and GO markers, promote the integrator result, and leave no lane commit at risk. This
 canary is run once during this migration after all hermetic tests pass; it is not required
 in unauthenticated CI.
+
+Liveness validation has two additional layers:
+
+1. A deterministic accelerated soak advances a fake clock through multiple simulated
+   hours while injecting frozen panes, killed processes, false heartbeats, rate limits,
+   provider outages, stale completion signals, and crashes between cycles. The test fails
+   if any incomplete interval exceeds its lease without useful work or an executed,
+   persisted recovery action.
+2. A real Codex/tmux continuity canary completes at least two consecutive small cycles,
+   injects one recoverable lane failure, observes automatic recovery, and verifies the
+   stable watch command and runtime ledger. It records the maximum unexplained idle gap,
+   which must be zero.
 
 ## Acceptance Criteria
 
@@ -369,6 +436,14 @@ The migration is complete when all of the following are demonstrated:
     original acceptance tree passes.
 18. Each cycle emits ranked next-move suggestions, and final completion emits exactly 30
     informational ideas that do not execute or alter completed scope.
+19. A heartbeat without progress expires its lease and is recovered; an active quiet
+    command remains valid only until its declared deadline.
+20. Every incomplete runtime snapshot contains running goal-directed work or a persisted
+    recovery action with `next_action_at`; an empty queue reconstructs automatically.
+21. Provider-outage tests stay in observable `RECOVERING`, drain offline work, probe and
+    resume without entering `WAITING_FOR_USER` unless a concrete account action is needed.
+22. Accelerated multi-hour fault-injection soak tests and the real two-cycle Codex/tmux
+    continuity canary pass with zero unexplained idle gaps.
 
 ## Non-Goals
 
