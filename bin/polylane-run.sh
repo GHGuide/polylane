@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# polylane-run.sh — parallel-lane build engine (worktrees · tmux · git · claude)
+# polylane-run.sh — parallel-lane build engine (worktrees · tmux · git · agent CLI)
 #
-# Splits a manifest of lanes into git worktrees, launches one seeded `claude`
+# Splits a manifest of lanes into git worktrees, launches one seeded selected-agent
 # pane per lane in a tmux session, polls each lane's DONE file, auto-runs the
 # integrator, gates on the integrator's GO verdict, then deletes scratch after
 # one confirmation. See .polylane/SCHEMA.md for the manifest + conventions.
@@ -51,7 +51,7 @@ OPTIONS:
   -h, --help             show this help and exit 0
 
 FLOW:
-  split worktrees -> launch seeded claude panes (tmux session 'polylane';
+  split worktrees -> launch seeded selected-agent panes (tmux session 'polylane';
   each pane's transcript mirrors to docs/lane-logs/<lane>.log — kept)
   -> poll each <worktree>/docs/status-<name>.md for DONE (per-lane status line;
      transient errors auto-retry with a WIP checkpoint; usage-limit paywalls
@@ -60,12 +60,12 @@ FLOW:
   -> one confirm -> remove worktrees + merged branches + .polylane scratch
      (keeps docs/verify-*.md, docs/parallel-status.md, docs/lane-logs/)
 
-DEPS: tmux, claude, jq, git
+DEPS: tmux, jq, git, and the selected agent CLI (codex, claude, aider, or custom)
 
 ENV:
-  POLYLANE_POLL_INTERVAL    seconds between DONE-file polls (default 15)
+  POLYLANE_POLL_INTERVAL    seconds between DONE-file polls (default 5)
   POLYLANE_HEALTH_INTERVAL  seconds between error-scans that auto-retry a lane
-                            stuck on a transient API/network error (default 300 = 5 min)
+                            stuck on a transient API/network error (default 60 = 1 min)
   POLYLANE_MAX_RETRIES      retries per lane before it is marked failed (default 3)
   POLYLANE_ON_LIMIT         what to do when a lane hits a usage-limit paywall, so
                             an unattended run never hangs on it:
@@ -185,14 +185,14 @@ parse_args() {
 # preflight
 # ---------------------------------------------------------------------------
 
-preflight() {
+preflight_basic() {
   local missing=() d
-  for d in tmux claude jq git; do
+  for d in jq git; do
     command -v "$d" >/dev/null 2>&1 || missing+=("$d")
   done
   if [ "${#missing[@]}" -gt 0 ]; then
     echo "polylane-run: missing required dependencies: ${missing[*]}" >&2
-    echo "  tmux = pane management, claude = builders, jq = manifest parse, git = worktrees" >&2
+    echo "  jq = manifest parse, git = worktrees" >&2
     echo "  install the missing tool(s) and retry." >&2
     exit 1
   fi
@@ -202,6 +202,29 @@ preflight() {
   fi
   if ! jq empty "$MANIFEST" 2>/dev/null; then
     echo "polylane-run: manifest is not valid JSON: $MANIFEST" >&2
+    exit 1
+  fi
+}
+
+preflight_agent() {
+  local missing=() d agent
+  agent="$(agent_selected)"
+  for d in tmux git jq; do
+    command -v "$d" >/dev/null 2>&1 || missing+=("$d")
+  done
+  if [ -z "${POLYLANE_AGENT_CMD:-}" ]; then
+    case "$agent" in
+      claude) d=claude ;;
+      codex|gpt|openai) d=codex ;;
+      aider) d=aider ;;
+      *) d="" ;;
+    esac
+    [ -z "$d" ] || command -v "$d" >/dev/null 2>&1 || missing+=("$d")
+  fi
+  if [ "${#missing[@]}" -gt 0 ]; then
+    echo "polylane-run: missing required dependencies: ${missing[*]}" >&2
+    echo "  tmux = pane management, ${agent} = builders, jq = manifest parse, git = worktrees" >&2
+    echo "  install the missing tool(s) and retry, or set POLYLANE_AGENT_CMD with {model} and {prompt}." >&2
     exit 1
   fi
   # disk floor — worktrees + tmux pane logs grow during a run; abort BEFORE
@@ -214,6 +237,8 @@ preflight() {
     exit 1
   fi
 }
+
+tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
 
 # ---------------------------------------------------------------------------
 # manifest -> globals
@@ -485,7 +510,7 @@ mark_resumed() {
 }
 
 # ---------------------------------------------------------------------------
-# launch — one seeded claude pane per lane
+# launch — one seeded selected-agent pane per lane
 # ---------------------------------------------------------------------------
 
 # pane_cmd WORKTREE MODEL PROMPT_FILE [EFFORT] : the literal command a pane's
@@ -506,8 +531,8 @@ mark_resumed() {
 #   2. the selected profile: $POLYLANE_AGENT (env) or `.agent` in the manifest.
 #   3. claude (default — unchanged behavior).
 # The template MUST contain {model} and {prompt}; pane_cmd substitutes both,
-# %q-quoted. Effort is passed to EVERY agent as the POLYLANE_EFFORT env var (agents
-# that don't use it are unaffected), so the template needn't mention it.
+# %q-quoted. It may also contain {effort}. Effort is additionally passed to EVERY
+# agent as the POLYLANE_EFFORT env var (agents that don't use it are unaffected).
 agent_selected() { printf '%s' "${POLYLANE_AGENT:-${AGENT:-claude}}"; }
 
 agent_template() {
@@ -516,8 +541,12 @@ agent_template() {
   case "$(agent_selected)" in
     # acceptEdits: lanes edit only their own files in an isolated worktree, so edits
     # are always safe to auto-accept; the walk-away design can't block per-edit.
-    claude)            printf 'claude --permission-mode %s --model {model} "$(cat {prompt})"' "$(printf '%q' "$pmode")" ;;
-    codex|gpt|openai)  printf 'codex exec --full-auto --model {model} "$(cat {prompt})"' ;;
+    # --effort: the CLI's real reasoning-effort flag (low|medium|high|xhigh|max — the
+    # SAME vocabulary polylane resolves from intensity). Without it a Claude lane's
+    # effort was pure prompt-discretion ("run at HIGH effort, confirm with /model"),
+    # while codex lanes already got it mechanically via model_reasoning_effort.
+    claude)            printf 'claude --permission-mode %s --effort {effort} --model {model} "$(cat {prompt})"' "$(printf '%q' "$pmode")" ;;
+    codex|gpt|openai)  printf 'codex exec --json --sandbox workspace-write -c approval_policy=never -c model_reasoning_effort={effort} --model {model} - < {prompt}' ;;
     aider)             printf 'aider --model {model} --message-file {prompt} --yes-always --no-auto-commits' ;;
     *) echo "polylane-run: unknown agent '$(agent_selected)' — set POLYLANE_AGENT_CMD to a template containing {model} and {prompt}" >&2; return 2 ;;
   esac
@@ -535,8 +564,8 @@ agent_procs() {
 
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" pfx=""
-  local qwt qmodel qpf tmpl
-  qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf")
+  local qwt qmodel qpf qeffort tmpl
+  qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf"); qeffort=$(printf '%q' "${effort:-medium}")
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
   # NEVER launch an agent with no prompt: that starts an amnesiac session with no
   # locked goal (the "pane sits at an empty input" bug). If the seeded agent exits
@@ -545,6 +574,7 @@ pane_cmd() {
   tmpl=$(agent_template) || tmpl='claude --model {model} "$(cat {prompt})"'
   tmpl=${tmpl//'{model}'/$qmodel}
   tmpl=${tmpl//'{prompt}'/$qpf}
+  tmpl=${tmpl//'{effort}'/$qeffort}
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
   printf 'cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
     "$qwt" "$pfx" "$tmpl"
@@ -649,7 +679,7 @@ lane_done() {
 # --- health-check + auto-retry (transient API/network errors) ----------------
 # A lane that hits a 500 / overloaded / network error stops WITHOUT writing its
 # DONE file, so a plain DONE-poll would hang forever. Every POLYLANE_HEALTH_INTERVAL
-# (default 300s = 5 min) we scan each unfinished lane's pane for an error banner and
+# (default 60s = 1 min) we scan each unfinished lane's pane for an error banner and
 # respawn (retry) it, up to POLYLANE_MAX_RETRIES (default 3). Past the cap the lane
 # is marked failed so the run halts with a report instead of hanging.
 # bash-3.2 safe: indexed arrays only (LANE_RETRIES keyed by pane index), no assoc.
@@ -750,7 +780,7 @@ pane_awaiting_approval() {
 # That dialog matches none of the error/stall/approval signatures, the process is
 # alive, so the health loop saw a healthy pane doing nothing, forever. These
 # prompts are SAFE by construction (the worktree is polylane's own checkout of the
-# user's own repo), so answer them at poll frequency (15s), not health frequency.
+# user's own repo), so answer them at poll frequency (5s), not health frequency.
 # startup_check SPEC... : per unfinished lane, clear trust/onboarding dialogs.
 startup_check() {
   local s name wt idx txt
@@ -814,7 +844,7 @@ lane_needs_decision() { case " ${NEEDS_DECISION_LANES:-} " in *" $1 "*) return 0
 # For a TRULY unattended run every not-DONE lane must keep making progress with
 # zero human input. Three recovery paths, all owned by the health-check:
 #   errored  -> respawn same seed (transient API/network)         [existing]
-#   dead     -> pane dropped to a shell (claude exited) -> respawn same seed
+#   dead     -> pane dropped to a shell (agent exited) -> respawn same seed
 #   stalled  -> usage-limit paywall -> POLYLANE_ON_LIMIT policy (below)
 
 # pane_dead IDX : 0 iff the pane's foreground process is a plain shell (the agent
@@ -1043,7 +1073,7 @@ health_check() {
     # (claude exited without DONE — amnesia), or is WEDGED (alive but frozen).
     if pane_errored "$idx"; then why="a transient error"
     elif pane_dead "$idx"; then why="a dead pane (claude exited)"
-    elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-2} * ${POLYLANE_HEALTH_INTERVAL:-300} / 60 ))+ min)"
+    elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-2} * ${POLYLANE_HEALTH_INTERVAL:-60} / 60 ))+ min)"
     else continue
     fi
     n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
@@ -1066,13 +1096,13 @@ health_check() {
   done
 }
 
-# verify_seeds : ~20s after launch, re-seed any pane whose seed was lost to the
+# verify_seeds : shortly after launch, re-seed any pane whose seed was lost to the
 # send-keys race (keys typed before the pane's shell was ready → command vanished,
 # pane sits at a bare shell). Without this the first health check catches it, but
-# only after POLYLANE_HEALTH_INTERVAL (300s) of dead air. Free — not a retry.
+# only after POLYLANE_HEALTH_INTERVAL (60s) of dead air. Free — not a retry.
 verify_seeds() {
   [ "${DRY_RUN:-0}" = "1" ] && return 0
-  local wait="${POLYLANE_SEED_VERIFY:-20}" i name
+  local wait="${POLYLANE_SEED_VERIFY:-5}" i name
   sleep "$wait"
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
@@ -1092,8 +1122,8 @@ fmt_elapsed() { printf '%dm%02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 # if the only remaining lanes have failed past the retry cap (halt, don't hang).
 # Every poll prints one status line per lane: name · state · elapsed.
 poll_done() {
-  local specs=("$@") interval="${POLYLANE_POLL_INTERVAL:-15}"
-  local hinterval="${POLYLANE_HEALTH_INTERVAL:-300}" since=0 t0 elapsed
+  local specs=("$@") interval="${POLYLANE_POLL_INTERVAL:-5}"
+  local hinterval="${POLYLANE_HEALTH_INTERVAL:-60}" since=0 t0 elapsed
   t0=$(date +%s)
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would poll for DONE (auto-retry errored lanes every ${hinterval}s): ${specs[*]}"
@@ -1474,8 +1504,9 @@ write_report() {
 main() {
   set -euo pipefail
   parse_args "$@"
-  preflight
+  preflight_basic
   load_manifest
+  preflight_agent
   apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
   mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
 
@@ -1484,7 +1515,7 @@ main() {
 
   echo "== launch: tmux session '$TMUX_SESSION' =="
   launch_panes
-  echo "Launched ${LAUNCHED:-0} of ${#LANE_NAMES[@]} lane(s). Attach with: tmux attach -t $TMUX_SESSION"
+  echo "Launched ${LAUNCHED:-0} of ${#LANE_NAMES[@]} lane(s). Watch: $(tmux_watch_command)"
   verify_seeds
 
   echo "== poll: waiting for builders (auto-retry on transient errors) =="

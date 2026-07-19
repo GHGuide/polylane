@@ -12,7 +12,8 @@ lanes L2/L3/L4 depend on them.
 {
   "base": "main",
   "intensity": "balanced",
-  "available_models": ["claude-fable-5", "claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5"],
+  "agent": "codex",
+  "available_models": ["gpt-5.6-sol", "gpt-5.6-terra"],
   "integrator": {
     "name": "integrator",
     "model": "claude-opus-4-8",
@@ -42,7 +43,7 @@ lanes L2/L3/L4 depend on them.
 | `base` | string | Branch each lane/integrator worktree is created from (e.g. `main`). |
 | `agent` | string | *(optional, default `claude`)* Which agent CLI each pane launches: `claude` \| `codex`/`gpt` \| `aider`. Env `POLYLANE_AGENT` overrides this; `POLYLANE_AGENT_CMD` (a template with `{model}` and `{prompt}`) overrides both for any other CLI. The pipeline is agent-agnostic (file-based done-signal + verdict); only the launch command differs. For a non-claude agent, the manifest `model` ids and the prompt style must match that agent (see SKILL.md). |
 | `intensity` | string | *(optional)* Preset the generator tuned this manifest for: `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** — records provenance; the per-lane `model`/`effort` are already baked to match it. The engine does **not** re-resolve from this at runtime; use the `--intensity` flag to remap live. `custom` = hand-tuned, no preset. |
-| `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh`). Required only if you pass `--intensity`; empty/absent then → error. |
+| `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh` or the Codex model probe used by the generator). Required only if you pass `--intensity`; empty/absent then → error. Rank strongest first for Codex manifests; when no Claude ladder id matches, presets fall back to this first available id and vary effort. |
 | `integrator` | object | The lane that runs **last**: merges lane branches, writes the verdict. |
 | `lanes[]` | array | One object per parallel builder. |
 
@@ -54,7 +55,7 @@ Each **lane** object (and the **integrator** object) has:
 | `model` | string | Model id passed to the agent's `--model` (e.g. `claude-opus-4-8`, `claude-fable-5`, or `gpt-5-codex` for the codex agent). |
 | `branch` | string | Branch created for this lane (`git worktree add -b <branch> <base>`). |
 | `worktree` | string | Path of the lane's git worktree. Relative paths resolve from the repo root. |
-| `prompt_file` | string | File whose contents seed the lane's `claude` pane. Read at pane runtime. |
+| `prompt_file` | string | File whose contents seed the lane's selected-agent pane. Read at pane runtime. |
 | `effort` | string | *(optional)* Reasoning effort for this lane: `low` \| `medium` \| `high` \| `xhigh` \| `max`. Surfaced to the pane as the `POLYLANE_EFFORT` env var and printed at launch. Absent → unset (no behavior change; the legacy pane command is reproduced byte-for-byte). |
 | `own_globs` | string[] | *(lanes only)* Files the lane owns. Informational — the engine does not enforce it. |
 
@@ -84,7 +85,7 @@ value aborts with nothing created or launched.
 
 Exit codes: `0` success · `1` preflight / gate / conflict failure, or `--intensity` with an empty/absent `available_models` · `2` bad arguments, including an unknown `--intensity` value, a malformed `--model` (not `lane=model_id`), or a `--model` naming an unknown lane.
 
-Environment: `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default `15`) · `POLYLANE_SESSION` — tmux session name, enables parallel runs (default `polylane`) · `POLYLANE_HEALTH_INTERVAL` — seconds between pane-health checks / transient-error auto-retry sweeps (default `300`) · `POLYLANE_MAX_RETRIES` — retries per lane before it is marked failed (default `3`).
+Environment: `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default `5`) · `POLYLANE_SESSION` — tmux session name, enables parallel runs (default `polylane`) · `POLYLANE_HEALTH_INTERVAL` — seconds between pane-health checks / transient-error auto-retry sweeps (default `60`) · `POLYLANE_SEED_VERIFY` — seconds after launch before checking that seeded commands actually started (default `5`) · `POLYLANE_MAX_RETRIES` — retries per lane before it is marked failed (default `3`).
 
 ---
 
@@ -171,9 +172,9 @@ or unrecognised verdict is treated as **not GO** (safe default).
 ## Lifecycle
 
 ```
-parse args → preflight (tmux, claude, jq, git + valid JSON)
+parse args → preflight (jq, git + valid JSON, then manifest-selected agent CLI + tmux)
   → split: git worktree add per lane (idempotent; skips existing)
-  → launch: tmux session 'polylane', one seeded claude pane per lane
+  → launch: tmux session 'polylane', one seeded selected-agent pane per lane
   → poll: until every <worktree>/docs/status-<name>.md first line == DONE
   → integrator: its own worktree + seeded pane; poll its DONE
   → gate: GO required in verify-integration.md, else stop (exit 1)
@@ -184,19 +185,18 @@ parse args → preflight (tmux, claude, jq, git + valid JSON)
 
 ### Pane command
 
-Each pane runs (prompt read at pane runtime, with a clipboard fallback if the
-seed fails):
+Each pane runs the manifest-selected agent profile. For Codex manifests, the
+default command is:
 
 ```sh
-cd '<worktree>' && POLYLANE_EFFORT=<effort> claude --model '<model>' "$(cat '<prompt_file>')" \
-  || { pbcopy < '<prompt_file>' 2>/dev/null \
-       || xclip -selection clipboard < '<prompt_file>' 2>/dev/null; \
-       echo 'SEED FAILED — prompt copied to clipboard; paste it into claude'; \
-       POLYLANE_EFFORT=<effort> claude --model '<model>'; }
+cd '<worktree>' && POLYLANE_EFFORT=<effort> codex exec --json --sandbox workspace-write \
+  -c approval_policy=never -c model_reasoning_effort=<effort> --model '<model>' - < '<prompt_file>'
 ```
 
 The `POLYLANE_EFFORT=<effort>` prefix appears only when the lane has an
-`effort` key; without it the legacy command is reproduced byte-for-byte.
+`effort` key. Claude and aider profiles are still supported by setting
+`agent: "claude"` or `agent: "aider"`, and any other CLI can be supplied through
+`POLYLANE_AGENT_CMD` with `{model}` and `{prompt}` placeholders.
 
 ---
 
@@ -205,12 +205,11 @@ The `POLYLANE_EFFORT=<effort>` prefix appears only when the lane has an
 | Tool | Used for |
 |---|---|
 | `tmux` | session `polylane`, one pane per lane + integrator |
-| `claude` | the builder / integrator agents |
+| selected agent CLI | `codex`, `claude`, or `aider` builders/integrator, unless `POLYLANE_AGENT_CMD` supplies a custom command |
 | `jq` | parsing the manifest |
 | `git` | worktree split, branch create, merge-branch cleanup |
 
-`pbcopy` (macOS) or `xclip` (Linux) are optional — only used by the seed-failure
-clipboard fallback. `curl` is optional and used only by `bin/polylane-models.sh`
+`curl` is optional and used only by `bin/polylane-models.sh`
 to probe the live model list; without it the helper prints its fallback list.
 
 ---

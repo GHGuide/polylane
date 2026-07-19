@@ -108,6 +108,8 @@ heartbeat() { printf '%s runner=%s restarts=%s\n' "$(date '+%F %T')" "$1" "$2" >
 # one watch tick (also the --check-once body): relay + heartbeat.
 tick() { drain_approvals; heartbeat "${1:-unknown}" "${2:-0}"; }
 
+tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
+
 # --- main ----------------------------------------------------------------------
 supervisor_main() {
   local restarts=0 rc pid args_line
@@ -116,6 +118,7 @@ supervisor_main() {
 
   while :; do
     sup_log "launching runner (attempt $((restarts + 1))/$((SUP_MAX_RESTARTS + 1))): polylane-run.sh $SUP_MANIFEST $args_line"
+    sup_log "watch active tmux: $(tmux_watch_command)"
     # shellcheck disable=SC2086  # args_line is intentionally word-split
     POLYLANE_SESSION="$TMUX_SESSION" "$SCRIPT_DIR/polylane-run.sh" "$SUP_MANIFEST" $args_line >> "$RUNNER_LOG" 2>&1 &
     pid=$!

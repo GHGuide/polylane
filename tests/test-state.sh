@@ -40,6 +40,7 @@ assert_contains "state-lane-likely-done" "likely-done"            "$(printf '%s'
 assert_contains "state-lane-commits"     "+1"                     "$(printf '%s' "$OUT" | grep '^  b ')"
 assert_contains "state-verdict-go"       "verdict: GO"            "$OUT"
 assert_contains "state-report-absent"    "report: absent"         "$OUT"
+assert_contains "state-watch-inactive"    "watch: -"               "$OUT"
 # no runner drives THIS temp project (others may run elsewhere on the machine)
 assert_contains "state-runner-dead"      "runner: dead"           "$OUT"
 
@@ -48,6 +49,12 @@ J=$(cd "$G" && POLYLANE_SESSION=state-test-nosuch "$STATE" .polylane/run.json --
 assert_ok "state-json-valid" sh -c "printf '%s' '$(printf '%s' "$J" | tr -d "'")' | jq -e . >/dev/null"
 assert_eq "state-json-verdict" "GO" "$(printf '%s' "$J" | jq -r .verdict)"
 assert_eq "state-json-lane-a"  "done" "$(printf '%s' "$J" | jq -r '.lanes[] | select(.name=="a") | .status')"
+assert_eq "state-json-watch-inactive" "-" "$(printf '%s' "$J" | jq -r .watch)"
+
+# a fresh supervisor heartbeat is enough to report this run alive without ps/lsof
+printf '%s runner=alive restarts=0\n' "$(date '+%F %T')" > "$G/.polylane/supervisor-heartbeat"
+OUT_HB=$(cd "$G" && POLYLANE_SESSION=state-test-nosuch "$STATE" .polylane/run.json)
+assert_contains "state-heartbeat-alive" "runner: alive" "$OUT_HB"
 
 # report present flips the field
 echo "Outcome: GO" > "$G/docs/polylane-report.md"

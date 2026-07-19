@@ -33,6 +33,9 @@ overlay. This produces several reliability gaps:
   stdin, increasing quoting and command-length risk.
 - Core and platform-specific behavior are mixed, making it difficult to test whether
   a change applies equally to both distributions.
+- The legacy one-cycle supervisor exits after a valid `GO` or `NO_GO` report and relies
+  on prose in the host skill turn to begin the next cycle. A council/cycle boundary can
+  therefore look like successful completion even though the locked goal remains open.
 
 ## Selected Architecture
 
@@ -86,6 +89,12 @@ The shared core owns:
   next-idea generation.
 - Platform-neutral workflow and planning rules.
 
+Python 3 is an explicit package/runtime dependency for the bounded skill inventory,
+content-addressed snapshots, and selection logic. Doctor, launchers, installers, and both
+platform package tests report the same dependency contract and fail before git/tmux side
+effects if it is unavailable; it is never an implicit helper discovered halfway through a
+cycle.
+
 The Codex adapter owns:
 
 - The Codex skill frontmatter and Codex-specific instructions.
@@ -126,17 +135,35 @@ invokes `polylane-codex-loop.sh`. That launcher creates one stable tmux session 
 Each builder and integrator pane changes into its isolated worktree and runs:
 
    ```text
-   codex exec --sandbox workspace-write --model <model> \
+   codex exec --json --sandbox workspace-write -c approval_policy=never --model <model> \
      -c model_reasoning_effort=<effort> - < /absolute/path/to/prompt-file
    ```
+
+Stdout JSONL and stderr are captured separately. Progress and failure classification use
+only validated Codex JSON events; incidental stderr warnings and natural-language pane
+text never become recovery facts. Controller turns additionally use `--output-schema` and
+`--output-last-message` so the proposed action has an exact private output path before core
+validation and application.
 
 The shared engine observes file markers and pane state, verifies the integrator verdict,
 promotes only on GO, and returns control to the persistent orchestrator. The orchestrator
 closes the cycle, elects the next focus, and immediately starts the next one.
 
+A one-cycle runner or supervisor exit is only a typed child result for the persistent
+orchestrator. It can never end the stable controller/guardian loop, be relayed as final
+host output, or satisfy teardown. The guardian must persist the continuation transaction
+before acknowledging the child result; restart replays that transaction if the controller
+dies anywhere across verdict, promotion, council, or next-cycle scheduling.
+
 `POLYLANE_AGENT_CMD` remains an explicit expert override. The Codex launcher still
 enforces the Codex manifest identity, but a supplied command template may replace the
 default executable command for testing or specialized Codex installations.
+
+The persistent controller has a narrower non-template override. `POLYLANE_CONTROLLER_CMD`
+accepts one canonical absolute executable path only. Multi-argument launches use a
+mutually exclusive `POLYLANE_CONTROLLER_ARGV_FILE`: a canonical mode-0600 JSON array of
+nonempty strings whose first member is an absolute executable. The validated array and
+hash are persisted and executed directly; shell evaluation and reparsing are forbidden.
 
 ## Persistent Autonomy and Terminal States
 
@@ -145,12 +172,18 @@ the foreground. There is no fixed cycle cap, time cap, token cap, cost cap, ROI 
 "diminishing returns" exit. Cost and usage remain visible in the ledger but are
 informational only.
 
+While the initiating Codex turn remains available, it follows durable state in short
+bounded waits, surfaces cycle/GitHub-skill suggestions, and delivers final output. That
+foreground observer is not a liveness dependency: if the host turn is interrupted, tmux
+continues and the next skill entry resumes the durable delivery cursor.
+
 Only two terminal states exist:
 
 1. **`COMPLETE`** — the locked goal, perfection convergence, and final certification all
    pass.
 2. **`WAITING_FOR_USER`** — a genuine product/strategy pivot, unavailable credential or
-   account, or irreversible externally visible action requires a user decision.
+   account, irreversible externally visible action, or an unrelated external resource
+   collision that cannot be changed safely requires a user decision.
 
 An internal lane failure, runner crash, controller crash, transient outage, rate limit,
 failed approach, merge conflict, weak ROI, or elapsed time is never a terminal state.
@@ -173,6 +206,10 @@ Ordinary cycles optimize wall-clock time without weakening final correctness:
 - Ordinary next-focus decisions use a fast independent three-member council. Any risky,
   regressed, or potentially final cycle uses the full five-member council including the
   adversary.
+- A council decision is valid only when every required member has a separate immutable
+  input artifact, output artifact, actor identity, prompt hash, output hash, start token,
+  and completion event. Reducer-authored booleans or member counts are never accepted as
+  evidence that a council or adversarial review ran.
 - Deep research is skipped when no new decision depends on external knowledge; previously
   covered ground is never repeated.
 - Polling is event-responsive with a short adaptive fallback interval rather than fixed
@@ -182,8 +219,40 @@ Ordinary cycles optimize wall-clock time without weakening final correctness:
 - User questions never block ordinary implementation choices. Recommended defaults are
   taken automatically unless the issue meets the `WAITING_FOR_USER` definition.
 
+The next-cycle critical path contains only evidence needed to choose and safely reserve
+the next in-scope action. Informational GitHub discovery and rich suggestion rendering are
+recoverable sidecars and never delay that reservation or worker launch. The authenticated
+council aggregate uses exact current goal references and a deterministic stable tie-break,
+so the next focus can be persisted without an additional model round trip. Per-cycle
+suggestions remain durable and replayable even when their richer rendering finishes after
+the next goal-directed job has begun.
+
 Potentially final cycles always run the exhaustive council, frozen acceptance suite,
 regression suite, and fresh checkout install/build/boot certification.
+
+A fast three-member council can never certify or terminate. Even unanimous `complete`
+only persists a nomination for a fresh exhaustive five-member council with the adversary.
+An exhaustive `complete` result then nominates certification; only the two-clean-pass
+terminal reducer may ultimately publish `COMPLETE`. Any negative finding at either level
+becomes repair work and launches the next cycle.
+
+A council verdict is routing evidence, never a terminal state. An authenticated cycle or
+integrator `GO` promotes the cycle result and atomically schedules the next open goal,
+perfection pass, or certification action. An authenticated cycle or integrator `NO_GO`
+converts every actionable finding into repair goals and atomically schedules the next
+repair cycle. A council `complete` recommendation routes to exhaustive certification; a
+`not_complete` recommendation routes to its selected open focus. An abstention, malformed
+verdict, missing member, or failed evidence check enters typed recovery and continues.
+No cycle or council verdict handler can emit `COMPLETE`, `WAITING_FOR_USER`, teardown the
+session, or leave an incomplete queue empty. Only the independent terminal-state reducer
+may select one of the two terminal states after its full gate has passed.
+
+The authenticated council artifact is also mandatory input to next-focus selection; a
+queue dependency alone is not proof that its recommendations were used. A council
+`complete` recommendation may nominate an exhaustive perfection/certification pass, but
+cannot certify completion. Its ranked focus recommendations are reconciled only against
+current open in-scope goals, and the selected continuation is persisted before the
+council work item is acknowledged as closed.
 
 ## Continuous Work and Progress Leases
 
@@ -210,6 +279,14 @@ long-running command declares its own deadline before launch; remaining alive co
 until that deadline, so a stuck child cannot renew forever. Lease and queue transitions
 are written atomically under `.polylane/runtime/` and include the current action, last
 progress proof, deadline, recovery attempt, and next action.
+
+Every runnable queue item also carries canonical `ownership_globs` and `resource_locks`
+arrays plus their canonical hash. Read-only selection reports the snapshot revision and
+aggregate ownership proof; only the guardian may atomically reserve that exact selection.
+Overlapping ownership or resource locks, a stale revision, or a changed proof rejects the
+reservation before a worker starts. Reservation and activation are separate: activation
+binds the claim to the launched worker PID/start token so a crash between selection and
+spawn is recoverable without creating two valid owners.
 
 On lease expiry the guardian captures diagnostics and escalates without waiting for chat:
 checkpoint and resume, retry, reflection repair, alternate approved model, task re-carve,
@@ -245,7 +322,11 @@ tmux attach -t polylane-<run-id>
 It appears once per launch/resume and again only if the session is recreated or its name
 changes. A single stable session contains controller and lane windows, so one command is
 enough to observe the whole run. If more than one Polylane run is active, chat displays
-one standalone command per active session.
+one standalone command per active session. On each Codex skill entry, Polylane discovers
+all tmux-tagged owned sessions globally, unions those records with the current launcher
+result by `(session, generation)`, sorts them, and prints each distinct line exactly once
+in that response. Response-local deduplication never suppresses the line on a later turn;
+unowned sessions are never adopted, listed, or changed.
 
 ## Builder Skill Kits and GitHub Suggestions
 
@@ -260,13 +341,32 @@ Every builder prompt contains exactly four required skill assignments:
 If a predefined skill is unavailable, the prompt includes its equivalent behavioral
 contract and the skill is offered for installation; the lane never starts with a missing
 quality gate. A deterministic prompt lint fails before launch unless all four assignments
-or approved equivalents are present. Each builder's verify file records which skills it
-used, the output they produced, and whether they helped. The council scores those results
-so repeatedly unused or harmful choices are not suggested again.
+or approved equivalents are present. Discovery snapshots every installed assignment's
+bounded complete skill directory once into a content-addressed, read-only runtime tree.
+The kit records that snapshot's absolute `SKILL.md`, body hash, tree manifest, and tree
+hash; prompt generation materializes the exact verified body while relative resources
+remain available from the immutable tree. Selection and rendering never reread a mutable
+host skill root. Each builder's verify file records which skills it used, the output they
+produced, and whether they helped. Those statements count only when authenticated runtime
+events bind the worker identity, prompt/kit/tree hashes, DONE marker, verify hash, and fresh
+verification artifact. Kit framing, worker results, attestations, and scoring records all
+bind the same claim, runner generation, attempt, and worker PID/start-token/generation; a
+record from another attempt or actor can never qualify the current lane. The council scores
+accepted receipts so repeatedly unused or harmful choices are not suggested again.
 
 The GitHub skill suggester runs after lane derivation and searches only for capabilities
 not covered by installed skills. Each suggestion includes repository URL, maintainer,
 recent activity, why it fits a named lane, and the permissions or tooling it introduces.
+It inspects bounded root and nested `SKILL.md` candidates at immutable blob identities and
+scores the metadata of the actual candidate against the named gap; a repository name,
+README, or unrelated first skill is not relevance evidence. Every lookup job reaches a
+typed terminal result, including unavailable/timeout, and guardian ownership survives a
+controller restart without blocking builders. Commit, tree, candidate-skill, and license
+objects are accepted only when their bounded fetched bytes reconstruct the canonical Git
+object id claimed by the pinned response and all parent/child links agree; an API-provided
+SHA string alone is not immutable-object evidence.
+Search vocabulary comes from the selected platform adapter; shared core contains no Codex-
+or Claude-specific query phrase.
 External skills are never auto-installed; they are informational until the user approves
 them, and their absence never blocks the current cycle. Installed, previously approved
 lane-specific skills may be selected automatically.
@@ -284,11 +384,23 @@ failure. Each certification includes the full five-member council, adversarial r
 all frozen checks, and a fresh checkout install/build/boot test. Any new finding becomes a
 top-weight sub-goal, resets the consecutive-clean counter, and the loop continues.
 
+Both clean records certify the same commit, frozen scope, built-in control-path allowlist,
+and product fingerprint. Staged, unstaged, or untracked product changes outside the closed
+Polylane control schema reject certification; a stable dirty defect cannot be hidden by
+testing only `HEAD` in fresh checkouts.
+
 After each ordinary cycle, Polylane reports concrete work completed and a ranked set of
-possible next moves while automatically continuing with the council-elected focus. After
-`COMPLETE`, it produces exactly 30 ranked informational ideas beyond the locked scope.
-Those ideas are not defects, do not reopen the completed goal, and are never built
-automatically. Selecting one starts a new locked run.
+possible next moves while automatically continuing with the council-elected focus. The
+terminal transaction freezes an exact immutable set of 30 ranked informational ideas
+beyond the locked scope before it may select `COMPLETE`; after teardown, the foreground
+delivers those same 30 items. Those ideas are not defects, do not reopen the completed
+goal, and are never built automatically. Selecting one starts a new locked run.
+
+The foreground does not declare the task fully done until durable shutdown reaches
+`TEARDOWN_COMPLETE` and all owned tmux/process resources are independently absent. Final
+delivery is deterministic at-least-once: a local render attempt never suppresses replay.
+Only a later host delivery receipt or explicit user acknowledgement of the visible delivery
+id/hash may mark the 30-item response acknowledged.
 
 ## Shared Agent Contract
 
@@ -300,8 +412,9 @@ The core runner becomes agent-aware without becoming Codex-specific:
   requires `aider`; a custom command template bypasses executable-name inference.
 - Doctor reports the same selected-agent dependency contract as the runner.
 - Unknown agents fail before worktrees or tmux sessions are created.
-- The core retains Claude as its generic backward-compatible default. Platform launchers
-  override this default and enforce their own identity.
+- Shared core rejects an absent agent identity. The temporary root compatibility wrappers
+  explicitly select Claude, while each platform launcher selects and enforces its own
+  identity; no shared helper silently defaults to either platform.
 
 The command-template contract supports `{model}`, `{prompt}`, and optional `{effort}`.
 The Codex default consumes all three values correctly. Existing Claude and custom
@@ -330,7 +443,24 @@ Codex failures are classified before recovery:
 
 `codex/install.sh` and `claude-code/install.sh` assemble self-contained installed skills
 from the same core revision. Each package records that core revision so tests and support
-output can detect stale or mixed installations.
+output can detect stale or mixed installations. A second deterministic whole-package
+manifest seals every shipped skill, adapter script, reference, asset, and metadata file;
+activation, certification, rollback, doctor, and installed-skill comparison validate the
+whole package rather than trusting the shared-core manifest alone.
+
+Package publication uses immutable releases and an atomic public pointer after a one-time
+rollback-safe maintenance conversion of any legacy regular-directory install. That first
+conversion mechanically refuses to run while an owned Polylane session/runtime/process is
+active and is not described as atomic. Before changing the public pointer, the installer
+durably writes an activation journal with prior/candidate hashes and the publisher,
+certification-owner, and independent-guard PID/start tokens. Publisher death before the
+`PUBLISHED` state rolls back; certification-owner death after `PUBLISHED` but before
+`COMMITTED` rolls back; `COMMITTED` keeps the candidate even if either process later exits.
+Installed-skill continuity or forward-invocation certification failure follows the same
+compare-and-swap rollback and never overwrites a concurrent newer activation.
+Public-pointer replacement is tested as an actual symlink-to-directory upgrade on both BSD
+and GNU userlands. Legacy rollback and stale-lock recovery use the same destination lock and
+expected-pointer/nonce comparison, so an old guard can never overwrite a newer publisher.
 
 The Codex installer targets `~/.codex/skills/polylane` when available, with the existing
 documented fallback supported explicitly. Repo-scoped installation remains available.
@@ -365,8 +495,13 @@ Shared-core tests cover:
 - Proof that internal failures, cycle counts, ROI, and ledger totals cannot select a
   terminal state.
 - Fast ordinary-cycle and exhaustive-final-cycle gate selection.
+- Verdict continuation: cycle `GO` promotes and schedules the next action, cycle `NO_GO`
+  schedules repair, council `complete` nominates exhaustive certification, council
+  `not_complete` selects the next open focus, and invalid/abstaining verdicts schedule
+  recovery; no verdict alone stops, tears down, or leaves the incomplete loop idle.
 - Exact standalone tmux watch-command emission on create, resume, and recreation.
-- Four-skill prompt assignment, prompt lint, evidence, and ledger scoring.
+- Four-skill prompt assignment with path/hash-verified body materialization, prompt lint,
+  evidence, and ledger scoring.
 - Perfection convergence requiring two consecutive clean exhaustive passes.
 - Per-cycle suggestion output and exactly 30 non-executing final suggestions.
 - Existing marker, scope, seam, ledger, memory, and report behavior.
@@ -376,7 +511,8 @@ Codex adapter tests cover:
 
 - Fail-closed rejection when `agent` is absent or not Codex.
 - No Claude executable requirement or Claude path fallback.
-- The current stdin-based `codex exec` command, model, sandbox, and reasoning effort.
+- The current stdin-based `codex exec --json` command, model, sandbox, reasoning effort,
+  separated event log, and structured terminal-failure artifact.
 - Installed-skill helper resolution relative to the skill directory.
 - Temporary Codex package installation and core-revision parity.
 - Supervisor restart retaining Codex identity.
@@ -417,7 +553,9 @@ The migration is complete when all of the following are demonstrated:
 6. The installed Codex skill resolves only its own installed helpers.
 7. Hermetic shared, Codex, Claude, installer, and tmux rehearsal suites pass.
 8. The real-Codex tmux canary reaches a valid GO and promotion in a throwaway repository.
-9. The verified Codex package is installed into the active user Codex skill location.
+9. The verified Codex package is installed into the active user Codex skill location through
+   guarded activation; failed/SIGKILL certification restores the prior package, and a
+   legacy directory is migrated only after the owned-user preflight is clean.
 10. Existing root Claude Code entrypoints remain operational during the compatibility
     period.
 11. A persistent Codex controller survives a forced exit, resumes from disk, and starts
@@ -426,24 +564,39 @@ The migration is complete when all of the following are demonstrated:
     `WAITING_FOR_USER`; budget, cycle, ROI, and internal-failure fixtures never terminate.
 13. Ordinary cycles take the fast adaptive path while final candidates take the full
     five-member and fresh-checkout certification path.
+    Cycle and council verdicts remain nonterminal routing evidence: crash/restart at
+    verdict, promotion, council, and next-cycle boundaries resume an already persisted
+    continuation, and neither cycle `GO`/`NO_GO` nor council
+    `complete`/`not_complete`/abstention/invalid evidence can stop an incomplete run.
 14. Every created, resumed, or recreated active session makes the exact standalone
     `tmux attach -t polylane-<run-id>` command available and surfaces it to chat.
 15. Every builder prompt passes a mechanical gate for two predefined and two
     lane-specific skills, with usage evidence recorded after execution.
 16. The GitHub suggester emits attributed lane-specific candidates without installing
     them or blocking the cycle.
-17. Completion requires two consecutive clean exhaustive certifications after the
-    original acceptance tree passes.
-18. Each cycle emits ranked next-move suggestions, and final completion emits exactly 30
-    informational ideas that do not execute or alter completed scope.
+17. Completion requires two consecutive clean exhaustive certifications of one clean
+    product fingerprint after the original acceptance tree passes; stable dirty product
+    state is rejected.
+18. Each cycle emits ranked next-move suggestions, and after `TEARDOWN_COMPLETE` final
+    delivery emits exactly 30 deterministic at-least-once informational ideas that do not
+    execute or alter completed scope.
 19. A heartbeat without progress expires its lease and is recovered; an active quiet
     command remains valid only until its declared deadline.
 20. Every incomplete runtime snapshot contains running goal-directed work or a persisted
     recovery action with `next_action_at`; an empty queue reconstructs automatically.
+    Claim activation, renewal, completion, failure, expiry, and reclaim all revalidate the
+    bound worker PID/start token and guardian generation; an expired writer is fully fenced
+    before conflicting work becomes runnable.
 21. Provider-outage tests stay in observable `RECOVERING`, drain offline work, probe and
     resume without entering `WAITING_FOR_USER` unless a concrete account action is needed.
 22. Accelerated multi-hour fault-injection soak tests and the real two-cycle Codex/tmux
-    continuity canary pass with zero unexplained idle gaps.
+    continuity canary pass with zero unexplained idle gaps. Promotion, recovery, council,
+    and certification counts are reduced from authenticated runtime events and artifact
+    hashes; the canary may not write expected counters directly.
+23. Runtime events form a verified content/hash chain, replay from the latest verified
+    checkpoint plus retained tail is byte-identical to the current snapshot, and tamper,
+    deletion, reordering, writer/reducer crashes, and ENOSPC recover without a false terminal
+    state or an ownerless wait.
 
 ## Non-Goals
 

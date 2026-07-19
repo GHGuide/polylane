@@ -48,6 +48,7 @@ reset_proj; echo crash-then-go > "$PROJ/.polylane/mode"
 POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out1" 2>&1
 assert_eq "sup-revive-rc0" "0" "$?"
 assert_contains "sup-revive-logged"  "reviving with --resume" "$(cat "$TEST_TMPDIR/out1")"
+assert_contains "sup-watch-command"  "watch active tmux: tmux attach -t sup-test-nosuch" "$(cat "$TEST_TMPDIR/out1")"
 assert_contains "sup-second-call-resumes" "yes --resume" "$(tail -1 "$PROJ/.polylane/calls.log")"
 assert_contains "sup-finished" "finished legitimately" "$(cat "$TEST_TMPDIR/out1")"
 

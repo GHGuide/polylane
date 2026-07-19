@@ -23,7 +23,7 @@ assert_eq() {
 
 # assert_contains NAME NEEDLE HAYSTACK — fixed-string match
 assert_contains() {
-  if printf '%s' "$3" | grep -qF "$2"; then
+  if printf '%s' "$3" | grep -qF -- "$2"; then
     pass "$1"
   else
     fail "$1" "output does not contain [$2]"

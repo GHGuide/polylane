@@ -18,8 +18,9 @@ bin/polylane-run.sh <manifest> [--dry-run] [--yes]
 Environment variables the runner honors:
 
 - `POLYLANE_SESSION` — tmux session name (default `polylane`); set it so parallel runs coexist without colliding.
-- `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default 15).
-- `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES` — the health check that auto-retries a lane stuck on a transient API/network error (default: scan every 300 s, 3 retries; past the cap the lane is marked failed and the run writes the report instead of hanging).
+- `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default 5).
+- `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES` — the health check that auto-retries a lane stuck on a transient API/network error (default: scan every 60 s, 3 retries; past the cap the lane is marked failed and the run writes the report instead of hanging).
+- `POLYLANE_SEED_VERIFY` — seconds after launch before checking that seeded commands actually started (default 5).
 
 Run it ONLY after the integrator's GO on a **re-merge of current branch HEADs** (not a stale prior GO). If NO-GO, don't run cleanup.
 

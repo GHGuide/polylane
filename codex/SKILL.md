@@ -15,8 +15,9 @@ Nothing is removed or simplified.** Read and follow it exactly. Helpers live und
 
 ## Codex deltas — the ONLY differences (apply these on top of the loop below)
 1. **Agent = codex.** Every emitted `.polylane/run.json` sets `"agent": "codex"`, so the
-   runner launches `codex exec --full-auto --model <model> "$(cat <prompt>)"` per lane
-   (override the template with `POLYLANE_AGENT_CMD` if your Codex CLI's flags differ).
+   runner launches `codex exec --json --sandbox workspace-write -c approval_policy=never
+   -c model_reasoning_effort=<effort> --model <model> - < <prompt>` per lane (override
+   the template with `POLYLANE_AGENT_CMD` if your Codex CLI's flags differ).
 2. **Models = your Codex model ids.** Probe/ask which Codex models are available and put
    their ids in the manifest's `available_models` (e.g. `gpt-5-codex`, plus any
    mini/lighter tier). The intensity → per-lane model resolution in
@@ -34,6 +35,23 @@ Nothing is removed or simplified.** Read and follow it exactly. Helpers live und
    per-cycle questions as normal messages, each with a clearly recommended default so one
    reply advances; in autonomous mode take the default and log it. `go deeper` / `surprise
    me` become extra offered options in the message.
+5. **tmux visibility is mandatory.** Whenever a Polylane tmux session is active, surface
+   exactly one terminal watch command in chat or state output: `tmux attach -t <session>`.
+   Do not invent this line for inactive sessions.
+6. **Council is advisory unless all terminal gates pass.** A council verdict, GO/NO-GO
+   cycle result, digest, research result, or suggestion list is never a stopping point by
+   itself. Continue into the next focus unless the locked goal, acceptance checks,
+   shippability certification, and perfection pass all say complete, or a genuine user
+   decision is required.
+7. **Autonomous Codex mode does not idle at boundaries.** After each cycle, immediately
+   pick or synthesize the next focus, arm builder lanes with predefined and lane-specific
+   installed skills, record GitHub skill suggestions as informational, and launch the next
+   executable work. If the initial prompt's requested goal is fully satisfied, emit exactly
+   30 concise informational suggestions for what can be improved next, then keep iterating
+   only on suggestions that still advance the locked goal/perfection criteria.
+8. **Fast default cadence.** Use the shared runner's responsive defaults
+   (`POLYLANE_POLL_INTERVAL=5`, `POLYLANE_HEALTH_INTERVAL=60`,
+   `POLYLANE_SEED_VERIFY=5`) unless the user explicitly slows them down.
 
 Everything else — the tree, gates, council, promote, cleanup, memory, resume — is
 byte-for-byte the same engine and the same loop. Now follow it:

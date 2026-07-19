@@ -114,7 +114,7 @@ cat docs/polylane-report.md
 
 ### Auto-retry on transient errors
 
-A lane that dies on an API 500 / overloaded / network blip shouldn't sink the run. Every `POLYLANE_HEALTH_INTERVAL` seconds (default 300) the runner scans each unfinished pane and respawns any that hit a transient error, up to `POLYLANE_MAX_RETRIES` times (default 3). Past the cap the run halts and writes the report instead of hanging.
+A lane that dies on an API 500 / overloaded / network blip shouldn't sink the run. Every `POLYLANE_HEALTH_INTERVAL` seconds (default 60) the runner scans each unfinished pane and respawns any that hit a transient error, up to `POLYLANE_MAX_RETRIES` times (default 3). Past the cap the run halts and writes the report instead of hanging.
 
 ```
 POLYLANE_MAX_RETRIES=5 polylane-run.sh .polylane/run.json --yes
@@ -148,7 +148,7 @@ The tmux session is named by `POLYLANE_SESSION` (default `polylane`). Two runs o
 POLYLANE_SESSION=run2 polylane-run.sh .polylane/run.json
 ```
 
-(`POLYLANE_POLL_INTERVAL` tunes the DONE-file poll, default 15s.)
+(`POLYLANE_POLL_INTERVAL` tunes the DONE-file poll, default 5s.)
 
 ### Live dashboard
 

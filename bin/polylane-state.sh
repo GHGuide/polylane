@@ -51,6 +51,9 @@ MDIR=$(cd "$(dirname "$MANIFEST")" && pwd)
 PROJECT_ROOT=$(cd "$MDIR/.." && pwd)
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
 
+tmux_session_active() { tmux has-session -t "$TMUX_SESSION" 2>/dev/null; }
+tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
+
 # --- pane discovery by worktree path (index-free, restart-proof) --------------
 PANE_LIST=$(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}|#{pane_current_command}' 2>/dev/null || true)
 
@@ -93,16 +96,15 @@ lane_state() { # NAME WT -> "status|paneidx|head|ahead"
 }
 
 # --- run-level facts ----------------------------------------------------------
-# A runner is "alive" only if a polylane-run.sh process is driving THIS project —
-# manifest basenames collide across projects (every run is .polylane/run.json), so
-# candidates are confirmed by cwd (or an absolute manifest path in the cmdline).
+# A runner is "alive" when it can be tied to this exact manifest or a fresh
+# supervisor heartbeat says the runner is alive. Do not use ps/lsof here: state
+# checks are the fast path during long runs and must not hang behind process-table
+# enumeration under load.
 runner_alive="dead"
-for rpid in $(pgrep -f "polylane-run\.sh .*$(basename "$MANIFEST")" 2>/dev/null || true); do
-  rcwd=$(lsof -a -p "$rpid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)
-  rcmd=$(ps -o command= -p "$rpid" 2>/dev/null || true)
-  case "$rcwd" in "$PROJECT_ROOT"*) runner_alive="alive"; break ;; esac
-  case "$rcmd" in *" $MDIR/"*) runner_alive="alive"; break ;; esac
-done
+REAL_MANIFEST="$MDIR/$(basename "$MANIFEST")"
+while IFS= read -r line; do
+  case "$line" in *"polylane-run.sh"*" $REAL_MANIFEST"*) runner_alive="alive"; break ;; esac
+done < <(pgrep -fl "polylane-run\.sh" 2>/dev/null || true)
 
 INT_NAME=$(jq -r '.integrator.name // ""' "$MANIFEST")
 INT_WT=$(jq -r '.integrator.worktree // ""' "$MANIFEST")
@@ -114,7 +116,11 @@ hb="$MDIR/supervisor-heartbeat"; hb_age="-"
 if [ -f "$hb" ]; then
   now=$(date +%s); mt=$(stat -f %m "$hb" 2>/dev/null || stat -c %Y "$hb" 2>/dev/null || echo "$now")
   hb_age="$((now - mt))s"
+  if [ "$((now - mt))" -le "${POLYLANE_STATE_HEARTBEAT_LIVE_SECS:-90}" ] && grep -q 'runner=alive' "$hb" 2>/dev/null; then
+    runner_alive="alive"
+  fi
 fi
+watch="-"; tmux_session_active && watch="$(tmux_watch_command)"
 
 # --- emit ----------------------------------------------------------------------
 NAMES=(); WTS=()
@@ -129,10 +135,10 @@ $(lane_state "${NAMES[$i]}" "${WTS[$i]}")
 EOF
     lanes_json=$(printf '%s' "$lanes_json" | jq --arg n "${NAMES[$i]}" --arg s "$st" --arg p "$idx" --arg h "$head" --argjson a "${ahead:-0}" '. + [{name:$n,status:$s,pane:$p,head:$h,commits_ahead:$a}]')
   done
-  jq -n --arg runner "$runner_alive" --arg verdict "$verdict" --arg report "$report" --arg hb "$hb_age" --arg session "$TMUX_SESSION" --argjson lanes "$lanes_json" \
-    '{runner:$runner, verdict:$verdict, report:$report, heartbeat_age:$hb, session:$session, lanes:$lanes}'
+  jq -n --arg runner "$runner_alive" --arg verdict "$verdict" --arg report "$report" --arg hb "$hb_age" --arg session "$TMUX_SESSION" --arg watch "$watch" --argjson lanes "$lanes_json" \
+    '{runner:$runner, verdict:$verdict, report:$report, heartbeat_age:$hb, session:$session, watch:$watch, lanes:$lanes}'
 else
-  echo "runner: $runner_alive · verdict: $verdict · report: $report · heartbeat: $hb_age · session: $TMUX_SESSION"
+  echo "runner: $runner_alive · verdict: $verdict · report: $report · heartbeat: $hb_age · session: $TMUX_SESSION · watch: $watch"
   for i in "${!NAMES[@]}"; do
     IFS='|' read -r st idx head ahead <<EOF
 $(lane_state "${NAMES[$i]}" "${WTS[$i]}")

@@ -12,6 +12,12 @@
 AGENT=claude; unset POLYLANE_AGENT POLYLANE_AGENT_CMD
 assert_contains "tmpl-claude"     "claude --permission-mode" "$(agent_template)"
 assert_contains "tmpl-claude-ph"  '{model}'                  "$(agent_template)"
+# effort must reach the CLI mechanically (--effort), not just as an env var the CLI
+# ignores — otherwise a Claude lane's effort is pure prompt-discretion.
+assert_contains "tmpl-claude-effort" '--effort {effort}'      "$(agent_template)"
+CCMD=$(pane_cmd /tmp/wt claude-opus-4-8 /tmp/p.txt xhigh)
+assert_contains "panecmd-claude-effort-applied" "--effort xhigh" "$CCMD"
+assert_contains "panecmd-claude-effort-default" "--effort medium" "$(pane_cmd /tmp/wt claude-opus-4-8 /tmp/p.txt '')"
 AGENT=codex
 assert_contains "tmpl-codex"      "codex exec"               "$(agent_template)"
 AGENT=gpt
@@ -33,9 +39,12 @@ AGENT=codex
 CMD=$(pane_cmd /tmp/wt gpt-5-codex /tmp/p.txt high)
 assert_contains "panecmd-cd"      "cd /tmp/wt"        "$CMD"
 assert_contains "panecmd-effort"  "POLYLANE_EFFORT=high" "$CMD"
+assert_contains "panecmd-effort-config" "model_reasoning_effort=high" "$CMD"
 assert_contains "panecmd-model"   "gpt-5-codex"       "$CMD"
-assert_contains "panecmd-prompt"  '$(cat /tmp/p.txt)' "$CMD"
+assert_contains "panecmd-prompt"  "< /tmp/p.txt" "$CMD"
 assert_contains "panecmd-no-claude" "codex exec"      "$CMD"
+assert_contains "panecmd-json" "--json" "$CMD"
+assert_contains "panecmd-approval-never" "approval_policy=never" "$CMD"
 
 # --- pane_dead process set follows the agent --------------------------------
 AGENT=codex;  assert_contains "procs-codex"  "codex" "$(agent_procs)"
@@ -46,5 +55,26 @@ AGENT=claude; assert_contains "procs-claude" "claude" "$(agent_procs)"
 AGENT=claude POLYLANE_AGENT=codex
 assert_eq "select-env-overrides" "codex" "$(agent_selected)"
 unset POLYLANE_AGENT
+
+# --- agent-aware preflight: codex manifests require codex, not claude --------
+make_tmpdir
+TOOLBIN="$TEST_TMPDIR/tools"; mkdir -p "$TOOLBIN"
+for t in tmux git jq codex; do
+  printf '#!/usr/bin/env sh\nexit 0\n' > "$TOOLBIN/$t"
+  chmod +x "$TOOLBIN/$t"
+done
+AGENT=codex REPO_ROOT="$TEST_TMPDIR" MANIFEST="$TEST_TMPDIR/run.json" PATH="$TOOLBIN" \
+  assert_ok "preflight-codex-does-not-require-claude" preflight_agent
+rm -f "$TOOLBIN/codex"
+AGENT=codex REPO_ROOT="$TEST_TMPDIR" MANIFEST="$TEST_TMPDIR/run.json" PATH="$TOOLBIN" \
+  assert_rc "preflight-codex-requires-codex" 1 preflight_agent
+
+# custom templates own their CLI deps; the runner only checks shared mechanics.
+AGENT=codex POLYLANE_AGENT_CMD='custom --m {model} --p {prompt}' REPO_ROOT="$TEST_TMPDIR" MANIFEST="$TEST_TMPDIR/run.json" PATH="$TOOLBIN" \
+  assert_ok "preflight-custom-template-skips-agent-cli" preflight_agent
+unset POLYLANE_AGENT_CMD
+
+TMUX_SESSION=polylane-c42
+assert_eq "watch-command" "tmux attach -t polylane-c42" "$(tmux_watch_command)"
 
 finish
