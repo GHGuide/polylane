@@ -18,6 +18,13 @@ assert_contains "tmpl-claude-effort" '--effort {effort}'      "$(agent_template)
 CCMD=$(pane_cmd /tmp/wt claude-opus-4-8 /tmp/p.txt xhigh)
 assert_contains "panecmd-claude-effort-applied" "--effort xhigh" "$CCMD"
 assert_contains "panecmd-claude-effort-default" "--effort medium" "$(pane_cmd /tmp/wt claude-opus-4-8 /tmp/p.txt '')"
+# respawn resumes the lane's session (keeps its worked-out context) and still delivers
+# the prompt; a COLD first launch must never carry --continue.
+assert_contains "panecmd-claude-resume"      "claude --continue" "$(pane_cmd /tmp/wt claude-opus-4-8 /tmp/p.txt high resume)"
+assert_contains "panecmd-claude-resume-prompt" 'cat /tmp/p.txt'   "$(pane_cmd /tmp/wt claude-opus-4-8 /tmp/p.txt high resume)"
+if printf '%s' "$(pane_cmd /tmp/wt claude-opus-4-8 /tmp/p.txt high)" | grep -q -- '--continue'; then
+  fail "panecmd-cold-has-no-continue" "cold launch carried --continue"
+else pass "panecmd-cold-has-no-continue"; fi
 AGENT=codex
 assert_contains "tmpl-codex"      "codex exec"               "$(agent_template)"
 AGENT=gpt

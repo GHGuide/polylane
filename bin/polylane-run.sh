@@ -563,7 +563,7 @@ agent_procs() {
 }
 
 pane_cmd() {
-  local wt="$1" model="$2" pf="$3" effort="${4:-}" pfx=""
+  local wt="$1" model="$2" pf="$3" effort="${4:-}" resume="${5:-}" pfx=""
   local qwt qmodel qpf qeffort tmpl
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf"); qeffort=$(printf '%q' "${effort:-medium}")
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
@@ -572,6 +572,15 @@ pane_cmd() {
   # for ANY reason (crash, limit, /exit) the pane drops to a shell and prints a
   # marker; the health-check owns recovery — it re-seeds THIS same command.
   tmpl=$(agent_template) || tmpl='claude --model {model} "$(cat {prompt})"'
+  # RESPAWN with context: a re-seeded Claude lane otherwise starts a BRAND-NEW session
+  # from the original prompt — its files survive (checkpoint_lane commits them) but
+  # everything it worked out in-context is lost, so it re-derives from zero. `--continue`
+  # resumes the most recent conversation IN THIS DIRECTORY (each lane owns its worktree),
+  # and still delivers the prompt as the next message — resume + re-anchor the goal.
+  # codex exec is stateless so it has no equivalent; only the claude profile gets this.
+  if [ -n "$resume" ] && [ "$(agent_selected)" = claude ]; then
+    tmpl=${tmpl/claude /claude --continue }
+  fi
   tmpl=${tmpl//'{model}'/$qmodel}
   tmpl=${tmpl//'{prompt}'/$qpf}
   tmpl=${tmpl//'{effort}'/$qeffort}
@@ -698,14 +707,14 @@ pane_index_for() {
 
 # pane_cmd_for NAME : the seeded launch command for a lane / the integrator.
 pane_cmd_for() {
-  local name="$1" i
+  local name="$1" resume="${2:-}" i
   for i in "${!LANE_NAMES[@]}"; do
     [ "${LANE_NAMES[$i]}" = "$name" ] && {
-      pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}"
+      pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}" "$resume"
       return
     }
   done
-  [ "$name" = "${INT_NAME:-}" ] && pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}"
+  [ "$name" = "${INT_NAME:-}" ] && pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}" "$resume"
 }
 
 # pane_errored IDX : 0 iff the pane shows a transient error signature (or died).
@@ -915,7 +924,12 @@ respawn_lane() {
   # fresh wedge window: a respawned pane gets full POLYLANE_WEDGE_CHECKS before it
   # can be declared frozen again (otherwise the stale hash re-triggers instantly).
   wedge_hash_set "$name" ""; wedge_cnt_set "$name" 0
-  cmd=$(pane_cmd_for "$name")
+  # FIRST respawn resumes the lane's session (keeps everything it worked out); later
+  # respawns use the proven cold seed, so a session that genuinely can't resume costs
+  # exactly one retry instead of looping on a failing --continue.
+  local resume=""
+  [ "$(retry_get "$name")" = "1" ] && resume=resume
+  cmd=$(pane_cmd_for "$name" "$resume")
   if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
