@@ -58,9 +58,35 @@ row() { # STATUS CHECK-NAME HINT/DETAIL
 
 # --- deps ---------------------------------------------------------------------
 
+# doctor_agent : the agent this run will actually use — POLYLANE_AGENT, else the
+# manifest's .agent, else claude. The agent BINARY is what must exist; requiring
+# `claude` for a codex manifest made doctor FAIL a perfectly healthy codex run.
+doctor_agent() {
+  local mf="${MANIFEST:-}" a
+  [ -n "${POLYLANE_AGENT:-}" ] && { printf '%s' "$POLYLANE_AGENT"; return; }
+  [ -z "$mf" ] && mf="$(git rev-parse --show-toplevel 2>/dev/null)/.polylane/run.json"
+  if [ -f "$mf" ] && command -v jq >/dev/null 2>&1; then
+    a=$(jq -r '.agent // "claude"' "$mf" 2>/dev/null)
+    [ -n "$a" ] && [ "$a" != null ] && { printf '%s' "$a"; return; }
+  fi
+  printf 'claude'
+}
+
+# agent_bin AGENT : the executable that agent needs on PATH.
+agent_bin() {
+  case "$1" in
+    codex|gpt|openai) printf 'codex' ;;
+    aider)            printf 'aider' ;;
+    *)                printf 'claude' ;;
+  esac
+}
+
 check_deps() {
-  local d hint
-  for d in tmux jq git claude; do
+  local d hint abin
+  abin=$(agent_bin "$(doctor_agent)")
+  # a custom POLYLANE_AGENT_CMD owns its own CLI — only shared mechanics are required
+  [ -n "${POLYLANE_AGENT_CMD:-}" ] && abin=""
+  for d in tmux jq git ${abin:+$abin}; do
     if command -v "$d" >/dev/null 2>&1; then
       row PASS "dep: $d" "$(command -v "$d")"
     else
@@ -69,6 +95,8 @@ check_deps() {
         jq)     hint="brew install jq" ;;
         git)    hint="xcode-select --install" ;;
         claude) hint="npm install -g @anthropic-ai/claude-code" ;;
+        codex)  hint="brew install codex (or npm i -g @openai/codex)" ;;
+        aider)  hint="pipx install aider-chat" ;;
       esac
       row FAIL "dep: $d" "missing — $hint"
     fi
@@ -244,14 +272,18 @@ check_tmux_session() {
 
 # --- claude version ----------------------------------------------------------------
 
+# version-check the agent this run actually uses (not always claude — a codex run
+# reports codex's version, and a custom POLYLANE_AGENT_CMD is skipped entirely).
 check_claude() {
-  command -v claude >/dev/null 2>&1 || return 0  # dep FAIL already covers absence
-  local v
-  v=$(claude --version 2>/dev/null | head -1)
+  [ -n "${POLYLANE_AGENT_CMD:-}" ] && return 0
+  local a abin v
+  a=$(doctor_agent); abin=$(agent_bin "$a")
+  command -v "$abin" >/dev/null 2>&1 || return 0   # dep FAIL already covers absence
+  v=$("$abin" --version 2>/dev/null | head -1)
   if [ -n "$v" ]; then
-    row PASS "claude: version" "$v"
+    row PASS "$abin: version" "$v"
   else
-    row FAIL "claude: version" "claude found but --version failed — reinstall: npm install -g @anthropic-ai/claude-code"
+    row FAIL "$abin: version" "$abin found but --version failed — reinstall it"
   fi
 }
 

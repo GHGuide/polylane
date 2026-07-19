@@ -1527,6 +1527,17 @@ main() {
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees
 
+  # announce the resolved agent — a manifest with no `agent` field silently selected
+  # claude before, so a codex run misconfigured this way looked identical to a good one.
+  if [ -n "${POLYLANE_AGENT_CMD:-}" ]; then
+    echo "== agent: custom POLYLANE_AGENT_CMD =="
+  else
+    if jq -e '.agent' "$MANIFEST" >/dev/null 2>&1; then
+      echo "== agent: $(agent_selected) =="
+    else
+      echo "== agent: $(agent_selected) (manifest has no 'agent' field — defaulted) =="
+    fi
+  fi
   echo "== launch: tmux session '$TMUX_SESSION' =="
   launch_panes
   echo "Launched ${LAUNCHED:-0} of ${#LANE_NAMES[@]} lane(s). Watch: $(tmux_watch_command)"
