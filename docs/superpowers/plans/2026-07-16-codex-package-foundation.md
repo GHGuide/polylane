@@ -1,5 +1,12 @@
 # Codex Package Foundation Implementation Plan
 
+> **STATUS: DEFERRED — do NOT execute.** Decision (docs/polylane/decisions/002):
+> the repo stays as it is today — Claude Code at the root, Codex assembled as a thin
+> overlay by `codex/install.sh` from the same SKILL.md + `bin/` engine. The reliability
+> gaps this doc named were fixed IN PLACE (agent-aware preflight + doctor, explicit
+> agent announce, mechanical `--effort`, resume-on-respawn) without moving any files.
+> Revisit only if the single-root layout actually starts costing something.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` (recommended) or
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
