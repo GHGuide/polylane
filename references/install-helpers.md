@@ -21,8 +21,8 @@ test -f ~/.claude/skills/polylane/SKILL.md && echo installed || echo "not found 
 
 ### Codex (OpenAI CLI) — same engine, Codex skill layout
 The engine is agent-agnostic, so polylane installs as a **Codex skill** too. From a
-checkout: `codex/install.sh` (user scope `~/.agents/skills/polylane`) or
-`codex/install.sh --repo` (repo scope `.agents/skills/polylane`). It lays out
+checkout: `codex/install.sh` (user scope `~/.codex/skills/polylane`) or
+`codex/install.sh --repo` (repo scope `.codex/skills/polylane`). It lays out
 `SKILL.md` + `scripts/` (the `bin/*.sh` helpers) + `references/` + `assets/`. Invoke in
 Codex with `$polylane` or `/skills`. Lanes run via `codex exec` (`agent:"codex"` in the
 manifest); prompts are plain instructions (no Claude preamble). Deps: `tmux` + `jq` +
@@ -117,7 +117,7 @@ PROJECT="/absolute/path/to/target/project"  # the repo builders will edit
    - Run /graphify-auto at session start to refresh (free).
    ```
 
-5. **Refresh.** Ensure each lane prompt starts with `/graphify-auto` (free AST refresh) so queries aren't stale.
+5. **Refresh.** The ORCHESTRATOR runs `/graphify-auto` once per cycle (recon); the runner symlinks graphify-out/ into every lane worktree, so lane prompts must NOT re-run it — lanes only query.
 
 ## Caveats to pass to the user
 - `q.py` is only as good as the graph. AST extraction captures imports/references/`uses` well; **`callers` can be sparse for some languages (e.g. Swift call-sites)** — don't read `callers: 0` as "nothing calls it". Prefer `search` / `file` / `community` / `uses` there.

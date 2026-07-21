@@ -22,6 +22,24 @@ and say WHY for any hard rule. If a section would be generic filler, cut it.
 Claude Code also reads `CLAUDE.md`; if the project wants both, make `CLAUDE.md` a one-line
 pointer to `AGENTS.md` (single source, no drift) — don't maintain two copies.
 
+## `docs/polylane/INDEX.md` — the home MOC (vault pattern: one front page, links over folders)
+Obsidian-vault practice, applied: a knowledge base is navigated through ONE "map of
+content" front page + links, never deep folders. `docs/polylane/INDEX.md` is that page —
+the FIRST file a fresh agent (or the resume path) reads. Keep it a plain linked list,
+a few lines per entry, refreshed in Phase 5 alongside AGENTS.md:
+```
+# <project> — polylane index
+Vision: [NORTHSTAR](NORTHSTAR.md) · Strategy: [STRATEGY](STRATEGY.md) · Goal: [ULTIMATE_GOAL](ULTIMATE_GOAL.md)
+Decisions: [decisions/INDEX.md](decisions/INDEX.md) — do not contradict
+State: max-state.json (tree; query via polylane-memory.sh) · Story so far: [corpus](corpus.md)
+Cycles: [c1 digest](cycle-1-digest.md) · [c1 research](cycle-1-research.md) · …latest first
+```
+**Link habit (atomic notes + backlinks):** every doc is atomic (one decision per file, one
+cycle per digest) and CROSS-LINKS its relatives with relative markdown links — a digest
+links the decisions it produced; a decision links the digest that motivated it. The
+council/harvest then FOLLOW links instead of globbing the directory. Links replace both
+folders and duplication; if a fact is needed twice, link it, never restate it.
+
 ## The polylane working docs (under `docs/polylane/`) — roles, not duplication
 - `STRATEGY.md` — the locked product strategy. **Update it FIRST when scope changes**, then
   build (spec-first; the tree + AGENTS.md follow from it).

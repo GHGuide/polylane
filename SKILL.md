@@ -174,6 +174,9 @@ them, run discovery FIRST — follow `references/discovery.md`:
   from discovery as a decision record (see "North-star docs" below): the chosen concept,
   the stack, any pivotal trade-off or scope cut. These persist and are re-read — the
   loop never silently contradicts a settled call.
+- **Scaffold `docs/polylane/INDEX.md`** — the home MOC (`references/documentation.md`):
+  one front page linking NORTHSTAR · STRATEGY · ULTIMATE_GOAL · decisions/INDEX.md ·
+  (later) cycle digests. The single entry point every fresh agent reads first.
 - **Scaffold the built app's `AGENTS.md`** (root of the project being built — the
   cross-agent context anchor Claude Code + Codex both read). Write a TIGHT first version
   from the strategy: Mission · Stack + key decisions · Run/build/test (fill in as they
@@ -549,7 +552,10 @@ the honest answer this cycle is "just finish what's planned," say so and skip it
 manufacture a question). This is the "keep making it better and better" loop — but gated on
 relevance so it stays signal, not nagging.
 
-**5. Maintain the built app's living docs (context always current).** The built project's
+**5. Maintain the built app's living docs (context always current).** Refresh
+`docs/polylane/INDEX.md` too — the home MOC (front-page link map per
+`references/documentation.md`): latest cycle links first, new decisions linked, so a fresh
+agent or resume enters through ONE page instead of globbing the directory. The built project's
 root **`AGENTS.md`** (the cross-agent context anchor — Claude Code, Codex, and every other
 agent read it) is a LIVING SPEC, refreshed each cycle so a fresh agent (or the next polylane
 run) never loses context. Keep it TIGHT and human-curated — research shows bloated,

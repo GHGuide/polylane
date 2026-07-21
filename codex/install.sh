@@ -27,6 +27,9 @@ mkdir -p "$DEST/scripts"
   awk 'f; /^---$/{c++; if (c==2) f=1}' "$REPO/SKILL.md" | sed 's#bin/polylane-#scripts/polylane-#g'
 } > "$DEST/SKILL.md"
 cp "$REPO"/bin/*.sh        "$DEST/scripts/" && chmod +x "$DEST/scripts/"*.sh
+# rm first: `cp -R dir existing-dir` NESTS (references/references) and leaves the
+# top level STALE — every reinstall after the first shipped old references (real bug).
+rm -rf "$DEST/references" "$DEST/assets"
 cp -R "$REPO/references"   "$DEST/references"
 cp -R "$REPO/assets"       "$DEST/assets"
 mkdir -p "$DEST/agents"

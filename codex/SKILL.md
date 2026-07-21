@@ -25,8 +25,7 @@ Nothing is removed or simplified.** Read and follow it exactly. Helpers live und
    models by capability/cost (strongest first) and economy/balanced/performance/max pick
    among them exactly as they do for Claude models. Only one Codex model? All intensities
    use it and only **effort** varies (economy=medium … max=xhigh — unchanged).
-3. **Lane prompts are PLAIN.** DROP the Claude-only mandatory preamble (`/graphify-auto`,
-   the caveman skill, `/goal`, `superpowers:*`) — Codex has none of them. KEEP every
+3. **Lane prompts are PLAIN.** DROP the Claude-only mandatory preamble (the caveman skill, `/goal`, `superpowers:*`) — Codex has none of them. KEEP every
    agent-neutral block verbatim: identity, OWN/FORBIDDEN + frozen contract, the locked
    goal in prose, "keep output terse", forced-verify evidence file, and the mandatory
    DONE-signal `STATUS: <lane> DONE run=<RUN_ID>` + integrator

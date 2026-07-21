@@ -6,13 +6,17 @@ Fill `<...>` slots from recon + derivation. Keep blocks verbatim otherwise — t
 These four are non-negotiable in every generated prompt:
 ```
 Before anything else, in order:
-1. /graphify-auto                              # free graph refresh (then query via q.py — see block E)
-2. Invoke the caveman skill (full)             # terse output, ~75% fewer output tokens
-3. /ponytail full                              # anti-over-engineering: build the MINIMUM that meets the goal (only if installed; skip the line if not — see below)
-4. /goal <one-line lock of THIS lane's goal>   # Anthropic built-in: set the objective, keep working until it's met; do not re-scope. (The GOAL block below documents the same lock in-prompt.)
-5. superpowers:using-superpowers               # then this lane's specific superpowers (block D)
+1. Invoke the caveman skill (full)             # terse output, ~75% fewer output tokens
+2. /ponytail full                              # anti-over-engineering: build the MINIMUM that meets the goal (only if installed; skip the line if not — see below)
+3. /goal <one-line lock of THIS lane's goal>   # Anthropic built-in: set the objective, keep working until it's met; do not re-scope. (The GOAL block below documents the same lock in-prompt.)
+4. superpowers:using-superpowers               # then this lane's specific superpowers (block D)
 ```
-Steps 1, 2, 4, 5 are the non-negotiable core (graphify + caveman + superpowers skills; /goal built-in). **Step 3 `/ponytail full` is included ONLY when the ponytail plugin is installed** (check `ls ~/.claude/skills/ | grep ponytail` or the plugins cache during recon) — it enforces "build the minimum that meets the goal, the best code is the code you never wrote" (~54% less code, ~20% cheaper on real sessions), which is squarely polylane's token mission; omit the line cleanly if absent (skill-scout recommends installing it — see `skill-scout.md`). The caveman LEVEL in step 2 follows the round's intensity — write `(ultra)` when the round is `economy`, `(full)` otherwise (per `model-selection.md`); the step itself is never dropped or reordered. Ponytail level tracks the same: `ultra` under `economy`, `full` otherwise. Fallbacks only if a project genuinely lacks one: caveman → the terse instruction in block C; graphify → the Explore-agent fallback in block E. Never omit the intent. This block is the DOMAIN-AGNOSTIC base for EVERY lane; the per-lane skill scout (references/skill-scout.md) never re-suggests these — it layers only DOMAIN skills into block D on top.
+Steps 1, 3, 4 are the non-negotiable core (caveman + superpowers skills; /goal built-in).
+**Lanes do NOT run `/graphify-auto`** — the ORCHESTRATOR refreshes the graph once per
+cycle before launch, and the runner symlinks the parent's `graphify-out/` into every
+worktree (`share_graph`), so each lane already has the CURRENT graph read-only. A lane
+refreshing it would race its siblings through the shared symlink and waste N rebuilds
+of the same commit. Lanes only QUERY (block E). **Step 3 `/ponytail full` is included ONLY when the ponytail plugin is installed** (check `ls ~/.claude/skills/ | grep ponytail` or the plugins cache during recon) — it enforces "build the minimum that meets the goal, the best code is the code you never wrote" (~54% less code, ~20% cheaper on real sessions), which is squarely polylane's token mission; omit the line cleanly if absent (skill-scout recommends installing it — see `skill-scout.md`). The caveman LEVEL in step 2 follows the round's intensity — write `(ultra)` when the round is `economy`, `(full)` otherwise (per `model-selection.md`); the step itself is never dropped or reordered. Ponytail level tracks the same: `ultra` under `economy`, `full` otherwise. Fallbacks only if a project genuinely lacks one: caveman → the terse instruction in block C; graphify → the Explore-agent fallback in block E. Never omit the intent. This block is the DOMAIN-AGNOSTIC base for EVERY lane; the per-lane skill scout (references/skill-scout.md) never re-suggests these — it layers only DOMAIN skills into block D on top.
 
 ## A. Identity + context
 ```
@@ -40,13 +44,13 @@ The global base (graphify · caveman · ponytail · superpowers · claude-mem) l
 
 ## E. Graphify-first (navigation) — MANDATORY, blocking Step 1 when graphify-out/ exists
 ```
-STEP 1 (before ANY Read/Grep): run /graphify-auto (free AST refresh), then build a map of your subsystem by QUERYING the graph with the helper — do NOT grep to discover where things are:
+STEP 1 (before ANY Read/Grep): build a map of your subsystem by QUERYING the graph with the helper — do NOT grep to discover where things are. The graph in graphify-out/ is a READ-ONLY symlink to the parent repo's, refreshed by the orchestrator this cycle — do NOT run /graphify-auto or rebuild it (you'd race the other lanes through the shared link):
   python graphify-out/q.py <symbol>           # find nodes -> file:line + community
   python graphify-out/q.py callers <symbol>   # who points AT it
   python graphify-out/q.py uses <symbol>      # what it points to
   python graphify-out/q.py near <symbol>      # both directions
   python graphify-out/q.py file <path-sub>    # nodes defined in a file
-Query every key symbol in your OWN file set + the shared-file boundary, print the resulting map, and work from it. Each result gives file:line so you can do a TARGETED Read only when you truly need the source. Use Grep/Glob ONLY to confirm an exact string right before an edit — never to find where code lives.
+Query every key symbol in your OWN file set + the shared-file boundary, print the resulting map, and work from it. Each result gives file:line so you can do a TARGETED Read only when you truly need the source. Treat line numbers as APPROXIMATE (the graph is refreshed per cycle, not per edit) — confirm the exact anchor with a targeted Read/Grep right before an edit; use Grep/Glob ONLY for that confirmation, never to find where code lives.
 ```
 If `graphify-out/q.py` is absent: substitute one read-only Explore agent to map the subsystem before editing.
 

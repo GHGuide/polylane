@@ -462,6 +462,23 @@ add_worktree() {
   else
     run git worktree add "$wt" -b "$br" "$BASE"
   fi
+  share_graph "$wt"
+}
+
+# share_graph WT : symlink the parent repo's graphify-out/ into a fresh worktree.
+# graphify-out/ is gitignored (0 tracked files), and `git worktree add` checks out
+# TRACKED files only — so every lane was born graphless: its mandatory "query the
+# graph" step either rebuilt the whole graph (N lanes = N redundant builds) or fell
+# back to an Explore agent (the exact token cost graphify exists to avoid). One
+# symlink gives every lane the parent's CURRENT graph for free. Read-only by
+# contract: the orchestrator refreshes ONCE per cycle before launch; lanes only
+# query (their prompts no longer run /graphify-auto).
+share_graph() {
+  local wt="$1" src="$REPO_ROOT/graphify-out"
+  [ "${DRY_RUN:-0}" = "1" ] && { [ -d "$src" ] && echo "+ (dry-run) would symlink graphify-out into $wt"; return 0; }
+  [ -d "$src" ] || return 0                      # no graph in this project — nothing to share
+  [ -e "$wt/graphify-out" ] && return 0          # already there (resumed/reused worktree)
+  ln -s "$src" "$wt/graphify-out" 2>/dev/null || true   # best-effort; lanes have the Explore fallback
 }
 
 # clear_stale_markers WT NAME : a fresh worktree checks out BASE and thus inherits

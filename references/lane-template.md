@@ -12,7 +12,7 @@ cd "<WORKTREE_ABS_PATH>" && claude --model <MODEL_ID>
 ```
 [A identity + context]
 [B model + effort header]
-[0 MANDATORY-4 preamble: /graphify-auto · caveman(full) · /goal <lane goal> · superpowers:using-superpowers]
+[0 MANDATORY preamble: caveman(full) · /goal <lane goal> · superpowers:using-superpowers (graph comes pre-refreshed via symlink — query only)]
 [C terse output]
 [D skills for this lane]
 [E graphify-first]   (omit only if graphify-out/ absent AND graphify skill unavailable — then substitute: "Use one read-only Explore agent to map <subsystem> before editing.")
@@ -69,16 +69,15 @@ Project: Vue 3 todo app (Vite + Pinia). Read THIS project's CLAUDE.md and memory
 Run on claude-opus-4-8 at high effort: confirm with /model, ultrathink before non-trivial steps.
 
 Before anything else, in order:
-1. /graphify-auto
-2. Invoke the caveman skill (full)
-3. /goal Ship a full dark theme across every rendered surface, screenshot-verified.
-4. superpowers:using-superpowers
+1. Invoke the caveman skill (full)
+2. /goal Ship a full dark theme across every rendered surface, screenshot-verified.
+3. superpowers:using-superpowers
 
 Keep output terse (caveman-style: drop articles/filler/hedging, fragments OK). Write code, commits, and PRs in normal prose. Act when you have enough information; do not re-derive settled facts or narrate options you won't pursue.
 
 Invoke: superpowers:using-superpowers, then design skills + /design-critique + verification-before-completion. Your goal is LOCKED (below) — do NOT open superpowers:brainstorming; go straight to writing-plans/execution.
 
-STEP 1 (before ANY Read/Grep): run /graphify-auto (free AST refresh), then map the styling subsystem by QUERYING the graph — do NOT grep to discover where things are:
+STEP 1 (before ANY Read/Grep): map the styling subsystem by QUERYING the graph (pre-refreshed, read-only symlink — do NOT run /graphify-auto) — do NOT grep to discover where things are:
   python graphify-out/q.py theme
   python graphify-out/q.py callers useTheme
   python graphify-out/q.py uses ThemeProvider
