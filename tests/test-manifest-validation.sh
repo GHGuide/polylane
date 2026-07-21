@@ -16,7 +16,7 @@ INT='"integrator":{"name":"i","model":"m","effort":"x","branch":"lane/i","worktr
 dies() {
   local json="$1" want="$2" name="$3" f="$TEST_TMPDIR/m.json" out rc
   printf '%s' "$json" > "$f"
-  out=$(POLYLANE_SESSION=vtest "$RUN" "$f" --dry-run 2>&1); rc=$?
+  out=$(POLYLANE_MIN_DISK_GB=0 POLYLANE_SESSION=vtest "$RUN" "$f" --dry-run 2>&1); rc=$?
   assert_eq "$name-rc2" "2" "$rc"
   assert_contains "$name-msg" "$want" "$out"
 }
@@ -29,7 +29,7 @@ dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a; touch /tmp/x\",\"model\"
 # a WELL-FORMED manifest still dry-runs clean (rc 0) — validation isn't over-eager
 GOOD="{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}"
 printf '%s' "$GOOD" > "$TEST_TMPDIR/good.json"
-POLYLANE_SESSION=vtest "$RUN" "$TEST_TMPDIR/good.json" --dry-run >/dev/null 2>&1
+POLYLANE_MIN_DISK_GB=0 POLYLANE_SESSION=vtest "$RUN" "$TEST_TMPDIR/good.json" --dry-run >/dev/null 2>&1
 assert_eq "good-manifest-rc0" "0" "$?"
 
 finish

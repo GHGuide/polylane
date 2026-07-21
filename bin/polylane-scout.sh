@@ -21,7 +21,7 @@ domain() {
     *routes/*|*api/*|*/handlers/*|*controllers/*|*.openapi*)    echo api ;;
     *.sql*|*migrations/*|*.prisma*|*schema*)                    echo data ;;
     *.swift*|*.kt*|*android/*|*ios/*|*.xcodeproj*)              echo mobile ;;
-    *test*|*spec*|*__tests__*)                                 echo test ;;
+    *test*|*spec*)                                             echo test ;;
     *.md*|*report*|*.docx*|*.pdf*|*.pptx*|*.xlsx*)             echo report ;;
     *) echo unknown ;;
   esac
