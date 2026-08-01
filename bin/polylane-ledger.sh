@@ -10,7 +10,7 @@
 #                         exit 3 iff spend>0 with zero subgoal progress (stall breaker)
 #   roi <next_weight> <open_weight_sum> <budget> [--file F]
 #                       : marginal value vs empirical cost/subgoal; prints
-#                         continue | stop:diminishing ; exit 4 on stop
+#                         continue | replan:diminishing ; exit 4 on replan signal
 #   fit <budget> <n_requested> [--file F]
 #                       : affordable lane ceiling from cost/lane; prints an integer
 # Pure bash-3.2 + jq; main-guarded.
@@ -87,10 +87,10 @@ roi() {
     if (ow<=0){print "continue"; exit}
     share = nw/ow;
     warrant = share * b;
-    if (cps > warrant) print "stop:diminishing"; else print "continue";
+    if (cps > warrant) print "replan:diminishing"; else print "continue";
   }')
   printf '%s (cost/subgoal=%s warrant-share=%s/%s of %s)\n' "$decision" "$cps" "$nw" "$ow" "$budget"
-  [ "$decision" = "stop:diminishing" ] && return 4 || return 0
+  [ "$decision" = "replan:diminishing" ] && return 4 || return 0
 }
 
 fit() {
@@ -108,18 +108,22 @@ fit() {
   printf '%s\n' "$out"
 }
 
-# cap [--file F] : the "never unbounded spend" hard stop. Exit 5 iff distinct cycles
-# recorded >= POLYLANE_MAX_CYCLES (default 8) OR total cost >= POLYLANE_BUDGET (if set).
-# Unlike trend/roi (progress-relative), this halts even a run that keeps making progress.
+# cap [--file F] : enforce only USER-SET hard boundaries. There is no arbitrary
+# default cycle cap. Exit 5 means a core money/time decision is required; it is
+# never evidence that the product goal is complete.
 cap() {
   local f="$DEFAULT_F"; [ "${1:-}" = "--file" ] && { f="$2"; shift 2; }
-  local rows n cost maxc="${POLYLANE_MAX_CYCLES:-8}" budget="${POLYLANE_BUDGET:-}"
+  local rows n cost maxc="${POLYLANE_MAX_CYCLES:-}" budget="${POLYLANE_BUDGET:-}"
   rows=$(_rows "$f")
   n=$(printf '%s' "$rows" | jq 'length')
   cost=$(printf '%s' "$rows" | jq '[.[].cost] | add // 0')
-  if [ "$n" -ge "$maxc" ]; then echo "CAP: $n cycles >= POLYLANE_MAX_CYCLES=$maxc — STOP" >&2; return 5; fi
+  if [ -n "$maxc" ] && [ "$n" -ge "$maxc" ]; then
+    echo "CAP: $n cycles >= user POLYLANE_MAX_CYCLES=$maxc — NEEDS-USER" >&2
+    return 5
+  fi
   if [ -n "$budget" ] && [ "$(awk -v c="$cost" -v b="$budget" 'BEGIN{print (c>=b)}')" = 1 ]; then
-    echo "CAP: cost $cost >= POLYLANE_BUDGET=$budget — STOP" >&2; return 5
+    echo "CAP: cost $cost >= user POLYLANE_BUDGET=$budget — NEEDS-USER" >&2
+    return 5
   fi
   return 0
 }

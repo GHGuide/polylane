@@ -9,11 +9,13 @@
 make_tmpdir
 seed="$TEST_TMPDIR/x.txt"
 printf 'ORIGINAL GOAL: build widget X to DONE' > "$seed"
+REPO_ROOT="$TEST_TMPDIR/canonical root"
 
 out=$(build_repair_prompt "$seed" x 2)
 assert_contains "repair-keeps-original"    "ORIGINAL GOAL: build widget X" "$out"
 assert_contains "repair-attempt-number"    "REPAIR ATTEMPT 2"              "$out"
-assert_contains "repair-points-transcript" "docs/lane-logs/x.log"          "$out"
+assert_contains "repair-points-canonical-transcript" \
+  "$REPO_ROOT/docs/lane-logs/x.log" "$out"
 assert_contains "repair-demands-different" "DIFFERENT"                     "$out"
 assert_contains "repair-keeps-goal-locked" "locked goal is unchanged"      "$out"
 

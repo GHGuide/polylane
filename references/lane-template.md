@@ -4,7 +4,7 @@ Emit ONE of these per lane, as: a launch line + a fenced paste block. Order the 
 
 ## Launch line
 ```
-cd "<WORKTREE_ABS_PATH>" && claude --model <MODEL_ID>
+cd "<WORKTREE_ABS_PATH>" && <selected-agent-cli> <MODEL/EXEC FLAGS>
 ```
 (`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `<MODEL_ID>` is whatever id the Phase 4 resolution of the `intensity` preset against `available_models` produced per model-selection.md — any rank-map model (`claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) — or the user's Phase 5 per-lane override; the lane's effort resolves the same way. Effort is instructed in-prompt via block B; when launched by the runner it is also surfaced to the pane as the `POLYLANE_EFFORT` env var — there is no CLI effort flag.)
 
@@ -27,6 +27,9 @@ WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [I scoped git]
 [J done checklist]
 
+DELEGATION: forbidden — this tmux CLI is the sole agent for the lane; do not spawn subagents or fan-out.
+CHECK-CACHE: use polylane-check.sh for expensive checks; reuse unchanged pass/fail results.
+
 DONE-SIGNAL: on completion write docs/status-<lane>.md, first line EXACTLY `STATUS: <lane> DONE run=<RUN_ID>` — per-lane + worktree-safe; the runner reads this file to know the lane finished.
 ```
 
@@ -36,12 +39,21 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
 - Emit `.polylane/run.json` conforming EXACTLY to the frozen schema — no added, dropped, or renamed keys:
 ```json
 {
+  "orchestration_contract": 2,
+  "run_id": "<fresh per-run nonce>",
+  "cycle": <N>,
+  "state_file": "docs/polylane/max-state.json",
+  "lane_skills_file": ".polylane/lane-skills.json",
+  "cycle_plan_file": "docs/polylane/cycle-<N>-plan.md",
+  "target_subgoals": ["<subgoal-id>"],
   "base": "<base branch>",
+  "session": "polylane-c<N>",
+  "agent": "<claude|codex|aider>",
   "intensity": "<economy|balanced|performance|max|custom>",
   "available_models": ["<id>", "..."],
   "integrator": {"name":"<int>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<int-branch>","worktree":"<int-worktree>","prompt_file":".polylane/lanes/<int>.txt"},
   "lanes": [
-    {"name":"<lane>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>"]}
+    {"name":"<lane>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>"],"target_subgoals":["<subgoal-id>"]}
   ]
 }
 ```
@@ -51,7 +63,9 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
 - The GOAL is copied verbatim from the locked INTEGRATION SPEC — never paraphrased or expanded. If a builder wants scope beyond it, it must raise NEEDS DECISION, not act.
 - Keep each prompt self-contained (a fresh terminal has no session context).
 - Project-specific recipes (build/install commands, device IDs, known-broken tooling) are pulled from the project's CLAUDE.md and inlined into the relevant lane(s) — not hardcoded in this template.
-- After all lane prompts + the integrator prompt: STOP. Do not launch, do not edit code.
+- In prompt-generation-only mode, hand off after the prompts. In autonomous Polylane
+  mode, validate contract v2 and launch the supervisor immediately; prompt generation is
+  never a stopping point.
 
 ## Filled mini-example (one lane, end to end)
 

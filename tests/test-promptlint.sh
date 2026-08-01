@@ -11,6 +11,12 @@ GOOD="$TEST_TMPDIR/good.txt"
 cat > "$GOOD" <<'P'
 /goal build the thing. OWN: src/x. FORBIDDEN: everything else.
 DONE-SIGNAL: STATUS: x DONE run=<RUN_ID>. Write docs/verify-x.md with proof.
+PREDEFINED-SKILLS: engineering:testing-strategy engineering:debug
+LANE-SPECIFIC-SKILLS: computer-use:computer-use design:accessibility-review
+TEST-CADENCE: focused while iterating; subsystem before DONE; full only in integrator.
+DELEGATION: forbidden; this tmux Codex CLI is the only agent for the lane.
+CHECK-CACHE: use polylane-check.sh and never rerun unchanged expensive checks.
+EXTERNAL-EVIDENCE: missing people, credentials, hardware, or third-party access stays EXTERNAL-EVIDENCE-OPEN and never becomes PASS.
 P
 assert_ok "lint-good" lint_one "$GOOD" x
 
@@ -26,6 +32,15 @@ miss_test own        'OWN'
 miss_test forbidden  'FORBIDDEN'
 miss_test nonce      'run='
 miss_test verify     'verify'
+
+POLYLANE_STRICT_PROMPTS=1 assert_ok "lint-strict-good" lint_one "$GOOD" x
+STRICT_BAD="$TEST_TMPDIR/strict-bad.txt"
+grep -v 'TEST-CADENCE' "$GOOD" > "$STRICT_BAD"
+POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-missing-cadence" lint_one "$STRICT_BAD" x
+grep -v 'DELEGATION:' "$GOOD" > "$TEST_TMPDIR/strict-no-delegation.txt"
+POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-missing-delegation" lint_one "$TEST_TMPDIR/strict-no-delegation.txt" x
+grep -v 'CHECK-CACHE:' "$GOOD" > "$TEST_TMPDIR/strict-no-cache.txt"
+POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-missing-cache" lint_one "$TEST_TMPDIR/strict-no-cache.txt" x
 
 # the message names what's missing
 out=$(lint_one "$TEST_TMPDIR/nonce.txt" nonce 2>&1 || true)

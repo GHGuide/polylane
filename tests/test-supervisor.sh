@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # polylane-supervisor.sh — crash-proof outer loop. Proven with a FAKE runner:
 #   crash (no report)  -> revived with --resume
-#   report written     -> legitimate end, supervisor exits with runner's rc
-#   NO-GO (rc1+report) -> clean end, NOT revived into a zombie
+#   GO/external report -> legitimate cycle end
+#   HALTED report      -> recoverable; supervisor resumes rather than stopping
+#   NO-GO report       -> clean end after runner-level repair is exhausted
 #   restart cap        -> halts rc1
 
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
@@ -18,7 +19,11 @@ cp "$SUP_SRC" "$BIN/polylane-supervisor.sh"
 # fake runner: behavior file .polylane/mode drives it —
 #   crash-then-go : crash rc137 first, then report+rc0   (revive path)
 #   nogo          : write report, exit 1                  (legit NO-GO end)
-#   always-crash  : crash rc137 every time                (cap path)
+#   halted-then-go: HALTED report first, then GO           (boundary recovery)
+#   external      : write external-open report, exit 0     (clean cycle end)
+#   always-crash  : crash rc137 every time                 (cap path)
+#   halted-needs-user: HALTED + needs-user marker           (do not relaunch)
+#   slow-go       : stay alive briefly, then GO             (lock contention)
 cat > "$BIN/polylane-run.sh" <<'FAKE'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -28,9 +33,14 @@ if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
   M="$1"; shift; D=$(cd "$(dirname "$M")" && pwd); ROOT=$(cd "$D/.." && pwd)
   echo "ARGS: $*" >> "$D/calls.log"
   case "$(cat "$D/mode")" in
-    crash-then-go) if [ -f "$D/crashed" ]; then echo GO > "$ROOT/docs/polylane-report.md"; exit 0
+    crash-then-go) if [ -f "$D/crashed" ]; then echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0
                    else touch "$D/crashed"; exit 137; fi ;;
-    nogo)          echo NO-GO > "$ROOT/docs/polylane-report.md"; exit 1 ;;
+    halted-then-go) if [ -f "$D/halted" ]; then echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0
+                    else touch "$D/halted"; echo '**Outcome:** HALTED' > "$ROOT/docs/polylane-report.md"; exit 1; fi ;;
+    external)      echo '**Outcome:** EXTERNAL-EVIDENCE-OPEN' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
+    nogo)          echo '**Outcome:** NO-GO' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
+    halted-needs-user) echo lane-a > "$D/needs-user"; echo '**Outcome:** HALTED' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
+    slow-go)       sleep 2; echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
     always-crash)  exit 137 ;;
   esac
 fi
@@ -41,7 +51,11 @@ cat > "$PROJ/.polylane/run.json" <<EOF
 "lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"$PROJ/.polylane/wt/a","prompt_file":"p","own_globs":["x"]}]}
 EOF
 
-reset_proj() { rm -f "$PROJ/.polylane/calls.log" "$PROJ/.polylane/crashed" "$PROJ/docs/polylane-report.md"; }
+reset_proj() {
+  rm -f "$PROJ/.polylane/calls.log" "$PROJ/.polylane/crashed" \
+    "$PROJ/.polylane/halted" "$PROJ/.polylane/needs-user" \
+    "$PROJ/docs/polylane-report.md"
+}
 
 # --- crash -> revive with --resume -> rc0 -------------------------------------
 reset_proj; echo crash-then-go > "$PROJ/.polylane/mode"
@@ -52,12 +66,48 @@ assert_contains "sup-watch-command"  "watch active tmux: tmux attach -t sup-test
 assert_contains "sup-second-call-resumes" "yes --resume" "$(tail -1 "$PROJ/.polylane/calls.log")"
 assert_contains "sup-finished" "finished legitimately" "$(cat "$TEST_TMPDIR/out1")"
 
+# --- HALTED is recoverable even though a report was written --------------------
+reset_proj; echo halted-then-go > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-halted" 2>&1
+assert_eq "sup-halted-recovers-rc0" "0" "$?"
+assert_eq "sup-halted-two-launches" "2" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+assert_contains "sup-halted-resumes" "HALTED outcome is recoverable" "$(cat "$TEST_TMPDIR/out-halted")"
+
+# --- external evidence is a clean engineering cycle end ------------------------
+reset_proj; echo external > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-external" 2>&1
+assert_eq "sup-external-rc0" "0" "$?"
+assert_eq "sup-external-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+
 # --- NO-GO is a clean end (rc1), NOT a crash to revive -------------------------
 reset_proj; echo nogo > "$PROJ/.polylane/mode"
 POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out2" 2>&1
 rc=$?
 assert_eq "sup-nogo-rc1" "1" "$rc"
 assert_eq "sup-nogo-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+
+# --- a durable no-progress blocker is not relaunched identically ----------------
+reset_proj; echo halted-needs-user > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-needs-user" 2>&1
+rc=$?
+assert_eq "sup-needs-user-rc1" "1" "$rc"
+assert_eq "sup-needs-user-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+assert_contains "sup-needs-user-no-loop" "not relaunching identical work" "$(cat "$TEST_TMPDIR/out-needs-user")"
+
+# --- only one supervisor may own a manifest ------------------------------------
+reset_proj; echo slow-go > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-lock-owner" 2>&1 &
+owner_pid=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  [ -d "$PROJ/.polylane/supervisor.lock" ] && break
+  sleep 0.1
+done
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-lock-second" 2>&1
+second_rc=$?
+wait "$owner_pid"
+assert_eq "sup-lock-second-refused" "1" "$second_rc"
+assert_contains "sup-lock-names-owner" "another supervisor already owns" "$(cat "$TEST_TMPDIR/out-lock-second")"
+assert_fail "sup-lock-cleaned-after-owner" test -d "$PROJ/.polylane/supervisor.lock"
 
 # --- restart cap: always-crash halts rc1 after cap ------------------------------
 reset_proj; echo always-crash > "$PROJ/.polylane/mode"

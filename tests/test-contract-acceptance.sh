@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Contract-v2 acceptance runs focused target checks per cycle, defers terminal
+# checks until the last autonomous route, and permits only declared external
+# subgoals to remain unverified under EXTERNAL-EVIDENCE-OPEN.
+. "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
+. "$RUNNER"
+
+command -v jq >/dev/null 2>&1 || { pass "accept-gate-skipped-no-jq"; finish; exit 0; }
+make_tmpdir
+P="$TEST_TMPDIR/project"
+mkdir -p "$P/.polylane" "$P/int" "$P/docs/polylane"
+STATE_FILE="$P/docs/polylane/max-state.json"
+MEM="$(dirname "$RUNNER")/polylane-memory.sh"
+"$MEM" "$STATE_FILE" init goal >/dev/null
+"$MEM" "$STATE_FILE" add-criterion c1 works >/dev/null
+"$MEM" "$STATE_FILE" add-milestone m1 build >/dev/null
+"$MEM" "$STATE_FILE" add-subgoal m1 s1 target 10 >/dev/null
+"$MEM" "$STATE_FILE" add-subgoal m1 s2 physical 5 >/dev/null
+"$MEM" "$STATE_FILE" add-accept s1 'test "${REPO:-}" = "$PWD" && test "${REPO_ROOT:-}" = "$PWD"' >/dev/null
+"$MEM" "$STATE_FILE" add-accept s1 'test "${REPO:-}" = "$PWD" && test "${REPO_ROOT:-}" = "$PWD"' --tier terminal >/dev/null
+"$MEM" "$STATE_FILE" add-accept s2 false >/dev/null
+"$MEM" "$STATE_FILE" add-accept s2 false --tier terminal >/dev/null
+
+MANIFEST="$P/.polylane/run.json"
+cat > "$MANIFEST" <<'JSON'
+{"target_subgoals":["s1"]}
+JSON
+ORCHESTRATION_CONTRACT=2
+CYCLE=1
+INT_WORKTREE="$P/int"
+
+assert_ok "accept-focused-cycle-pass" contract_acceptance_gate GO
+assert_eq "accept-focused-stamped" "pass" "$(jq -r '.accept[0].status' "$STATE_FILE")"
+assert_eq "accept-terminal-deferred" "unchecked" "$(jq -r '.accept[1].status' "$STATE_FILE")"
+assert_eq "accept-other-deferred" "unchecked" "$(jq -r '.accept[2].status' "$STATE_FILE")"
+assert_eq "accept-external-terminal-deferred" "unchecked" "$(jq -r '.accept[3].status' "$STATE_FILE")"
+
+"$MEM" "$STATE_FILE" set-status s2 external "physical proof" 1 >/dev/null
+assert_ok "accept-external-allows-declared-gap" contract_acceptance_gate EXTERNAL-EVIDENCE-OPEN
+assert_eq "accept-terminal-runs-at-boundary" "pass" "$(jq -r '.accept[1].status' "$STATE_FILE")"
+assert_eq "accept-external-terminal-not-executed" "unchecked" "$(jq -r '.accept[3].status' "$STATE_FILE")"
+assert_fail "accept-go-rejects-external-gap" contract_acceptance_gate GO
+
+VERDICT_RESULT=EXTERNAL-EVIDENCE-OPEN
+out=$(finalize_cycle_state)
+assert_contains "accept-finalize-routes-needs-user" "NEEDS-USER" "$out"
+assert_eq "accept-target-marked-done" "done" "$(jq -r '.milestones[0].subgoals[0].status' "$STATE_FILE")"
+
+finish

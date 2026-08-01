@@ -29,9 +29,12 @@ assert_fail "attempted-unseen"   "$MEM" "$S" attempted "some fresh approach"
 # progress + met transitions
 assert_contains "progress-fmt" "subgoals: 0/2 done" "$("$MEM" "$S" progress)"
 assert_fail "not-met-initially" "$MEM" "$S" met
+"$MEM" "$S" add-accept m1.1 true >/dev/null
+"$MEM" "$S" add-accept m1.2 true >/dev/null
 "$MEM" "$S" set-status m1.1 done "commit abc" 3 >/dev/null
 "$MEM" "$S" set-status m1.2 done >/dev/null
 "$MEM" "$S" set-status c1  done >/dev/null
+"$MEM" "$S" check-accept >/dev/null
 assert_ok   "met-when-all-done"  "$MEM" "$S" met
 
 # after m1.2 is done, next has no open sub-goal left
@@ -73,6 +76,21 @@ B="$TEST_TMPDIR/accept-ok.json"
 "$MEM" "$B" set-status s1 done >/dev/null; "$MEM" "$B" set-status c1 done >/dev/null
 assert_ok   "accept-check-passes"   "$MEM" "$B" check-accept
 assert_ok   "met-when-accept-pass"  "$MEM" "$B" met
+
+# --- fast cadence: target-focused checks now, terminal checks only at close ---
+T="$TEST_TMPDIR/tiered.json"
+"$MEM" "$T" init g >/dev/null; "$MEM" "$T" add-criterion c1 x >/dev/null
+"$MEM" "$T" add-milestone m1 M >/dev/null
+"$MEM" "$T" add-subgoal m1 s1 A >/dev/null; "$MEM" "$T" add-subgoal m1 s2 B >/dev/null
+"$MEM" "$T" add-accept s1 "true" >/dev/null
+"$MEM" "$T" add-accept s1 "true" --tier terminal >/dev/null
+"$MEM" "$T" add-accept s2 "true" >/dev/null
+assert_ok "accept-targeted-focused" "$MEM" "$T" check-accept --targets s1 --focused
+assert_eq "accept-target-pass" "pass" "$(jq -r '.accept[0].status' "$T")"
+assert_eq "accept-terminal-deferred" "unchecked" "$(jq -r '.accept[1].status' "$T")"
+assert_eq "accept-other-deferred" "unchecked" "$(jq -r '.accept[2].status' "$T")"
+assert_ok "accept-terminal-only" "$MEM" "$T" check-accept --only-terminal
+assert_eq "accept-terminal-pass" "pass" "$(jq -r '.accept[1].status' "$T")"
 
 # --- temporal regression guard (#3) -----------------------------------------
 RS="$TEST_TMPDIR/regstate.json"

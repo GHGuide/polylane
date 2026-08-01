@@ -10,9 +10,18 @@ lanes L2/L3/L4 depend on them.
 
 ```json
 {
+  "orchestration_contract": 2,
+  "run_id": "cycle-7-unique-nonce",
+  "cycle": 7,
+  "state_file": "docs/polylane/max-state.json",
+  "lane_skills_file": ".polylane/lane-skills.json",
+  "cycle_plan_file": "docs/polylane/cycle-7-plan.md",
+  "target_subgoals": ["m2.3"],
   "base": "main",
+  "session": "polylane-c7",
   "intensity": "balanced",
   "agent": "codex",
+  "codex_sandbox": "workspace-write",
   "available_models": ["gpt-5.6-sol", "gpt-5.6-terra"],
   "integrator": {
     "name": "integrator",
@@ -30,6 +39,7 @@ lanes L2/L3/L4 depend on them.
       "worktree": "../pl-api",
       "prompt_file": ".polylane/prompts/api.txt",
       "own_globs": ["backend/api/**"],
+      "target_subgoals": ["m2.3"],
       "effort": "high"
     }
   ]
@@ -40,8 +50,17 @@ lanes L2/L3/L4 depend on them.
 
 | Key | Type | Meaning |
 |---|---|---|
+| `orchestration_contract` | integer | Set to `2` for reliable Codex runs. Enables pre-launch gates for state, plans, prompts, skills, scope, acceptance, and prior-cycle artifacts. Fresh Codex runs reject legacy manifests unless `POLYLANE_ALLOW_LEGACY=1` is explicitly set for migration. A `--resume` may grandfather a legacy manifest only when it has a non-empty `run_id` and at least one already-materialized lane worktree, preventing an upgrade from stranding real in-flight work without weakening new launches. |
+| `run_id` | string | Fresh per-run nonce baked into every DONE marker and verdict sentinel. |
+| `cycle` | integer | Current durable cycle number, starting at 1. |
+| `state_file` | string | Durable goal/acceptance state. Must live outside `.polylane/`, normally `docs/polylane/max-state.json`. |
+| `lane_skills_file` | string | Structured skill kits. Every builder needs at least two predefined and two lane-specific installed skills. GitHub suggestions remain informational metadata. |
+| `cycle_plan_file` | string | Non-empty current executable cycle plan. |
+| `target_subgoals` | string[] | Open/doing frozen-acceptance subgoals executed by this run. The highest-priority `memory next` id must be included. |
 | `base` | string | Branch each lane/integrator worktree is created from (e.g. `main`). |
+| `session` | string | *(optional, recommended)* Durable tmux session name. When absent, `POLYLANE_SESSION` wins; observers can discover upgraded active runs from tmux ownership tags, then fall back to `polylane`. Use only `A-Za-z0-9._-`. |
 | `agent` | string | *(optional, default `claude`)* Which agent CLI each pane launches: `claude` \| `codex`/`gpt` \| `aider`. Env `POLYLANE_AGENT` overrides this; `POLYLANE_AGENT_CMD` (a template with `{model}` and `{prompt}`) overrides both for any other CLI. The pipeline is agent-agnostic (file-based done-signal + verdict); only the launch command differs. For a non-claude agent, the manifest `model` ids and the prompt style must match that agent (see SKILL.md). |
+| `codex_sandbox` | string | *(optional, default `workspace-write`)* Sandbox passed mechanically to every Codex lane: `read-only` \| `workspace-write` \| `danger-full-access`. Invalid values abort before tmux opens. `POLYLANE_CODEX_SANDBOX` overrides the manifest for explicit host-level recovery. |
 | `intensity` | string | *(optional)* Preset the generator tuned this manifest for: `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** — records provenance; the per-lane `model`/`effort` are already baked to match it. The engine does **not** re-resolve from this at runtime; use the `--intensity` flag to remap live. `custom` = hand-tuned, no preset. |
 | `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh` or the Codex model probe used by the generator). Required only if you pass `--intensity`; empty/absent then → error. Rank strongest first for Codex manifests; when no Claude ladder id matches, presets fall back to this first available id and vary effort. |
 | `integrator` | object | The lane that runs **last**: merges lane branches, writes the verdict. |
@@ -57,7 +76,8 @@ Each **lane** object (and the **integrator** object) has:
 | `worktree` | string | Path of the lane's git worktree. Relative paths resolve from the repo root. |
 | `prompt_file` | string | File whose contents seed the lane's selected-agent pane. Read at pane runtime. |
 | `effort` | string | *(optional)* Reasoning effort for this lane: `low` \| `medium` \| `high` \| `xhigh` \| `max`. Surfaced to the pane as the `POLYLANE_EFFORT` env var and printed at launch. Absent → unset (no behavior change; the legacy pane command is reproduced byte-for-byte). |
-| `own_globs` | string[] | *(lanes only)* Files the lane owns. Informational — the engine does not enforce it. |
+| `own_globs` | string[] | *(lanes only)* Files the lane owns. Contract v2 rejects empty or conservatively overlapping sets before launch. |
+| `target_subgoals` | string[] | *(lanes only, contract v2)* The run-level target ids assigned to this builder. Must be non-empty and a subset of the run-level list. |
 
 ---
 
@@ -85,7 +105,22 @@ value aborts with nothing created or launched.
 
 Exit codes: `0` success · `1` preflight / gate / conflict failure, or `--intensity` with an empty/absent `available_models` · `2` bad arguments, including an unknown `--intensity` value, a malformed `--model` (not `lane=model_id`), or a `--model` naming an unknown lane.
 
-Environment: `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default `5`) · `POLYLANE_SESSION` — tmux session name, enables parallel runs (default `polylane`) · `POLYLANE_HEALTH_INTERVAL` — seconds between pane-health checks / transient-error auto-retry sweeps (default `60`) · `POLYLANE_SEED_VERIFY` — seconds after launch before checking that seeded commands actually started (default `5`) · `POLYLANE_MAX_RETRIES` — retries per lane before it is marked failed (default `3`).
+Environment: `POLYLANE_POLL_INTERVAL` — DONE-file poll (default `2`) ·
+`POLYLANE_SESSION` — tmux session (default `polylane`) ·
+`POLYLANE_CODEX_SANDBOX` — explicit Codex sandbox override (`read-only`,
+`workspace-write`, or `danger-full-access`) ·
+`POLYLANE_HEALTH_INTERVAL` — pane-health sweep (default `15`) ·
+`POLYLANE_SEED_VERIFY` — seed check (default `2`) ·
+`POLYLANE_SUP_INTERVAL` — supervisor tick (default `5`) ·
+`POLYLANE_MAX_RETRIES` — transient retries (default `3`) ·
+`POLYLANE_INTEGRATOR_REPAIRS` — verdict repair waves (default `3`).
+`POLYLANE_PROGRESS_CHECKS` — unchanged-source health sweeps before a churn replan
+(default `12`) · `POLYLANE_PROGRESS_MIN_COMMANDS` — command executions required
+before that replan (default `20`) · `POLYLANE_PROGRESS_REPLANS` — narrowed,
+model/effort-downgraded replans before a durable `needs-user` stop (default `2`).
+
+Codex panes launch with nested multi-agent and fan-out features disabled. Strict
+contract-v2 prompts must include `DELEGATION:` and `CHECK-CACHE:` blocks.
 
 ---
 
@@ -159,13 +194,26 @@ The integrator uses the same convention: `docs/status-<integrator.name>.md`.
 ## Verdict file
 
 The integrator writes `<integrator.worktree>/docs/verify-integration.md`, ending
-in an explicit verdict line:
+in exactly one nonce-tagged sentinel on its own line:
 
-- `... GO` → engine proceeds to the confirm + cleanup step.
-- `... NO-GO` → engine stops, prints the verdict, exits non-zero, **deletes nothing**.
+- `POLYLANE-VERDICT: GO run=<run_id>` → engineering and autonomous evidence pass.
+- `POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=<run_id>` → engineering passes;
+  only genuinely physical/manual evidence remains. Verified work is promoted and
+  the outer cycle routes around the external item.
+- `POLYLANE-VERDICT: NO-GO run=<run_id>` → the runner preserves evidence and
+  immediately respawns the integrator with a repair prompt. Default repair budget
+  is 3 (`POLYLANE_INTEGRATOR_REPAIRS`).
 
-Parsing takes the last line containing `GO`/`NO-GO`; `NO-GO` wins ties; an absent
-or unrecognised verdict is treated as **not GO** (safe default).
+An integrator may add `POLYLANE-REPAIRABLE: NO run=<run_id>` immediately before
+NO-GO only when a current host/account/hardware restriction blocks a required
+gate before source execution and no owned source change can affect it. The runner
+then skips identical repair waves. This does not complete the goal: the outer
+orchestrator records the external evidence boundary and routes other autonomous
+subgoals.
+
+Prose never counts. Any matching NO-GO wins; a missing, stale-nonce, or malformed
+sentinel is `UNKNOWN` and enters the same bounded repair path. A council verdict
+outside this file is advisory and cannot terminate a run.
 
 ---
 
@@ -177,8 +225,11 @@ parse args → preflight (jq, git + valid JSON, then manifest-selected agent CLI
   → launch: tmux session 'polylane', one seeded selected-agent pane per lane
   → poll: until every <worktree>/docs/status-<name>.md first line == DONE
   → integrator: its own worktree + seeded pane; poll its DONE
-  → gate: GO required in verify-integration.md, else stop (exit 1)
+  → gate: verified verdict + frozen focused acceptance required
+  → NO-GO/UNKNOWN: preserve evidence → integrator repair → gate again
+  → final autonomous targets: terminal acceptance suite once
   → assert no unmerged paths (conflict → exit 1, worktrees intact)
+  → stamp durable goal state/progress
   → cleanup: one confirm (unless --yes) → git worktree remove --force,
              git branch -d (merged only), rm .polylane + docs/status-*.md
 ```
@@ -189,7 +240,7 @@ Each pane runs the manifest-selected agent profile. For Codex manifests, the
 default command is:
 
 ```sh
-cd '<worktree>' && POLYLANE_EFFORT=<effort> codex exec --json --sandbox workspace-write \
+cd '<worktree>' && POLYLANE_EFFORT=<effort> codex exec --json --sandbox <codex_sandbox> \
   -c approval_policy=never -c model_reasoning_effort=<effort> --model '<model>' - < '<prompt_file>'
 ```
 
@@ -224,3 +275,8 @@ to probe the live model list; without it the helper prints its fallback list.
   coordination survive cleanup.
 - Any unresolved merge conflict aborts with a non-zero exit and leaves all
   worktrees intact.
+- Contract v2 runs cannot launch if they have no autonomous route, missing frozen
+  acceptance, stale prior-cycle artifacts, empty skill kits, weak prompts, or
+  overlapping ownership.
+- Every live supervised tmux run is observable with the exact line returned by
+  `bin/polylane-cycle.sh runtime .polylane/run.json`.

@@ -11,7 +11,7 @@
 #     "criteria":   [ {id,text,weight,status,score} ],           # success measures
 #     "milestones": [ {id,text,subgoals:[ {id,text,weight,status,cycle,evidence} ]} ],
 #     "log":        [ {cycle,kind,text,meta} ] }                  # decisions/learnings/attempts
-#   status ∈ open | doing | done | blocked
+#   status ∈ open | doing | done | external | blocked
 #
 # Commands:
 #   init <ultimate>                 create the file (no-op if it already exists)
@@ -26,9 +26,11 @@
 #   attempted <text>                exit 0 iff this approach is already in the log as an attempt
 #   progress                        "subgoals: X/Y done · criteria: A/B done · N% "
 #   met                             exit 0 iff every sub-goal AND criterion done AND every acceptance check passing
-#   add-accept   <sid> <cmd> [dep-glob...]   register a FROZEN acceptance command for <sid>
+#   add-accept   <sid> <cmd> [--tier focused|terminal] [dep-glob...]
+#                                    register a FROZEN acceptance command for <sid>
 #                                    (refused once done; dep-globs enable content-hash memoization)
-#   check-accept [--cycle N]        run every registered command (cached if deps unchanged);
+#   check-accept [--cycle N] [--targets a,b --focused | --only-terminal]
+#                                    run selected registered commands;
 #                                    stamp pass|fail; --cycle records the cycle a pass->fail broke
 #   unmet-accept                    list every acceptance check not currently "pass"
 #   regressions                     list checks that went pass->fail, naming the cycle (temporal guard)
@@ -130,6 +132,10 @@ case "$CMD" in
 
   set-status)
     _need
+    case "${2:-}" in
+      open|doing|done|external|blocked) : ;;
+      *) echo "polylane-memory: invalid status '${2:-}' (want open|doing|done|external|blocked)" >&2; exit 2 ;;
+    esac
     # fail loud if the id matches no sub-goal AND no criterion — a silent no-op here
     # means the tree never reaches `met` and the loop can't terminate (typo'd id).
     jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id) or any(.criteria[]; .id==$id)' "$F" >/dev/null \
@@ -163,8 +169,10 @@ case "$CMD" in
 
   next)
     _need
-    jq -r '[.milestones[].subgoals[] | select(.status=="open")]
-           | sort_by(-.weight) | .[0] // empty | "\(.id)  \(.text)"' "$F"
+    # Finish committed work before switching focus: doing outranks open, then weight.
+    jq -r '[.milestones[].subgoals[] | select(.status=="open" or .status=="doing")]
+           | sort_by((if .status=="doing" then 0 else 1 end), -.weight)
+           | .[0] // empty | "\(.id)  \(.text)"' "$F"
     ;;
 
   attempted)
@@ -186,13 +194,17 @@ case "$CMD" in
 
   met)
     _need
-    # goal reached iff >=1 criterion AND every criterion + sub-goal done AND every
-    # pre-registered acceptance check passing (absent .accept -> vacuously satisfied).
+    # Goal reached iff >=1 criterion/subgoal, all statuses done, and EVERY subgoal
+    # has at least one passing frozen grader. Missing .accept is never completion.
     jq -e '
-      (([.criteria[]]|length) > 0)
+      ([.milestones[].subgoals[]]) as $sg
+      | ((.accept // [])) as $ac
+      | (([.criteria[]]|length) > 0)
+      and (($sg|length) > 0)
       and (all(.criteria[]; .status=="done"))
-      and (all(.milestones[].subgoals[]; .status=="done"))
-      and (all((.accept // [])[]; .status=="pass"))' "$F" >/dev/null
+      and (all($sg[]; .status=="done"))
+      and ([$sg[] | .id as $sid | any($ac[]; .sid==$sid and .status=="pass")] | all)
+      and (all($ac[]; .status=="pass"))' "$F" >/dev/null
     ;;
 
   add-accept)
@@ -203,40 +215,72 @@ case "$CMD" in
     # open, so the builder cannot author its own weaker success bar after the fact.
     jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id and .status=="done")' "$F" >/dev/null \
       && { echo "polylane-memory: sub-goal '$1' already done — acceptance must be registered BEFORE the build" >&2; exit 1; }
-    _sid="$1"; _cmd="${2:?usage: add-accept <sid> <cmd> [dep-glob...]}"; shift 2
+    _sid="$1"; _cmd="${2:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [dep-glob...]}"; shift 2
+    _tier="focused"
+    if [ "${1:-}" = "--tier" ]; then
+      _tier="${2:?--tier needs focused or terminal}"; shift 2
+    fi
+    case "$_tier" in focused|terminal) : ;; *)
+      echo "polylane-memory: acceptance tier must be focused or terminal" >&2; exit 2 ;;
+    esac
+    [ "${1:-}" = "--" ] && shift
     # remaining args are dependency globs the check GRADES; content-hash of these
     # gates memoization. No deps -> always re-run (backward-compatible).
     _deps="[]"; if [ "$#" -gt 0 ]; then _deps=$(printf '%s\n' "$@" | jq -R . | jq -cs .); fi
-    _save --arg sid "$_sid" --arg cmd "$_cmd" --argjson deps "$_deps" \
-      '.accept = ((.accept // []) + [{sid:$sid, cmd:$cmd, status:"unchecked", deps:$deps, fp:"", regressed_cycle:null}])'
+    _save --arg sid "$_sid" --arg cmd "$_cmd" --arg tier "$_tier" --argjson deps "$_deps" \
+      '.accept = ((.accept // []) + [{sid:$sid, cmd:$cmd, tier:$tier, status:"unchecked", deps:$deps, fp:"", regressed_cycle:null}])'
     ;;
 
   check-accept)
     _need
-    # optional --cycle N stamps regressed_cycle on a pass->fail transition
-    _cyc="null"
-    [ "${1:-}" = "--cycle" ] && { _cyc="${2:?--cycle needs N}"; shift 2; }
+    # Targeted focused checks keep inner cycles fast. Terminal checks are reserved
+    # for final certification; a plain check-accept remains backward-compatible
+    # and runs everything.
+    _cyc="null"; _targets=""; _focused=0; _terminal_only=0
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --cycle) _cyc="${2:?--cycle needs N}"; shift 2 ;;
+        --targets) _targets="${2:?--targets needs comma-separated ids}"; shift 2 ;;
+        --focused) _focused=1; shift ;;
+        --only-terminal) _terminal_only=1; shift ;;
+        *) echo "polylane-memory: unknown check-accept option '$1'" >&2; exit 2 ;;
+      esac
+    done
     _n=$(jq '.accept // [] | length' "$F")
     [ "$_n" = "0" ] && { echo "check-accept: no acceptance checks registered"; exit 0; }
-    _rows="["; _i=0
+    _rows="["; _i=0; _failed=0
     while [ "$_i" -lt "$_n" ]; do
       _cmd=$(jq -r ".accept[$_i].cmd" "$F")
+      _sid=$(jq -r ".accept[$_i].sid" "$F")
+      _tier=$(jq -r ".accept[$_i].tier // \"focused\"" "$F")
       _prev=$(jq -r ".accept[$_i].status // \"unchecked\"" "$F")
       _rc=$(jq -r ".accept[$_i].regressed_cycle // \"null\"" "$F")
       # --- #4 memoization: skip a passing check whose graded files are byte-identical
       _deps=$(jq -r ".accept[$_i].deps // [] | join(\" \")" "$F")
       _oldfp=$(jq -r ".accept[$_i].fp // \"\"" "$F")
       _newfp=""
-      if [ -n "$_deps" ]; then _newfp=$(_fingerprint $_deps); fi
+      _selected=1
+      if [ -n "$_targets" ]; then
+        case ",$_targets," in *",$_sid,"*) : ;; *) _selected=0 ;; esac
+      fi
+      [ "$_focused" = "1" ] && [ "$_tier" = "terminal" ] && _selected=0
+      [ "$_terminal_only" = "1" ] && [ "$_tier" != "terminal" ] && _selected=0
+      if [ "$_selected" = "0" ]; then
+        _st="$_prev"; _newfp="$_oldfp"
+      else
+        # shellcheck disable=SC2086  # dependency globs must expand into graded files
+        if [ -n "$_deps" ]; then _newfp=$(_fingerprint $_deps); fi
       # memoization is OFF by default: a check often reads files outside its declared
       # deps, so a byte-identical dep-set can falsely cache a pass over now-broken work
       # (invisible to `met`). Correctness first; opt in with POLYLANE_ACCEPT_MEMO=1 only
       # when a check provably reads ONLY its deps and re-running is measurably costly.
-      if [ "${POLYLANE_ACCEPT_MEMO:-0}" = "1" ] && [ "$_prev" = "pass" ] && [ -n "$_deps" ] && [ -n "$_newfp" ] && [ "$_newfp" = "$_oldfp" ]; then
-        _st="pass"                                   # cached: command never runs
-        printf 'check-accept[%s]: pass (cached)\n' "$_i" >&2
-      else
-        if _accept_run "$_cmd"; then _st="pass"; else _st="fail"; fi
+        if [ "${POLYLANE_ACCEPT_MEMO:-0}" = "1" ] && [ "$_prev" = "pass" ] && [ -n "$_deps" ] && [ -n "$_newfp" ] && [ "$_newfp" = "$_oldfp" ]; then
+          _st="pass"                                   # cached: command never runs
+          printf 'check-accept[%s]: pass (cached)\n' "$_i" >&2
+        else
+          if _accept_run "$_cmd"; then _st="pass"; else _st="fail"; fi
+        fi
+        [ "$_st" = "pass" ] || _failed=1
       fi
       # --- #3 temporal guard: first pass->fail flip records the cycle it broke. Stamp
       # even without --cycle (use "?") so a cycle-less call still surfaces the regression.
@@ -253,7 +297,7 @@ case "$CMD" in
     # the extra entries merge nothing (stay unchanged) instead of writing status:null.
     _save --argjson u "$_rows" \
       '.accept |= [ range(0; length) as $i | .[$i] + ($u[$i] // {}) ]'
-    jq -e 'all((.accept // [])[]; .status=="pass")' "$F" >/dev/null
+    [ "$_failed" = "0" ]
     ;;
 
   unmet-accept)
@@ -282,11 +326,13 @@ case "$CMD" in
       | ([.criteria[]]) as $cr
       | ($sg|length) as $sn | ($sg|map(select(.status=="done"))|length) as $sd
       | ($cr|length) as $cn | ($cr|map(select(.status=="done"))|length) as $cd
-      | ($sg|map(select(.status=="open"))|sort_by(-.weight)|.[0]) as $next
+      | ($sg|map(select(.status=="open" or .status=="doing"))
+           | sort_by((if .status=="doing" then 0 else 1 end), -.weight)|.[0]) as $next
       | "GOAL: \(.ultimate)",
         "PROGRESS: subgoals \($sd)/\($sn) · criteria \($cd)/\($cn)",
         "NEXT: \(if $next then "\($next.id) — \($next.text)" else "(no open sub-goal)" end)",
         "OPEN CRITERIA:", (($cr[]|select(.status!="done")|"  - \(.id): \(.text)") // "  (none)"),
+        "EXTERNAL / NEEDS USER:", (($sg[]|select(.status=="external")|"  - \(.id): \(.text)") // "  (none)"),
         "BLOCKED:", (($sg[]|select(.status=="blocked")|"  - \(.id): \(.text)") // "  (none)"),
         "RECENT:", (.log[-6:][]|"  c\(.cycle) \(.kind): \(.text)")' "$F"
     ;;
@@ -302,7 +348,8 @@ case "$CMD" in
       | ([.criteria[]]) as $cr
       | ($sg|length) as $sn | ($sg|map(select(.status=="done"))|length) as $sd
       | ($cr|length) as $cn | ($cr|map(select(.status=="done"))|length) as $cd
-      | ($sg|map(select(.status=="open"))|sort_by(-.weight)) as $open
+      | ($sg|map(select(.status=="open" or .status=="doing"))
+           | sort_by((if .status=="doing" then 0 else 1 end), -.weight)) as $open
       | (([.log[].cycle]|max) // 0) as $cyc
       | "=== POLYLANE-MAX RESUME ===",
         "GOAL: \(.ultimate)",
@@ -310,9 +357,10 @@ case "$CMD" in
         "PROGRESS: subgoals \($sd)/\($sn) · criteria \($cd)/\($cn)",
         "OPEN SUBGOALS (by weight):", (($open[]|"  - \(.id) (w\(.weight)): \(.text)") // "  (none — check criteria)"),
         "OPEN CRITERIA:", (([$cr[]|select(.status!="done")]|if length>0 then (.[]|"  - \(.id): \(.text)") else "  (none)" end)),
+        "EXTERNAL / NEEDS USER:", (([$sg[]|select(.status=="external")]|if length>0 then (.[]|"  - \(.id): \(.text)") else "  (none)" end)),
         "BLOCKED:", (([$sg[]|select(.status=="blocked")]|if length>0 then (.[]|"  - \(.id): \(.text)") else "  (none)" end)),
         "RECENT LOG:", (.log[-8:][]|"  c\(.cycle) \(.kind): \(.text)"),
-        "NEXT ACTION: resume at cycle \($cyc+1) — build the highest-weight open sub-goal; if none open and all criteria done, finalize and STOP."' "$F"
+        "NEXT ACTION: resume at cycle \($cyc+1) — continue doing/open work; if only external items remain, request their exact inputs; STOP only after met + shippability."' "$F"
     ;;
 
   dump)

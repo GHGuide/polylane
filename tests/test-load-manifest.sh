@@ -13,6 +13,7 @@ PROJ="$FIXTURES/project"
 
 assert_eq "manifest-base"          "main" "$BASE"
 assert_eq "manifest-project-root"  "$PROJ" "$PROJECT_ROOT"
+assert_eq "manifest-codex-sandbox" "danger-full-access" "$CODEX_SANDBOX"
 
 # integrator block
 assert_eq "int-name"     "integrator"            "$INT_NAME"
@@ -61,5 +62,24 @@ sed '/available_models/d' "$FIXTURES/project/.polylane/run.json" > "$TEST_TMPDIR
 MANIFEST="$TEST_TMPDIR/run2.json"
 load_manifest
 assert_eq "models-absent-empty" "0" "${#AVAILABLE_MODELS[@]}"
+
+# manifest session persists observability; an explicit environment still wins.
+jq '.session="manifest-session"' "$FIXTURES/project/.polylane/run.json" > "$TEST_TMPDIR/run3.json"
+unset POLYLANE_SESSION
+TMUX_SESSION=polylane
+MANIFEST="$TEST_TMPDIR/run3.json"
+load_manifest
+assert_eq "manifest-session-applied" "manifest-session" "$TMUX_SESSION"
+POLYLANE_SESSION=env-session
+TMUX_SESSION=env-session
+load_manifest
+assert_eq "manifest-session-env-wins" "env-session" "$TMUX_SESSION"
+unset POLYLANE_SESSION
+
+# The default remains isolated and writable when the optional key is absent.
+jq 'del(.codex_sandbox)' "$FIXTURES/project/.polylane/run.json" > "$TEST_TMPDIR/run4.json"
+MANIFEST="$TEST_TMPDIR/run4.json"
+load_manifest
+assert_eq "manifest-codex-sandbox-default" "workspace-write" "$CODEX_SANDBOX"
 
 finish

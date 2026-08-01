@@ -25,6 +25,8 @@ dies "{\"base\":\"main\",$INT,\"lanes\":[]}" "no lanes" "empty-lanes"
 dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\"}]}" "missing a required field" "null-fields"
 dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]},{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/b\",\"worktree\":\"/tmp/b\",\"prompt_file\":\"p\",\"own_globs\":[\"y\"]}]}" "duplicate lane name" "dup-name"
 dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a; touch /tmp/x\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "unsafe chars" "unsafe-name"
+dies "{\"base\":\"main\",\"session\":\"bad session;name\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "session has unsafe chars" "unsafe-session"
+dies "{\"base\":\"main\",\"agent\":\"codex\",\"codex_sandbox\":\"unconfined-ish\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "invalid Codex sandbox" "unsafe-codex-sandbox"
 
 # a WELL-FORMED manifest still dry-runs clean (rc 0) — validation isn't over-eager
 GOOD="{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}"

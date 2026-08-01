@@ -7,6 +7,7 @@
 . "$RUNNER"
 
 BASE="main"
+CYCLE=7
 LANE_NAMES=(alpha beta)
 LANE_MODELS=(claude-sonnet-5 claude-haiku-4-5)
 LANE_BRANCHES=(lane/alpha lane/beta)
@@ -28,6 +29,8 @@ assert_contains "go-lane-row-beta"  "| beta | claude-haiku-4-5 | lane/beta | com
 assert_contains "go-merged-text"    "all lanes merged"       "$go"
 assert_contains "go-push-step"      "git push"               "$go"
 assert_contains "go-no-open-items"  "No open items"          "$go"
+assert_eq "go-ledger-cycle" "7" "$(jq -r '.cycle' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
+assert_eq "go-ledger-tokens" "42000" "$(jq -r '.tokens' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
 
 # --- NO-GO report ------------------------------------------------------------
 make_tmpdir

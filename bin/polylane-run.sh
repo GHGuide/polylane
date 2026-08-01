@@ -4,7 +4,7 @@
 #
 # Splits a manifest of lanes into git worktrees, launches one seeded selected-agent
 # pane per lane in a tmux session, polls each lane's DONE file, auto-runs the
-# integrator, gates on the integrator's GO verdict, then deletes scratch after
+# integrator, gates on a verified engineering verdict, then deletes scratch after
 # one confirmation. See .polylane/SCHEMA.md for the manifest + conventions.
 #
 # CONTRACTS (frozen — other lanes depend on these):
@@ -56,16 +56,16 @@ FLOW:
   -> poll each <worktree>/docs/status-<name>.md for DONE (per-lane status line;
      transient errors auto-retry with a WIP checkpoint; usage-limit paywalls
      stall the lane and wait for a human — never auto-answered)
-  -> run integrator -> gate on GO in <int-worktree>/docs/verify-integration.md
+  -> run integrator -> gate/repair verdict in <int-worktree>/docs/verify-integration.md
   -> one confirm -> remove worktrees + merged branches + .polylane scratch
      (keeps docs/verify-*.md, docs/parallel-status.md, docs/lane-logs/)
 
 DEPS: tmux, jq, git, and the selected agent CLI (codex, claude, aider, or custom)
 
 ENV:
-  POLYLANE_POLL_INTERVAL    seconds between DONE-file polls (default 5)
+  POLYLANE_POLL_INTERVAL    seconds between DONE-file polls (default 2)
   POLYLANE_HEALTH_INTERVAL  seconds between error-scans that auto-retry a lane
-                            stuck on a transient API/network error (default 60 = 1 min)
+                            stuck on a transient API/network error (default 15)
   POLYLANE_MAX_RETRIES      retries per lane before it is marked failed (default 3)
   POLYLANE_ON_LIMIT         what to do when a lane hits a usage-limit paywall, so
                             an unattended run never hangs on it:
@@ -83,6 +83,12 @@ ENV:
   POLYLANE_MIN_DISK_GB      free-space floor in GB (default 2). Preflight ABORTS below
                             it; a run that dips below it mid-flight HALTS gracefully
                             (worktrees intact, resumable) instead of ENOSPC-crashing.
+  POLYLANE_PROGRESS_CHECKS  unchanged-source health sweeps before command-churn
+                            replan (default 12)
+  POLYLANE_PROGRESS_MIN_COMMANDS
+                            command executions required before that replan (default 20)
+  POLYLANE_PROGRESS_REPLANS narrowed model/effort-downgraded replans before the
+                            lane stops as NEEDS-USER (default 2)
 EOF
 }
 
@@ -257,6 +263,13 @@ abs_prompt() {
   esac
 }
 
+abs_project_path() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    *)  printf '%s/%s' "$PROJECT_ROOT" "$1" ;;
+  esac
+}
+
 # die MSG : print a fatal error and stop before any side effect.
 die() { echo "polylane-run: $*" >&2; exit 2; }
 
@@ -270,11 +283,28 @@ load_manifest() {
   # which agent CLI each pane launches — claude (default), codex/gpt, aider, or a
   # custom POLYLANE_AGENT_CMD template. Env POLYLANE_AGENT overrides the manifest.
   AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
+  # Codex lanes default to the least-surprising writable isolation. A run may
+  # explicitly select another supported Codex sandbox, and the environment can
+  # override it for host-specific recovery without replacing the whole agent
+  # command template.
+  CODEX_SANDBOX=$(jq -r '.codex_sandbox // "workspace-write"' "$MANIFEST")
   # PROJECT_ROOT = parent of the manifest's own dir (.polylane) = the project root
   # where .polylane/lanes/*.txt actually live. Robust even outside a git checkout.
   local _mdir
-  _mdir=$(cd "$(dirname "$MANIFEST")" && pwd)
-  PROJECT_ROOT=$(cd "$_mdir/.." && pwd)
+  _mdir=$(cd "$(dirname "$MANIFEST")" && pwd -P)
+  PROJECT_ROOT=$(cd "$_mdir/.." && pwd -P)
+  MANIFEST_SESSION=$(jq -r '.session // ""' "$MANIFEST")
+  if [ -z "${POLYLANE_SESSION:-}" ] && [ -n "$MANIFEST_SESSION" ]; then
+    TMUX_SESSION="$MANIFEST_SESSION"
+  fi
+  ORCHESTRATION_CONTRACT=$(jq -r '.orchestration_contract // 0' "$MANIFEST")
+  CYCLE=$(jq -r '.cycle // 0' "$MANIFEST")
+  STATE_FILE=$(jq -r '.state_file // ""' "$MANIFEST")
+  LANE_SKILLS_FILE=$(jq -r '.lane_skills_file // ""' "$MANIFEST")
+  CYCLE_PLAN_FILE=$(jq -r '.cycle_plan_file // ""' "$MANIFEST")
+  [ -z "$STATE_FILE" ] || STATE_FILE=$(abs_project_path "$STATE_FILE")
+  [ -z "$LANE_SKILLS_FILE" ] || LANE_SKILLS_FILE=$(abs_project_path "$LANE_SKILLS_FILE")
+  [ -z "$CYCLE_PLAN_FILE" ] || CYCLE_PLAN_FILE=$(abs_project_path "$CYCLE_PLAN_FILE")
   INT_NAME=$(jq -r '.integrator.name' "$MANIFEST")
   INT_MODEL=$(jq -r '.integrator.model' "$MANIFEST")
   INT_BRANCH=$(jq -r '.integrator.branch' "$MANIFEST")
@@ -291,7 +321,8 @@ load_manifest() {
   done < <(jq -r '.available_models // [] | .[]' "$MANIFEST")
 
   LANE_NAMES=(); LANE_MODELS=(); LANE_EFFORTS=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
-  LANE_PANE_IDX=(); LANE_RESUMED=(); LANE_WHASH=(); LANE_WCNT=()
+  LANE_PANE_IDX=(); LANE_RESUMED=(); LANE_ADOPTED=(); LANE_WHASH=(); LANE_WCNT=()
+  LANE_PHASH=(); LANE_PCNT=(); LANE_PCOMMANDS=(); LANE_PREPLANS=()
   INT_PANE_IDX=-1; NEXT_PANE_IDX=0; SESSION_STARTED=0
   local n i
   n=$(jq '.lanes | length' "$MANIFEST")
@@ -303,14 +334,98 @@ load_manifest() {
     LANE_WORKTREES+=("$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
     LANE_PROMPTS+=("$(abs_prompt "$(jq -r ".lanes[$i].prompt_file" "$MANIFEST")")")
     LANE_POLLSPEC+=("$(jq -r ".lanes[$i].name" "$MANIFEST"):$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
-    LANE_PANE_IDX+=(-1); LANE_RESUMED+=(0)
+    LANE_PANE_IDX+=(-1); LANE_RESUMED+=(0); LANE_ADOPTED+=(0)
   done
 
+  MANIFEST_RUNTIME_FINGERPRINT=$(runtime_settings_fingerprint)
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
   # shellcheck disable=SC2034  # kept for sourcers (tests source this file's functions)
   BASE_WT="$REPO_ROOT"
 
   validate_manifest
+}
+
+# preflight_contract : Codex runs use orchestration contract v2 by default. This
+# converts the workflow promises into executable launch gates, before worktrees or
+# tmux exist. POLYLANE_ALLOW_LEGACY=1 is an explicit compatibility escape hatch.
+# A --resume may also grandfather an already-materialized legacy Codex run so an
+# upgraded supervisor cannot strand work that was launched under contract v1.
+preflight_contract() {
+  local strict=0 lane prompt sid next next_id previous legacy_wt
+  if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
+    strict=1
+  elif [ "$(agent_selected)" = "codex" ] || [ "$(agent_selected)" = "gpt" ] || [ "$(agent_selected)" = "openai" ]; then
+    if [ "${POLYLANE_ALLOW_LEGACY:-0}" = "1" ]; then
+      return 0
+    fi
+    if [ "${RESUME:-0}" = "1" ] && [ -n "${RUN_ID:-}" ]; then
+      for legacy_wt in "${LANE_WORKTREES[@]}" "$INT_WORKTREE"; do
+        if [ -d "$legacy_wt" ]; then
+          echo "ORCHESTRATION-CONTRACT: grandfathering existing legacy Codex run for --resume; migrate next cycle" >&2
+          return 0
+        fi
+      done
+    fi
+    die "Codex manifest needs orchestration_contract: 2 (set POLYLANE_ALLOW_LEGACY=1 only for migration)"
+  fi
+  [ "$strict" = "1" ] || return 0
+
+  [ "${CYCLE:-0}" -ge 1 ] 2>/dev/null || die "contract v2 needs integer cycle >= 1"
+  [ -n "${RUN_ID:-}" ] || die "contract v2 needs a fresh non-empty run_id"
+  case "$RUN_ID" in *[!A-Za-z0-9._-]*)
+    die "contract v2 run_id must use only A-Za-z0-9._-" ;;
+  esac
+  [ -n "${STATE_FILE:-}" ] && [ -s "$STATE_FILE" ] || die "contract v2 state_file is missing/empty"
+  [ -n "${LANE_SKILLS_FILE:-}" ] && [ -s "$LANE_SKILLS_FILE" ] || die "contract v2 lane_skills_file is missing/empty"
+  [ -n "${CYCLE_PLAN_FILE:-}" ] && [ -s "$CYCLE_PLAN_FILE" ] || die "contract v2 cycle_plan_file is missing/empty"
+  [ -s "$PROJECT_ROOT/docs/polylane/INDEX.md" ] || die "contract v2 needs docs/polylane/INDEX.md"
+
+  jq -e '
+    (.target_subgoals | type=="array" and length>0)
+    and all(.lanes[]; (.target_subgoals | type=="array" and length>0))
+    and (([.lanes[].target_subgoals[]] | unique) -
+         ([.target_subgoals[]] | unique) | length == 0)
+  ' "$MANIFEST" >/dev/null 2>&1 ||
+    die "contract v2 needs non-empty target_subgoals globally and on every builder lane"
+
+  "$SCRIPT_DIR/polylane-scope.sh" check-static "$MANIFEST" ||
+    die "contract v2 scope isolation failed"
+  POLYLANE_STRICT_PROMPTS=1 "$SCRIPT_DIR/polylane-promptlint.sh" lint-run "$MANIFEST" ||
+    die "contract v2 prompt lint failed"
+  "$SCRIPT_DIR/polylane-scout.sh" validate "$LANE_SKILLS_FILE" "$MANIFEST" ||
+    die "contract v2 lane skill kits failed"
+  for lane in "${LANE_NAMES[@]}"; do
+    prompt=$(jq -r --arg n "$lane" '.lanes[] | select(.name==$n) | .prompt_file' "$MANIFEST")
+    prompt=$(abs_project_path "$prompt")
+    "$SCRIPT_DIR/polylane-scout.sh" lint "$LANE_SKILLS_FILE" "$lane" "$prompt" ||
+      die "contract v2 lane '$lane' prompt does not invoke its armed skills"
+    grep -qF "STATUS: $lane DONE run=$RUN_ID" "$prompt" ||
+      die "contract v2 lane '$lane' prompt lacks its exact current-run DONE marker"
+  done
+  if ! grep -qF "POLYLANE-VERDICT:" "$INT_PROMPT" ||
+     ! grep -qF "run=$RUN_ID" "$INT_PROMPT"; then
+    die "contract v2 integrator prompt lacks a current-run verdict sentinel"
+  fi
+
+  for sid in $(jq -r '.target_subgoals[]' "$MANIFEST"); do
+    jq -e --arg sid "$sid" '
+      any(.milestones[].subgoals[]; .id==$sid and (.status=="open" or .status=="doing"))
+      and any((.accept // [])[]; .sid==$sid)
+    ' "$STATE_FILE" >/dev/null ||
+      die "target subgoal '$sid' must be open/doing with frozen acceptance registered"
+  done
+  next=$("$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" next)
+  next_id="${next%%  *}"
+  [ -n "$next_id" ] || die "contract v2 has no autonomous next subgoal to execute"
+  jq -e --arg sid "$next_id" 'any(.target_subgoals[]; .==$sid)' "$MANIFEST" >/dev/null ||
+    die "highest-priority next subgoal '$next_id' is not routed into this cycle"
+
+  if [ "$CYCLE" -gt 1 ]; then
+    previous=$((CYCLE - 1))
+    "$SCRIPT_DIR/polylane-cycle.sh" artifacts "$PROJECT_ROOT" "$previous" "$STATE_FILE" ||
+      die "prior cycle $previous is not durably closed"
+  fi
+  echo "ORCHESTRATION-CONTRACT: v2 cycle=$CYCLE target=$next_id"
 }
 
 # validate_manifest : fail LOUD before any git/tmux side effect on a malformed plan.
@@ -320,6 +435,11 @@ load_manifest() {
 validate_manifest() {
   local i nm seen=""
   [ "${#LANE_NAMES[@]}" -ge 1 ] || die "manifest has no lanes — nothing to run"
+  if [ -n "${MANIFEST_SESSION:-}" ]; then
+    case "$MANIFEST_SESSION" in
+      *[!A-Za-z0-9._-]*) die "manifest session has unsafe chars — use [A-Za-z0-9._-] only" ;;
+    esac
+  fi
   # agent must be a known profile unless a custom command template is supplied
   if [ -z "${POLYLANE_AGENT_CMD:-}" ]; then
     case "$(agent_selected)" in
@@ -327,6 +447,14 @@ validate_manifest() {
       *) die "unknown agent '$(agent_selected)' — use claude|codex|gpt|aider, or set POLYLANE_AGENT_CMD with {model} {prompt}" ;;
     esac
   fi
+  case "$(agent_selected)" in
+    codex|gpt|openai)
+      case "$(codex_sandbox_selected)" in
+        read-only|workspace-write|danger-full-access) : ;;
+        *) die "invalid Codex sandbox '$(codex_sandbox_selected)' — use read-only|workspace-write|danger-full-access" ;;
+      esac
+      ;;
+  esac
   for field in INT_NAME INT_MODEL INT_BRANCH INT_WORKTREE; do
     [ "${!field}" = "null" ] && die "integrator.$(printf '%s' "$field" | tr 'A-Z_' 'a-z ' ) is missing in the manifest"
   done
@@ -551,10 +679,14 @@ mark_resumed() {
 # %q-quoted. It may also contain {effort}. Effort is additionally passed to EVERY
 # agent as the POLYLANE_EFFORT env var (agents that don't use it are unaffected).
 agent_selected() { printf '%s' "${POLYLANE_AGENT:-${AGENT:-claude}}"; }
+codex_sandbox_selected() {
+  printf '%s' "${POLYLANE_CODEX_SANDBOX:-${CODEX_SANDBOX:-workspace-write}}"
+}
 
 agent_template() {
   if [ -n "${POLYLANE_AGENT_CMD:-}" ]; then printf '%s' "$POLYLANE_AGENT_CMD"; return; fi
-  local pmode="${POLYLANE_PERMISSION_MODE:-acceptEdits}"
+  local pmode="${POLYLANE_PERMISSION_MODE:-acceptEdits}" codex_sandbox
+  codex_sandbox=$(codex_sandbox_selected)
   case "$(agent_selected)" in
     # acceptEdits: lanes edit only their own files in an isolated worktree, so edits
     # are always safe to auto-accept; the walk-away design can't block per-edit.
@@ -563,7 +695,7 @@ agent_template() {
     # effort was pure prompt-discretion ("run at HIGH effort, confirm with /model"),
     # while codex lanes already got it mechanically via model_reasoning_effort.
     claude)            printf 'claude --permission-mode %s --effort {effort} --model {model} "$(cat {prompt})"' "$(printf '%q' "$pmode")" ;;
-    codex|gpt|openai)  printf 'codex exec --json --sandbox workspace-write -c approval_policy=never -c model_reasoning_effort={effort} --model {model} - < {prompt}' ;;
+    codex|gpt|openai)  printf 'codex exec --json --disable multi_agent --disable multi_agent_v2 --disable enable_fanout --sandbox %s -c approval_policy=never -c model_reasoning_effort={effort} --model {model} - < {prompt}' "$(printf '%q' "$codex_sandbox")" ;;
     aider)             printf 'aider --model {model} --message-file {prompt} --yes-always --no-auto-commits' ;;
     *) echo "polylane-run: unknown agent '$(agent_selected)' — set POLYLANE_AGENT_CMD to a template containing {model} and {prompt}" >&2; return 2 ;;
   esac
@@ -626,7 +758,10 @@ assert_prompt() {
 
 # pipe_pane_log IDX NAME : mirror pane IDX's full transcript to
 # docs/lane-logs/<NAME>.log (repo root; dir created; cleanup KEEPS it).
-# -o = only open a pipe if none exists, so re-issuing after a respawn is safe.
+# -o makes ordinary launch/adoption calls idempotent. A respawn must call
+# repipe_pane_log instead: tmux can retain stale pipe metadata after replacing a
+# pane process, causing `pipe-pane -o` to silently leave the new transcript
+# disconnected.
 # The log path is %q-escaped — the pipe command runs through a shell.
 pipe_pane_log() {
   local idx="$1" name="$2" dir="${REPO_ROOT:-.}/docs/lane-logs" qlog
@@ -636,17 +771,96 @@ pipe_pane_log() {
   run tmux pipe-pane -o -t "$TMUX_SESSION:0.$idx" "cat >> $qlog" 2>/dev/null || true
 }
 
+# repipe_pane_log IDX NAME : explicitly close any stale pipe left by
+# `respawn-pane`, then attach a fresh logger to the replacement process.
+repipe_pane_log() {
+  local idx="$1" name="$2"
+  run tmux pipe-pane -t "$TMUX_SESSION:0.$idx" 2>/dev/null || true
+  pipe_pane_log "$idx" "$name"
+}
+
+# pane_for_worktree WT : print the pane index currently rooted at WT.
+pane_for_worktree() {
+  local wt="$1" line pane_path
+  [ ! -d "$wt" ] || wt=$(cd "$wt" 2>/dev/null && pwd -P)
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    pane_path="${line#*|}"
+    [ ! -d "$pane_path" ] || pane_path=$(cd "$pane_path" 2>/dev/null && pwd -P)
+    [ "$pane_path" = "$wt" ] && { printf '%s' "${line%%|*}"; return 0; }
+  done < <(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}' 2>/dev/null || true)
+  return 1
+}
+
+# session_owned_by_run : an existing session is adoptable only when it is tagged
+# for this exact project/run, or (migration only) an untagged --resume session has
+# a pane rooted in one of this manifest's worktrees. Never kill/adopt an unrelated
+# session merely because its user-visible name happens to collide.
+session_owned_by_run() {
+  local tagged_run tagged_project i
+  tmux has-session -t "$TMUX_SESSION" 2>/dev/null || return 1
+  tagged_run=$(tmux show-options -t "$TMUX_SESSION" -v @polylane_run_id 2>/dev/null || true)
+  tagged_project=$(tmux show-options -t "$TMUX_SESSION" -v @polylane_project 2>/dev/null || true)
+  if [ -n "$tagged_run$tagged_project" ]; then
+    [ "$tagged_run" = "${RUN_ID:-}" ] && [ "$tagged_project" = "${PROJECT_ROOT:-}" ]
+    return
+  fi
+  [ "${RESUME:-0}" = "1" ] || return 1
+  for i in "${!LANE_WORKTREES[@]}"; do
+    pane_for_worktree "${LANE_WORKTREES[$i]}" >/dev/null && return 0
+  done
+  pane_for_worktree "$INT_WORKTREE" >/dev/null
+}
+
+tag_session() {
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  run tmux set-option -q -t "$TMUX_SESSION" @polylane_run_id "${RUN_ID:-legacy}"
+  run tmux set-option -q -t "$TMUX_SESSION" @polylane_project "${PROJECT_ROOT:-unknown}"
+}
+
+# adopt_existing_session : reconnect runner state to surviving tmux panes after a
+# runner/supervisor crash. This is the critical resume seam: unfinished live Codex
+# processes remain authoritative and are watched instead of duplicated.
+adopt_existing_session() {
+  local i idx max=-1 line
+  [ "${RESUME:-0}" = "1" ] || return 0
+  tmux has-session -t "$TMUX_SESSION" 2>/dev/null || return 0
+  session_owned_by_run || die "SESSION-COLLISION: tmux '$TMUX_SESSION' is not owned by run ${RUN_ID:-legacy}; use a distinct POLYLANE_SESSION"
+  SESSION_STARTED=1
+  tag_session
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    [ "$line" -gt "$max" ] 2>/dev/null && max="$line"
+  done < <(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}' 2>/dev/null || true)
+  NEXT_PANE_IDX=$((max + 1))
+  for i in "${!LANE_NAMES[@]}"; do
+    lane_resumed "$i" && continue
+    if idx=$(pane_for_worktree "${LANE_WORKTREES[$i]}"); then
+      LANE_PANE_IDX[i]="$idx"
+      LANE_ADOPTED[i]=1
+      echo "resume: adopted live tmux pane $idx for lane '${LANE_NAMES[$i]}'"
+      pipe_pane_log "$idx" "${LANE_NAMES[$i]}"
+    fi
+  done
+}
+
+lane_adopted() { [ "${LANE_ADOPTED[$1]:-0}" = "1" ]; }
+
 # new_pane WINDOW_NAME : create the next pane (new-session for the first,
 # split-window after) and set NEW_PANE_IDX. Panes are targeted by EXPLICIT
 # index ($TMUX_SESSION:0.N) everywhere, so health-check/respawn/stats stay
 # correct when --resume skips lanes (positional index != lane order then).
 new_pane() {
   if [ "${SESSION_STARTED:-0}" != "1" ]; then
+    if [ "${DRY_RUN:-0}" != "1" ] && tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+      die "SESSION-COLLISION: tmux '$TMUX_SESSION' already exists; resume the owned run or choose a distinct POLYLANE_SESSION"
+    fi
     # size the detached session generously: the default 80x24 can't tile a 3rd+ pane
     # ("no space for new pane" -> a later seed_pane hits "can't find pane: N"). tmux
     # resizes to the real client on attach, so a big virtual size is free.
     run tmux new-session -d -s "$TMUX_SESSION" -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}"
     SESSION_STARTED=1
+    tag_session
   else
     run tmux split-window -t "$TMUX_SESSION"
     run tmux select-layout -t "$TMUX_SESSION" tiled
@@ -669,10 +883,12 @@ launch_panes() {
   # than to leave half a tmux session of empty claude sessions.
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
+    lane_adopted "$i" && continue
     assert_prompt "${LANE_PROMPTS[$i]}" "${LANE_NAMES[$i]}"
   done
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
+    lane_adopted "$i" && continue
     echo "lane ${LANE_NAMES[$i]}: model=${LANE_MODELS[$i]} effort=${LANE_EFFORTS[$i]:-(default)}"
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
     new_pane "${LANE_NAMES[$i]}"
@@ -687,25 +903,40 @@ launch_panes() {
 # poll — wait for DONE files
 # ---------------------------------------------------------------------------
 
-# lane_done WORKTREE NAME : 0 iff first line of the status file == the DONE line.
+# lane_done WORKTREE NAME : 0 iff the status marker matches this run. Contract-v2
+# lanes are DONE only after that marker and every lane change are committed. This
+# closes the marker-before-commit race where the runner could merge an older tip
+# while the live agent was still staging its evidence.
 lane_done() {
-  local wt="$1" name="$2" f="$1/docs/status-$2.md" first=""
+  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" rel="docs/status-$2.md"
   [ -f "$f" ] || return 1
   # `|| true`: read returns non-zero at EOF-before-newline but STILL populates $first,
   # so a marker written without a trailing newline (markers.sh done emits none) is read
   # correctly instead of reading as not-done forever. Empty file -> first="" -> != DONE.
   IFS= read -r first < "$f" || true
   if [ -n "${RUN_ID:-}" ]; then
-    [ "$first" = "STATUS: $name DONE run=$RUN_ID" ]   # nonce mode: only THIS run's marker
+    [ "$first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
   else
-    [ "$first" = "STATUS: $name DONE" ]               # legacy: unchanged frozen contract
+    [ "$first" = "STATUS: $name DONE" ] || return 1
   fi
+  if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
+    git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+    [ -z "$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null)" ] || return 1
+    git -C "$wt" cat-file -e "HEAD:$rel" 2>/dev/null || return 1
+    IFS= read -r head_first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
+    if [ -n "${RUN_ID:-}" ]; then
+      [ "$head_first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
+    else
+      [ "$head_first" = "STATUS: $name DONE" ] || return 1
+    fi
+  fi
+  return 0
 }
 
 # --- health-check + auto-retry (transient API/network errors) ----------------
 # A lane that hits a 500 / overloaded / network error stops WITHOUT writing its
 # DONE file, so a plain DONE-poll would hang forever. Every POLYLANE_HEALTH_INTERVAL
-# (default 60s = 1 min) we scan each unfinished lane's pane for an error banner and
+# (default 15s) we scan each unfinished lane's pane for an error banner and
 # respawn (retry) it, up to POLYLANE_MAX_RETRIES (default 3). Past the cap the lane
 # is marked failed so the run halts with a report instead of hanging.
 # bash-3.2 safe: indexed arrays only (LANE_RETRIES keyed by pane index), no assoc.
@@ -743,6 +974,15 @@ pane_errored() {
     'API Error|Internal server error|overloaded|rate.?limit|Connection error|network error|5[0-9][0-9] (Internal|error)|status\.claude\.com' \
     && return 0
   return 1
+}
+
+# pane_retryable_error IDX : an error signature is destructive only after the
+# lane's agent process has exited. Codex JSON streams legitimately retain failed
+# MCP/tool calls in pane scrollback while the same turn keeps working; respawning
+# on that text discards a productive, expensive context. A still-live process
+# that actually freezes is recovered by pane_wedged after the normal grace window.
+pane_retryable_error() {
+  pane_errored "$1" && pane_dead "$1"
 }
 
 lane_failed() { case " ${FAILED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
@@ -873,21 +1113,53 @@ lane_needs_decision() { case " ${NEEDS_DECISION_LANES:-} " in *" $1 "*) return 0
 #   dead     -> pane dropped to a shell (agent exited) -> respawn same seed
 #   stalled  -> usage-limit paywall -> POLYLANE_ON_LIMIT policy (below)
 
+# pane_agent_live IDX : 0 iff the pane command or bounded descendant tree still
+# contains the selected agent. Kept separate so the wedge detector can give a
+# live inference/build/test turn a longer quiet window than an empty shell.
+pane_agent_live() {
+  local idx="$1" cmd p pane_pid
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  cmd=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_current_command}' 2>/dev/null || echo "")
+  for p in $(agent_procs); do
+    case "$cmd" in *"$p"*) return 0 ;; esac
+  done
+  # tmux often reports the pane's login shell while `codex exec` is a child (or
+  # grandchild). Inspect the bounded descendant tree too.
+  pane_pid=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_pid}' 2>/dev/null || true)
+  [ -n "$pane_pid" ] && process_tree_has_agent "$pane_pid"
+}
+
 # pane_dead IDX : 0 iff the pane's foreground process is a plain shell (the agent
 # exited) rather than a live agent process. Agent-aware (agent_procs), so it works
 # for claude, codex/gpt, aider, or a custom agent. Unknown cmd -> not dead.
 pane_dead() {
-  local idx="$1" cmd p
+  local idx="$1" cmd
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  pane_agent_live "$idx" && return 1
   cmd=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_current_command}' 2>/dev/null || echo "")
   [ -z "$cmd" ] && return 1                              # unknown -> leave it
-  for p in $(agent_procs); do
-    case "$cmd" in *"$p"*) return 1 ;; esac              # a live agent process
-  done
   case "$cmd" in
     *sh|-*) return 0 ;;                                  # shell prompt = agent exited
     *)      return 1 ;;                                  # unknown -> no false respawn
   esac
+}
+
+process_tree_has_agent() {
+  local queue="$1" seen="" pid comm child p count=0
+  while [ -n "$queue" ] && [ "$count" -lt 128 ]; do
+    pid="${queue%% *}"
+    if [ "$queue" = "$pid" ]; then queue=""; else queue="${queue#* }"; fi
+    case " $seen " in *" $pid "*) continue ;; esac
+    seen="$seen $pid"; count=$((count + 1))
+    comm=$(ps -p "$pid" -o comm= 2>/dev/null || true)
+    for p in $(agent_procs); do
+      case "$comm" in *"/$p"|"$p"|*"/$p "*) return 0 ;; esac
+    done
+    for child in $(pgrep -P "$pid" 2>/dev/null || true); do
+      queue="${queue:+$queue }$child"
+    done
+  done
+  return 1
 }
 
 # unstall NAME : drop NAME from the sticky STALLED_LANES set.
@@ -910,6 +1182,87 @@ lane_model_set() {
   [ "$1" = "${INT_NAME:-}" ] && INT_MODEL="$2"
 }
 
+lane_effort_get() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do [ "${LANE_NAMES[$i]}" = "$1" ] && { printf '%s' "${LANE_EFFORTS[$i]:-medium}"; return; }; done
+  [ "$1" = "${INT_NAME:-}" ] && printf '%s' "${INT_EFFORT:-medium}"
+}
+lane_effort_set() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do [ "${LANE_NAMES[$i]}" = "$1" ] && { LANE_EFFORTS[i]="$2"; return; }; done
+  [ "$1" = "${INT_NAME:-}" ] && INT_EFFORT="$2"
+}
+
+# runtime_settings_fingerprint : stable checksum of manifest fields that may be
+# deliberately tuned while a durable runner stays alive. Internal fallbacks do
+# not change it, so an unchanged manifest cannot undo an in-process downgrade.
+runtime_settings_fingerprint() {
+  [ -n "${MANIFEST:-}" ] && [ -f "$MANIFEST" ] || return 1
+  jq -c '{
+    codex_sandbox:(.codex_sandbox // "workspace-write"),
+    lanes: [.lanes[] | {name, model, effort:(.effort // "")}],
+    integrator: {
+      name:.integrator.name,
+      model:.integrator.model,
+      effort:(.integrator.effort // "")
+    }
+  }' "$MANIFEST" 2>/dev/null | cksum | awk '{print $1 ":" $2}'
+}
+
+# refresh_manifest_runtime_settings : apply an explicit live manifest model or
+# effort edit before the next respawn. This lets an observer narrow an expensive
+# lane without restarting or duplicating the supervisor. Unchanged manifests do
+# not overwrite usage-limit or command-churn fallbacks held in runner memory.
+refresh_manifest_runtime_settings() {
+  local current i name model effort int_model int_effort codex_sandbox
+  current=$(runtime_settings_fingerprint) || return 0
+  [ -n "${MANIFEST_RUNTIME_FINGERPRINT:-}" ] || {
+    MANIFEST_RUNTIME_FINGERPRINT="$current"
+    return 0
+  }
+  [ "$current" != "$MANIFEST_RUNTIME_FINGERPRINT" ] || return 0
+
+  for i in "${!LANE_NAMES[@]}"; do
+    name="${LANE_NAMES[$i]}"
+    model=$(jq -r --arg n "$name" '.lanes[] | select(.name==$n) | .model' "$MANIFEST" 2>/dev/null | head -n 1)
+    effort=$(jq -r --arg n "$name" '.lanes[] | select(.name==$n) | (.effort // "")' "$MANIFEST" 2>/dev/null | head -n 1)
+    [ -n "$model" ] && [ "$model" != "null" ] || {
+      echo "runtime-config: ignored invalid live manifest edit for lane '$name'" >&2
+      return 0
+    }
+    LANE_MODELS[i]="$model"
+    LANE_EFFORTS[i]="$effort"
+  done
+
+  int_model=$(jq -r '.integrator.model' "$MANIFEST" 2>/dev/null)
+  int_effort=$(jq -r '.integrator.effort // ""' "$MANIFEST" 2>/dev/null)
+  [ -n "$int_model" ] && [ "$int_model" != "null" ] || {
+    echo "runtime-config: ignored invalid live manifest integrator edit" >&2
+    return 0
+  }
+  INT_MODEL="$int_model"
+  INT_EFFORT="$int_effort"
+  codex_sandbox=$(jq -r '.codex_sandbox // "workspace-write"' "$MANIFEST" 2>/dev/null)
+  case "$codex_sandbox" in
+    read-only|workspace-write|danger-full-access) CODEX_SANDBOX="$codex_sandbox" ;;
+    *)
+      echo "runtime-config: ignored invalid live manifest Codex sandbox '$codex_sandbox'" >&2
+      return 0
+      ;;
+  esac
+  MANIFEST_RUNTIME_FINGERPRINT="$current"
+  echo "runtime-config: reloaded live manifest model/effort/sandbox settings"
+}
+
+next_lower_effort() {
+  case "$1" in
+    ultra|max|xhigh) printf 'high' ;;
+    high)            printf 'medium' ;;
+    medium)          printf 'low' ;;
+    *)               printf 'low' ;;
+  esac
+}
+
 stallwait_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_STALLWAIT[$i]:-0}" || printf '0'; }
 stallwait_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_STALLWAIT[i]="$2"; }
 
@@ -917,16 +1270,19 @@ stallwait_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_STAL
 # is in AVAILABLE_MODELS. Ladder is ordered by likelihood of a plan limit
 # (Fable first — it burns weekly limits fastest), so fallback walks fable ->
 # opus -> sonnet -> haiku. rc 1 when nothing is left below CURRENT (=> lane fails).
-FALLBACK_LADDER="claude-fable-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5"
 next_fallback_model() {
-  local cur="$1" past=0 m
-  for m in $FALLBACK_LADDER; do
+  local cur="$1" past=0 m ladder
+  case "$(agent_selected)" in
+    codex|gpt|openai) ladder="gpt-5.6-sol gpt-5.6-terra" ;;
+    *)                ladder="claude-fable-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5" ;;
+  esac
+  for m in $ladder; do
     if [ "$past" = "1" ]; then model_available "$m" && { printf '%s' "$m"; return 0; }; fi
     [ "$m" = "$cur" ] && past=1
   done
   # CURRENT not on the ladder: offer the first available model that isn't CURRENT.
   if [ "$past" = "0" ]; then
-    for m in $FALLBACK_LADDER; do
+    for m in $ladder; do
       [ "$m" != "$cur" ] && model_available "$m" && { printf '%s' "$m"; return 0; }
     done
   fi
@@ -938,9 +1294,11 @@ next_fallback_model() {
 respawn_lane() {
   local idx="$1" name="$2" wt="$3" cmd
   checkpoint_lane "$wt" "$name"
+  refresh_manifest_runtime_settings
   # fresh wedge window: a respawned pane gets full POLYLANE_WEDGE_CHECKS before it
   # can be declared frozen again (otherwise the stale hash re-triggers instantly).
   wedge_hash_set "$name" ""; wedge_cnt_set "$name" 0
+  progress_hash_set "$name" ""; progress_count_set "$name" 0
   # FIRST respawn resumes the lane's session (keeps everything it worked out); later
   # respawns use the proven cold seed, so a session that genuinely can't resume costs
   # exactly one retry instead of looping on a failing --continue.
@@ -952,7 +1310,7 @@ respawn_lane() {
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
   fi
-  pipe_pane_log "$idx" "$name"
+  repipe_pane_log "$idx" "$name"
 }
 
 # --- Reflexion: reflect-then-repair before giving up on a lane ----------------
@@ -979,13 +1337,16 @@ repairs_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_REPAIR
 # addendum. Kept as a pure function so it is unit-testable without tmux.
 build_repair_prompt() {
   local src="$1" name="$2" k="$3"
+  local transcript="${REPO_ROOT:-.}/docs/lane-logs/$name.log"
   cat "$src" 2>/dev/null
   printf '\n\n── REPAIR ATTEMPT %s (a prior attempt did NOT reach DONE) ──────────────\n' "$k"
-  printf 'FIRST, before any new work: read the tail of docs/lane-logs/%s.log (your own\n' "$name"
+  printf 'FIRST, before any new work: read the tail of `%s` (your own\n' "$transcript"
   printf 'prior transcript) and any docs/verify-%s.md. Write a 3-line reflection into\n' "$name"
   printf 'docs/verify-%s.md — (1) what went wrong (2) the root cause (3) the DIFFERENT\n' "$name"
   printf 'approach you will now take. THEN fix and drive to DONE. Do NOT repeat the\n'
   printf 'failed approach. Your locked goal is unchanged.\n'
+  printf 'DELEGATION: forbidden. Do not spawn subagents, collaboration agents, or fan-out.\n'
+  printf 'CHECK-CACHE: do not repeat an unchanged expensive check; use polylane-check.sh.\n'
 }
 
 # reflect_and_repair NAME WT IDX : write the augmented prompt, point the lane at
@@ -1069,25 +1430,125 @@ checkpoint_lane() {
     || echo "health: WIP checkpoint failed in $wt — continuing with retry" >&2
 }
 
-# pane_wedged NAME IDX : 0 iff the pane's content has not changed across
-# POLYLANE_WEDGE_CHECKS consecutive health checks (default 2 ≈ 10 min) while the
-# lane is unfinished. Catch-all for the "initialized but never started" class the
-# other detectors miss: agent alive, no error text, no paywall, no menu — just
-# frozen (unsubmitted input, an unrecognized dialog, a hung tool call). Content
-# hash, not activity heuristics: ANY frozen screen qualifies.
+# pane_wedged NAME IDX : 0 iff the pane's content has not changed across a
+# bounded health window while the lane is unfinished. Empty/dead-start panes use
+# POLYLANE_WEDGE_CHECKS (default 4 = about 60s). A confirmed live agent uses the
+# longer POLYLANE_LIVE_WEDGE_CHECKS (default 20 = about 5m), because Codex can
+# legitimately emit no pane bytes while inference or a quiet verifier is active.
+# This still recovers a genuinely hung live turn, without destroying an expensive
+# context every time a valid command is quiet for one minute.
 pane_wedged() {
-  local name="$1" idx="$2" h prev cnt
+  local name="$1" idx="$2" h prev cnt limit
   h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
   [ -n "$h" ] || return 1
   prev=$(wedge_hash_get "$name"); cnt=$(wedge_cnt_get "$name")
   if [ "$h" = "$prev" ]; then cnt=$((cnt + 1)); else cnt=0; fi
   wedge_hash_set "$name" "$h"; wedge_cnt_set "$name" "$cnt"
-  [ "$cnt" -ge "${POLYLANE_WEDGE_CHECKS:-2}" ]
+  limit="${POLYLANE_WEDGE_CHECKS:-4}"
+  pane_agent_live "$idx" && limit="${POLYLANE_LIVE_WEDGE_CHECKS:-20}"
+  [ "$cnt" -ge "$limit" ]
 }
 wedge_hash_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_WHASH[$i]:-}" || printf ''; }
 wedge_hash_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_WHASH[i]="$2"; }
 wedge_cnt_get()  { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_WCNT[$i]:-0}" || printf '0'; }
 wedge_cnt_set()  { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_WCNT[i]="$2"; }
+
+# Material-progress guard: a pane whose screen keeps changing can still churn
+# through commands without changing source or producing evidence. After a
+# bounded number of health checks AND command executions on the same material
+# fingerprint, checkpoint it, lower model/effort where possible, and respawn
+# with a narrow no-repeat plan.
+worktree_fingerprint() {
+  local wt="$1"
+  {
+    git -C "$wt" rev-parse HEAD 2>/dev/null || true
+    git -C "$wt" diff --no-ext-diff --binary 2>/dev/null || true
+    git -C "$wt" diff --cached --no-ext-diff --binary 2>/dev/null || true
+    git -C "$wt" status --porcelain=v1 2>/dev/null || true
+  } | cksum | awk '{print $1 ":" $2}'
+}
+lane_command_count() {
+  local name="$1" log="${REPO_ROOT:-.}/docs/lane-logs/$1.log" count
+  [ -f "$log" ] || { printf '0'; return; }
+  count=$(grep -cE '"type":"item.started".*"type":"command_execution"|"type":"command_execution".*"status":"in_progress"' "$log" 2>/dev/null || true)
+  printf '%s' "${count:-0}"
+}
+lane_material_event_count() {
+  local name="$1" log="${REPO_ROOT:-.}/docs/lane-logs/$1.log" count
+  [ -f "$log" ] || { printf '0'; return; }
+  # Codex emits completed agent milestones and file changes as compact JSONL.
+  # These are durable semantic/evidence progress even when a certification lane
+  # intentionally leaves executable source untouched.
+  count=$(grep -cE '"type":"item.completed".*"type":"(agent_message|file_change)"' "$log" 2>/dev/null || true)
+  printf '%s' "${count:-0}"
+}
+material_progress_fingerprint() {
+  printf '%s:%s' "$(worktree_fingerprint "$2")" "$(lane_material_event_count "$1")"
+}
+progress_hash_get()     { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_PHASH[$i]:-}" || printf ''; }
+progress_hash_set()     { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_PHASH[i]="$2"; }
+progress_count_get()    { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_PCNT[$i]:-0}" || printf '0'; }
+progress_count_set()    { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_PCNT[i]="$2"; }
+progress_commands_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_PCOMMANDS[$i]:-0}" || printf '0'; }
+progress_commands_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_PCOMMANDS[i]="$2"; }
+progress_replans_get()  { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_PREPLANS[$i]:-0}" || printf '0'; }
+progress_replans_set()  { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_PREPLANS[i]="$2"; }
+
+material_progress_stalled() {
+  local name="$1" wt="$2" fp prev cnt commands baseline delta
+  fp=$(material_progress_fingerprint "$name" "$wt")
+  prev=$(progress_hash_get "$name")
+  commands=$(lane_command_count "$name")
+  if [ -z "$prev" ] || [ "$fp" != "$prev" ]; then
+    progress_hash_set "$name" "$fp"
+    progress_count_set "$name" 0
+    progress_commands_set "$name" "$commands"
+    return 1
+  fi
+  cnt=$(progress_count_get "$name"); cnt=$((cnt + 1))
+  baseline=$(progress_commands_get "$name")
+  delta=$((commands - baseline))
+  progress_count_set "$name" "$cnt"
+  [ "$cnt" -ge "${POLYLANE_PROGRESS_CHECKS:-12}" ] &&
+    [ "$delta" -ge "${POLYLANE_PROGRESS_MIN_COMMANDS:-20}" ]
+}
+
+replan_churning_lane() {
+  local name="$1" wt="$2" idx="$3" count max cur next effort lower src repair dir
+  count=$(progress_replans_get "$name"); count=$((count + 1))
+  max="${POLYLANE_PROGRESS_REPLANS:-2}"
+  if [ "$count" -gt "$max" ]; then
+    echo "usage-guard: lane '$name' made no source/evidence progress after $max narrowed replans — user input required; stopping usage burn." >&2
+    notify_event approval "lane '$name' exhausted no-progress replans — inspect evidence and choose a new core approach"
+    NEEDS_DECISION_LANES="${NEEDS_DECISION_LANES:+$NEEDS_DECISION_LANES }$name"
+    FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+    mkdir -p "$REPO_ROOT/.polylane" 2>/dev/null || true
+    printf '%s\n' "$name" >> "$REPO_ROOT/.polylane/needs-user"
+    return 1
+  fi
+  progress_replans_set "$name" "$count"
+  cur=$(lane_model_get "$name")
+  if next=$(next_fallback_model "$cur"); then lane_model_set "$name" "$next"; else next="$cur"; fi
+  effort=$(lane_effort_get "$name"); lower=$(next_lower_effort "$effort"); lane_effort_set "$name" "$lower"
+  dir="$REPO_ROOT/.polylane/lanes"; mkdir -p "$dir"
+  src=$(lane_prompt_get "$name")
+  repair="$dir/$name.progress-replan-$count.txt"
+  {
+    cat "$src" 2>/dev/null
+    printf '\n\n── USAGE-GUARD REPLAN %s ─────────────────────────────────────\n' "$count"
+    printf 'Your transcript executed many commands without a source-state change.\n'
+    printf 'Stop broad auditing. Produce the smallest concrete change/evidence that advances GOAL.\n'
+    printf 'DELEGATION: forbidden; do not spawn subagents, collaboration agents, or fan-out.\n'
+    printf 'CHECK-CACHE: use %s/polylane-check.sh %s/.polylane/check-cache/%s -- <command>;\n' "$SCRIPT_DIR" "$REPO_ROOT" "$name"
+    printf 'never rerun an unchanged expensive pass or failure. Read its saved log instead.\n'
+    printf 'Work only from current evidence, make one narrow plan, execute it, then finish DONE.\n'
+  } > "$repair"
+  lane_prompt_set "$name" "$repair"
+  echo "usage-guard: lane '$name' source/evidence unchanged under command churn — replan $count/$max, model=$next effort=$lower"
+  notify_event stall "lane '$name' command churn — narrowed replan $count/$max on $next/$lower"
+  progress_hash_set "$name" ""; progress_count_set "$name" 0
+  respawn_lane "$idx" "$name" "$wt"
+}
 
 # health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
 health_check() {
@@ -1102,9 +1563,12 @@ health_check() {
     idx=$(pane_index_for "$name")
     # respawn a lane that is showing a transient error, has died back to a shell
     # (claude exited without DONE — amnesia), or is WEDGED (alive but frozen).
-    if pane_errored "$idx"; then why="a transient error"
-    elif pane_dead "$idx"; then why="a dead pane (claude exited)"
-    elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-2} * ${POLYLANE_HEALTH_INTERVAL:-60} / 60 ))+ min)"
+    if material_progress_stalled "$name" "$wt"; then
+      replan_churning_lane "$name" "$wt" "$idx" || true
+      continue
+    elif pane_retryable_error "$idx"; then why="a transient error after agent exit"
+    elif pane_dead "$idx"; then why="a dead pane ($(agent_selected) exited)"
+    elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-4} * ${POLYLANE_HEALTH_INTERVAL:-15} ))s)"
     else continue
     fi
     n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
@@ -1130,10 +1594,10 @@ health_check() {
 # verify_seeds : shortly after launch, re-seed any pane whose seed was lost to the
 # send-keys race (keys typed before the pane's shell was ready → command vanished,
 # pane sits at a bare shell). Without this the first health check catches it, but
-# only after POLYLANE_HEALTH_INTERVAL (60s) of dead air. Free — not a retry.
+# only after POLYLANE_HEALTH_INTERVAL (15s) of dead air. Free — not a retry.
 verify_seeds() {
   [ "${DRY_RUN:-0}" = "1" ] && return 0
-  local wait="${POLYLANE_SEED_VERIFY:-5}" i name
+  local wait="${POLYLANE_SEED_VERIFY:-2}" i name
   sleep "$wait"
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
@@ -1153,8 +1617,8 @@ fmt_elapsed() { printf '%dm%02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 # if the only remaining lanes have failed past the retry cap (halt, don't hang).
 # Every poll prints one status line per lane: name · state · elapsed.
 poll_done() {
-  local specs=("$@") interval="${POLYLANE_POLL_INTERVAL:-5}"
-  local hinterval="${POLYLANE_HEALTH_INTERVAL:-60}" since=0 t0 elapsed
+  local specs=("$@") interval="${POLYLANE_POLL_INTERVAL:-2}"
+  local hinterval="${POLYLANE_HEALTH_INTERVAL:-15}" since=0 t0 elapsed
   t0=$(date +%s)
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would poll for DONE (auto-retry errored lanes every ${hinterval}s): ${specs[*]}"
@@ -1215,11 +1679,24 @@ run_integrator() {
   pipe_pane_log "$NEW_PANE_IDX" "$INT_NAME"
 }
 
+adopt_integrator() {
+  local idx
+  [ "${RESUME:-0}" = "1" ] || return 1
+  [ "${SESSION_STARTED:-0}" = "1" ] || return 1
+  if idx=$(pane_for_worktree "$INT_WORKTREE"); then
+    INT_PANE_IDX="$idx"
+    echo "resume: adopted live tmux pane $idx for integrator '$INT_NAME'"
+    pipe_pane_log "$idx" "$INT_NAME"
+    return 0
+  fi
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 # merge gate
 # ---------------------------------------------------------------------------
 
-# parse_verdict FILE : echo GO | NO-GO | UNKNOWN (NO-GO wins; safe default UNKNOWN).
+# parse_verdict FILE : GO | EXTERNAL-EVIDENCE-OPEN | NO-GO | UNKNOWN.
 parse_verdict() {
   local f="$1" line
   [ -f "$f" ] || { echo "UNKNOWN"; return; }
@@ -1235,13 +1712,15 @@ parse_verdict() {
   # nonce mode: only a sentinel tagged run=THIS-RUN counts (a committed stale GO from
   # an earlier run reads as UNKNOWN). Absent RUN_ID -> legacy exact-match (backward-compat).
   if [ -n "${RUN_ID:-}" ]; then
-    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)[[:space:]]+run='"$RUN_ID"'[[:space:]]*$'
+    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|EXTERNAL-EVIDENCE-OPEN|NO-GO)[[:space:]]+run='"$RUN_ID"'[[:space:]]*$'
   else
-    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|NO-GO)[[:space:]]*$'
+    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|EXTERNAL-EVIDENCE-OPEN|NO-GO)[[:space:]]*$'
   fi
   sentinels=$(grep -E "$pat" "$f")
   if [ -n "$sentinels" ]; then
     printf '%s' "$sentinels" | grep -q 'NO-GO' && { echo "NO-GO"; return; }
+    printf '%s' "$sentinels" | grep -q 'EXTERNAL-EVIDENCE-OPEN' &&
+      { echo "EXTERNAL-EVIDENCE-OPEN"; return; }
     echo "GO"; return
   fi
   # NO sentinel = the integrator did not complete its contract (crash, stall, wrong
@@ -1250,8 +1729,86 @@ parse_verdict() {
   echo "UNKNOWN"
 }
 
-# merge_gate : sets VERDICT_RESULT and returns 0 iff GO. Does NOT exit — the caller
-# writes the run report on both paths, then decides. NO-GO keeps worktrees intact.
+# parse_repairability FILE : YES | NO. NO is trusted only from an exact
+# nonce-bound marker on its own line. It means the integrator proved that another
+# model repair wave cannot change the result (for example, the host blocks the
+# required compiler before source execution). Missing/malformed markers default
+# to YES so crashes and ordinary NO-GOs still receive autonomous repair.
+parse_repairability() {
+  local f="$1" pat
+  [ -f "$f" ] || { echo "YES"; return; }
+  if [ -n "${RUN_ID:-}" ]; then
+    pat='^[[:space:]]*POLYLANE-REPAIRABLE:[[:space:]]*NO[[:space:]]+run='"$RUN_ID"'[[:space:]]*$'
+  else
+    pat='^[[:space:]]*POLYLANE-REPAIRABLE:[[:space:]]*NO[[:space:]]*$'
+  fi
+  grep -Eq "$pat" "$f" 2>/dev/null && echo "NO" || echo "YES"
+}
+
+# contract_acceptance_gate : run only this cycle's focused graders in the
+# integrator worktree. If these are the last autonomous subgoals, also run the
+# terminal suite once before promotion.
+contract_acceptance_gate() {
+  local verdict="${1:-GO}" targets outside terminal_targets
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
+  targets=$(jq -r '.target_subgoals | join(",")' "$MANIFEST")
+  (
+    cd "$INT_WORKTREE"
+    export REPO="$PWD" REPO_ROOT="$PWD"
+    "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+      --cycle "$CYCLE" --targets "$targets" --focused
+  ) || return 1
+  outside=$(jq -r --arg targets ",$targets," '
+    [.milestones[].subgoals[]
+      | select(.status=="open" or .status=="doing")
+      | .id as $sid
+      | select(($targets | contains("," + $sid + ",")) | not)]
+    | length
+  ' "$STATE_FILE")
+  if [ "$outside" = "0" ]; then
+    if [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
+      # External terminal checks require a human, physical device, independent
+      # witness, or distribution authority. Re-running them locally cannot turn
+      # them green and previously made EXTERNAL-EVIDENCE-OPEN impossible: the
+      # command failure returned before the external-status allowance below.
+      # Refresh only terminal checks whose subgoals are still autonomous.
+      terminal_targets=$(jq -r '
+        ([.milestones[].subgoals[] | select(.status=="external") | .id]) as $external
+        | [(.accept // [])[]
+            | select((.tier // "focused")=="terminal")
+            | .sid
+            | select(. as $sid | any($external[]; .==$sid) | not)]
+        | unique
+        | join(",")
+      ' "$STATE_FILE")
+      if [ -n "$terminal_targets" ]; then
+        (
+          cd "$INT_WORKTREE"
+          export REPO="$PWD" REPO_ROOT="$PWD"
+          "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+            --cycle "$CYCLE" --targets "$terminal_targets" --only-terminal
+        ) || return 1
+      fi
+      jq -e '
+        ([.milestones[].subgoals[] | select(.status=="external") | .id]) as $external
+        | all((.accept // [])[]
+            | select((.tier // "focused")=="terminal");
+            .status=="pass" or (.sid as $sid | any($external[]; .==$sid)))
+      ' "$STATE_FILE" >/dev/null || return 1
+    else
+      (
+        cd "$INT_WORKTREE"
+        export REPO="$PWD" REPO_ROOT="$PWD"
+        "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+          --cycle "$CYCLE" --only-terminal
+      ) || return 1
+      jq -e 'all((.accept // [])[]; .status=="pass")' "$STATE_FILE" >/dev/null || return 1
+    fi
+  fi
+}
+
+# merge_gate : returns 0 for verified engineering outcomes. External evidence is a
+# routing state, not a reason to discard verified code or end the autonomous loop.
 merge_gate() {
   local f="$INT_WORKTREE/docs/verify-integration.md" v
   if [ "${DRY_RUN:-0}" = "1" ]; then
@@ -1260,20 +1817,122 @@ merge_gate() {
     return 0
   fi
   v=$(parse_verdict "$f")
+  VERDICT_REPAIRABLE=$(parse_repairability "$f")
+  if [ "$v" = "GO" ] || [ "$v" = "EXTERNAL-EVIDENCE-OPEN" ]; then
+    if ! contract_acceptance_gate "$v"; then
+      printf '\nACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.\n' >> "$f"
+      v="NO-GO"
+      VERDICT_REPAIRABLE="YES"
+    fi
+  fi
   VERDICT_RESULT="$v"
   case "$v" in
-    GO)
-      echo "Integrator verdict: GO — proceeding."
-      notify_event go "integrator verdict GO — merging + cleanup"
+    GO|EXTERNAL-EVIDENCE-OPEN)
+      echo "Integrator verdict: $v — engineering gate passed; proceeding."
+      notify_event go "integrator verdict $v — merging + cleanup"
       return 0
       ;;
     *)
-      echo "Integrator verdict: $v — NOT a GO. Nothing deleted." >&2
+      echo "Integrator verdict: $v — engineering gate did not pass. Nothing deleted." >&2
       [ -f "$f" ] && { echo "--- $f ---" >&2; cat "$f" >&2; }
       notify_event no-go "integrator verdict $v — nothing merged, worktrees intact"
       return 1
       ;;
   esac
+}
+
+# build_integrator_repair_prompt SRC ATTEMPT VERDICT EVIDENCE -> stdout.
+# A council/integrator NO-GO is feedback for the next repair wave, not a cycle
+# boundary. The original contract stays locked; only the failed evidence is added.
+build_integrator_repair_prompt() {
+  local src="$1" attempt="$2" verdict="$3" evidence="$4"
+  local transcript="${REPO_ROOT:-.}/docs/lane-logs/${INT_NAME:-integrator}.log"
+  cat "$src" 2>/dev/null
+  printf '\n\n── INTEGRATION REPAIR %s (verdict was %s) ─────────────────────\n' "$attempt" "$verdict"
+  printf 'The previous integration verdict is diagnostic feedback, NOT permission to stop.\n'
+  printf 'Read %s, `%s`, and the lane verification files.\n' "$evidence" "$transcript"
+  printf 'Fix every autonomous issue the preserved evidence names,\n'
+  printf 're-run the focused failing checks first, then the full terminal gate once.\n'
+  printf 'DELEGATION: forbidden. Do not spawn subagents, collaboration agents, or fan-out.\n'
+  printf 'CHECK-CACHE: never rerun an expensive command on an unchanged source fingerprint;\n'
+  printf 'route it through polylane-check.sh and reuse its recorded result.\n'
+  printf 'Do not weaken frozen acceptance checks, scope, or product decisions. Write a fresh\n'
+  printf 'docs/verify-integration.md and finish with exactly one run-tagged POLYLANE-VERDICT.\n'
+  printf 'Use EXTERNAL-EVIDENCE-OPEN only when engineering is verified and the remaining\n'
+  printf 'proof physically cannot be produced by the system; otherwise GO or NO-GO.\n'
+}
+
+# repair_integrator_verdict ATTEMPT : preserve the failed verdict as evidence,
+# clear only terminal markers, then immediately respawn the same tmux Codex lane.
+repair_integrator_verdict() {
+  local attempt="$1" verdict="${VERDICT_RESULT:-UNKNOWN}" evidence archive prompt cmd
+  evidence="$INT_WORKTREE/docs/verify-integration.md"
+  archive="$INT_WORKTREE/docs/verify-integration-attempt-$attempt.md"
+  prompt="$REPO_ROOT/.polylane/lanes/$INT_NAME.gate-repair-$attempt.txt"
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would preserve verdict evidence and respawn integrator repair $attempt"
+    return 0
+  fi
+  mkdir -p "$(dirname "$prompt")" "$INT_WORKTREE/docs"
+  [ -f "$evidence" ] && cp "$evidence" "$archive"
+  build_integrator_repair_prompt "$INT_PROMPT" "$attempt" "$verdict" \
+    "docs/$(basename "$archive")" > "$prompt" || return 1
+  checkpoint_lane "$INT_WORKTREE" "$INT_NAME"
+  rm -f "$INT_WORKTREE/docs/status-$INT_NAME.md" "$evidence"
+  INT_PROMPT="$prompt"
+  retry_set "$INT_NAME" 0
+  wedge_hash_set "$INT_NAME" ""; wedge_cnt_set "$INT_NAME" 0
+  refresh_manifest_runtime_settings
+  cmd=$(pane_cmd_for "$INT_NAME")
+  echo "gate-repair: integrator verdict $verdict — autonomous repair $attempt"
+  notify_event stall "integrator $verdict — repair wave $attempt"
+  if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$INT_PANE_IDX" "$cmd" 2>/dev/null; then
+    run tmux send-keys -t "$TMUX_SESSION:0.$INT_PANE_IDX" C-c 2>/dev/null || true
+    run tmux send-keys -t "$TMUX_SESSION:0.$INT_PANE_IDX" -l "$cmd" 2>/dev/null || true
+    run tmux send-keys -t "$TMUX_SESSION:0.$INT_PANE_IDX" C-m 2>/dev/null || true
+  fi
+  repipe_pane_log "$INT_PANE_IDX" "$INT_NAME"
+}
+
+# gate_with_repairs : exhaust autonomous integration repair before exposing a
+# terminal NO-GO. No report is written between attempts, so the supervisor cannot
+# mistake council feedback for legitimate completion.
+gate_with_repairs() {
+  local attempt=0 max="${POLYLANE_INTEGRATOR_REPAIRS:-3}"
+  while :; do
+    merge_gate && return 0
+    if [ "${VERDICT_REPAIRABLE:-YES}" = "NO" ]; then
+      echo "Integrator proved this gate is not autonomously repairable on the current host; skipping model repair waves." >&2
+      return 1
+    fi
+    [ "$attempt" -lt "$max" ] || {
+      echo "Integrator repair budget exhausted ($max); verified promotion remains blocked." >&2
+      return 1
+    }
+    attempt=$((attempt + 1))
+    repair_integrator_verdict "$attempt" || return 1
+    if ! poll_done "$INT_NAME:$INT_WORKTREE"; then
+      echo "Integrator repair $attempt failed before producing a verdict." >&2
+      return 1
+    fi
+    capture_stats
+  done
+}
+
+# finalize_cycle_state : promotion makes the verified target durable. Stamp its
+# goal-tree state and regenerate progress immediately so the next cycle never
+# starts from stale conversation memory.
+finalize_cycle_state() {
+  local sid targets route_text
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
+  targets=$(jq -r '.target_subgoals[]' "$MANIFEST")
+  for sid in $targets; do
+    "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" set-status "$sid" "done" \
+      "integrator ${VERDICT_RESULT:-GO}; promoted cycle $CYCLE" "$CYCLE"
+  done
+  "$SCRIPT_DIR/polylane-cycle.sh" progress "$STATE_FILE" "$CYCLE" >/dev/null
+  route_text=$("$SCRIPT_DIR/polylane-cycle.sh" route "$STATE_FILE" 2>&1 || true)
+  echo "CYCLE-ROUTE: $route_text"
 }
 
 # assert_no_conflict WORKTREE : abort (leaving worktrees intact) on unmerged paths.
@@ -1292,7 +1951,7 @@ assert_no_conflict() {
 }
 
 # ---------------------------------------------------------------------------
-# promote — on GO only, advance the base branch to the integrator's branch
+# promote — on a verified engineering verdict, advance base to the integrator branch
 # ---------------------------------------------------------------------------
 
 # promote_to_main : the integrator merges the lanes into its OWN branch and
@@ -1303,7 +1962,7 @@ assert_no_conflict() {
 # a real merge. Runs on the base worktree ($REPO_ROOT), which is on $BASE.
 promote_to_main() {
   if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "+ (dry-run) would fast-forward $BASE to $INT_BRANCH (integrator branch), only because verdict=GO"
+    echo "+ (dry-run) would fast-forward $BASE to $INT_BRANCH after a verified engineering verdict"
     return 0
   fi
   local cur
@@ -1312,10 +1971,10 @@ promote_to_main() {
     echo "promote: base worktree is on '$cur', not '$BASE' — merging $INT_BRANCH into '$cur'" >&2
   fi
   if run git -C "$REPO_ROOT" merge --ff-only "$INT_BRANCH"; then
-    echo "promote: $BASE fast-forwarded to $INT_BRANCH (GO)"
+    echo "promote: $BASE fast-forwarded to $INT_BRANCH (verified)"
   else
     echo "promote: $cur diverged from $INT_BRANCH — non-ff merge" >&2
-    run git -C "$REPO_ROOT" merge --no-ff -m "polylane: integrate verified lanes (GO)" "$INT_BRANCH" || {
+    run git -C "$REPO_ROOT" merge --no-ff -m "polylane: integrate verified lanes" "$INT_BRANCH" || {
       echo "promote: merge FAILED — base left as-is, nothing deleted. Resolve manually." >&2
       return 1
     }
@@ -1348,6 +2007,18 @@ cleanup() {
     echo "+ (dry-run) would copy integrator verify-integration.md to repo docs/ before removal"
   fi
 
+  # The tmux session is runtime scratch too. Kill it before removing worktrees so
+  # no completed Codex process/shell keeps a deleted worktree as its cwd, and so a
+  # finished pipeline never leaves an apparently active watch command behind.
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would kill tmux session $TMUX_SESSION"
+  elif tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+    tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || {
+      echo "cleanup: could not terminate tmux session $TMUX_SESSION" >&2
+      return 1
+    }
+  fi
+
   # remove worktrees (never a raw rm on a worktree dir)
   for i in "${!LANE_NAMES[@]}"; do
     run git worktree remove --force "${LANE_WORKTREES[$i]}"
@@ -1377,13 +2048,12 @@ cleanup() {
 # report — plain-terms rollup the chat surfaces after the run
 # ---------------------------------------------------------------------------
 
-# capture_stats : best-effort grab each lane pane's "Goal achieved (…)" line while
-# the tmux panes are still alive (call BEFORE cleanup). Fills LANE_STATS aligned
-# with LANE_NAMES. Never fatal — a missing pane just yields "completed".
+# capture_stats : best-effort grab Claude's "Goal achieved" line or Codex exec's
+# JSON turn.completed usage while panes/logs still exist.
 capture_stats() {
   LANE_STATS=()
   [ "${DRY_RUN:-0}" = "1" ] && return 0
-  local i idx line
+  local i idx line tok log
   for i in "${!LANE_NAMES[@]}"; do
     if lane_resumed "$i"; then
       LANE_STATS+=("DONE (resumed — prior run)")
@@ -1394,6 +2064,12 @@ capture_stats() {
     if [ "$idx" -ge 0 ] 2>/dev/null; then
       line=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null \
              | grep -oE 'Goal achieved \([^)]*\)' | tail -1 || true)
+    fi
+    if [ -z "$line" ]; then
+      log="$REPO_ROOT/docs/lane-logs/${LANE_NAMES[$i]}.log"
+      tok=$(grep '"type":"turn.completed"' "$log" 2>/dev/null | tail -1 |
+        jq -r '(.usage.input_tokens // 0) + (.usage.output_tokens // 0)' 2>/dev/null || true)
+      [ -n "$tok" ] && [ "$tok" != "0" ] && line="Codex completed ($tok tokens)"
     fi
     LANE_STATS+=("${line:-completed}")
   done
@@ -1437,7 +2113,7 @@ est_cost() { LC_ALL=C awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000
 # write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
 write_report() {
-  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0
   # dry-run must never touch the tree — print the intent, write nothing.
   if [ "${DRY_RUN:-0}" = "1" ]; then
     printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
@@ -1445,6 +2121,10 @@ write_report() {
   fi
   when=$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo "?")
   mkdir -p "$REPO_ROOT/docs" 2>/dev/null || true
+  if [ -n "${STATE_FILE:-}" ] && [ -f "$STATE_FILE" ]; then
+    subdone=$(jq '[.milestones[].subgoals[] | select(.status=="done")] | length' "$STATE_FILE" 2>/dev/null || echo 0)
+    subtotal=$(jq '[.milestones[].subgoals[]] | length' "$STATE_FILE" 2>/dev/null || echo 0)
+  fi
 
   # next steps: surface anything the lanes flagged as open (kept files only).
   steps=$(grep -hiE 'NEEDS DECISION|unverified|half-satisf|follow-up|not (yet|tested)|TODO|manual (verif|test)|out of scope|NO-GO' \
@@ -1460,7 +2140,7 @@ write_report() {
     echo
     echo "| Lane | Model | Branch | Result | Tokens | Est. \$ |"
     echo "|---|---|---|---|---|---|"
-    local _total="0.00" _tok _price _cost
+    local _total="0.00" _tokens_total=0 _tok _price _cost
     for i in "${!LANE_NAMES[@]}"; do
       local _r="${LANE_STATS[$i]:-completed}"
       lane_failed "${LANE_NAMES[$i]}" && _r="FAILED — errored after retries"
@@ -1472,25 +2152,30 @@ write_report() {
         _total=$(LC_ALL=C awk -v a="$_total" -v b="$_cost" 'BEGIN{printf "%.2f", a + b}')
         _cost="\$$_cost"
       fi
+      [ -n "$_tok" ] && _tokens_total=$(( _tokens_total + _tok ))
       printf '| %s | %s | %s | %s | %s | %s |\n' \
         "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "$_r" \
         "${_tok:-?}" "$_cost"
     done
     echo
     echo "**Estimated total: \$${_total}** — rough, output-rate pricing from \`references/model-selection.md\`; lanes without a token count are excluded."
-    # durable spend ledger (best-effort; never fails the report). The orchestrator
-    # (Phase 4) re-stamps subgoals_done/total from $STATE, which run.sh cannot see.
-    if [ -x "$(dirname "$0")/polylane-ledger.sh" ]; then
-      "$(dirname "$0")/polylane-ledger.sh" record --file "$REPO_ROOT/docs/polylane/spend-ledger.jsonl" \
-        --cycle "${POLYLANE_CYCLE:-0}" --verdict "$verdict" --tokens 0 --cost "${_total:-0}" \
-        --subdone 0 --subtotal 0 --nogo "$([ "$verdict" = GO ] && echo 0 || echo 1)" \
+    # durable spend ledger (best-effort; never fails the report).
+    if [ -x "$SCRIPT_DIR/polylane-ledger.sh" ]; then
+      "$SCRIPT_DIR/polylane-ledger.sh" record --file "$REPO_ROOT/docs/polylane/spend-ledger.jsonl" \
+        --cycle "${CYCLE:-${POLYLANE_CYCLE:-0}}" --verdict "$verdict" --tokens "$_tokens_total" --cost "${_total:-0}" \
+        --subdone "$subdone" --subtotal "$subtotal" --nogo "$([ "$verdict" = GO ] || [ "$verdict" = EXTERNAL-EVIDENCE-OPEN ]; echo $?)" \
         --lanes "${#LANE_NAMES[@]}" --wall "${SECONDS:-0}" >/dev/null 2>&1 || true
     fi
     echo
     echo "## Integrator verdict"
     echo
-    if [ "$verdict" = "GO" ]; then
-      echo "**GO** — all lanes merged into \`${BASE}\`; worktrees, branches, and scratch removed. Kept the \`docs/verify-*.md\` evidence."
+    if [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
+      if [ "$verdict" = "GO" ]; then
+        echo "**GO** — all lanes merged into \`${BASE}\`; worktrees, branches, and scratch removed. Kept the \`docs/verify-*.md\` evidence."
+      else
+        echo "**EXTERNAL-EVIDENCE-OPEN** — verified engineering work merged into \`${BASE}\`; worktrees, branches, and scratch removed."
+        echo "Only physical/manual evidence remains open; continue routing any other autonomous subgoals."
+      fi
     else
       echo "**${verdict}** — integrator withheld GO. Nothing merged, nothing deleted; the lane worktrees are left intact so you can fix and re-run. See \`docs/verify-integration.md\`."
     fi
@@ -1502,7 +2187,7 @@ write_report() {
     echo
     echo "## Suggested next steps"
     echo
-    if [ "$verdict" = "GO" ]; then
+    if [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
       echo "- Review the merged result, then \`git push\` to back it up."
     elif [ -n "${FAILED_LANES:-}" ]; then
       echo "- Lane(s) errored out and could not recover after retries: **${FAILED_LANES}**."
@@ -1539,10 +2224,12 @@ main() {
   load_manifest
   preflight_agent
   apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
+  preflight_contract
   mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
 
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees
+  adopt_existing_session
 
   # announce the resolved agent — a manifest with no `agent` field silently selected
   # claude before, so a codex run misconfigured this way looked identical to a good one.
@@ -1576,6 +2263,8 @@ main() {
   echo "== integrator: $INT_NAME =="
   if [ "${RESUME:-0}" = "1" ] && lane_done "$INT_WORKTREE" "$INT_NAME"; then
     echo "resume: integrator already DONE — skipping launch"
+  elif adopt_integrator; then
+    :
   else
     run_integrator
   fi
@@ -1590,14 +2279,15 @@ main() {
 
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time
-  if merge_gate; then
+  if gate_with_repairs; then
     assert_no_conflict "$INT_WORKTREE"
-    echo "== promote: base -> integrator branch (GO only) =="
+    echo "== promote: base -> integrator branch (verified outcome) =="
     if ! promote_to_main; then
       write_report "${VERDICT_RESULT:-GO}" || true
       echo "Promote failed — base intact, worktrees kept. See report." >&2
       exit 1
     fi
+    finalize_cycle_state
     echo "== cleanup =="
     cleanup
     if [ "${PUSH:-0}" = "1" ]; then
@@ -1609,7 +2299,7 @@ main() {
   echo "== report =="
   write_report "${VERDICT_RESULT:-UNKNOWN}" || true
   echo "Report written: $REPO_ROOT/docs/polylane-report.md"
-  [ "${VERDICT_RESULT:-}" = "GO" ] || exit 1
+  [ "${VERDICT_RESULT:-}" = "GO" ] || [ "${VERDICT_RESULT:-}" = "EXTERNAL-EVIDENCE-OPEN" ] || exit 1
 }
 
 # Only run main when executed directly (so tests can source the functions).

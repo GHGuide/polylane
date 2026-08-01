@@ -18,14 +18,9 @@ case "${1:-}" in
 esac
 
 mkdir -p "$DEST/scripts"
-# installed SKILL.md = the Codex overlay (frontmatter + deltas) + the FULL Claude loop
-# verbatim (its frontmatter stripped, bin/ -> scripts/). Single source of truth: the
-# real SKILL.md — the Codex skill can never drift from the Claude one.
-{
-  cat "$REPO/codex/SKILL.md"
-  echo
-  awk 'f; /^---$/{c++; if (c==2) f=1}' "$REPO/SKILL.md" | sed 's#bin/polylane-#scripts/polylane-#g'
-} > "$DEST/SKILL.md"
+# Codex owns a standalone product contract. The runner remains shared, but Codex
+# never inherits Claude-only prompt syntax, models, memory, or stop conditions.
+cp "$REPO/codex/SKILL.md" "$DEST/SKILL.md"
 cp "$REPO"/bin/*.sh        "$DEST/scripts/" && chmod +x "$DEST/scripts/"*.sh
 # rm first: `cp -R dir existing-dir` NESTS (references/references) and leaves the
 # top level STALE — every reinstall after the first shipped old references (real bug).

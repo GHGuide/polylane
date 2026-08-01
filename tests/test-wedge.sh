@@ -28,6 +28,8 @@ LANE_NAMES=(a); LANE_PANE_IDX=(0); LANE_WORKTREES=("$TEST_TMPDIR/wt")
 LANE_WHASH=(); LANE_WCNT=(); LANE_RETRIES=(); LANE_RESUMED=(0)
 FAILED_LANES=""; STALLED_LANES=""; NEEDS_DECISION_LANES=""
 mkdir -p "$TEST_TMPDIR/wt/docs"
+FAKE_AGENT_LIVE=0
+pane_agent_live() { [ "$FAKE_AGENT_LIVE" = "1" ]; }
 
 # --- 1. startup_check answers the trust dialog -------------------------------
 FAKE_PANE_TXT='Do you trust the files in this folder?
@@ -61,13 +63,18 @@ rm -f "$TEST_TMPDIR/wt/docs/status-a.md"
 # NOTE: assert_ok/assert_fail run in a subshell, so state-mutating calls must run
 # directly; assert on the captured rc instead.
 LANE_WHASH=(); LANE_WCNT=()
+POLYLANE_WEDGE_CHECKS=4
 FAKE_PANE_TXT='❯ (stuck empty input)'
 pane_wedged a 0; rc1=$?
 pane_wedged a 0; rc2=$?
 pane_wedged a 0; rc3=$?
+pane_wedged a 0; rc4=$?
+pane_wedged a 0; rc5=$?
 assert_eq "wedge-check1-not-yet" "1" "$rc1"     # cnt 0 (first sight)
 assert_eq "wedge-check2-not-yet" "1" "$rc2"     # cnt 1
-assert_eq "wedge-check3-fires"   "0" "$rc3"     # cnt 2 >= default 2
+assert_eq "wedge-check3-not-yet" "1" "$rc3"     # cnt 2
+assert_eq "wedge-check4-not-yet" "1" "$rc4"     # cnt 3
+assert_eq "wedge-check5-fires"   "0" "$rc5"     # cnt 4 >= default 4
 
 # changing content resets the counter
 LANE_WHASH=(); LANE_WCNT=()
@@ -75,15 +82,35 @@ FAKE_PANE_TXT='screen A'; pane_wedged a 0; :
 FAKE_PANE_TXT='screen B'; pane_wedged a 0; rcA=$?
 FAKE_PANE_TXT='screen B'; pane_wedged a 0; rcB=$?
 FAKE_PANE_TXT='screen B'; pane_wedged a 0; rcC=$?
+FAKE_PANE_TXT='screen B'; pane_wedged a 0; rcD=$?
+FAKE_PANE_TXT='screen B'; pane_wedged a 0; rcE=$?
 assert_eq "wedge-change-resets"  "1" "$rcA"
 assert_eq "wedge-after-reset-1"  "1" "$rcB"
-assert_eq "wedge-after-reset-2"  "0" "$rcC"
+assert_eq "wedge-after-reset-2"  "1" "$rcC"
+assert_eq "wedge-after-reset-3"  "1" "$rcD"
+assert_eq "wedge-after-reset-4"  "0" "$rcE"
+
+# A live Codex turn may be waiting on inference or a quiet build/test process.
+# It gets a longer bounded window instead of losing its expensive context after
+# the shell-only 60-second threshold.
+LANE_WHASH=(); LANE_WCNT=()
+FAKE_AGENT_LIVE=1
+POLYLANE_LIVE_WEDGE_CHECKS=20
+FAKE_PANE_TXT='quiet live codex turn'
+pane_wedged a 0; :
+wedge_cnt_set a 3
+pane_wedged a 0; rcLiveShort=$?
+wedge_cnt_set a 19
+pane_wedged a 0; rcLiveLong=$?
+assert_eq "live-agent-not-killed-at-shell-window" "1" "$rcLiveShort"
+assert_eq "live-agent-eventually-recovers"        "0" "$rcLiveLong"
+FAKE_AGENT_LIVE=0
 
 # --- 3. respawn resets the wedge window --------------------------------------
 wedge_hash_set a ""; wedge_cnt_set a 0
 FAKE_PANE_TXT='frozen'; pane_wedged a 0; pane_wedged a 0; :
 wedge_hash_set a ""; wedge_cnt_set a 0                 # what respawn_lane does
 pane_wedged a 0; rcR=$?
-assert_eq "respawn-fresh-window" "1" "$rcR"            # needs 2 fresh checks again
+assert_eq "respawn-fresh-window" "1" "$rcR"            # needs 4 fresh checks again
 
 finish

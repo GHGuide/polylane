@@ -7,7 +7,7 @@
 # panes + git + files (the #1 turn-burner in real runs):
 #
 #   runner   : alive | dead            (is a polylane-run.sh driving this manifest?)
-#   verdict  : GO | NO-GO | UNKNOWN    (integrator sentinel, fail-safe parser)
+#   verdict  : GO | EXTERNAL-EVIDENCE-OPEN | NO-GO | UNKNOWN
 #   report   : present | absent        (docs/polylane-report.md)
 #   heartbeat: age of the supervisor heartbeat, if one is running
 #   per lane : status · pane · branch HEAD · commits ahead of base
@@ -39,7 +39,6 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=polylane-run.sh
 . "$SCRIPT_DIR/polylane-run.sh"
 
-TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
 BASE=$(jq -r '.base // "main"' "$MANIFEST")
 # per-run nonce: the sourced lane_done/parse_verdict trust markers only when run=
 # matches. MUST match the runner's, or a nonce-tagged DONE reads here as not-done.
@@ -47,9 +46,30 @@ BASE=$(jq -r '.base // "main"' "$MANIFEST")
 RUN_ID=$(jq -r '.run_id // ""' "$MANIFEST")
 # shellcheck disable=SC2034  # consumed by the sourced runner's agent_procs/pane_dead
 AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
-MDIR=$(cd "$(dirname "$MANIFEST")" && pwd)
-PROJECT_ROOT=$(cd "$MDIR/.." && pwd)
+MDIR=$(cd "$(dirname "$MANIFEST")" && pwd -P)
+PROJECT_ROOT=$(cd "$MDIR/.." && pwd -P)
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
+
+# discover_session : recover the exact session without relying on chat memory or
+# the observer's environment. New manifests persist `.session`; upgraded legacy
+# runs are discovered from the ownership tags written by polylane-run.sh.
+discover_session() {
+  local explicit manifest_session session tagged_run tagged_project
+  explicit="${POLYLANE_SESSION:-}"
+  [ -n "$explicit" ] && { printf '%s' "$explicit"; return; }
+  manifest_session=$(jq -r '.session // ""' "$MANIFEST")
+  [ -n "$manifest_session" ] && { printf '%s' "$manifest_session"; return; }
+  while IFS='|' read -r session tagged_run tagged_project; do
+    [ -n "$session" ] || continue
+    if [ "$tagged_run" = "${RUN_ID:-}" ] && [ "$tagged_project" = "$PROJECT_ROOT" ]; then
+      printf '%s' "$session"
+      return
+    fi
+  done < <(tmux list-sessions -F '#{session_name}|#{@polylane_run_id}|#{@polylane_project}' 2>/dev/null || true)
+  printf 'polylane'
+}
+
+TMUX_SESSION=$(discover_session)
 
 tmux_session_active() { tmux has-session -t "$TMUX_SESSION" 2>/dev/null; }
 tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
@@ -58,10 +78,16 @@ tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
 PANE_LIST=$(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}|#{pane_current_command}' 2>/dev/null || true)
 
 pane_for_wt() { # -> "idx|cmd" or ""
-  local wt="$1" line
+  local wt="$1" line idx rest pane_path cmd
+  [ ! -d "$wt" ] || wt=$(cd "$wt" 2>/dev/null && pwd -P)
   while IFS= read -r line; do
     [ -n "$line" ] || continue
-    case "$line" in *"|$wt|"*) printf '%s|%s' "${line%%|*}" "${line##*|}"; return 0 ;; esac
+    idx="${line%%|*}"
+    rest="${line#*|}"
+    pane_path="${rest%%|*}"
+    cmd="${line##*|}"
+    [ ! -d "$pane_path" ] || pane_path=$(cd "$pane_path" 2>/dev/null && pwd -P)
+    [ "$pane_path" = "$wt" ] && { printf '%s|%s' "$idx" "$cmd"; return 0; }
   done <<EOF
 $PANE_LIST
 EOF
@@ -120,7 +146,13 @@ if [ -f "$hb" ]; then
     runner_alive="alive"
   fi
 fi
-watch="-"; tmux_session_active && watch="$(tmux_watch_command)"
+# A surviving tmux shell is preserved state, not a live runtime. Advertise an
+# attach command only while the runner/heartbeat proves the supervised CLI is
+# active; otherwise observers must report paused/idle.
+watch="-"
+if [ "$runner_alive" = "alive" ] && tmux_session_active; then
+  watch="$(tmux_watch_command)"
+fi
 
 # --- emit ----------------------------------------------------------------------
 NAMES=(); WTS=()

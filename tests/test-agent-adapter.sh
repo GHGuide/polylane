@@ -52,6 +52,21 @@ assert_contains "panecmd-prompt"  "< /tmp/p.txt" "$CMD"
 assert_contains "panecmd-no-claude" "codex exec"      "$CMD"
 assert_contains "panecmd-json" "--json" "$CMD"
 assert_contains "panecmd-approval-never" "approval_policy=never" "$CMD"
+assert_contains "panecmd-sandbox-default" "--sandbox workspace-write" "$CMD"
+assert_contains "panecmd-no-multi-agent" "--disable multi_agent" "$CMD"
+assert_contains "panecmd-no-multi-agent-v2" "--disable multi_agent_v2" "$CMD"
+assert_contains "panecmd-no-fanout" "--disable enable_fanout" "$CMD"
+
+# A Codex manifest may deliberately widen or narrow the lane sandbox. The
+# selected policy must reach the real CLI mechanically; recording it only in
+# run.json creates a misleading "unsandboxed" run that is still workspace-write.
+CODEX_SANDBOX=danger-full-access
+CMD=$(pane_cmd /tmp/wt gpt-5-codex /tmp/p.txt high)
+assert_contains "panecmd-sandbox-manifest" "--sandbox danger-full-access" "$CMD"
+POLYLANE_CODEX_SANDBOX=read-only
+CMD=$(pane_cmd /tmp/wt gpt-5-codex /tmp/p.txt high)
+assert_contains "panecmd-sandbox-env-wins" "--sandbox read-only" "$CMD"
+unset POLYLANE_CODEX_SANDBOX CODEX_SANDBOX
 
 # --- pane_dead process set follows the agent --------------------------------
 AGENT=codex;  assert_contains "procs-codex"  "codex" "$(agent_procs)"

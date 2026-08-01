@@ -25,7 +25,7 @@ assert_eq       "trend-rc-ok"     "0" "$rc"
   --subdone 4 --subtotal 6 --nogo 1 --lanes 3 --wall 55 >/dev/null
 assert_rc "trend-stall-rc3" "3" "$LED" trend --file "$F"
 
-# roi: cheap history + big warrant -> continue; tiny warrant -> stop:diminishing
+# roi: cheap history + big warrant -> continue; tiny warrant -> replan signal
 out=$("$LED" roi 5 10 100 --file "$F"); assert_contains "roi-continue" "continue" "$out"
 assert_rc "roi-stop-rc4" "4" "$LED" roi 1 1000 1 --file "$F"
 
@@ -42,6 +42,7 @@ G="$TEST_TMPDIR/dedup.jsonl"
 assert_rc "ledger-dedup-stall-rc3" 3 "$LED" trend --file "$G"
 
 # I1: mechanical cap on cycle count + budget
+assert_ok "ledger-no-default-cycle-cap" "$LED" cap --file "$G"
 assert_rc "ledger-cap-maxcycles" 5 env POLYLANE_MAX_CYCLES=2 "$LED" cap --file "$G"
 assert_ok "ledger-cap-under"           env POLYLANE_MAX_CYCLES=9 "$LED" cap --file "$G"
 assert_rc "ledger-cap-budget"     5 env POLYLANE_MAX_CYCLES=9 POLYLANE_BUDGET=3 "$LED" cap --file "$G"

@@ -35,6 +35,17 @@ errored "err-case-insensitive"   "OVERLOADED — API BUSY"
 not_errored "ok-clean-pane"      "Goal achieved (12k tokens) — writing status file"
 not_errored "ok-benign-noise"    "compiling module 3 of 7"
 
+# A live Codex process may report an expected MCP/tool transport failure and
+# continue productively. The health loop must not destroy that turn merely
+# because the error text remains in the pane scrollback. It becomes retryable
+# only after the agent process has actually exited; a live-but-frozen process is
+# handled separately by the wedge detector.
+printf '%s\n' "Connection error from Computer Use transport" > "$FAKE_PANE_TEXT_FILE"
+pane_dead() { return 1; }
+assert_fail "live-agent-tool-error-not-retryable" pane_retryable_error 0
+pane_dead() { return 0; }
+assert_ok "exited-agent-transient-error-retryable" pane_retryable_error 0
+
 # negative index = unknown lane -> never errored
 printf 'API Error\n' > "$FAKE_PANE_TEXT_FILE"
 assert_fail "err-negative-index" pane_errored -1

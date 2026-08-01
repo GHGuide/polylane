@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# parse_verdict FILE -> GO | NO-GO | UNKNOWN. FROZEN FAIL-SAFE contract:
-#   * ONLY a `POLYLANE-VERDICT: GO|NO-GO` sentinel on its OWN line counts.
+# parse_verdict FILE -> GO | EXTERNAL-EVIDENCE-OPEN | NO-GO | UNKNOWN.
+# FROZEN FAIL-SAFE contract:
+#   * ONLY a supported `POLYLANE-VERDICT:` sentinel on its OWN line counts.
 #   * ANY NO-GO sentinel => NO-GO, regardless of order (a later GO can't override).
 #   * No sentinel (prose, crash, wrong format, missing file) => UNKNOWN — never a
 #     prose-guessed GO, which risked merging unverified work.
@@ -34,6 +35,8 @@ printf 'discussion mentions NO-GO risks everywhere\nPOLYLANE-VERDICT: GO\n' > "$
 assert_eq "verdict-sentinel-go"   "GO"    "$(parse_verdict "$TEST_TMPDIR/sentinel-go.md")"
 printf 'everything is a GO, great GO, GO GO\nPOLYLANE-VERDICT: NO-GO\n' > "$TEST_TMPDIR/sentinel-nogo.md"
 assert_eq "verdict-sentinel-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/sentinel-nogo.md")"
+printf 'POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN\n' > "$TEST_TMPDIR/external.md"
+assert_eq "verdict-external-open" "EXTERNAL-EVIDENCE-OPEN" "$(parse_verdict "$TEST_TMPDIR/external.md")"
 
 # leading whitespace + trailing spaces on the sentinel line are tolerated
 printf '   POLYLANE-VERDICT: GO   \n' > "$TEST_TMPDIR/ws.md"
@@ -47,8 +50,16 @@ printf 'POLYLANE-VERDICT: GO run=00-0\n'  > "$TEST_TMPDIR/nonce-stale.md"
 assert_eq "verdict-nonce-stale"  "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/nonce-stale.md")"
 printf 'POLYLANE-VERDICT: GO\n'           > "$TEST_TMPDIR/nonce-bare.md"
 assert_eq "verdict-nonceless-unknown" "UNKNOWN" "$(parse_verdict "$TEST_TMPDIR/nonce-bare.md")"
+printf 'POLYLANE-REPAIRABLE: NO run=55-3\nPOLYLANE-VERDICT: NO-GO run=55-3\n' > "$TEST_TMPDIR/nonce-unrepairable.md"
+assert_eq "repairability-current-nonce" "NO" "$(parse_repairability "$TEST_TMPDIR/nonce-unrepairable.md")"
+printf 'POLYLANE-REPAIRABLE: NO run=00-0\nPOLYLANE-VERDICT: NO-GO run=55-3\n' > "$TEST_TMPDIR/nonce-stale-repairability.md"
+assert_eq "repairability-stale-defaults-yes" "YES" "$(parse_repairability "$TEST_TMPDIR/nonce-stale-repairability.md")"
+printf 'The host is not repairable here.\nPOLYLANE-VERDICT: NO-GO run=55-3\n' > "$TEST_TMPDIR/prose-unrepairable.md"
+assert_eq "repairability-prose-defaults-yes" "YES" "$(parse_repairability "$TEST_TMPDIR/prose-unrepairable.md")"
 printf 'POLYLANE-VERDICT: NO-GO run=55-3\nPOLYLANE-VERDICT: GO run=55-3\n' > "$TEST_TMPDIR/nonce-nogo.md"
 assert_eq "verdict-nonce-nogo-wins" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/nonce-nogo.md")"
+printf 'POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=55-3\n' > "$TEST_TMPDIR/nonce-external.md"
+assert_eq "verdict-nonce-external" "EXTERNAL-EVIDENCE-OPEN" "$(parse_verdict "$TEST_TMPDIR/nonce-external.md")"
 # seam dangler is an auto-NO-GO even with a valid GO sentinel
 printf 'POLYLANE-VERDICT: GO run=55-3\nSEAM-DANGLING: dom-id export-btn\n' > "$TEST_TMPDIR/nonce-seam.md"
 assert_eq "verdict-seam-auto-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/nonce-seam.md")"

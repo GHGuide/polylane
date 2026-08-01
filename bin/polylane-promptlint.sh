@@ -21,6 +21,14 @@ lint_one() {
   grep -qE  'STATUS:.*DONE'  "$f"    || miss="$miss done-marker(STATUS:..DONE)"
   grep -q   'run='  "$f"             || miss="$miss nonce(run=<RUN_ID>)"
   grep -qi  'verify' "$f"            || miss="$miss verify-evidence"
+  if [ "${POLYLANE_STRICT_PROMPTS:-0}" = "1" ]; then
+    grep -qi 'PREDEFINED-SKILLS:' "$f"    || miss="$miss predefined-skills"
+    grep -qi 'LANE-SPECIFIC-SKILLS:' "$f" || miss="$miss lane-specific-skills"
+    grep -qi 'TEST-CADENCE:' "$f"         || miss="$miss test-cadence"
+    grep -qi 'DELEGATION:' "$f"           || miss="$miss delegation-policy"
+    grep -qi 'CHECK-CACHE:' "$f"          || miss="$miss check-cache"
+    grep -qi 'EXTERNAL-EVIDENCE:' "$f"    || miss="$miss external-evidence-routing"
+  fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi
   return 0
 }

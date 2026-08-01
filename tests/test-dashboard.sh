@@ -19,7 +19,12 @@ run_frame() {
   : > "$out"
   "$@" >"$out" 2>&1 &
   local pid=$! n=0
-  while [ ! -s "$out" ] && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+  # Wait up to ~30s (was 5s). The frame appears in milliseconds when the box is idle,
+  # but under full-suite load the old 5s ceiling could expire with the file still
+  # empty — every assertion then failed for a reason the test does not test. This
+  # loop still exits the INSTANT the frame lands, so the common case stays fast;
+  # only a genuinely stuck render pays the longer bound.
+  while [ ! -s "$out" ] && [ "$n" -lt 300 ]; do sleep 0.1; n=$((n + 1)); done
   kill "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
 }

@@ -35,11 +35,17 @@ Keep output terse (caveman-style: drop articles/filler/hedging, fragments OK). W
 
 ## D. Skills for this lane
 ```
-Invoke: superpowers:using-superpowers, then <lane skills>. Your goal is LOCKED (below) — do NOT open superpowers:brainstorming; go straight to writing-plans/execution.
+PREDEFINED-SKILLS: <at least two installed execution/testing skills>
+LANE-SPECIFIC-SKILLS: <at least two installed domain skills>
+Read and apply every named skill. Your goal is LOCKED (below); go straight to execution.
 ```
 `<lane skills>` is filled in TWO layers, in order:
 1. **Static type-baseline** (always, per lane TYPE): debugging/fix → `systematic-debugging` + `verification-before-completion`; build → `writing-plans` + `test-driven-development` + `verification-before-completion`; UI → `design:design-critique`; anything → `verification-before-completion`.
-2. **Scouted DOMAIN skills** (this cycle's per-lane scout — `references/skill-scout.md`): read `.polylane/lane-skills.json` and append the skills listed under THIS lane's name. If the lane is absent or chose `None`, append nothing — layer 1 stands alone. Only append a skill whose `SKILL.md` exists (the scout bakes only after a passing `test -f`). Non-Claude lanes: drop block D entirely.
+2. **Scouted DOMAIN skills** (this cycle's per-lane scout — `references/skill-scout.md`):
+   read structured `.polylane/lane-skills.json` and append THIS lane's `specific`
+   skills. Only installed skills count. Codex uses Codex skill names; Claude uses
+   Claude skill names. GitHub suggestions are informational and never appear here
+   until installed. Contract v2 rejects fewer than two skills in either layer.
 The global base (graphify · caveman · ponytail · superpowers · claude-mem) lives in block 0, NOT here — never duplicate it into `<lane skills>`.
 
 ## E. Graphify-first (navigation) — MANDATORY, blocking Step 1 when graphify-out/ exists
@@ -64,6 +70,16 @@ HARD CONTRACT: <frozen public APIs>. If you need a change in a file you don't ow
 ## G. Forced verification (no done without proof)
 ```
 VERIFY with evidence — no claim without it. Write docs/verify-<lane>.md containing: <lane-appropriate evidence>. Never say "done"/"works"/"looks good" without the artifact in that file. <For UI: preview_start + screenshots. For device: build/install/log. For logic: test output.>
+TEST-CADENCE: run focused checks while iterating, subsystem checks before DONE, and
+leave the expensive full terminal suite for integration/final certification.
+DELEGATION: forbidden. This tmux CLI is the sole agent for this lane. Do not spawn
+Codex app collaboration agents, subagents, or nested fan-out.
+CHECK-CACHE: route every expensive check through
+`<POLYLANE_SCRIPT_DIR>/polylane-check.sh <CANONICAL_PROJECT>/.polylane/check-cache/<lane> -- <command>`.
+Reuse an unchanged PASS or FAIL; a FAIL requires a source/environment change before
+the command may execute again.
+EXTERNAL-EVIDENCE: physical/manual proof the system cannot produce stays explicitly
+external; continue every autonomous task and never turn missing evidence into PASS.
 ```
 
 ## H. Coordination + resource mutex
@@ -87,9 +103,24 @@ Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `mod
 - **Merge into YOUR OWN integrator branch — NEVER the base branch.** You run in your own worktree on your own branch. Merge each lane branch's CURRENT tip INTO THIS branch and verify the combined tree HERE. Do NOT check out or merge into `main`/base — the runner fast-forwards the base to your branch itself, and ONLY on a GO, so a NO-GO can never touch the base. Never trust a prior GO: if commits followed one, re-verify from scratch.
 - Read all verify-*.md + status, build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in status.
 - **If ponytail is installed, run `/ponytail-review` on the merged diff** — flag any over-engineering a lane introduced (dead abstraction, speculative generality, needless deps). Note findings in verify-integration.md; a lane that grossly over-built against its goal is a quality regression worth a NO-GO. Keeps the token-efficiency mission enforced at the gate, not just per-lane.
-- **Ensemble verdict — never a single-judge GO (self-consistency).** Before deciding, dispatch an ODD number of INDEPENDENT verifier subagents (≥3) — each judges GO/NO-GO from the merged tree + evidence on its own, and at least ONE is adversarial (told to REFUTE the GO: hunt for the regression that makes this NO-GO). The verdict is the MAJORITY vote; a tie, or any adversarial refutation the others can't rebut with evidence, resolves to **NO-GO** (safe default). Record each verifier's vote + one-line reason in docs/verify-integration.md, then set the sentinel to the majority. This is what kills a flukey false-GO.
+- **Independent evidence, never a vibes-only GO.** Use independent verifier lanes
+  when the plan includes them; otherwise combine mechanical acceptance, seam checks,
+  build/test evidence, and an adversarial review in the integrator. Codex app
+  subagents never replace the runner's tmux Codex CLI lanes.
 - **Mechanical seam scan (before you decide).** Run `bin/polylane-seams.sh scan <your integrator worktree> >> docs/verify-integration.md` — it greps the merged tree for cross-file name danglers (a DOM id referenced in JS that no HTML produces — the classic "two halves don't wire up" bug). A `SEAM-DANGLING:` line it appends is an AUTO-NO-GO the gate enforces regardless of your prose, so fix the wiring (or reassign the lane) before issuing GO.
-- **End docs/verify-integration.md with the verdict sentinel on its OWN line, EXACTLY** `POLYLANE-VERDICT: GO run=<RUN_ID>` (or `POLYLANE-VERDICT: NO-GO run=<RUN_ID>`) — the orchestrator bakes the manifest's literal run_id in place of <RUN_ID>. The runner's merge gate reads this line and trusts it only when the nonce matches THIS run; prose that mentions "GO"/"NO-GO", a stray fixture, or a stale prior-run sentinel can no longer flip the gate. `git commit` verify-integration.md in your worktree so the evidence survives cleanup.
+- **End docs/verify-integration.md with exactly one verdict sentinel on its OWN line:**
+  `POLYLANE-VERDICT: GO run=<RUN_ID>`,
+  `POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=<RUN_ID>`, or
+  `POLYLANE-VERDICT: NO-GO run=<RUN_ID>`. External-open is valid only after
+  engineering is verified and remaining proof truly requires a person/physical
+  system. NO-GO is repair feedback, not a stopping point. The runner trusts only
+  the current nonce and commits the evidence.
+- **Skip impossible identical repair waves:** only when the current
+  host/account/hardware blocks a required gate before source execution and no
+  owned source change can alter it, add
+  `POLYLANE-REPAIRABLE: NO run=<RUN_ID>` immediately before the NO-GO sentinel.
+  Do not use this for source defects or uncertainty. The outer orchestrator must
+  route other autonomous work rather than treating the marker as completion.
 - **Batch the human device/voice/visual sign-off here** (diff-aware — only re-verify surfaces changed since last sign-off; note each re-install invalidates prior voice/visual proof).
 - **On GO: run merge + cleanup** (references/merge-and-cleanup.md) — verify each branch merged, `git worktree remove` merged worktrees, `git branch -d` merged branches, MOVE strays/duplicates into `<project>-useless/` (never rm, never touch the main tree's uncommitted work or the harness cwd). Leave one project folder. If auto-mode blocks a destructive step, hand the user the exact commands.
 - Stage only docs/verify-integration.md + logged glue fixes.

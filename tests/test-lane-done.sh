@@ -41,4 +41,29 @@ assert_fail "done-nonceless-in-nonce-mode" lane_done "$TEST_TMPDIR" alpha
 unset RUN_ID   # legacy path still exact-matches (guards backward compat)
 assert_ok   "done-legacy-when-no-nonce" lane_done "$TEST_TMPDIR" alpha
 
+# Contract v2 must not observe a marker before the lane has committed its final
+# source/evidence checkpoint. This prevents promotion from racing a live commit.
+G="$TEST_TMPDIR/contract-v2"
+mkdir -p "$G"
+(
+  cd "$G"
+  git init -q -b main
+  git config user.email test@example.com
+  git config user.name test
+  printf 'base\n' > base.txt
+  git add base.txt
+  git commit -qm base
+  mkdir -p docs
+)
+ORCHESTRATION_CONTRACT=2
+RUN_ID=run-2
+printf 'STATUS: alpha DONE run=run-2\n' > "$G/docs/status-alpha.md"
+assert_fail "done-v2-rejects-uncommitted-marker" lane_done "$G" alpha
+(cd "$G" && git add docs/status-alpha.md && git commit -qm done)
+assert_ok "done-v2-accepts-committed-clean-checkpoint" lane_done "$G" alpha
+printf 'still writing evidence\n' > "$G/docs/verify-alpha.md"
+assert_fail "done-v2-rejects-dirty-checkpoint" lane_done "$G" alpha
+(cd "$G" && git add docs/verify-alpha.md && git commit -qm evidence)
+assert_ok "done-v2-accepts-final-clean-checkpoint" lane_done "$G" alpha
+
 finish

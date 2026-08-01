@@ -50,11 +50,32 @@ assert_ok "state-json-valid" sh -c "printf '%s' '$(printf '%s' "$J" | tr -d "'")
 assert_eq "state-json-verdict" "GO" "$(printf '%s' "$J" | jq -r .verdict)"
 assert_eq "state-json-lane-a"  "done" "$(printf '%s' "$J" | jq -r '.lanes[] | select(.name=="a") | .status')"
 assert_eq "state-json-watch-inactive" "-" "$(printf '%s' "$J" | jq -r .watch)"
+assert_eq "state-json-session-explicit" "state-test-nosuch" "$(printf '%s' "$J" | jq -r .session)"
+
+# A preserved tmux session with only idle shells is not a live supervised
+# runtime and must not advertise an attach command.
+mkdir -p "$TEST_TMPDIR/bin"
+cat > "$TEST_TMPDIR/bin/tmux" <<'TMUX'
+#!/usr/bin/env bash
+case "$1" in
+  has-session) exit 0 ;;
+  list-panes) exit 0 ;;
+  list-sessions) exit 0 ;;
+  *) exit 1 ;;
+esac
+TMUX
+chmod +x "$TEST_TMPDIR/bin/tmux"
+old_path="$PATH"; PATH="$TEST_TMPDIR/bin:$PATH"; export PATH
+J_IDLE=$(cd "$G" && POLYLANE_SESSION=idle-state "$STATE" .polylane/run.json --json)
+assert_eq "state-idle-session-runner-dead" "dead" "$(printf '%s' "$J_IDLE" | jq -r .runner)"
+assert_eq "state-idle-session-hides-watch" "-" "$(printf '%s' "$J_IDLE" | jq -r .watch)"
 
 # a fresh supervisor heartbeat is enough to report this run alive without ps/lsof
 printf '%s runner=alive restarts=0\n' "$(date '+%F %T')" > "$G/.polylane/supervisor-heartbeat"
-OUT_HB=$(cd "$G" && POLYLANE_SESSION=state-test-nosuch "$STATE" .polylane/run.json)
+OUT_HB=$(cd "$G" && POLYLANE_SESSION=idle-state "$STATE" .polylane/run.json)
 assert_contains "state-heartbeat-alive" "runner: alive" "$OUT_HB"
+assert_contains "state-live-session-shows-watch" "watch: tmux attach -t idle-state" "$OUT_HB"
+PATH="$old_path"; export PATH
 
 # report present flips the field
 echo "Outcome: GO" > "$G/docs/polylane-report.md"

@@ -10,7 +10,7 @@
 # supervisor owns the runner's lifecycle:
 #
 #   launch  : starts polylane-run.sh (with --yes) as a child, logs to a file
-#   watch   : every POLYLANE_SUP_INTERVAL (20s) —
+#   watch   : every POLYLANE_SUP_INTERVAL (5s) —
 #               * drains permission prompts (approval relay OUTSIDE the runner,
 #                 so a dead runner no longer strands lanes on approvals):
 #                 SAFE -> auto-approve; CRITICAL -> park + notify (never answered)
@@ -18,8 +18,8 @@
 #   revive  : runner exited WITHOUT writing this run's report -> crash. Relaunch
 #             with --resume (idempotent: DONE lanes are skipped) up to
 #             POLYLANE_SUP_MAX_RESTARTS (10). A runner that DID write the report
-#             ended legitimately (GO or NO-GO) -> exit with its code. NO-GO is a
-#             clean verdict, NOT a crash — never "revived" into a zombie run.
+#             ended with GO / EXTERNAL-EVIDENCE-OPEN / NO-GO -> clean cycle end.
+#             A HALTED report is recoverable runner failure and is resumed.
 #   halt    : restart cap exhausted -> notify halt, exit 1, worktrees intact.
 #
 # Panes are found by WORKTREE PATH, not remembered index, so the relay works
@@ -40,19 +40,20 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=polylane-run.sh
 . "$SCRIPT_DIR/polylane-run.sh"
 
-TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
-SUP_INTERVAL="${POLYLANE_SUP_INTERVAL:-20}"
+TMUX_SESSION="${POLYLANE_SESSION:-$(jq -r '.session // "polylane"' "$SUP_MANIFEST")}"
+SUP_INTERVAL="${POLYLANE_SUP_INTERVAL:-5}"
 SUP_MAX_RESTARTS="${POLYLANE_SUP_MAX_RESTARTS:-10}"
 # per-run nonce: the sourced lane_done must trust markers by the SAME run= tag the
 # runner uses, else nonce-tagged DONE lanes read as not-done and get needlessly revived.
 # shellcheck disable=SC2034  # consumed by the sourced runner's lane_done
 RUN_ID=$(jq -r '.run_id // ""' "$SUP_MANIFEST")
 
-MDIR=$(cd "$(dirname "$SUP_MANIFEST")" && pwd)
-PROJECT_ROOT=$(cd "$MDIR/.." && pwd)
+MDIR=$(cd "$(dirname "$SUP_MANIFEST")" && pwd -P)
+PROJECT_ROOT=$(cd "$MDIR/.." && pwd -P)
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
 HEARTBEAT="$MDIR/supervisor-heartbeat"
 RUNNER_LOG="$MDIR/runner.log"
+SUP_LOCK="$MDIR/supervisor.lock"
 DECIDED=""            # lanes parked on a critical approval (notified once)
 SUP_START=$(date +%s)
 
@@ -65,6 +66,11 @@ report_fresh() {
   [ -f "$REPORT" ] || return 1
   local mt; mt=$(stat -f %m "$REPORT" 2>/dev/null || stat -c %Y "$REPORT" 2>/dev/null || echo 0)
   [ "$mt" -ge "$SUP_START" ]
+}
+
+report_outcome() {
+  [ -f "$REPORT" ] || { echo "UNKNOWN"; return; }
+  sed -n 's/.*\*\*Outcome:\*\*[[:space:]]*\([^[:space:]·]*\).*/\1/p' "$REPORT" | head -1
 }
 
 # pane_for_wt WT : print the pane index whose cwd is WT, else fail.
@@ -103,16 +109,52 @@ drain_approvals() {
   done < <(jq -r '(.lanes[] | "\(.name)|\(.worktree)"), (.integrator | "\(.name)|\(.worktree)")' "$SUP_MANIFEST")
 }
 
-heartbeat() { printf '%s runner=%s restarts=%s\n' "$(date '+%F %T')" "$1" "$2" > "$HEARTBEAT" 2>/dev/null || true; }
+heartbeat() {
+  # Successful runner cleanup intentionally removes .polylane. Do not recreate it
+  # or emit a redirection error for a final "finished" heartbeat.
+  [ -d "$MDIR" ] || return 0
+  printf '%s runner=%s restarts=%s\n' "$(date '+%F %T')" "$1" "$2" > "$HEARTBEAT" 2>/dev/null || true
+}
 
 # one watch tick (also the --check-once body): relay + heartbeat.
 tick() { drain_approvals; heartbeat "${1:-unknown}" "${2:-0}"; }
 
 tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
 
+# acquire_lock : only one supervisor may own a manifest. Atomic mkdir works on
+# macOS/bash 3.2 and prevents two restart loops from launching competing runners.
+# A lock whose recorded PID no longer exists is reclaimed.
+acquire_lock() {
+  local owner=""
+  if mkdir "$SUP_LOCK" 2>/dev/null; then
+    printf '%s\n' "$$" > "$SUP_LOCK/pid"
+    return 0
+  fi
+  [ -f "$SUP_LOCK/pid" ] && IFS= read -r owner < "$SUP_LOCK/pid" || true
+  if [ -n "$owner" ] && kill -0 "$owner" 2>/dev/null; then
+    sup_log "another supervisor already owns this run (pid=$owner) — refusing duplicate launch"
+    return 1
+  fi
+  rm -rf "$SUP_LOCK"
+  mkdir "$SUP_LOCK" 2>/dev/null || {
+    sup_log "could not acquire supervisor lock: $SUP_LOCK"
+    return 1
+  }
+  printf '%s\n' "$$" > "$SUP_LOCK/pid"
+}
+
+release_lock() {
+  local owner=""
+  [ -f "$SUP_LOCK/pid" ] && IFS= read -r owner < "$SUP_LOCK/pid" || true
+  [ "$owner" = "$$" ] && rm -rf "$SUP_LOCK"
+  return 0
+}
+
 # --- main ----------------------------------------------------------------------
 supervisor_main() {
-  local restarts=0 rc pid args_line
+  local restarts=0 rc pid args_line outcome
+  acquire_lock || return 1
+  trap release_lock EXIT INT TERM
   # default --yes: the supervisor IS the unattended path; keep user args too.
   case " $* " in *" --yes "*) args_line="$*" ;; *) args_line="--yes${*:+ $*}" ;; esac
 
@@ -131,10 +173,36 @@ supervisor_main() {
     rc=0; wait "$pid" 2>/dev/null || rc=$?
 
     if report_fresh; then
-      # legitimate end — GO (rc 0) or NO-GO (rc 1). Either way: done, not a crash.
-      sup_log "runner finished legitimately (rc=$rc, report written) — supervisor exiting"
-      heartbeat finished "$restarts"
-      return "$rc"
+      outcome=$(report_outcome)
+      case "$outcome" in
+        HALTED|UNKNOWN|"")
+          if [ -s "$MDIR/needs-user" ]; then
+            sup_log "$outcome outcome exhausted autonomous no-progress replans — user input is required; not relaunching identical work"
+            heartbeat needs-user "$restarts"
+            return 1
+          fi
+          restarts=$((restarts + 1))
+          if [ "$restarts" -gt "$SUP_MAX_RESTARTS" ]; then
+            sup_log "runner wrote a $outcome report and the restart cap ($SUP_MAX_RESTARTS) is exhausted — halting"
+            heartbeat halted "$restarts"
+            return 1
+          fi
+          sup_log "$outcome outcome is recoverable — reviving with --resume (${restarts}/${SUP_MAX_RESTARTS})"
+          case " $args_line " in *" --resume "*) : ;; *) args_line="$args_line --resume" ;; esac
+          SUP_START=$(date +%s)
+          continue
+          ;;
+        GO|EXTERNAL-EVIDENCE-OPEN)
+          sup_log "runner finished legitimately (outcome=$outcome, rc=$rc) — cycle complete"
+          heartbeat finished "$restarts"
+          return 0
+          ;;
+        NO-GO)
+          sup_log "runner finished legitimately (outcome=NO-GO, rc=$rc) — runner-level repair exhausted"
+          heartbeat finished "$restarts"
+          return "$rc"
+          ;;
+      esac
     fi
 
     restarts=$((restarts + 1))

@@ -20,9 +20,11 @@ build again. It does not stop for you between cycles — recommended defaults ca
 forward; your answers only steer.
 
 ## Locked behaviors (this mode's contract)
-- **Termination:** loop until the COUNCIL + the goal-tree BOTH judge the ULTIMATE GOAL met
-  AND a mechanical shippability gate passes (or it's blocked),
-  or the user says stop. No fixed cycle count.
+- **Termination:** the council is advisory. After every cycle run
+  `bin/polylane-cycle.sh route "$STATE"` and obey its mechanical route. Continue on
+  `CONTINUE`; repair the tree on `DEAD-END`/`INCOMPLETE`; ask only when it says
+  `NEEDS-USER`; stop only on `COMPLETE` after acceptance, shippability, and the
+  perfection pass, or when the user explicitly says stop. No fixed cycle count.
 - **Questions:** every question ships a pre-picked recommended answer. Ask, but if
   the user doesn't weigh in, take the recommended path and start the next cycle —
   it "pops questions AND keeps working."
@@ -111,12 +113,11 @@ test -f "$STATE" && "$MEM" "$STATE" resume
 The `resume` packet is self-contained (goal, cycle, every open sub-goal/criterion,
 blocked items, recent decisions, next action) — you need nothing from the old
 transcript to continue correctly.
-- **Budgeted (never unbounded spend):** honor a hard cycle cap and a token budget.
-  `POLYLANE_MAX_CYCLES` (default 8) caps total cycles; `POLYLANE_BUDGET` (optional,
-  tokens or $) caps cumulative cost. Default each cycle's build to the CHEAPEST models
-  that clear the viability gate (`--intensity economy`; only bump a lane when a
-  sub-goal genuinely needs it). Track cumulative cost in `progress.md` from each run's
-  report; if the cap or budget is hit, STOP with the wrap-up instead of another cycle.
+- **Budget-aware, not arbitrarily finite:** no default cycle cap. If the user set a
+  hard money/token boundary, treat changing it as a core decision: finish independent
+  no-cost work, then route `NEEDS-USER` with the exact budget choice. Never use an
+  arbitrary cycle count or diminishing-returns opinion as an excuse to stop unfinished
+  work. Use the cheapest models that clear the viability gate and ledger actual progress.
 
 ## Phase 00 — Discovery & Strategy (when the idea is vague — the flagship path)
 If the user handed you a crisp goal + criteria, skip to Phase 0. If they gave a
@@ -211,6 +212,7 @@ STATE=docs/polylane/max-state.json     # durable — survives the runner's clean
 # while it is still open — the grader is authored before the build, so a lane can't
 # weaken its own bar. Phase 4 runs `check-accept` and `met` requires every one green.
 "$MEM" "$STATE" add-accept    m1.1 'cd "$REPO" && <a command that EXITS 0 iff m1.1 truly works>'
+"$MEM" "$STATE" add-accept    m1.1 'cd "$REPO" && <expensive final certification>' --tier terminal
 ```
 **Always seed ≥1 success criterion** — `met` can never fire without one, so a crisp-goal
 run with zero criteria can never terminate; if the user gave none, synthesize 3–5
@@ -230,8 +232,7 @@ from memory:**
 "$MEM" "$STATE" brief                       # goal, progress, NEXT, blocked (a few hundred bytes)
 cat docs/polylane/NORTHSTAR.md          # the anchor — stay true to the vision
 "$DEC" docs/polylane/decisions context  # the settled decisions — never contradict them
-# STOP the loop instead of building another cycle if either cap is hit:
-#   cycle count >= POLYLANE_MAX_CYCLES (default 8), or cumulative cost >= POLYLANE_BUDGET.
+# A user-authored hard spend cap is a core-decision boundary, not silent completion.
 ```
 (`DEC="$(dirname "$MEM")/polylane-decision.sh"`.) Read the brief + north-star +
 settled decisions (and only the specific digests/research the cycle needs) — do NOT
@@ -244,18 +245,27 @@ file-isolated lanes real overlap allows → tune model/effort per lane → **per
 paste-ready prompts → emit `.polylane/run.json` (with the `intensity` the USER PICKED in
 discovery dimension 12 — never silently default; if somehow unset, ASK before launch) →
 launch (below) → merge on GO. The picked intensity sets each lane's model+effort per
-`references/model-selection.md`; you may still bump a single hard sub-goal a tier up:
+`references/model-selection.md`; you may still bump a single hard sub-goal a tier up.
+
+**Always emit `"orchestration_contract": 2`** (plus its required companions: integer
+`cycle` ≥ 1, a fresh `run_id`, `state_file`, `lane_skills_file`, `cycle_plan_file`,
+`session`, `target_subgoals`). The runner only REQUIRES this for codex manifests, but the
+strict pre-launch gates it unlocks are agent-neutral — state, plan, prompts, skills, scope,
+acceptance and prior-cycle artifacts are all verified BEFORE a pane spawns. A Claude run
+that omits it silently skips every one of those checks, so omit it only when knowingly
+migrating a legacy manifest:
 - **Cycle 1:** derive the first concrete spec from the ultimate goal (a short
   deep-research pass to scope it), present it at the plan gate, then build.
 - **Cycle N>1:** the spec is already synthesized from the prior cycle (Phase 5) —
   skip the interview, go straight to recon → lanes → plan gate → hands-off run.
 
 **Gate 1b — PER-LANE skill scout (after lane derivation, BEFORE prompt generation —
-`references/skill-scout.md`):** the domain-agnostic base (graphify · caveman · ponytail ·
-superpowers · claude-mem) is already in block 0 of EVERY lane — the scout never re-suggests
-it. Walk each BUILDER lane (skip the integrator + every non-Claude lane): infer its domain
+`references/skill-scout.md`):** Walk every BUILDER lane (skip only the integrator): infer its domain
 from name + OWN globs + goal, list that lane's activities, and match each slot against
-already-installed skills → curated DOMAIN list → GitHub search for unfilled slots. For each
+already-installed skills → curated DOMAIN list → GitHub search for unfilled slots. Arm at
+least TWO predefined execution/testing skills and TWO lane-specific installed skills with
+`polylane-scout.sh arm-role`; `validate` rejects thinner kits. GitHub results are recorded
+with `github` as informational suggestions and never count as installed skills. For each
 lane with a real slot, add ONE question object (`multiSelect: true`) scoped to THAT lane —
 1–3 domain skills each with a one-line WHY tied to THIS lane ("`playwright` — drives the
 real dashboard + screenshots each view as verify evidence") + ALWAYS a final `None`
@@ -266,7 +276,7 @@ the default, and NOTHING untrusted is auto-installed.** A lane with no slot gets
 question. In autonomous mode, skip the call, take installed-only defaults, log to
 `cycle-<N>-questions.md`. Bake each accepted skill into ONLY that lane's block D `<lane
 skills>` slot AFTER a passing `test -f`, and write the per-lane picks to
-`.polylane/lane-skills.json` (Phase 6 reads it). Record per lane in
+`.polylane/lane-skills.json` structured v2 format. Record per lane in
 `docs/polylane/skills-ledger.md` (`| cycle | lane | skill | why | used by lane? | verdict
 |`). The council later scores each (used/helped/hurt) — unused 2 cycles on the same kind of
 lane → suggest removal; the scout reads the ledger first and never re-suggests removed /
@@ -322,7 +332,8 @@ runner no longer blocks lanes), parks+notifies critical ones, and writes a heart
 BIN="$(dirname "$(command -v polylane-run.sh || echo "$HOME/.claude/skills/polylane/bin/x")")"
 POLYLANE_CYCLE=<N> POLYLANE_SESSION="polylane-c<N>" "$BIN/polylane-supervisor.sh" .polylane/run.json
 ```
-Print the tmux watch commands in chat (`tmux attach -t polylane-c<N>`), then wait
+Immediately run `bin/polylane-cycle.sh runtime .polylane/run.json` and surface its
+exact one-line tmux attach command in chat. Never invent it for an inactive run. Then monitor
 for the finish notification. **Read run state through the state surface, never by
 hand-capturing panes + git + files** (that reconstruction was ~80% of orchestrator
 turns in real runs):
@@ -416,11 +427,11 @@ Log every member's vote + proposal:
 "$MEM" "$STATE" log <N> decision "council/<lens>: complete=<yes|no> focus=<subgoal-id|NEW:...>" "<one-line why>"
 ```
 
-First run the frozen graders — `"$MEM" "$STATE" check-accept --cycle <N>` executes every
-pre-registered acceptance check (ALWAYS re-run for correctness — a check often reads files
-outside its declared deps, so caching a stale pass would hide broken work; opt into
-content-hash memoization only via `POLYLANE_ACCEPT_MEMO=1` when a check provably reads
-only its deps) and stamps pass/fail; `met` (below) then REQUIRES every
+First run the frozen graders for this cycle's targets —
+`bin/polylane-cycle.sh reconcile "$STATE" <N> "<target-ids-comma-separated>"`.
+Focused checks run while iterating; terminal/full-suite checks run only when no autonomous
+subgoal remains, avoiding repeated full-suite thrash while preserving the final bar.
+`met` (below) then REQUIRES every
 one green, so a sub-goal marked `done` whose executable check fails cannot terminate the
 loop. `"$MEM" "$STATE" unmet-accept` lists any that block it. Then the TEMPORAL guard —
 `REG=$("$MEM" "$STATE" regressions)`: any output means a check that PASSED in an earlier
@@ -432,17 +443,22 @@ same as a `SEAM-DANGLING`; fix the regression before the council can vote comple
 runner already appended a row to `docs/polylane/spend-ledger.jsonl` with `subgoals 0 0`;
 re-stamp it with the real counts (`"$MEM" "$STATE" progress`) via a corrected `LED record`
 (`LED="$(dirname "$MEM")/polylane-ledger.sh"`). Then the gates before the next cycle:
-`"$LED" cap` (rc 5 = hit `POLYLANE_MAX_CYCLES` or `POLYLANE_BUDGET` → the HARD "never
-unbounded spend" stop, enforced mechanically not by discretion → STOP), `"$LED" trend`
-(rc 3 = spend with ZERO tree progress → a semantic stall the pane-level detector misses →
-STOP with the wrap-up), and `"$LED" roi <next-weight> <open-weight-sum> <budget>` (rc 4 =
-the next sub-goal costs more than its share of remaining value warrants → STOP on the
-diminishing tail). At lane-carve, `N=$("$LED" fit <budget> <N>)` trims the wave
+`"$LED" cap` (a user-authored hard spend cap routes to a core budget decision),
+`"$LED" trend` (zero tree progress triggers a different approach/re-carve), and
+`"$LED" roi <next-weight> <open-weight-sum> <budget>` (a planning signal, never a
+completion verdict). At lane-carve, `N=$("$LED" fit <budget> <N>)` trims the wave
 to what the budget affords before any pane spawns.
+
+**The council is ADVISORY. It may reprioritize weights, add a sub-goal with frozen
+acceptance, or name a gap — it can NEVER declare completion or stop the run.** A vote is
+one input to the mechanical gate below, never a substitute for it. Only `route`
+(`polylane-cycle.sh route "$STATE"`) returning `COMPLETE` after every check below passes
+ends the loop; a council verdict, a GO cycle, a digest, or a suggestion list is never by
+itself a stopping point.
 
 **Synthesis (a) — Terminate?** STOP only when ALL THREE pass (each patches the others' blind
 spot):
-- a MAJORITY (≥3 of 5) votes `complete=yes`, AND
+- a MAJORITY (≥3 of 5) votes `complete=yes` (advisory — necessary, never sufficient), AND
 - `"$MEM" "$STATE" met` exits 0 (every criterion AND sub-goal `done`, AND every acceptance check `pass`), AND
 - the **mechanical shippability gate** passes: from a FRESH checkout/clone, `install →
   build → boot/smoke-run` all green (the integrator's per-cycle verify is incremental — this
@@ -451,6 +467,23 @@ spot):
   `NEEDS FROM YOU` in `STRATEGY.md` is resolved or explicitly acknowledged. An LLM council
   can vote "complete" on code that doesn't compile;
   only this gate catches that.
+
+**Final `COMPLETE` requires ALL of these — no exceptions, no "close enough":**
+- every requested AND `perfection` sub-goal `done`;
+- every criterion `done`;
+- every frozen `focused` AND `terminal` acceptance check `pass`
+  (`"$MEM" "$STATE" check-accept --cycle <N>`; terminal = the expensive full-suite /
+  signed-build / end-to-end certifications). Run EXPENSIVE verifications through the
+  cache so an unchanged tree never re-burns usage:
+  `bin/polylane-check.sh <canonical-project>/.polylane/check-cache/<lane> -- <command>`
+  — it runs the command at most once per (source, command, cwd, build-env). A cached
+  FAILURE is evidence to repair the source, not permission to rerun the same command;
+  keep the cache dir in the canonical project, never inside a lane worktree;
+- **no** acceptance regression (`"$MEM" "$STATE" regressions` empty), unmerged lane branch,
+  unresolved seam (`polylane-seams.sh`), silent external requirement, missing artifact,
+  stale progress file, still-running runner, or live tmux pane;
+- the installed artifact/package and the real user path verified where applicable.
+Only then terminate tmux, give the final result + evidence, and end.
 Reconcile disagreement rather than trusting one signal:
 - `met`=0 but council majority says NOT complete → the tree is under-specified: turn each
   dissenter's missing piece into a NEW sub-goal/criterion (`add-subgoal`/`add-criterion`) so
@@ -460,9 +493,11 @@ Reconcile disagreement rather than trusting one signal:
 - Council majority says complete but `met`≠0 → the tree is authoritative; do NOT stop.
 - Shippability gate fails → create a sub-goal for the failure, `set-weight <id> top`,
   continue (this becomes next cycle's focus).
-- All three pass → write the final **runbook wrap-up** (how to run/deploy, env/secrets
-  needed, the one converting action, tree `dump` + all digests + an honest what's-left),
-  STOP.
+- All three pass for the initially requested work → generate exactly 30 concise
+  informational next suggestions, validate them with `polylane-cycle.sh suggestions`,
+  then add the highest-leverage in-scope items as a frozen-acceptance `perfection`
+  milestone exactly once. Only after that milestone also passes do you write the final
+  runbook and allow `route` to return `COMPLETE`.
 
 **Synthesis (b) — pick WHERE to work next (the council's real job, only if not stopping).**
 Tally the 5 NEXT-FOCUS proposals; group ones pointing at the same focus. **Always ground the
@@ -499,8 +534,8 @@ refuses to terminate.
   the same kind of lane → next scout suggests removal.
 
 A blocked-and-unblockable winning focus → `set-status <id> blocked`, surface it, and re-run
-(b) on the remaining proposals to route around it. If EVERY proposal is blocked, surface why
-and stop.
+(b) on the remaining proposals to route around it. If every autonomous route is exhausted,
+`polylane-cycle.sh route` returns `NEEDS-USER` with the exact blockers.
 
 ## Phase 5 — close the cycle: report + Next, then emergent questions → next spec (auto-continue)
 The council (Phase 4) has already elected the focus and given it top weight, so
@@ -571,7 +606,10 @@ suggestions + `"$MEM" "$STATE" next` (the council-elected focus — it LEADS the
 1) into the next cycle's numbered INTEGRATION SPEC (each item one line + a testable outcome),
 exactly as `references/planning.md` produces. Skip any approach `"$MEM" "$STATE" attempted`
 already flagged failed. Then record the decision (`"$MEM" "$STATE" log <N> decision "<what>"
-"<why>"`), set the new baseline (`git rev-parse HEAD`), increment N, and GOTO Phase 1.
+"<why>"`), generate `progress.md` mechanically, require digest/research/council/questions/
+INDEX and the next plan with `bin/polylane-cycle.sh artifacts`, run `route`, set the new
+baseline (`git rev-parse HEAD`), increment N, and immediately GOTO Phase 1 on `CONTINUE`.
+Never emit a final answer merely because Phase 5 ended.
 
 ## North-star docs — write after every BIG decision, keep them in mind
 The blackboard `log` is a terse machine index; north-star docs are the readable

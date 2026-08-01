@@ -1,30 +1,38 @@
 # polylane
 
-**Describe what you want in plain English. polylane strategizes it with you, splits it into file-isolated lanes, builds them in parallel Claude Code (or GPT/aider) terminals, merges on GO, reports, researches the next step, and keeps going — one autonomous loop toward your goal.**
+**Describe what you want in plain English. Polylane strategizes it, splits safe
+file-isolated lanes, executes parallel Codex or Claude CLIs in visible tmux panes,
+integrates verified work, and keeps iterating until the locked goal is complete.**
 
-`polylane` is **one** [Claude Code](https://docs.claude.com/en/docs/claude-code) skill. Give it a goal — or even a vague one-line app idea — and it runs a product-discovery interview (numerous easy recommended-default questions + research) to strategize *with* you, locks a strategy + goal tree, then loops: derive the *right* number of file-isolated lanes from how the code actually overlaps → build them in parallel → merge on GO → **~50-bullet report** → deep-research the next step → **ensemble critic** → questions → repeat, until a critic judges the goal met or you stop.
+The repository has two product entrypoints: a standalone, Codex-native
+`codex/SKILL.md` and the Claude Code `SKILL.md`. They share one deterministic
+engine in `bin/`, so reliability fixes land in both without mixing model ids,
+prompt syntax, skills, or CLI behavior. Codex never substitutes app subagents for
+the tmux `codex exec` lanes.
 
-You stay in the loop for **decisions only** — a handful of click-through questions with recommended defaults. Everything else is derived, generated, launched, verified, merged, and cleaned up for you. It's resumable across conversations, budget-capped, and self-recovers from stalls, dead panes, and never-started workers.
+You stay in the loop for **core decisions only**. Everything else is derived,
+launched, verified, repaired, merged, documented, and routed into the next cycle.
+State survives conversations; the supervisor recovers crashes, HALTED runners,
+dead panes, usage limits, missing seeds, and frozen workers.
 
 ---
 
 ## Quickstart
 
-One skill, two runner deps:
+Install the Codex package (current priority) and two runner dependencies:
 
 ```bash
-git clone https://github.com/GHGuide/polylane ~/.claude/skills/polylane
+git clone https://github.com/GHGuide/polylane
+cd polylane && ./codex/install.sh --user
 brew install tmux jq   # runner deps (Debian/Ubuntu: apt-get install -y tmux jq)
 ```
 
 Then the whole happy path is three lines:
 
 ```
-cd your-project && claude
-> /polylane build me an app that <your idea>
-# answer a handful of click-through questions (each has a recommended default and
-# "🔍 go deeper" / "✨ go bold" escape hatches) — then walk away.
-# it strategizes, builds in tmux, merges, reports ~50 bullets, researches, and loops.
+cd your-project && codex
+> $polylane build me an app that <your idea>
+# Answer only material product/secrets/money decisions. Polylane keeps working.
 ```
 
 Prefer to just plan and stop at paste-ready prompts? Say "only plan the lanes, don't run them" — polylane will stop at the plan gate. (See [install-helpers](references/install-helpers.md) for details.)
@@ -48,7 +56,7 @@ Most multi-agent tools (swarm frameworks, `/batch`, fire-and-forget agent runtim
 | **Collisions** | Agents edit shared files → clobber, merge hell | **Hard file isolation** — every lane gets an OWN/FORBIDDEN file list + a frozen public-API contract. Zero source overlap by construction. |
 | **Control** | Runs autonomously, you find out later | **Two approval gates** (spec lock, plan lock) + click-only questions. You approve the plan before a single prompt runs. |
 | **Cost** | Dozens of agents burning tokens in the background | **One visible tmux pane per lane** — `tmux attach` and watch any of them; nothing spawns silently. Plus per-lane model/effort tuning and terse output (see below). |
-| **Verification** | "Done" = the agent said so | **Forced evidence** — no lane is "done" without a `docs/verify-<lane>.md` proof file. An integrator lane re-merges current HEADs, re-verifies, and issues GO/NO-GO. |
+| **Verification** | "Done" = the agent said so | **Frozen executable acceptance + forced evidence** — focused checks per cycle, terminal suite once at final certification, and an integrator verdict. NO-GO starts a repair wave. |
 | **Cleanup** | Leftover worktrees + branches pile up | **Auto merge + cleanup** — removes merged worktrees, deletes merged branches, quarantines strays into one folder. |
 
 It's not "more agents." It's **the right agents, isolated, verified, and cheap.**
@@ -86,11 +94,16 @@ The result: a big feature set built in parallel, with the token profile of a car
 
 1. **Interview → spec.** Batched click-through questions (you pick, you don't type) until a numbered **integration spec** is locked. Half-satisfiable items (need a bundle / paid service / product call) get flagged so the final GO isn't surprised.
 2. **Recon.** `git status` first — any uncommitted orphan work is surfaced and protected before any branch op. Then maps goals → files (via the graph, not grep).
-3. **Derive lanes.** Optimal count + carving from file-overlap. Per-lane model, effort, and skill recommendations.
+3. **Derive lanes.** Optimal count + carving from file-overlap. Every builder gets at least two predefined and two lane-specific installed skills; GitHub candidates stay informational.
 4. **Plan gate.** You approve the lane table, models, isolation mode (worktrees vs shared tree), and which suggested skills to install.
 5. **Generate prompts.** One paste-ready prompt per lane — each opens with the graphify/caveman/`/goal`/superpowers preamble, then OWN/FORBIDDEN + contracts, forced-verify, coordination, scoped git, done-checklist. Plus an optional **integrator** lane that runs last. `/polylane` also emits the run manifest `.polylane/run.json`.
-6. **Launch + watch.** The runner (via `bin/polylane-supervisor.sh`) opens one tmux pane per lane, polls each to completion, auto-retries transient errors, and runs the integrator over the finished branches. Or launch the prompts yourself in separate terminals — they coordinate through a shared status file either way (with a device/DB/deploy **mutex** so only one lane touches a shared resource at a time).
-7. **Merge + cleanup + report.** After the integrator's GO (on a re-merge of current HEADs — never a stale prior GO), consolidate to one project folder, remove merged worktrees/branches, quarantine strays — and write `docs/polylane-report.md`.
+6. **Launch + watch.** Contract v2 rejects missing state, acceptance, artifacts, skills, prompt blocks, and overlapping scope before tmux opens. The supervisor launches real CLIs and prints one valid watch command: `tmux attach -t <session>`.
+7. **Integrate + continue.** GO promotes. NO-GO/UNKNOWN preserves evidence and repairs in-process. `EXTERNAL-EVIDENCE-OPEN` promotes verified engineering and routes around manual proof. Cycle artifacts and the next plan are required before continuing.
+
+For Codex, each tmux pane is mechanically prevented from spawning nested agents.
+The runner also caches unchanged expensive checks and detects command churn with no
+source/evidence progress; it narrows and downgrades the lane instead of spending
+another identical wave.
 
 ---
 
@@ -106,7 +119,10 @@ polylane-run.sh <manifest> [--dry-run] [--yes] [--push] [--resume] [--intensity 
 
 ### End-of-run report
 
-The run happens in tmux, out of your sight — so the runner writes `docs/polylane-report.md` on **both GO and NO-GO**: outcome, one line per lane, and suggested next steps in plain terms. Cost figures in the report are **rough estimates** (parsed from pane output, best-effort), good for spotting an expensive lane, not for invoicing.
+The run happens in tmux, so the runner writes `docs/polylane-report.md` with the
+verified outcome, one line per lane, actual goal-tree counts, and suggested next
+steps. Intermediate NO-GO attempts remain repair evidence and are not exposed as
+false cycle-completion reports.
 
 ```
 cat docs/polylane-report.md
@@ -114,7 +130,10 @@ cat docs/polylane-report.md
 
 ### Auto-retry on transient errors
 
-A lane that dies on an API 500 / overloaded / network blip shouldn't sink the run. Every `POLYLANE_HEALTH_INTERVAL` seconds (default 60) the runner scans each unfinished pane and respawns any that hit a transient error, up to `POLYLANE_MAX_RETRIES` times (default 3). Past the cap the run halts and writes the report instead of hanging.
+A lane that dies on an API/network error should not sink the run. The runner
+polls DONE markers every 2 seconds and health-checks every 15 seconds. It retries
+transient failures, uses a different reflect-and-repair approach after retry
+exhaustion, and treats an unchanged pane for about 60 seconds as wedged.
 
 ```
 POLYLANE_MAX_RETRIES=5 polylane-run.sh .polylane/run.json --yes
@@ -122,11 +141,17 @@ POLYLANE_MAX_RETRIES=5 polylane-run.sh .polylane/run.json --yes
 
 ### Usage-limit stall detection
 
-Hitting your Claude usage limit is **not** an error — it's a money decision, so the runner never makes it for you. A pane showing a usage-limit prompt is marked **STALL**: you get one notification, a line in the report, and no auto-answer or respawn. See [Troubleshooting](#troubleshooting) for what to do.
+Hitting an agent usage limit is not a code failure. The unattended default tries
+the next configured lower-cost model. `POLYLANE_ON_LIMIT=wait` holds for a bounded
+number of health cycles; `credits` may be used only when the user authorized that
+spend behavior.
 
 ### Resume a run
 
-Re-running after a failure, stall, or Ctrl-C shouldn't redo finished work. `--resume` skips every lane whose DONE file is already valid and launches only the unfinished ones.
+Re-running after a failure, stall, or Ctrl-C shouldn't redo finished work. `--resume`
+skips every valid DONE lane and adopts surviving tmux panes for unfinished builders
+or the integrator. A same-named unrelated session is rejected rather than killed or
+reused.
 
 ```
 polylane-run.sh .polylane/run.json --resume
@@ -148,7 +173,9 @@ The tmux session is named by `POLYLANE_SESSION` (default `polylane`). Two runs o
 POLYLANE_SESSION=run2 polylane-run.sh .polylane/run.json
 ```
 
-(`POLYLANE_POLL_INTERVAL` tunes the DONE-file poll, default 5s.)
+Persist the same name as `"session": "run2"` in the manifest so observers and
+resumed supervisors recover the exact attach command without chat memory.
+(`POLYLANE_POLL_INTERVAL` tunes the DONE-file poll, default 2s.)
 
 ### Live dashboard
 
@@ -192,7 +219,8 @@ tail -f docs/lane-logs/backend.log
 
 ## Requirements
 
-- **Claude Code CLI** (`claude` on PATH).
+- **Codex CLI** (`codex` on PATH) for the Codex package, or **Claude Code CLI**
+  (`claude`) for the Claude package.
 - **A git repository** for the target project — worktree/branch isolation and the merge/cleanup phase need one.
 - **tmux + jq** — needed to launch + run lanes; a plan-only run (stops at the plan gate) needs neither.
 - **macOS for notifications** — `polylane-notify.sh` uses `osascript`; elsewhere it silently no-ops.
@@ -200,7 +228,10 @@ tail -f docs/lane-logs/backend.log
 
 ## Troubleshooting
 
-**A lane hit the usage limit (STALL).** What you'll see: the dashboard and report mark the lane `STALL`, the pane shows a message like `usage limit` / `Switch to usage credits` / `Upgrade your plan`, and on macOS you hear one Sosumi. The runner deliberately does nothing else — answering that prompt spends money, and that call is yours. What to do: `tmux attach -t polylane` (or your `POLYLANE_SESSION` name), pick an option in the pane and the lane continues — or kill the run and relaunch later with `--resume` to redo only the unfinished lanes.
+**A lane hit the usage limit.** The runner first follows `POLYLANE_ON_LIMIT`
+(default `fallback`). If a real money/credits decision remains, it parks the lane
+and surfaces the exact `tmux attach -t <session>` line. Independent autonomous
+lanes continue.
 
 **Disk space.** Worktree isolation checks out one full copy of the repo per lane. On a big repo × many lanes that adds up — `bin/polylane-doctor.sh` warns below 5 GB free and fails below 1 GB. Free space or approve fewer lanes at the plan gate.
 
@@ -213,7 +244,8 @@ tail -f docs/lane-logs/backend.log
 - **Descriptions describe *when to trigger*, not the workflow** — the skill body loads on demand (progressive disclosure), so triggering it is cheap.
 - **Positive recipes, closed loopholes** — generated prompts state exactly what to do (never `git add -A`, no "done" without an evidence file, shared file → request-an-edit not edit-it), so generation is deterministic.
 - **Generic, not project-specific** — build recipes, device IDs, and quirks come from the target project's `CLAUDE.md`; the skill ships zero hardcoded specifics.
-- **You in the loop for decisions only** — two gates, click-through questions, nothing autonomous between them.
+- **You in the loop for core decisions only** — routine cycle gates take their
+  recommended autonomous route. Council verdicts and reports never become pauses.
 
 ## License
 

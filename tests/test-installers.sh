@@ -10,7 +10,16 @@ trap 'rm -rf "$REPO/.codex/skills/polylane" "$REPO/.claude/skills/polylane"; cle
 (cd "$REPO" && ./codex/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-codex-skill" test -f "$REPO/.codex/skills/polylane/SKILL.md"
 assert_ok "install-codex-runner" test -x "$REPO/.codex/skills/polylane/scripts/polylane-run.sh"
+assert_ok "install-codex-cycle-guard" test -x "$REPO/.codex/skills/polylane/scripts/polylane-cycle.sh"
 assert_contains "install-codex-agent" '"agent": "codex"' "$(grep -m1 '"agent": "codex"' "$REPO/.codex/skills/polylane/SKILL.md" || true)"
+assert_eq "install-codex-standalone-source" \
+  "$(cksum "$REPO/codex/SKILL.md" | awk '{print $1 ":" $2}')" \
+  "$(cksum "$REPO/.codex/skills/polylane/SKILL.md" | awk '{print $1 ":" $2}')"
+if grep -qE 'claude --model|AskUserQuestion|Claude memory' "$REPO/.codex/skills/polylane/SKILL.md"; then
+  fail "install-codex-no-claude-contract" "Claude-only instructions leaked into Codex package"
+else
+  pass "install-codex-no-claude-contract"
+fi
 
 (cd "$REPO" && ./claude-code/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-claude-skill" test -f "$REPO/.claude/skills/polylane/SKILL.md"
