@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# test-install-fresh.sh — hermetic proof a fresh clone installs BOTH documented
+# skill layouts correctly. Everything happens under $TEST_TMPDIR fake HOMEs; the
+# real ~/.claude and ~/.codex are never touched.
+#
+#   1. CLAUDE layout  — the documented `cp -R . ~/.claude/skills/polylane/` yields
+#      SKILL.md + executable bin/*.sh + references/ + assets/.
+#   2. CODEX layout   — HOME=<fake> codex/install.sh lays out ~/.codex/skills/polylane
+#      with a valid `name:` frontmatter, >=20 executable scripts/*.sh,
+#      references/prompt-blocks.md + assets/; a reinstall must NOT nest
+#      references/references (the fixed `cp -R dir existing-dir` bug — pinned here).
+#   3. Both layouts   — polylane-memory.sh runs standalone from where it was
+#      installed (init succeeds; a fresh state is not `met`, so met exits 1).
+. "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
+
+REPO="$(cd "$TESTS_DIR/.." && pwd)"
+make_tmpdir
+
+# count_exec_scripts DIR — how many *.sh under DIR carry the execute bit
+count_exec_scripts() {
+  local n=0 f
+  for f in "$1"/*.sh; do [ -x "$f" ] && n=$((n + 1)); done
+  echo "$n"
+}
+
+# --- 1. CLAUDE layout: the documented cp -R install --------------------------
+CLA="$TEST_TMPDIR/claude-home/.claude/skills/polylane"
+mkdir -p "$CLA"
+cp -R "$REPO/." "$CLA/" >/dev/null 2>&1
+
+assert_ok "claude-skill-md"        test -f "$CLA/SKILL.md"
+assert_ok "claude-run-executable"  test -x "$CLA/bin/polylane-run.sh"
+assert_ok "claude-mem-executable"  test -x "$CLA/bin/polylane-memory.sh"
+assert_ok "claude-references-dir"  test -d "$CLA/references"
+assert_ok "claude-assets-dir"      test -d "$CLA/assets"
+
+# --- 2. CODEX layout: HOME=<fake> codex/install.sh ---------------------------
+CODEX_HOME="$TEST_TMPDIR/codex-home"
+mkdir -p "$CODEX_HOME/.codex/skills"          # makes install pick the .codex path
+assert_ok "codex-install-ok"  env HOME="$CODEX_HOME" bash "$REPO/codex/install.sh"
+
+DEST="$CODEX_HOME/.codex/skills/polylane"
+assert_ok       "codex-skill-md"        test -f "$DEST/SKILL.md"
+assert_contains "codex-skill-name"      "name: polylane" "$(grep -m1 '^name:' "$DEST/SKILL.md")"
+assert_ok       "codex-20-scripts"      test "$(count_exec_scripts "$DEST/scripts")" -ge 20
+assert_ok       "codex-prompt-blocks"   test -f "$DEST/references/prompt-blocks.md"
+assert_ok       "codex-assets-dir"      test -d "$DEST/assets"
+
+# reinstall must overwrite in place, not nest references/references (the fixed bug)
+assert_ok "codex-reinstall-ok"  env HOME="$CODEX_HOME" bash "$REPO/codex/install.sh"
+assert_ok "codex-no-nested-refs"  test '!' -e "$DEST/references/references"
+assert_ok "codex-refs-still-flat" test -f "$DEST/references/prompt-blocks.md"
+
+# --- 3. Both layouts: polylane-memory.sh standalone from its installed spot ---
+if command -v jq >/dev/null 2>&1; then
+  for MEM in "$CLA/bin/polylane-memory.sh" "$DEST/scripts/polylane-memory.sh"; do
+    case "$MEM" in *scripts*) tag=codex ;; *) tag=claude ;; esac
+    SF="$TEST_TMPDIR/state-$tag.json"
+    assert_ok "mem-init-$tag"    bash "$MEM" "$SF" init "install-test goal"
+    assert_ok "mem-state-$tag"   test -f "$SF"
+    assert_rc "mem-not-met-$tag" 1 bash "$MEM" "$SF" met
+  done
+else
+  pass "mem-skipped-no-jq"
+fi
+
+finish
