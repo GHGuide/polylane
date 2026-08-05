@@ -78,6 +78,11 @@ installed() {
       -path "*/$namespace/*/skills/$member" -print -quit 2>/dev/null | grep -q . && return 0
     ls -d "${HOME}"/.claude/plugins/*/"$namespace" >/dev/null 2>&1 && return 0
     ls -d "${HOME}"/.claude/plugins/marketplaces/*"$namespace"* >/dev/null 2>&1 && return 0
+  else
+    # bare plugin name (superpowers/ponytail/caveman): real installs live in the plugin
+    # CACHE — either cache/<name> (own marketplace) or cache/<marketplace>/<name>.
+    ls -d "${HOME}/.claude/plugins/cache/$skill" >/dev/null 2>&1 && return 0
+    ls -d "${HOME}"/.claude/plugins/cache/*/"$skill" >/dev/null 2>&1 && return 0
   fi
   return 1
 }

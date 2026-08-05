@@ -1,0 +1,179 @@
+{
+  "ultimate": "polylane production-grade: stranger-clonable, flawless unattended first run, every feature proven",
+  "criteria": [
+    {
+      "id": "c1",
+      "text": "fresh-clone install works on both platforms",
+      "weight": 5,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c2",
+      "text": "suite green + shellcheck clean",
+      "weight": 4,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c3",
+      "text": "rehearse canary GO+NO-GO green",
+      "weight": 5,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c4",
+      "text": "docs executable as written",
+      "weight": 3,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c5",
+      "text": "real 2-lane self-run reaches GO unattended",
+      "weight": 5,
+      "status": "open",
+      "score": 0
+    }
+  ],
+  "milestones": [
+    {
+      "id": "m1",
+      "text": "Install + packaging",
+      "subgoals": [
+        {
+          "id": "m1.1",
+          "text": "hermetic fresh-clone install test for claude + codex layouts",
+          "weight": 5,
+          "status": "done",
+          "cycle": 1,
+          "evidence": "tests/test-install-fresh.sh 20 pass; merged c1"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "text": "Reliability",
+      "subgoals": [
+        {
+          "id": "m2.1",
+          "text": "rehearse canary green both cases, wired into doctor",
+          "weight": 5,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "text": "Docs truth",
+      "subgoals": [
+        {
+          "id": "m3.1",
+          "text": "README quickstart + AGENTS.md verified executable",
+          "weight": 3,
+          "status": "done",
+          "cycle": 1,
+          "evidence": "tests/test-docs-truth.sh 16 pass; merged c1"
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "text": "Quality gate",
+      "subgoals": [
+        {
+          "id": "m4.1",
+          "text": "suite + shellcheck + marker/parity contracts all green",
+          "weight": 4,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
+    },
+    {
+      "id": "m5",
+      "text": "Real-run proof",
+      "subgoals": [
+        {
+          "id": "m5.1",
+          "text": "tiny 2-lane claude self-run completes to GO",
+          "weight": 5,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
+    }
+  ],
+  "log": [
+    {
+      "cycle": 1,
+      "kind": "decision",
+      "text": "marathon params: performance, open-ended, autonomous",
+      "meta": "user-picked at launch"
+    },
+    {
+      "cycle": 1,
+      "kind": "attempt",
+      "text": "2 lanes install-test+docs-truth, opus/high, contract v2",
+      "meta": "both green; runner halted on marker loss; integrated manually"
+    },
+    {
+      "cycle": 1,
+      "kind": "learning",
+      "text": "resume/respawn path can lose a lane's DONE marker -> finished lanes respawn and 'fail after retries'",
+      "meta": "investigate before next launch"
+    }
+  ],
+  "accept": [
+    {
+      "sid": "m1.1",
+      "cmd": "bash tests/test-install-fresh.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m2.1",
+      "cmd": "cd /Users/leonardo/Downloads/polylane && bin/polylane-rehearse.sh go >/dev/null 2>&1 && bin/polylane-rehearse.sh nogo >/dev/null 2>&1",
+      "tier": "terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m3.1",
+      "cmd": "cd /Users/leonardo/Downloads/polylane && bash tests/test-docs-truth.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m4.1",
+      "cmd": "cd /Users/leonardo/Downloads/polylane && tests/run.sh 2>/dev/null | grep -q \"0 failed\"",
+      "tier": "terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m5.1",
+      "cmd": "cd /Users/leonardo/Downloads/polylane && test -f docs/polylane/selfrun-proof.md && grep -q \"Outcome: GO\" docs/polylane/selfrun-proof.md",
+      "tier": "terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    }
+  ]
+}
