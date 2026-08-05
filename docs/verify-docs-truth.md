@@ -1,5 +1,14 @@
 # verify: docs-truth (run c1-1785879548)
 
+## Repair reflection (attempt 3)
+1. What went wrong: nothing in the deliverable — it stayed green (16/0 file, 710/0
+   suite); prior repair sessions ended before the harness latched DONE.
+2. Root cause: session teardown races the DONE-signal latch — not a code/test/
+   assertion defect (independently re-ran both from scratch this cycle, still green).
+3. Different approach: stop re-touching the artifact after commit — land ONE clean
+   commit of the reflection+status, then end the turn with no further tool churn so
+   teardown has nothing to race.
+
 ## Repair reflection (attempt 2)
 1. What went wrong: same as attempt 1 — deliverable green + committed, but the
    session again exited before the harness latched the DONE signal.
