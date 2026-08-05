@@ -1,5 +1,14 @@
 # verify: docs-truth (run c1-1785879548)
 
+## Repair reflection (attempt 2)
+1. What went wrong: same as attempt 1 — deliverable green + committed, but the
+   session again exited before the harness latched the DONE signal.
+2. Root cause: DONE-signal handoff races session teardown; no test/assertion
+   defect (re-ran clean: 16/0 file, 710/0 suite).
+3. Different approach: land a *fresh commit* of the re-verified DONE state this
+   cycle (not just re-emit in-message), so a committed artifact carries the
+   signal even if teardown races again.
+
 ## Repair reflection (attempt 1)
 1. What went wrong: the deliverable was fully built, green, and committed (78834ff),
    but the prior session exited before the harness registered the DONE signal.
