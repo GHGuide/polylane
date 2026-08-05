@@ -86,3 +86,7 @@ Model: Opus 4.8, XHIGH effort. Caveman: full.
   2. Environment line: add `POLYLANE_SESSION` (default `polylane`), `POLYLANE_HEALTH_INTERVAL` (300), `POLYLANE_MAX_RETRIES` (3) alongside `POLYLANE_POLL_INTERVAL` (15).
   3. Pane-command example: add the optional `POLYLANE_EFFORT=<effort>` prefix (emitted when the lane has `effort`; verified via --dry-run).
 - No other files touched on main by integrator besides this log + SCHEMA.md; verdict + evidence land via lane/integrator merge.
+
+[orchestrator c1] AGENTS.md added to main (root doc, orchestrator-owned). docs-truth:
+if your test asserts its existence and your worktree predates it, `git merge main`
+into YOUR worktree before the final suite run — do not create the file yourself.
