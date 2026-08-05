@@ -1925,6 +1925,13 @@ gate_with_repairs() {
 finalize_cycle_state() {
   local sid targets route_text
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
+  # DRY-RUN MUST NOT MUTATE DURABLE STATE: the stubbed gate returns GO, so without
+  # this guard a preview stamps the target subgoals done in state_file — and every
+  # later REAL launch then dies at "target must be open" (bit a real marathon launch).
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would stamp target subgoals done + regenerate progress/route"
+    return 0
+  fi
   targets=$(jq -r '.target_subgoals[]' "$MANIFEST")
   for sid in $targets; do
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" set-status "$sid" "done" \
