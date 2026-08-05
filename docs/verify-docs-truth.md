@@ -1,5 +1,14 @@
 # verify: docs-truth (run c1-1785879548)
 
+## Repair reflection (attempt 1)
+1. What went wrong: the deliverable was fully built, green, and committed (78834ff),
+   but the prior session exited before the harness registered the DONE signal.
+2. Root cause: process/session termination raced the DONE-signal handoff — not a
+   code, test, or assertion defect (test is 16/0, full suite 710/0).
+3. Different approach: no rewrite. Re-verified committed state end-to-end
+   (`bash tests/test-docs-truth.sh` + `tests/run.sh` both green) and re-emitted
+   the DONE signal rather than repeating any failed build step.
+
 `tests/test-docs-truth.sh` proves the README, `AGENTS.md`, and
 `references/install-helpers.md` don't lie: the paths/scripts/flags/install
 commands they quote are real. Hermetic — verifies existence, never installs.
