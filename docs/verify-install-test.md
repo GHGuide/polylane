@@ -1,5 +1,14 @@
 # Verify — tests/test-install-fresh.sh
 
+## Repair reflection (attempt 1)
+1. What went wrong: a repair was dispatched though the prior run had already
+   written the test, gone 20/0 + suite 714/0, and committed (HEAD 76be3ae).
+2. Root cause: not a code failure — the lane process exited before the
+   health-check registered the DONE signal, so the orchestrator re-dispatched.
+3. Different approach: re-run verification to prove the committed work is still
+   green rather than rewriting a passing test, then re-emit the DONE signal.
+
+
 Hermetic proof a fresh clone installs BOTH documented skill layouts. Everything
 runs under `$TEST_TMPDIR` fake HOMEs; the real `~/.claude` / `~/.codex` are
 never touched.
