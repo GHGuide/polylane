@@ -20,6 +20,11 @@ assert_ok "discovery-bold-activates-child" "$DISCOVERY" answer "$STATE" q-succes
 assert_eq "discovery-answers-typed" "3" "$(jq '[.answers[] | select(.type == "answer")] | length' "$STATE")"
 assert_contains "discovery-summary-strategy" "Strategy packet" "$("$DISCOVERY" summary "$STATE")"
 
+assert_ok "discovery-records-contradiction" "$DISCOVERY" contradict "$STATE" a-q-user a-q-workflow "audience and workflow assumptions conflict"
+assert_eq "discovery-contradiction-open" "open" "$(jq -r '.contradictions[0].status' "$STATE")"
+assert_fail "discovery-lock-blocks-open-contradiction" "$DISCOVERY" lock "$STATE" "$DOCS"
+assert_ok "discovery-resolves-contradiction" "$DISCOVERY" resolve "$STATE" c-1 accept-both "conscious tradeoff"
+assert_eq "discovery-contradiction-resolved" "resolved" "$(jq -r '.contradictions[0].status' "$STATE")"
 assert_ok "discovery-lock-resolved" "$DISCOVERY" lock "$STATE" "$DOCS"
 assert_ok "discovery-lock-strategy-artifact" test -s "$DOCS/strategy.md"
 assert_ok "discovery-lock-north-star-artifact" test -s "$DOCS/north-star.md"

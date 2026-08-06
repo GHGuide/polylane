@@ -10,10 +10,13 @@ set -euo pipefail
 
 scan_dom() {
   local dir="$1" refs prods id found=0
-  refs=$( { grep -rhoE "getElementById\(['\"][A-Za-z0-9_-]+['\"]\)" "$dir" 2>/dev/null || true
-            grep -rhoE "querySelector\(['\"]#[A-Za-z0-9_-]+['\"]\)"  "$dir" 2>/dev/null || true; } \
+  # Test fixtures intentionally contain broken interfaces to prove this gate;
+  # they are not integrated product surfaces and must not poison a repository
+  # scan. `find` keeps this portable to the BSD grep shipped with Bash 3.2 Macs.
+  refs=$( { find "$dir" -type f ! -path '*/tests/*' \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "getElementById\(['\"][A-Za-z0-9_-]+['\"]\)" {} + 2>/dev/null || true
+            find "$dir" -type f ! -path '*/tests/*' \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "querySelector\(['\"]#[A-Za-z0-9_-]+['\"]\)" {} + 2>/dev/null || true; } \
           | grep -oE "[A-Za-z0-9_-]+" | grep -vE '^(getElementById|querySelector)$' | sort -u || true )
-  prods=$( grep -rhoE "id=['\"][A-Za-z0-9_-]+['\"]" "$dir" 2>/dev/null \
+  prods=$( find "$dir" -type f ! -path '*/tests/*' \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "id=['\"][A-Za-z0-9_-]+['\"]" {} + 2>/dev/null \
            | grep -oE "['\"][A-Za-z0-9_-]+['\"]" | tr -d "\"'" | sort -u || true )
   for id in $refs; do
     printf '%s\n' "$prods" | grep -qx "$id" || { echo "SEAM-DANGLING: dom-id $id"; found=1; }

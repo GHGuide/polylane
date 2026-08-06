@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-discovery.sh init <state> <brief> | next <state> [limit] | answer <state> <question-id> <recommended|deep|bold|custom> [text] | summary <state> | lock <state> <docs-dir>" >&2
+  echo "usage: polylane-discovery.sh init <state> <brief> | next <state> [limit] | answer <state> <question-id> <recommended|deep|bold|custom> [text] | contradict <state> <answer-id> <answer-id> <reason> | resolve <state> <contradiction-id> <accept-left|accept-right|accept-both> [note] | summary <state> | lock <state> <docs-dir>" >&2
   exit 2
 }
 
@@ -108,10 +108,50 @@ cmd_summary() {
   strategy_packet "$1"
 }
 
+cmd_contradict() {
+  local state="$1" left="$2" right="$3" reason="$4" id tmp
+  need_state "$state"
+  [ "$left" != "$right" ] && [ -n "$reason" ] || { echo 'discovery: contradiction needs two answers and a reason' >&2; return 1; }
+  jq -e --arg left "$left" --arg right "$right" 'any(.answers[]; .id == $left) and any(.answers[]; .id == $right)' "$state" >/dev/null || {
+    echo 'discovery: contradiction answer not found' >&2; return 1;
+  }
+  if jq -e --arg left "$left" --arg right "$right" '
+    any(.contradictions[];
+      .status == "open" and
+      ((.left_answer_id == $left and .right_answer_id == $right) or
+       (.left_answer_id == $right and .right_answer_id == $left)))
+  ' "$state" >/dev/null; then
+    echo 'discovery: contradiction already open' >&2
+    return 1
+  fi
+  id="c-$(jq '.contradictions | length + 1' "$state")"
+  tmp=$(mktemp "${state}.tmp.XXXXXX")
+  jq --arg id "$id" --arg left "$left" --arg right "$right" --arg reason "$reason" \
+    '.contradictions += [{id:$id, type:"contradiction", left_answer_id:$left, right_answer_id:$right, reason:$reason, status:"open"}]' \
+    "$state" > "$tmp"
+  mv "$tmp" "$state"
+}
+
+cmd_resolve() {
+  local state="$1" id="$2" resolution="$3" note="${4:-}" tmp
+  need_state "$state"
+  case "$resolution" in accept-left|accept-right|accept-both) ;; *)
+    echo 'discovery: resolution must be accept-left, accept-right, or accept-both' >&2; return 1 ;;
+  esac
+  jq -e --arg id "$id" 'any(.contradictions[]; .id == $id and .status == "open")' "$state" >/dev/null || {
+    echo "discovery: open contradiction not found: $id" >&2; return 1;
+  }
+  tmp=$(mktemp "${state}.tmp.XXXXXX")
+  jq --arg id "$id" --arg resolution "$resolution" --arg note "$note" \
+    '.contradictions |= map(if .id == $id then .status = "resolved" | .resolution = $resolution | .resolution_note = $note else . end)' \
+    "$state" > "$tmp"
+  mv "$tmp" "$state"
+}
+
 cmd_lock() {
   local state="$1" docs="$2" summary tmp
   need_state "$state"
-  jq -e '(.contradictions | length) == 0' "$state" >/dev/null || {
+  jq -e 'all(.contradictions[]?; .status == "resolved")' "$state" >/dev/null || {
     echo "discovery: contradictions must be resolved before lock" >&2; return 1;
   }
   summary=$(strategy_packet "$state")
@@ -124,11 +164,17 @@ cmd_lock() {
   mv "$tmp" "$state"
 }
 
-case "${1:-}" in
-  init) [ "$#" = 3 ] || usage; cmd_init "$2" "$3" ;;
-  next) [ "$#" -ge 2 ] && [ "$#" -le 3 ] || usage; cmd_next "$2" "${3:-3}" ;;
-  answer) [ "$#" -ge 4 ] && [ "$#" -le 5 ] || usage; cmd_answer "$2" "$3" "$4" "${5:-}" ;;
-  summary) [ "$#" = 2 ] || usage; cmd_summary "$2" ;;
-  lock) [ "$#" = 3 ] || usage; cmd_lock "$2" "$3" ;;
-  *) usage ;;
-esac
+main() {
+  case "${1:-}" in
+    init) [ "$#" = 3 ] || usage; cmd_init "$2" "$3" ;;
+    next) [ "$#" -ge 2 ] && [ "$#" -le 3 ] || usage; cmd_next "$2" "${3:-3}" ;;
+    answer) [ "$#" -ge 4 ] && [ "$#" -le 5 ] || usage; cmd_answer "$2" "$3" "$4" "${5:-}" ;;
+    contradict) [ "$#" = 5 ] || usage; cmd_contradict "$2" "$3" "$4" "$5" ;;
+    resolve) [ "$#" -ge 4 ] && [ "$#" -le 5 ] || usage; cmd_resolve "$2" "$3" "$4" "${5:-}" ;;
+    summary) [ "$#" = 2 ] || usage; cmd_summary "$2" ;;
+    lock) [ "$#" = 3 ] || usage; cmd_lock "$2" "$3" ;;
+    *) usage ;;
+  esac
+}
+
+if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then main "$@"; fi

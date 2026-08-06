@@ -10,7 +10,7 @@ HOME_FIXTURE="$TEST_TMPDIR/home"
 LEDGER="$TEST_TMPDIR/outcomes.jsonl"
 mkdir -p "$ROOT/local" "$ROOT/design/design-critique" "$ROOT/superpowers/test-driven-development" \
   "$ROOT/engineering/testing-strategy" \
-  "$HOME_FIXTURE/.codex/plugins/cache/market/superpowers/1.0/skills/cache-only"
+  "$ROOT/../escape" "$HOME_FIXTURE/.codex/plugins/cache/market/superpowers/1.0/skills/cache-only"
 cat > "$ROOT/local/SKILL.md" <<'EOF'
 ---
 name: local
@@ -27,6 +27,10 @@ cat > "$ROOT/engineering/testing-strategy/SKILL.md" <<'EOF'
 ---
 name: testing
 EOF
+cat > "$ROOT/../escape/SKILL.md" <<'EOF'
+---
+name: escape
+EOF
 cat > "$HOME_FIXTURE/.codex/plugins/cache/market/superpowers/1.0/skills/cache-only/SKILL.md" <<'EOF'
 ---
 name: tdd
@@ -39,6 +43,7 @@ assert_eq "scout-resolve-qualified-root" "$ROOT/design/design-critique/SKILL.md"
 assert_eq "scout-resolve-qualified-codex-cache" \
   "$HOME_FIXTURE/.codex/plugins/cache/market/superpowers/1.0/skills/cache-only/SKILL.md" \
   "$(POLYLANE_SKILLS_DIRS="$ROOT" HOME="$HOME_FIXTURE" "$SCOUT" resolve superpowers:cache-only)"
+assert_fail "scout-rejects-path-traversal" env POLYLANE_SKILLS_DIRS="$ROOT" HOME="$HOME_FIXTURE" "$SCOUT" resolve ../escape
 
 assert_ok "scout-record-helped" "$SCOUT" record-outcome "$LEDGER" lane-a ui design:design-critique helped useful
 assert_ok "scout-record-unused" "$SCOUT" record-outcome "$LEDGER" lane-b ui local unused irrelevant

@@ -37,9 +37,9 @@ set -eu
 [ -d "$POLYLANE_BENCH_WORKDIR" ]
 case_id=$(jq -r '.id' "$POLYLANE_BENCH_CASE")
 if [ "$case_id" = "pantry-planner" ]; then
-  printf '{"tokens":321,"score":0.75}\n' > "$POLYLANE_BENCH_RESULT"
+  printf '{"tokens":321,"completion":1,"product_quality":0.8,"score":0.75}\n' > "$POLYLANE_BENCH_RESULT"
 else
-  printf '{"interventions":2,"score":0.75}\n' > "$POLYLANE_BENCH_RESULT"
+  printf '{"interventions":2,"completion":0.5,"product_quality":0.7,"score":0.75}\n' > "$POLYLANE_BENCH_RESULT"
 fi
 EOF
 chmod +x "$ADAPTER"
@@ -48,12 +48,16 @@ assert_eq "benchmark-one-record-per-case" "2" "$(wc -l < "$OUT/results.jsonl" | 
 assert_eq "benchmark-case-workdirs-isolated" "2" "$(find "$OUT/cases" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
 assert_eq "benchmark-captures-tokens" "321" "$(jq -r 'select(.id == "pantry-planner") | .tokens' "$OUT/results.jsonl")"
 assert_eq "benchmark-captures-interventions" "2" "$(jq -r 'select(.id == "shift-handoff") | .interventions' "$OUT/results.jsonl")"
+assert_eq "benchmark-captures-completion" "1" "$(jq -r 'select(.id == "pantry-planner") | .completion' "$OUT/results.jsonl")"
+assert_eq "benchmark-captures-product-quality" "0.7" "$(jq -r 'select(.id == "shift-handoff") | .product_quality' "$OUT/results.jsonl")"
 assert_eq "benchmark-records-adapter-rc" "0" "$(jq -r 'select(.id == "pantry-planner") | .adapter_rc' "$OUT/results.jsonl")"
 assert_eq "benchmark-preserves-unknown-metric" "null" "$(jq -r 'select(.id == "shift-handoff") | .tokens' "$OUT/results.jsonl")"
 
 SUMMARY_JSON=$("$BENCH" summarize "$OUT" --json)
 assert_eq "benchmark-summary-reproducible-count" "2" "$(printf '%s' "$SUMMARY_JSON" | jq -r '.cases')"
 assert_eq "benchmark-summary-does-not-zero-unknown" "null" "$(printf '%s' "$SUMMARY_JSON" | jq -r '.mean_tokens')"
+assert_eq "benchmark-summary-completion" "0.75" "$(printf '%s' "$SUMMARY_JSON" | jq -r '.mean_completion')"
+assert_eq "benchmark-summary-product-quality" "0.75" "$(printf '%s' "$SUMMARY_JSON" | jq -r '.mean_product_quality')"
 assert_contains "benchmark-summary-text" "Cases: 2" "$("$BENCH" summarize "$OUT")"
 
 finish

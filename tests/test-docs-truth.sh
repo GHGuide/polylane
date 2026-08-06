@@ -67,4 +67,18 @@ for phrase in 'codex/install.sh' 'brew install tmux jq'; do
   else fail "no-drift:$phrase" "'$phrase' not verbatim in both README and install-helpers"; fi
 done
 
+# The canonical contract example declares a Codex agent, so every advertised
+# model in that example must be a Codex model. A Claude id here gets copied into
+# generated manifests even when the probe itself is correctly agent-aware.
+schema_example=$(awk '/^```json$/{capture=1; next} capture && /^```$/{exit} capture' "$REPO/.polylane/SCHEMA.md")
+if printf '%s\n' "$schema_example" | jq -e '
+  .agent == "codex"
+  and ([.available_models[], .integrator.model, .lanes[].model]
+       | all(.[]; type == "string" and startswith("gpt-")))
+' >/dev/null 2>&1; then
+  pass "schema-codex-model-family"
+else
+  fail "schema-codex-model-family" "Codex manifest example contains a non-gpt model id"
+fi
+
 finish

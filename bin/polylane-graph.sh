@@ -202,7 +202,7 @@ compile_graph() {
          and (.name | type == "string" and length > 0)
          and (.lens | type == "string" and length > 0)
          and (.command | type == "string" and length > 0)
-         and (.timeout_s | type == "number" and floor == . and . >= 1))
+         and (.timeout_s | type == "number" and floor == . and . >= 1 and . <= 300))
        and ([$quality_judges[].name] | unique | length == 3)
        and ([$quality_judges[].lens] | unique | length == 3))
      else true end)

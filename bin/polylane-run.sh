@@ -163,10 +163,8 @@ quality_judges_requested() {
 }
 
 seam_gate() {
-  local evidence="$INT_WORKTREE/docs/verify-integration.md" out
-  out=$($SCRIPT_DIR/polylane-seams.sh scan "$INT_WORKTREE" 2>&1) && return 0
-  mkdir -p "$(dirname "$evidence")"
-  printf '\n%s\n' "$out" >> "$evidence"
+  local evidence="$INT_WORKTREE/docs/verify-integration.md"
+  advanced_runtime seams "$INT_WORKTREE" "$evidence" && return 0
   echo "SEAM-GATE: integration has dangling seams; repair required." >&2
   return 1
 }
@@ -396,6 +394,7 @@ load_manifest() {
   STATE_FILE=$(jq -r '.state_file // ""' "$MANIFEST")
   LANE_SKILLS_FILE=$(jq -r '.lane_skills_file // ""' "$MANIFEST")
   CYCLE_PLAN_FILE=$(jq -r '.cycle_plan_file // ""' "$MANIFEST")
+  PROMPT_TOKEN_BUDGET=$(jq -r '.prompt_token_budget // 8000' "$MANIFEST")
   [ -z "$STATE_FILE" ] || STATE_FILE=$(abs_project_path "$STATE_FILE")
   [ -z "$LANE_SKILLS_FILE" ] || LANE_SKILLS_FILE=$(abs_project_path "$LANE_SKILLS_FILE")
   [ -z "$CYCLE_PLAN_FILE" ] || CYCLE_PLAN_FILE=$(abs_project_path "$CYCLE_PLAN_FILE")
@@ -499,11 +498,15 @@ preflight_contract() {
       die "contract v2 lane '$lane' prompt does not invoke its armed skills"
     grep -qF "STATUS: $lane DONE run=$RUN_ID" "$prompt" ||
       die "contract v2 lane '$lane' prompt lacks its exact current-run DONE marker"
+    "$SCRIPT_DIR/polylane-promptopt.sh" check "$prompt" "$PROMPT_TOKEN_BUDGET" >/dev/null ||
+      die "contract v2 lane '$lane' prompt exceeds its immutable prompt budget"
   done
   if ! grep -qF "POLYLANE-VERDICT:" "$INT_PROMPT" ||
      ! grep -qF "run=$RUN_ID" "$INT_PROMPT"; then
     die "contract v2 integrator prompt lacks a current-run verdict sentinel"
   fi
+  "$SCRIPT_DIR/polylane-promptopt.sh" check "$INT_PROMPT" "$PROMPT_TOKEN_BUDGET" >/dev/null ||
+    die "contract v2 integrator prompt exceeds its immutable prompt budget"
 
   for sid in $(jq -r '.target_subgoals[]' "$MANIFEST"); do
     jq -e --arg sid "$sid" '
@@ -951,6 +954,11 @@ validate_manifest() {
   for field in INT_NAME INT_MODEL INT_BRANCH INT_WORKTREE; do
     [ "${!field}" = "null" ] && die "integrator.$(printf '%s' "$field" | tr 'A-Z_' 'a-z ' ) is missing in the manifest"
   done
+  case "$(agent_selected)" in
+    codex|gpt|openai)
+      case "$INT_MODEL" in gpt-*) : ;; *) die "Codex integrator model '$INT_MODEL' must be a gpt-* id" ;; esac
+      ;;
+  esac
   for i in "${!LANE_NAMES[@]}"; do
     nm="${LANE_NAMES[$i]}"
     for f in "$nm" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "${LANE_WORKTREES[$i]}"; do
@@ -960,6 +968,11 @@ validate_manifest() {
     case " $seen " in *" $nm "*) die "duplicate lane name '$nm' — names must be unique" ;; esac
     # and shell/path safe — they land in tmux commands, branch names, and file paths
     case "$nm" in *[!A-Za-z0-9_-]*) die "lane name '$nm' has unsafe chars — use [A-Za-z0-9_-] only" ;; esac
+    case "$(agent_selected)" in
+      codex|gpt|openai)
+        case "${LANE_MODELS[$i]}" in gpt-*) : ;; *) die "Codex lane '$nm' model '${LANE_MODELS[$i]}' must be a gpt-* id" ;; esac
+        ;;
+    esac
     seen="$seen $nm"
   done
 }

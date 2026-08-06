@@ -78,11 +78,24 @@ spend_snapshot() { # LEDGER
   if [ ! -f "$ledger" ]; then printf '{"entries":null,"total":null}'; return; fi
   jq -s 'map(select(type == "object")) as $rows |
     {entries: ($rows | length),
-     total: ([ $rows[] | (.cost_usd // .spent // .amount // empty) | select(type == "number") ] | add // null)}' "$ledger" 2>/dev/null || printf '{"entries":null,"total":null}'
+     total: ([ $rows[] | (.cost_usd // .cost // .spent // .amount // empty) | select(type == "number") ] | add // null)}' "$ledger" 2>/dev/null || printf '{"entries":null,"total":null}'
+}
+
+graph_ready_snapshot() { # GRAPH EVENTS RUN_ID -> JSON array; invalid replay stays null
+  local graph="$1" events="$2" run_id="$3" graph_id replay state ready
+  [ -f "$graph" ] && jq empty "$graph" >/dev/null 2>&1 || { printf 'null'; return; }
+  graph_id=$(jq -r '.graph_id // empty' "$graph")
+  [ -n "$graph_id" ] && [ -n "$run_id" ] || { printf 'null'; return; }
+  replay=$("$SCRIPT_DIR/polylane-events.sh" replay "$events" "$run_id" "$graph_id" 2>/dev/null) || { printf 'null'; return; }
+  state=$(mktemp "${TMPDIR:-/tmp}/polylane-dashboard-state.XXXXXX") || { printf 'null'; return; }
+  printf '%s\n' "$replay" > "$state"
+  ready=$("$SCRIPT_DIR/polylane-graph.sh" ready "$graph" "$state" 2>/dev/null | jq -Rsc 'split("\n") | map(select(length > 0))') || ready=null
+  rm -f "$state"
+  printf '%s' "$ready"
 }
 
 canonical_snapshot() {
-  local mdir project max_path max graph_events ledger stats cleanup state_json max_json spend_json
+  local mdir project max_path max graph_events graph_file graph_json graph_ready ledger stats cleanup state_json max_json spend_json run_id
   mdir=$(cd "$(dirname "$MANIFEST")" && pwd -P)
   project=$(cd "$mdir/.." && pwd -P)
   state_json=$("$SCRIPT_DIR/polylane-state.sh" "$MANIFEST" --json 2>/dev/null) || state_json='{}'
@@ -91,6 +104,10 @@ canonical_snapshot() {
   max_path=$(path_from_project "$project" "$max")
   max_json=$(json_file_or_null "$max_path")
   graph_events=$(event_count_or_null "$mdir/events.jsonl")
+  graph_file="$mdir/graph.json"
+  graph_json=$(json_file_or_null "$graph_file")
+  run_id=$(jq -r '.run_id // empty' "$MANIFEST")
+  graph_ready=$(graph_ready_snapshot "$graph_file" "$mdir/events.jsonl" "$run_id")
   ledger="$project/docs/polylane/spend-ledger.jsonl"
   spend_json=$(spend_snapshot "$ledger")
   stats="$mdir/run-stats.json"
@@ -99,14 +116,16 @@ canonical_snapshot() {
   [ -n "$cleanup" ] || cleanup='unknown'
 
   jq -n --argjson manifest "$(cat "$MANIFEST")" --argjson state "$state_json" \
-    --argjson max "$max_json" --argjson spend "$spend_json" --argjson events "$graph_events" --arg cleanup "$cleanup" '
+    --argjson max "$max_json" --argjson spend "$spend_json" --argjson events "$graph_events" \
+    --argjson compiled_graph "$graph_json" --argjson graph_ready "$graph_ready" --arg cleanup "$cleanup" '
       ($manifest.lanes + (if $manifest.integrator then [$manifest.integrator] else [] end)) as $declared |
       {schema:"polylane-control-room/v1",
        goal:($manifest.goal // $max.goal // null), cycle:($manifest.cycle // null),
        run_id:($manifest.run_id // null), route:{target_subgoals:($manifest.target_subgoals // []), state_file:($manifest.state_file // "docs/polylane/max-state.json")},
-       graph:{id:($manifest.graph.id // $manifest.graph_id // null), events:$events},
+       graph:{id:($compiled_graph.graph_id // $manifest.graph.id // $manifest.graph_id // null), events:$events, ready:$graph_ready},
        lanes:($state.lanes // [] | map(. as $lane | $lane + {model: ([ $declared[] | select(.name == $lane.name) | .model ][0] // null)})),
-       spend:$spend, verdict:($state.verdict // "UNKNOWN"), heartbeat:($state.heartbeat_age // null),
+       spend:$spend, verdict:($state.verdict // "UNKNOWN"),
+       heartbeat:(if ($state.heartbeat_age // "-") == "-" then null else $state.heartbeat_age end),
        cleanup:$cleanup,
        next_action:(if ($state.verdict // "UNKNOWN") == "GO" then "review durable report and cleanup" elif ($state.runner // "dead") == "alive" then "observe current lanes" else "inspect canonical state before resuming" end),
        report:($state.report // "absent"), runner:($state.runner // "dead"), max_state:$max}'
@@ -126,6 +145,10 @@ render_snapshot() { # SNAPSHOT JSON
   done
   printf '%s\n' "$RULE"
   printf '%s/%s done · verdict %s · heartbeat %s · cleanup %s\n' "$done_count" "$total" "$(jq -r '.verdict' <<<"$snapshot")" "$(jq -r '.heartbeat // "unknown"' <<<"$snapshot")" "$(jq -r '.cleanup' <<<"$snapshot")"
+  printf 'goal: %s\n' "$(jq -r '.goal // "unknown"' <<<"$snapshot")"
+  printf 'graph: %s · ready: %s\n' "$(jq -r '.graph.id // "unknown"' <<<"$snapshot")" "$(jq -r 'if .graph.ready == null then "unknown" else (.graph.ready | join(",") | if . == "" then "none" else . end) end' <<<"$snapshot")"
+  printf 'spend: entries=%s total=%s\n' "$(jq -r '.spend.entries // "unknown"' <<<"$snapshot")" "$(jq -r '.spend.total // "unknown"' <<<"$snapshot")"
+  printf 'next: %s\n' "$(jq -r '.next_action' <<<"$snapshot")"
   printf 'hint: tmux attach -t %s\n' "${POLYLANE_SESSION:-polylane}"
 }
 

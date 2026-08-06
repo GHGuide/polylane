@@ -31,8 +31,9 @@ valid_case() {
 }
 
 cmd_validate() {
-  local corpus="$1" file ids id rc=0
+  local corpus="$1" file ids id files rc=0
   ids=$(mktemp "${TMPDIR:-/tmp}/polylane-benchmark-ids.XXXXXX")
+  files=$(case_files "$corpus") || { rm -f "$ids"; return 1; }
   while IFS= read -r file; do
     if ! jq -e . "$file" >/dev/null 2>&1; then
       echo "benchmark: malformed JSON: $file" >&2; rc=1; continue
@@ -43,7 +44,7 @@ cmd_validate() {
     id=$(jq -r '.id' "$file")
     printf '%s\n' "$id" >> "$ids"
   done <<EOF
-$(case_files "$corpus")
+$files
 EOF
   if [ -s "$ids" ] && LC_ALL=C sort "$ids" | uniq -d | grep -q .; then
     echo "benchmark: duplicate case id: $(LC_ALL=C sort "$ids" | uniq -d | head -1)" >&2
@@ -79,7 +80,7 @@ cmd_run() {
   cmd_validate "$corpus" >/dev/null
   mkdir -p "$out/cases"
   : > "$out/results.jsonl"
-  local case_file id work result start end rc tokens interventions score any_failure=0
+  local case_file id work result start end rc tokens interventions completion product_quality score any_failure=0
   while IFS= read -r case_file; do
     id=$(jq -r '.id' "$case_file")
     work="$out/cases/$id"
@@ -92,11 +93,14 @@ cmd_run() {
     end=$(date +%s)
     tokens=$(json_metric "$result" tokens)
     interventions=$(json_metric "$result" interventions)
+    completion=$(json_metric "$result" completion)
+    product_quality=$(json_metric "$result" product_quality)
     score=$(json_metric "$result" score)
     jq -cn --arg id "$id" --arg case "$case_file" --arg workdir "$work" \
       --argjson adapter_rc "$rc" --argjson wall_time_s "$((end - start))" \
-      --argjson tokens "$tokens" --argjson interventions "$interventions" --argjson score "$score" \
-      '{schema:"schema-v1", id:$id, case:$case, workdir:$workdir, adapter_rc:$adapter_rc, wall_time_s:$wall_time_s, tokens:$tokens, interventions:$interventions, score:$score}' \
+      --argjson tokens "$tokens" --argjson interventions "$interventions" \
+      --argjson completion "$completion" --argjson product_quality "$product_quality" --argjson score "$score" \
+      '{schema:"schema-v1", id:$id, case:$case, workdir:$workdir, adapter_rc:$adapter_rc, wall_time_s:$wall_time_s, tokens:$tokens, interventions:$interventions, completion:$completion, product_quality:$product_quality, score:$score}' \
       >> "$out/results.jsonl"
     [ "$rc" -eq 0 ] || any_failure=1
     unset rc
@@ -118,6 +122,8 @@ summary_json() {
      mean_wall_time_s: complete_mean("wall_time_s"),
      mean_tokens: complete_mean("tokens"),
      mean_interventions: complete_mean("interventions"),
+     mean_completion: complete_mean("completion"),
+     mean_product_quality: complete_mean("product_quality"),
      mean_score: complete_mean("score")}
   ' "$results"
 }
@@ -129,19 +135,25 @@ cmd_summarize() {
   if [ "$mode" = "--json" ]; then
     printf '%s\n' "$summary"
   else
-    printf 'Cases: %s\nAdapter failures: %s\nMean wall time (s): %s\nMean tokens: %s\nMean interventions: %s\nMean score: %s\n' \
+    printf 'Cases: %s\nAdapter failures: %s\nMean wall time (s): %s\nMean tokens: %s\nMean interventions: %s\nMean completion: %s\nMean product quality: %s\nMean score: %s\n' \
       "$(printf '%s' "$summary" | jq -r '.cases')" \
       "$(printf '%s' "$summary" | jq -r '.adapter_failures')" \
       "$(printf '%s' "$summary" | jq -r '.mean_wall_time_s')" \
       "$(printf '%s' "$summary" | jq -r '.mean_tokens')" \
       "$(printf '%s' "$summary" | jq -r '.mean_interventions')" \
+      "$(printf '%s' "$summary" | jq -r '.mean_completion')" \
+      "$(printf '%s' "$summary" | jq -r '.mean_product_quality')" \
       "$(printf '%s' "$summary" | jq -r '.mean_score')"
   fi
 }
 
-case "${1:-}" in
-  validate) [ "$#" = 2 ] || usage; cmd_validate "$2" ;;
-  run) [ "$#" -ge 5 ] || usage; shift; cmd_run "$@" ;;
-  summarize) [ "$#" -ge 2 ] && [ "$#" -le 3 ] || usage; cmd_summarize "$2" "${3:-}" ;;
-  *) usage ;;
-esac
+main() {
+  case "${1:-}" in
+    validate) [ "$#" = 2 ] || usage; cmd_validate "$2" ;;
+    run) [ "$#" -ge 5 ] || usage; shift; cmd_run "$@" ;;
+    summarize) [ "$#" -ge 2 ] && [ "$#" -le 3 ] || usage; cmd_summarize "$2" "${3:-}" ;;
+    *) usage ;;
+  esac
+}
+
+if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then main "$@"; fi

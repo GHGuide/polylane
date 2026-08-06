@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)
 
 usage() {
-  echo "usage: polylane-advanced.sh preflight|select|salvage|record <manifest> [verdict]" >&2
+  echo "usage: polylane-advanced.sh preflight|select|salvage|seams|record <manifest> [args]" >&2
 }
 
 manifest_ok() { [ -f "$1" ] && jq -e 'type == "object" and (.lanes | type == "array")' "$1" >/dev/null 2>&1; }
@@ -50,6 +50,21 @@ salvage() {
   POLYLANE_VERIFY_CMD="$verify" "$SCRIPT_DIR/polylane-bisect.sh" salvage $lanes
 }
 
+seams() { # MANIFEST TREE EVIDENCE — preserve mechanical evidence for the gate
+  local manifest="$1" tree="$2" evidence="$3" output rc=0
+  [ -d "$tree" ] || { echo "ADVANCED: seam tree does not exist: $tree" >&2; return 2; }
+  output=$("$SCRIPT_DIR/polylane-seams.sh" scan "$tree" 2>&1) || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf 'ADVANCED: seams=passed evidence=%s\n' "$evidence"
+  else
+    mkdir -p "$(dirname "$evidence")"
+    printf '\n%s\n' "$output" >> "$evidence"
+    printf '%s\n' "$output" >&2
+    printf 'ADVANCED: seams=failed evidence=%s\n' "$evidence" >&2
+  fi
+  return "$rc"
+}
+
 record() {
   local manifest="$1" verdict="$2" lane model globs sig
   while IFS=$'\t' read -r lane model globs; do
@@ -63,13 +78,18 @@ record() {
   printf 'ADVANCED: outcomes=recorded verdict=%s\n' "$verdict"
 }
 
-[ $# -ge 2 ] || { usage; exit 2; }
-cmd="$1"; manifest="$2"
-manifest_ok "$manifest" || { echo "ADVANCED: invalid manifest" >&2; exit 2; }
-case "$cmd" in
-  preflight) [ $# -eq 2 ] || { usage; exit 2; }; preflight "$manifest" ;;
-  select) [ $# -eq 2 ] || { usage; exit 2; }; select_champion "$manifest" ;;
-  salvage) [ $# -eq 2 ] || { usage; exit 2; }; salvage "$manifest" ;;
-  record) [ $# -eq 3 ] || { usage; exit 2; }; record "$manifest" "$3" ;;
-  *) usage; exit 2 ;;
-esac
+main() {
+  [ $# -ge 2 ] || { usage; return 2; }
+  local cmd="$1" manifest="$2"
+  manifest_ok "$manifest" || { echo "ADVANCED: invalid manifest" >&2; return 2; }
+  case "$cmd" in
+    preflight) [ $# -eq 2 ] || { usage; return 2; }; preflight "$manifest" ;;
+    select) [ $# -eq 2 ] || { usage; return 2; }; select_champion "$manifest" ;;
+    salvage) [ $# -eq 2 ] || { usage; return 2; }; salvage "$manifest" ;;
+    seams) [ $# -eq 4 ] || { usage; return 2; }; seams "$manifest" "$3" "$4" ;;
+    record) [ $# -eq 3 ] || { usage; return 2; }; record "$manifest" "$3" ;;
+    *) usage; return 2 ;;
+  esac
+}
+
+if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then main "$@"; fi

@@ -54,15 +54,17 @@ if command -v jq >/dev/null 2>&1; then
   "cycle": 9,
   "goal": "ship canonical control room",
   "state_file": "docs/polylane/max-state.json",
-  "lanes": [{"name":"api","model":"gpt-5.6-terra","branch":"pl/api","worktree":"__WT__"}],
-  "integrator": {"name":"integrate","model":"gpt-5.6-terra","branch":"pl/int","worktree":"__INT_WT__"}
+  "target_subgoals": ["m8.8"],
+  "lanes": [{"name":"api","model":"gpt-5.6-terra","effort":"high","branch":"pl/api","worktree":"__WT__","own_globs":["src/**"],"target_subgoals":["m8.8"]}],
+  "integrator": {"name":"integrate","model":"gpt-5.6-sol","effort":"xhigh","branch":"pl/int","worktree":"__INT_WT__"}
 }
 JSON
   sed -i.bak "s|__WT__|$SNAP_WT|; s|__INT_WT__|$SNAP_ROOT/.polylane/wt/integrate|" "$SNAP_MAN"
   rm -f "$SNAP_MAN.bak"
   printf '%s\n' '{"version":1,"goal":"durable goal","milestones":[]}' > "$SNAP_ROOT/docs/polylane/max-state.json"
-  printf '%s\n' '{"run_id":"current-nonce","spent":12}' > "$SNAP_ROOT/docs/polylane/spend-ledger.jsonl"
+  printf '%s\n' '{"run_id":"current-nonce","cost":12}' > "$SNAP_ROOT/docs/polylane/spend-ledger.jsonl"
   printf '%s\n' 'STATUS: api DONE run=current-nonce' > "$SNAP_WT/docs/status-api.md"
+  "$(dirname "$DASH")/polylane-graph.sh" compile "$SNAP_MAN" "$SNAP_ROOT/.polylane/graph.json"
   snapshot=$("$DASH" "$SNAP_MAN" --once --json)
   assert_ok "once-json-is-valid" jq -e . >/dev/null <<<"$snapshot"
   for key in schema goal cycle run_id route graph lanes spend verdict heartbeat cleanup next_action; do
@@ -70,6 +72,16 @@ JSON
   done
   assert_eq "once-json-current-run" "current-nonce" "$(jq -r '.run_id' <<<"$snapshot")"
   assert_eq "once-json-lane-from-state" "done" "$(jq -r '.lanes[0].status' <<<"$snapshot")"
+  assert_eq "once-json-canonical-spend" "12" "$(jq -r '.spend.total' <<<"$snapshot")"
+  assert_eq "once-json-graph-ready" "start" "$(jq -r '.graph.ready[0]' <<<"$snapshot")"
+  text_snapshot=$("$DASH" "$SNAP_MAN" --once)
+  assert_contains "once-text-goal" "goal: ship canonical control room" "$text_snapshot"
+  assert_contains "once-text-graph" "graph:" "$text_snapshot"
+  assert_contains "once-text-spend" "spend:" "$text_snapshot"
+  assert_contains "once-text-next-action" "next:" "$text_snapshot"
+  snapshot_text=$("$DASH" "$SNAP_MAN" --once)
+  assert_contains "once-text-renders-header" "POLYLANE DASHBOARD" "$snapshot_text"
+  assert_contains "once-text-renders-current-run" "current-nonce" "$snapshot_text"
 else
   pass "once-json-skipped-no-jq"
 fi

@@ -23,4 +23,12 @@ select_out=$("$ADVANCED" select "$TEST_TMPDIR/select.json")
 assert_contains "advanced-select-explicit-config" "selection=" "$select_out"
 salvage_out=$("$ADVANCED" salvage "$M")
 assert_contains "advanced-salvage-not-requested" "salvage=not-requested" "$salvage_out"
+
+SEAM_TREE="$TEST_TMPDIR/seam-tree"; mkdir -p "$SEAM_TREE"
+printf '%s\n' '<button id="save">Save</button>' > "$SEAM_TREE/index.html"
+printf '%s\n' "document.getElementById('save')" > "$SEAM_TREE/app.js"
+assert_contains "advanced-seams-passed" "seams=passed" "$("$ADVANCED" seams "$M" "$SEAM_TREE" "$TEST_TMPDIR/seams.md")"
+printf '%s\n' "document.getElementById('missing')" >> "$SEAM_TREE/app.js"
+assert_fail "advanced-seams-block-dangling" "$ADVANCED" seams "$M" "$SEAM_TREE" "$TEST_TMPDIR/seams.md"
+assert_contains "advanced-seams-actionable-evidence" "SEAM-DANGLING: dom-id missing" "$(cat "$TEST_TMPDIR/seams.md")"
 finish

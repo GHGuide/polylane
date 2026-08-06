@@ -19,4 +19,13 @@ CODEX_PROFILE=broken
 INT_NAME=i INT_MODEL=m INT_BRANCH=b INT_WORKTREE=w
 LANE_NAMES=(lane); LANE_MODELS=(m); LANE_BRANCHES=(b); LANE_WORKTREES=(w)
 assert_rc "invalid-profile-fails-before-launch" 2 validate_manifest
+
+CODEX_PROFILE=lean CODEX_SANDBOX=workspace-write MANIFEST_SESSION=""
+INT_MODEL=claude-opus-4-8
+LANE_MODELS=(gpt-5.6-terra)
+AVAILABLE_MODELS=(gpt-5.6-terra)
+assert_rc "codex-rejects-claude-integrator-model" 2 validate_manifest
+INT_MODEL=gpt-5.6-sol
+LANE_MODELS=(claude-sonnet-5)
+assert_rc "codex-rejects-claude-builder-model" 2 validate_manifest
 finish

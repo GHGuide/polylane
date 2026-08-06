@@ -8,17 +8,19 @@ PROMPTOPT="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-promptopt.sh"
 make_tmpdir
 PROMPT="$TEST_TMPDIR/valid.md"
 cat > "$PROMPT" <<'EOF'
-## GOAL
-Build the requested product.
-
-## CONTEXT
-The input is intentionally vague.
-
-## CONSTRAINTS
-Use Bash 3.2 and do not rewrite this file.
-
-## VERIFICATION
-Run focused checks.
+ULTIMATE-GOAL: Ship the smallest useful product.
+CURRENT-SUBGOAL: Prove the prompt launch gate.
+GOAL: preserve every strict prompt contract.
+OWN: tests/**.
+FORBIDDEN: everything else.
+PREDEFINED-SKILLS: engineering:testing-strategy
+LANE-SPECIFIC-SKILLS: engineering:debug
+Read only the named kit once.
+TEST-CADENCE: focused first; full suite only in integration.
+DELEGATION: forbidden.
+CHECK-CACHE: use $PWD/.polylane/check-cache/promptopt.
+EXTERNAL-EVIDENCE: never turn missing physical proof into PASS.
+VERIFY: write evidence and finish STATUS: promptopt DONE run=prompt-run.
 EOF
 ORIGINAL=$(cksum "$PROMPT")
 
@@ -28,17 +30,9 @@ assert_ok "promptopt-check-valid" "$PROMPTOPT" check "$PROMPT" 500
 assert_eq "promptopt-check-never-rewrites-source" "$ORIGINAL" "$(cksum "$PROMPT")"
 
 MISSING="$TEST_TMPDIR/missing.md"
-cat > "$MISSING" <<'EOF'
-## GOAL
-Build the requested product.
-
-## CONTEXT
-The input is intentionally vague.
-
-## CONSTRAINTS
-Use Bash 3.2.
-EOF
+grep -v '^TEST-CADENCE:' "$PROMPT" > "$MISSING"
 assert_fail "promptopt-check-rejects-missing-strict-block" "$PROMPTOPT" check "$MISSING"
 assert_fail "promptopt-check-rejects-over-budget" "$PROMPTOPT" check "$PROMPT" 1
+assert_fail "promptopt-check-rejects-over-byte-budget" env POLYLANE_PROMPT_BYTE_BUDGET=1 "$PROMPTOPT" check "$PROMPT" 500
 
 finish

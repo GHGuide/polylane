@@ -63,6 +63,11 @@ _skill_roots() {
 # unqualified skill. Plugin cache entries are read-only metadata, never code.
 resolve() {
   local skill="$1" namespace member root found
+  case "$skill" in
+    ''|*/*|*'..'*|:*|*:|*:*:*|*[!A-Za-z0-9._:-]*)
+      echo "polylane-scout: invalid skill id: $skill" >&2
+      return 2 ;;
+  esac
   namespace="${skill%%:*}"
   member="${skill#*:}"
   while IFS= read -r root; do

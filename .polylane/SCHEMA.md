@@ -25,7 +25,7 @@ lanes L2/L3/L4 depend on them.
   "available_models": ["gpt-5.6-sol", "gpt-5.6-terra"],
   "integrator": {
     "name": "integrator",
-    "model": "claude-opus-4-8",
+    "model": "gpt-5.6-sol",
     "branch": "lane/integrator",
     "worktree": "../pl-integrator",
     "prompt_file": ".polylane/prompts/integrator.txt",
@@ -34,7 +34,7 @@ lanes L2/L3/L4 depend on them.
   "lanes": [
     {
       "name": "api",
-      "model": "claude-opus-4-8",
+      "model": "gpt-5.6-terra",
       "branch": "lane/api",
       "worktree": "../pl-api",
       "prompt_file": ".polylane/prompts/api.txt",

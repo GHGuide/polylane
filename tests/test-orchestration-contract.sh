@@ -31,6 +31,7 @@ TEST-CADENCE: focused first; subsystem before DONE; full suite only in integrati
 DELEGATION: forbidden; do not spawn subagents or fan-out.
 CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks; reuse unchanged results.
 EXTERNAL-EVIDENCE: keep physical-only proof external; continue all autonomous work.
+VERIFY: run the focused contract checks before the DONE marker.
 Write docs/verify-builder.md. Finish STATUS: builder DONE run=run-1.
 PROMPT
 cat > "$P/.polylane/lanes/integrator.txt" <<'PROMPT'
@@ -45,6 +46,7 @@ TEST-CADENCE: focused failures first; full terminal suite once.
 DELEGATION: forbidden; do not spawn subagents or fan-out.
 CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks; reuse unchanged results.
 EXTERNAL-EVIDENCE: keep physical-only proof external; continue autonomous work.
+VERIFY: run the focused contract checks before the verdict sentinel.
 Write docs/verify-integration.md ending POLYLANE-VERDICT: GO run=run-1.
 Finish STATUS: integrator DONE run=run-1.
 PROMPT
@@ -69,12 +71,12 @@ cat > "$MANIFEST" <<JSON
   "base": "main",
   "agent": "codex",
   "integrator": {
-    "name":"integrator","model":"gpt","branch":"lane/integrator",
+    "name":"integrator","model":"gpt-5.6-terra","branch":"lane/integrator",
     "worktree":"$P/.polylane/wt/integrator",
     "prompt_file":".polylane/lanes/integrator.txt"
   },
   "lanes": [{
-    "name":"builder","model":"gpt","branch":"lane/builder",
+    "name":"builder","model":"gpt-5.6-terra","branch":"lane/builder",
     "worktree":"$P/.polylane/wt/builder",
     "prompt_file":".polylane/lanes/builder.txt",
     "own_globs":["src/**"],"target_subgoals":["s1"]
@@ -101,5 +103,9 @@ grep -v 'TEST-CADENCE:' "$PROMPT" > "$P/.polylane/lanes/builder-bad.txt"
 jq '.lanes[0].prompt_file=".polylane/lanes/builder-bad.txt"' "$MANIFEST" > "$P/.polylane/bad-prompt.json"
 MANIFEST="$P/.polylane/bad-prompt.json"; load_manifest
 assert_rc "contract-rejects-weak-prompt" 2 preflight_contract
+
+jq '.prompt_token_budget=1' "$P/.polylane/run.json" > "$P/.polylane/over-budget.json"
+MANIFEST="$P/.polylane/over-budget.json"; load_manifest
+assert_rc "contract-rejects-over-budget-prompt" 2 preflight_contract
 
 finish

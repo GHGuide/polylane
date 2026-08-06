@@ -23,6 +23,11 @@ timeout_out=$("$JUDGES" run "$TEST_TMPDIR/timeout.json" "$TREE" "$TEST_TMPDIR/ti
 assert_eq "judges-enforce-timeout" "1" "$timeout_rc"
 assert_eq "judges-timeout-is-aggregated" "timeout" "$(jq -r '.judges[0].status' "$TEST_TMPDIR/timeout/judges.json")"
 
+jq --arg out "$TEST_TMPDIR/private-out" '.quality_judges[0].command="true" | .quality_judges[1].command=("test ! -e " + $out + "/1.evidence") | .quality_judges[2].command="true"' "$M" > "$TEST_TMPDIR/private.json"
+assert_ok "judges-hide-prior-evidence" "$JUDGES" run "$TEST_TMPDIR/private.json" "$TREE" "$TEST_TMPDIR/private-out"
+
 jq '.quality_judges[2].lens="security"' "$M" > "$TEST_TMPDIR/duplicate.json"
 assert_rc "judges-reject-duplicate-lens" 2 "$JUDGES" run "$TEST_TMPDIR/duplicate.json" "$TREE" "$OUT"
+jq '.quality_judges[0].timeout_s=3601' "$M" > "$TEST_TMPDIR/unbounded.json"
+assert_rc "judges-reject-unbounded-timeout" 2 "$JUDGES" run "$TEST_TMPDIR/unbounded.json" "$TREE" "$TEST_TMPDIR/unbounded-out"
 finish

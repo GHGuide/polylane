@@ -17,9 +17,14 @@ assert_eq "domain-none"   "unknown" "$(domain 'lib/util.rs')"
 # --- installed gating: a fake skills dir ------------------------------------
 command -v jq >/dev/null 2>&1 || { pass "scout-skipped-no-jq"; finish; exit 0; }
 make_tmpdir
+export HOME="$TEST_TMPDIR/home"
 export CLAUDE_SKILLS_DIR="$TEST_TMPDIR/skills"
 mkdir -p "$CLAUDE_SKILLS_DIR/dataviz"          # only dataviz is "installed"
 mkdir -p "$CLAUDE_SKILLS_DIR/testing-strategy" "$CLAUDE_SKILLS_DIR/design-critique"
+mkdir -p "$HOME"
+for skill in dataviz testing-strategy design-critique; do
+  printf '%s\n' '---' "name: $skill" > "$CLAUDE_SKILLS_DIR/$skill/SKILL.md"
+done
 assert_ok   "installed-yes" installed dataviz
 assert_fail "installed-no"  installed nonesuch
 # design:design-critique -> checks the 'design' plugin dir; not present -> not installed
