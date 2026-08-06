@@ -16,6 +16,8 @@ lint_one() {
   local f="$1" lane="${2:-$(basename "$1" .txt)}" miss=""
   [ -s "$f" ] || { echo "PROMPT-LINT: $lane empty-or-missing $f"; return 6; }
   grep -qiE 'GOAL|/goal' "$f"        || miss="$miss objective(GOAL)"
+  grep -q   'ULTIMATE-GOAL:' "$f"    || miss="$miss ultimate-goal"
+  grep -q   'CURRENT-SUBGOAL:' "$f"  || miss="$miss current-subgoal"
   grep -qi  'OWN'  "$f"              || miss="$miss ownership(OWN)"
   grep -qi  'FORBIDDEN' "$f"         || miss="$miss boundaries(FORBIDDEN)"
   grep -qE  'STATUS:.*DONE'  "$f"    || miss="$miss done-marker(STATUS:..DONE)"
@@ -27,6 +29,9 @@ lint_one() {
     grep -qi 'TEST-CADENCE:' "$f"         || miss="$miss test-cadence"
     grep -qi 'DELEGATION:' "$f"           || miss="$miss delegation-policy"
     grep -qi 'CHECK-CACHE:' "$f"          || miss="$miss check-cache"
+    grep -qF '$PWD/.polylane/check-cache/' "$f" || miss="$miss worktree-local-check-cache"
+    grep -qi 'Read only the named kit once' "$f" || miss="$miss selected-kit-once"
+    grep -qiE '^[[:space:]]*(browse|list|find) .*skill' "$f" && miss="$miss skill-inventory-dump"
     grep -qi 'EXTERNAL-EVIDENCE:' "$f"    || miss="$miss external-evidence-routing"
   fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi

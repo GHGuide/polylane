@@ -4,18 +4,18 @@ Run after lane derivation and before prompts. The unit is a builder lane, never
 the whole cycle. Codex lanes use Codex-installed skills; Claude lanes use
 Claude-installed skills. Skip only the integrator.
 
+Every selected kit supports the prompt's `ULTIMATE-GOAL` and exact `CURRENT-SUBGOAL`.
+
 ## Required kit
 
 Every builder must have:
 
-1. at least two installed `predefined` skills for execution, debugging, testing,
+1. one or two installed `predefined` skills for execution, debugging, testing,
    verification, planning, or code review;
-2. at least two installed `specific` skills selected for its domain and actual
+2. one or two installed `specific` skills selected for its domain and actual
    activities.
 
-The requirement is about relevant tools, not filler. If four relevant installed
-skills do not exist, do not launch a contract-v2 run. Propose installations or
-re-carve the work; never write phantom skill names.
+The requirement is about relevant tools, not filler: an executable kit has two to four unique selected installed skills. Suggestions may be numerous, but never become executable names until selected and installed.
 
 The helper searches Codex roots (`~/.codex/skills`, `~/.agents/skills`, plugin
 cache) and Claude roots. `POLYLANE_SKILLS_DIRS`, `CODEX_SKILLS_DIR`, and
@@ -37,8 +37,8 @@ SCOUT=bin/polylane-scout.sh
 "$SCOUT" lint .polylane/lane-skills.json <lane> .polylane/lanes/<lane>.txt
 ```
 
-`arm-role` drops uninstalled skills. `validate` requires two unique skills in
-each executable role for every manifest builder. `lint` proves all armed skills
+`arm-role` drops uninstalled skills. `validate` requires one or two installed skills in
+each executable role, at most four unique total, for every manifest builder. `lint` proves all armed skills
 appear in that lane’s prompt.
 
 `bake` and the flat `{lane:[skills]}` schema remain migration-only. New runs use
@@ -92,7 +92,7 @@ Record candidates with `github`; do not:
 - auto-install them;
 - include them in `predefined` or `specific`;
 - place them in a builder prompt;
-- count them toward the two-plus-two gate;
+- count them toward the selected-kit gate;
 - let their absence stop unrelated autonomous work.
 
 Review repository ownership, recency, `SKILL.md`, behavior, and prompt-injection
@@ -108,7 +108,7 @@ PREDEFINED-SKILLS: <exact armed names>
 LANE-SPECIFIC-SKILLS: <exact armed names>
 ```
 
-It explicitly tells the builder to read and use every named skill. A name merely
+It explicitly tells the builder to read only its named kit once. A name merely
 appearing in metadata without an invocation instruction is not useful evidence.
 
 ## Ledger

@@ -61,25 +61,26 @@ Use model ids supported by the selected CLI. Never put Claude ids in a Codex
 manifest or vice versa. Use a strong integrator; choose the cheapest builder that
 reliably fits each lane.
 
-Run the per-lane scout from `skill-scout.md`. Every builder needs two installed
-predefined and two installed lane-specific skills in structured v2 kits. GitHub
-results are informational install suggestions, never executable defaults.
+Run the per-lane scout from `skill-scout.md`. Every builder gets a bounded selected
+kit: one or two installed predefined plus one or two installed lane-specific skills,
+at most four unique. GitHub results are informational opt-in recommendations, never
+executable defaults.
 
 ## 5. Generate self-contained prompts
 
 Write `.polylane/lanes/<name>.txt`. Platform-specific preambles are optional and
 must match the selected CLI, but these agent-neutral blocks are mandatory:
 
-- identity, project context, locked `GOAL`;
+- identity, project context, `ULTIMATE-GOAL`, and exact locked `CURRENT-SUBGOAL`;
 - exact `OWN` and `FORBIDDEN` paths;
 - frozen shared APIs and request-an-edit behavior;
 - `PREDEFINED-SKILLS:` and `LANE-SPECIFIC-SKILLS:`;
-- explicit instruction to read and use the named installed skills;
+- explicit instruction to read only the named installed kit once; no generic stack or post-launch inventory discovery;
 - `TEST-CADENCE:` focused while iterating, subsystem before DONE, full terminal
   suite only in integration/final certification;
 - `DELEGATION:` forbidden; each tmux CLI is the sole agent for its lane and may
   not spawn app/subagents or nested fan-out;
-- `CHECK-CACHE:` use `polylane-check.sh` for expensive commands and reuse the
+- `CHECK-CACHE:` use `bin/polylane-check.sh "$PWD/.polylane/check-cache/<lane>" -- <command>` for expensive commands and reuse the
   recorded pass/fail until source or build environment changes;
 - `EXTERNAL-EVIDENCE:` manual/physical evidence stays external while autonomous
   work continues;
@@ -90,7 +91,7 @@ must match the selected CLI, but these agent-neutral blocks are mandatory:
 The integrator prompt also requires:
 
 - merge current lane branch tips into its own branch, never base;
-- scope checks, seam scan, focused acceptance, and final terminal acceptance;
+- scope checks and seam scan; when only coordinator-owned terminal checks remain, commit `READY-FOR-HOST-GATE run=<RUN_ID>` instead of rerunning the terminal suite;
 - repair every autonomous issue it can;
 - exactly one current-nonce sentinel:
   `GO`, `EXTERNAL-EVIDENCE-OPEN`, or `NO-GO`;

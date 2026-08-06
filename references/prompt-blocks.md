@@ -2,16 +2,13 @@
 
 Fill `<...>` slots from recon + derivation. Keep blocks verbatim otherwise — they encode hard-won rules.
 
-## 0. MANDATORY skill preamble — ALWAYS in EVERY lane prompt, in this order
-These four are non-negotiable in every generated prompt:
+## 0. Selected-skill preamble — every builder prompt
+Use the platform-native form. Do not add a generic stack or skill-discovery commands:
 ```
-Before anything else, in order:
-1. Invoke the caveman skill (full)             # terse output, ~75% fewer output tokens
-2. /ponytail full                              # anti-over-engineering: build the MINIMUM that meets the goal (only if installed; skip the line if not — see below)
-3. /goal <one-line lock of THIS lane's goal>   # Anthropic built-in: set the objective, keep working until it's met; do not re-scope. (The GOAL block below documents the same lock in-prompt.)
-4. superpowers:using-superpowers               # then this lane's specific superpowers (block D)
+Claude builder: read only the named kit once, in listed order.
+Codex builder: read only the named kit once, in listed order; follow these native prompt instructions directly.
 ```
-Steps 1, 3, 4 are the non-negotiable core (caveman + superpowers skills; /goal built-in).
+Do not require Claude slash commands in a Codex prompt. Do not browse, list, or search skill inventories after launch.
 **Lanes do NOT run `/graphify-auto`** — the ORCHESTRATOR refreshes the graph once per
 cycle before launch, and the runner symlinks the parent's `graphify-out/` into every
 worktree (`share_graph`), so each lane already has the CURRENT graph read-only. A lane
@@ -20,6 +17,8 @@ of the same commit. Lanes only QUERY (block E). **Step 3 `/ponytail full` is inc
 
 ## A. Identity + context
 ```
+ULTIMATE-GOAL: <verbatim durable product goal>
+CURRENT-SUBGOAL: <verbatim cycle subgoal>
 Project: <PROJECT one-liner>. Read THIS project's CLAUDE.md and memory/MEMORY.md first. IGNORE any unrelated CLAUDE.md from other projects. YOUR LANE = <LANE NAME>. Other Claudes run <other lanes> in parallel — do NOT touch their files.
 ```
 
@@ -35,18 +34,16 @@ Keep output terse (caveman-style: drop articles/filler/hedging, fragments OK). W
 
 ## D. Skills for this lane
 ```
-PREDEFINED-SKILLS: <at least two installed execution/testing skills>
-LANE-SPECIFIC-SKILLS: <at least two installed domain skills>
-Read and apply every named skill. Your goal is LOCKED (below); go straight to execution.
+PREDEFINED-SKILLS: <1-2 exact selected installed execution/testing skills>
+LANE-SPECIFIC-SKILLS: <1-2 exact selected installed domain skills>
+Read only the named kit once. Your goal is LOCKED (below); go straight to execution.
 ```
 `<lane skills>` is filled in TWO layers, in order:
-1. **Static type-baseline** (always, per lane TYPE): debugging/fix → `systematic-debugging` + `verification-before-completion`; build → `writing-plans` + `test-driven-development` + `verification-before-completion`; UI → `design:design-critique`; anything → `verification-before-completion`.
+1. **Static type-baseline**: select one or two relevant installed skills, not an unconditional stack.
 2. **Scouted DOMAIN skills** (this cycle's per-lane scout — `references/skill-scout.md`):
    read structured `.polylane/lane-skills.json` and append THIS lane's `specific`
-   skills. Only installed skills count. Codex uses Codex skill names; Claude uses
-   Claude skill names. GitHub suggestions are informational and never appear here
-   until installed. Contract v2 rejects fewer than two skills in either layer.
-The global base (graphify · caveman · ponytail · superpowers · claude-mem) lives in block 0, NOT here — never duplicate it into `<lane skills>`.
+   skills. Only concrete installed skills count. Codex uses Codex skill names; Claude uses
+   Claude skill names. GitHub suggestions are reviewed informational recommendations and never appear here until installed. The executable kit is one to two `predefined` plus one to two `specific`, at most four unique skills.
 
 ## E. Graphify-first (navigation) — MANDATORY, blocking Step 1 when graphify-out/ exists
 ```
@@ -75,7 +72,7 @@ leave the expensive full terminal suite for integration/final certification.
 DELEGATION: forbidden. This tmux CLI is the sole agent for this lane. Do not spawn
 Codex app collaboration agents, subagents, or nested fan-out.
 CHECK-CACHE: route every expensive check through
-`<POLYLANE_SCRIPT_DIR>/polylane-check.sh <CANONICAL_PROJECT>/.polylane/check-cache/<lane> -- <command>`.
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/<lane>" -- <command>`.
 Reuse an unchanged PASS or FAIL; a FAIL requires a source/environment change before
 the command may execute again.
 EXTERNAL-EVIDENCE: physical/manual proof the system cannot produce stays explicitly
@@ -101,7 +98,7 @@ Also write a `## DEFERRED` section at the END of docs/verify-<lane>.md: every fo
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
 - **Merge into YOUR OWN integrator branch — NEVER the base branch.** You run in your own worktree on your own branch. Merge each lane branch's CURRENT tip INTO THIS branch and verify the combined tree HERE. Do NOT check out or merge into `main`/base — the runner fast-forwards the base to your branch itself, and ONLY on a GO, so a NO-GO can never touch the base. Never trust a prior GO: if commits followed one, re-verify from scratch.
-- Read all verify-*.md + status, build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in status.
+- Read all verify-*.md + status, build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in status. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite in this sandbox.
 - **If ponytail is installed, run `/ponytail-review` on the merged diff** — flag any over-engineering a lane introduced (dead abstraction, speculative generality, needless deps). Note findings in verify-integration.md; a lane that grossly over-built against its goal is a quality regression worth a NO-GO. Keeps the token-efficiency mission enforced at the gate, not just per-lane.
 - **Independent evidence, never a vibes-only GO.** Use independent verifier lanes
   when the plan includes them; otherwise combine mechanical acceptance, seam checks,

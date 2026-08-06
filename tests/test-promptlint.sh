@@ -9,13 +9,15 @@ LINT="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-promptlint.sh"
 make_tmpdir
 GOOD="$TEST_TMPDIR/good.txt"
 cat > "$GOOD" <<'P'
-/goal build the thing. OWN: src/x. FORBIDDEN: everything else.
+ULTIMATE-GOAL: build the product from a brief to verified completion. CURRENT-SUBGOAL: prompt economy.
+OWN: src/x. FORBIDDEN: everything else.
 DONE-SIGNAL: STATUS: x DONE run=<RUN_ID>. Write docs/verify-x.md with proof.
-PREDEFINED-SKILLS: engineering:testing-strategy engineering:debug
-LANE-SPECIFIC-SKILLS: computer-use:computer-use design:accessibility-review
+PREDEFINED-SKILLS: engineering:debug
+LANE-SPECIFIC-SKILLS: design:accessibility-review
+Read only the named kit once; do not browse skill inventories after launch.
 TEST-CADENCE: focused while iterating; subsystem before DONE; full only in integrator.
 DELEGATION: forbidden; this tmux Codex CLI is the only agent for the lane.
-CHECK-CACHE: use polylane-check.sh and never rerun unchanged expensive checks.
+CHECK-CACHE: use bin/polylane-check.sh "$PWD/.polylane/check-cache/x" -- <command>; never rerun unchanged expensive checks.
 EXTERNAL-EVIDENCE: missing people, credentials, hardware, or third-party access stays EXTERNAL-EVIDENCE-OPEN and never becomes PASS.
 P
 assert_ok "lint-good" lint_one "$GOOD" x
@@ -28,6 +30,8 @@ miss_test() {
   assert_fail "lint-missing-$name" lint_one "$f" "$name"
 }
 miss_test objective  'GOAL|/goal'
+miss_test ultimate   'ULTIMATE-GOAL'
+miss_test subgoal    'CURRENT-SUBGOAL'
 miss_test own        'OWN'
 miss_test forbidden  'FORBIDDEN'
 miss_test nonce      'run='
@@ -41,6 +45,10 @@ grep -v 'DELEGATION:' "$GOOD" > "$TEST_TMPDIR/strict-no-delegation.txt"
 POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-missing-delegation" lint_one "$TEST_TMPDIR/strict-no-delegation.txt" x
 grep -v 'CHECK-CACHE:' "$GOOD" > "$TEST_TMPDIR/strict-no-cache.txt"
 POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-missing-cache" lint_one "$TEST_TMPDIR/strict-no-cache.txt" x
+sed 's#\$PWD/.polylane/check-cache/x#/tmp/check-cache/x#' "$GOOD" > "$TEST_TMPDIR/strict-nonlocal-cache.txt"
+POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-rejects-nonlocal-cache" lint_one "$TEST_TMPDIR/strict-nonlocal-cache.txt" x
+sed 's/Read only the named kit once; do not browse skill inventories after launch./Browse all installed skills before editing./' "$GOOD" > "$TEST_TMPDIR/strict-inventory-dump.txt"
+POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-rejects-inventory-dump" lint_one "$TEST_TMPDIR/strict-inventory-dump.txt" x
 
 # the message names what's missing
 out=$(lint_one "$TEST_TMPDIR/nonce.txt" nonce 2>&1 || true)
