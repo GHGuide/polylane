@@ -177,7 +177,7 @@ quality_judge_gate() {
   attempt=1
   QUALITY_JUDGE_ATTEMPT=1
   graph_authority_require judge-repair "route bounded judge repair" || return 1
-  repair_integrator_verdict "$attempt" || return 1
+  repair_integrator_verdict "$attempt" judge || return 1
   poll_done "$INT_NAME:$INT_WORKTREE" || return 1
   # A repair that rewrites its verdict still has to clear the ordinary host gate
   # before its fresh judge evidence is trusted.
@@ -2588,21 +2588,52 @@ build_integrator_repair_prompt() {
   printf 'proof physically cannot be produced by the system; otherwise GO or NO-GO.\n'
 }
 
-# repair_integrator_verdict ATTEMPT : preserve the failed verdict as evidence,
-# clear only terminal markers, then immediately respawn the same tmux Codex lane.
+# build_judge_repair_prompt SRC ATTEMPT AGGREGATE PREVIOUS_EVIDENCE -> stdout.
+# Judge repair is a distinct typed route: it points at the three-judge aggregate
+# and never reuses or overwrites an ordinary acceptance-repair archive.
+build_judge_repair_prompt() {
+  local src="$1" attempt="$2" aggregate="$3" previous="$4"
+  cat "$src" 2>/dev/null
+  printf '\n\nJUDGE-REPAIR: attempt=%s max=1\n' "$attempt"
+  printf 'Exactly three independent quality judges blocked promotion.\n'
+  printf 'Read %s and each failing evidence path it names.\n' "$aggregate"
+  printf 'The pre-judge integration verdict is preserved at %s.\n' "$previous"
+  printf 'Repair only those actionable judge findings; do not weaken judge commands,\n'
+  printf 'quality lenses, frozen acceptance, scope, graph bounds, or product decisions.\n'
+  printf 'Re-run focused failing checks, then write fresh nonce-bound integration evidence.\n'
+  printf 'This is the single bounded judge-repair attempt; a second failure must halt.\n'
+}
+
+# repair_integrator_verdict ATTEMPT [integration|judge] : preserve the failed
+# boundary evidence, clear only terminal markers, then immediately respawn the
+# same tmux Codex lane with the matching typed repair packet.
 repair_integrator_verdict() {
-  local attempt="$1" verdict="${VERDICT_RESULT:-UNKNOWN}" evidence archive prompt cmd
+  local attempt="$1" repair_kind="${2:-integration}" verdict="${VERDICT_RESULT:-UNKNOWN}" evidence archive prompt cmd
   evidence="$INT_WORKTREE/docs/verify-integration.md"
-  archive="$INT_WORKTREE/docs/verify-integration-attempt-$attempt.md"
-  prompt="$REPO_ROOT/.polylane/lanes/$INT_NAME.gate-repair-$attempt.txt"
+  case "$repair_kind" in
+    integration)
+      archive="$INT_WORKTREE/docs/verify-integration-attempt-$attempt.md"
+      prompt="$REPO_ROOT/.polylane/lanes/$INT_NAME.gate-repair-$attempt.txt"
+      ;;
+    judge)
+      archive="$INT_WORKTREE/docs/verify-integration-judge-attempt-$attempt.md"
+      prompt="$REPO_ROOT/.polylane/lanes/$INT_NAME.judge-repair-$attempt.txt"
+      ;;
+    *) echo "polylane-run: unknown integrator repair kind: $repair_kind" >&2; return 2 ;;
+  esac
   if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "+ (dry-run) would preserve verdict evidence and respawn integrator repair $attempt"
+    echo "+ (dry-run) would preserve $repair_kind evidence and respawn integrator repair $attempt"
     return 0
   fi
   mkdir -p "$(dirname "$prompt")" "$INT_WORKTREE/docs"
   [ -f "$evidence" ] && cp "$evidence" "$archive"
-  build_integrator_repair_prompt "$INT_PROMPT" "$attempt" "$verdict" \
-    "docs/$(basename "$archive")" > "$prompt" || return 1
+  if [ "$repair_kind" = judge ]; then
+    build_judge_repair_prompt "$INT_PROMPT" "$attempt" \
+      'docs/polylane/judges/judges.json' "docs/$(basename "$archive")" > "$prompt" || return 1
+  else
+    build_integrator_repair_prompt "$INT_PROMPT" "$attempt" "$verdict" \
+      "docs/$(basename "$archive")" > "$prompt" || return 1
+  fi
   checkpoint_lane "$INT_WORKTREE" "$INT_NAME"
   rm -f "$INT_WORKTREE/docs/status-$INT_NAME.md" "$evidence"
   INT_PROMPT="$prompt"

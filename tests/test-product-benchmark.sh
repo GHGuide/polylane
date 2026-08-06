@@ -55,6 +55,9 @@ assert_eq "benchmark-preserves-unknown-metric" "null" "$(jq -r 'select(.id == "s
 printf '[]\n' > "$TEST_TMPDIR/wrong-shape.json"
 assert_eq "benchmark-wrong-shaped-result-is-unknown" "null" \
   "$(bash -c '. "$1"; json_metric "$2" tokens' _ "$BENCH" "$TEST_TMPDIR/wrong-shape.json")"
+printf '{"tokens":"unknown","metrics":7}\n' > "$TEST_TMPDIR/wrong-nested-shape.json"
+assert_eq "benchmark-wrong-nested-shape-is-unknown" "null" \
+  "$(bash -c '. "$1"; json_metric "$2" tokens' _ "$BENCH" "$TEST_TMPDIR/wrong-nested-shape.json" 2>/dev/null)"
 
 SUMMARY_JSON=$("$BENCH" summarize "$OUT" --json)
 assert_eq "benchmark-summary-reproducible-count" "2" "$(printf '%s' "$SUMMARY_JSON" | jq -r '.cases')"

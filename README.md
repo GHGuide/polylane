@@ -102,7 +102,7 @@ The result: a big feature set built in parallel, with the token profile of a car
 
 1. **Interview → spec.** Batched click-through questions (you pick, you don't type) until a numbered **integration spec** is locked. Half-satisfiable items (need a bundle / paid service / product call) get flagged so the final GO isn't surprised.
 2. **Recon.** `git status` first — any uncommitted orphan work is surfaced and protected before any branch op. Then maps goals → files (via the graph, not grep).
-3. **Derive lanes.** Optimal count + carving from file-overlap. Every builder gets at least two predefined and two lane-specific installed skills; GitHub candidates stay informational.
+3. **Derive lanes.** Optimal count + carving from file-overlap. Every builder gets one or two predefined and one or two lane-specific installed skills; GitHub candidates stay informational.
 4. **Plan gate.** You approve the lane table, models, isolation mode (worktrees vs shared tree), and which suggested skills to install.
 5. **Generate prompts.** One paste-ready prompt per lane — each opens with the graphify/caveman/`/goal`/superpowers preamble, then OWN/FORBIDDEN + contracts, forced-verify, coordination, scoped git, done-checklist. Plus an optional **integrator** lane that runs last. `/polylane` also emits the run manifest `.polylane/run.json`.
 6. **Launch + watch.** Contract v2 rejects missing state, acceptance, artifacts, skills, prompt blocks, and overlapping scope before tmux opens. The supervisor launches real CLIs and prints one valid watch command: `tmux attach -t <session>`.

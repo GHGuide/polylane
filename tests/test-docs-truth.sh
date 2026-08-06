@@ -67,6 +67,19 @@ for phrase in 'codex/install.sh' 'brew install tmux jq'; do
   else fail "no-drift:$phrase" "'$phrase' not verbatim in both README and install-helpers"; fi
 done
 
+if grep -qF 'one or two predefined and one or two lane-specific installed skills' "$README"; then
+  pass "readme-skill-kit-bounds"
+else
+  fail "readme-skill-kit-bounds" "README must describe the executable one-to-four skill-kit bound"
+fi
+SCOUT_DOC="$REPO/references/skill-scout.md"
+if grep -qF 'docs/polylane/skill-outcomes.jsonl' "$SCOUT_DOC" &&
+   ! grep -qE 'docs/polylane/skills-ledger\.(jsonl|md)' "$SCOUT_DOC"; then
+  pass "skill-scout-ledger-path"
+else
+  fail "skill-scout-ledger-path" "skill-scout reference must use the executable JSONL ledger path consistently"
+fi
+
 # The canonical contract example declares a Codex agent, so every advertised
 # model in that example must be a Codex model. A Claude id here gets copied into
 # generated manifests even when the probe itself is correctly agent-aware.

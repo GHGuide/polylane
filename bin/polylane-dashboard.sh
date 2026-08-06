@@ -110,7 +110,7 @@ canonical_snapshot() {
   graph_ready=$(graph_ready_snapshot "$graph_file" "$mdir/events.jsonl" "$run_id")
   ledger="$project/docs/polylane/spend-ledger.jsonl"
   spend_json=$(spend_snapshot "$ledger")
-  stats="$mdir/run-stats.json"
+  stats="$project/docs/polylane/run-stats.json"
   cleanup=$(jq -r '.cleanup // empty' "$stats" 2>/dev/null || true)
   [ -n "$cleanup" ] || cleanup=$(jq -r '.cleanup // empty' <<<"$max_json" 2>/dev/null || true)
   [ -n "$cleanup" ] || cleanup='unknown'
@@ -120,7 +120,7 @@ canonical_snapshot() {
     --argjson compiled_graph "$graph_json" --argjson graph_ready "$graph_ready" --arg cleanup "$cleanup" '
       ($manifest.lanes + (if $manifest.integrator then [$manifest.integrator] else [] end)) as $declared |
       {schema:"polylane-control-room/v1",
-       goal:($manifest.goal // $max.goal // null), cycle:($manifest.cycle // null),
+       goal:($manifest.goal // $max.goal // $max.ultimate // null), cycle:($manifest.cycle // null),
        run_id:($manifest.run_id // null), route:{target_subgoals:($manifest.target_subgoals // []), state_file:($manifest.state_file // "docs/polylane/max-state.json")},
        graph:{id:($compiled_graph.graph_id // $manifest.graph.id // $manifest.graph_id // null), events:$events, ready:$graph_ready},
        lanes:($state.lanes // [] | map(. as $lane | $lane + {model: ([ $declared[] | select(.name == $lane.name) | .model ][0] // null)})),

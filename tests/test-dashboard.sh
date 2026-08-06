@@ -52,7 +52,6 @@ if command -v jq >/dev/null 2>&1; then
   "orchestration_contract": 2,
   "run_id": "current-nonce",
   "cycle": 9,
-  "goal": "ship canonical control room",
   "state_file": "docs/polylane/max-state.json",
   "target_subgoals": ["m8.8"],
   "lanes": [{"name":"api","model":"gpt-5.6-terra","effort":"high","branch":"pl/api","worktree":"__WT__","own_globs":["src/**"],"target_subgoals":["m8.8"]}],
@@ -61,8 +60,10 @@ if command -v jq >/dev/null 2>&1; then
 JSON
   sed -i.bak "s|__WT__|$SNAP_WT|; s|__INT_WT__|$SNAP_ROOT/.polylane/wt/integrate|" "$SNAP_MAN"
   rm -f "$SNAP_MAN.bak"
-  printf '%s\n' '{"version":1,"goal":"durable goal","milestones":[]}' > "$SNAP_ROOT/docs/polylane/max-state.json"
+  printf '%s\n' '{"version":1,"ultimate":"durable goal","milestones":[]}' > "$SNAP_ROOT/docs/polylane/max-state.json"
   printf '%s\n' '{"run_id":"current-nonce","cost":12}' > "$SNAP_ROOT/docs/polylane/spend-ledger.jsonl"
+  printf '%s\n' '{"cleanup":"complete"}' > "$SNAP_ROOT/docs/polylane/run-stats.json"
+  printf '%s\n' '{"cleanup":"warning"}' > "$SNAP_ROOT/.polylane/run-stats.json"
   printf '%s\n' 'STATUS: api DONE run=current-nonce' > "$SNAP_WT/docs/status-api.md"
   "$(dirname "$DASH")/polylane-graph.sh" compile "$SNAP_MAN" "$SNAP_ROOT/.polylane/graph.json"
   snapshot=$("$DASH" "$SNAP_MAN" --once --json)
@@ -73,6 +74,7 @@ JSON
   assert_eq "once-json-current-run" "current-nonce" "$(jq -r '.run_id' <<<"$snapshot")"
   assert_eq "once-json-lane-from-state" "done" "$(jq -r '.lanes[0].status' <<<"$snapshot")"
   assert_eq "once-json-canonical-spend" "12" "$(jq -r '.spend.total' <<<"$snapshot")"
+  assert_eq "once-json-durable-cleanup" "complete" "$(jq -r '.cleanup' <<<"$snapshot")"
   assert_eq "once-json-graph-ready" "start" "$(jq -r '.graph.ready[0]' <<<"$snapshot")"
   graph_id=$(jq -r '.graph_id' "$SNAP_ROOT/.polylane/graph.json")
   events="$(dirname "$DASH")/polylane-events.sh"
@@ -83,7 +85,7 @@ JSON
   assert_eq "once-json-replayed-event-count" "3" "$(jq -r '.graph.events' <<<"$replayed_snapshot")"
   assert_eq "once-json-replayed-graph-ready" "lane:api" "$(jq -r '.graph.ready[0]' <<<"$replayed_snapshot")"
   text_snapshot=$("$DASH" "$SNAP_MAN" --once)
-  assert_contains "once-text-goal" "goal: ship canonical control room" "$text_snapshot"
+  assert_contains "once-text-goal" "goal: durable goal" "$text_snapshot"
   assert_contains "once-text-graph" "graph:" "$text_snapshot"
   assert_contains "once-text-spend" "spend:" "$text_snapshot"
   assert_contains "once-text-next-action" "next:" "$text_snapshot"

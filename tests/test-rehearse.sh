@@ -10,6 +10,9 @@ RH="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-rehearse.sh"
 # that intended durable state change.
 make_tmpdir
 REHEARSE_REPO="$TEST_TMPDIR/repo"
+REHEARSE_SKILLS="$TEST_TMPDIR/skills"
+fixture_skills_check='source "$1"; rehearse_create_fixture_skills "$2"; for skill in fixture-test fixture-debug fixture-review fixture-check; do test -f "$2/$skill/SKILL.md" || exit 1; done'
+assert_ok "rehearse-creates-resolvable-skill-fixtures" bash -c "$fixture_skills_check" _ "$RH" "$REHEARSE_SKILLS"
 mkdir -p "$REHEARSE_REPO"
 git -C "$REHEARSE_REPO" init -q
 git -C "$REHEARSE_REPO" config user.email t@t
@@ -28,14 +31,14 @@ git -C "$REHEARSE_REPO" commit -qm marker
 assert_fail "rehearse-rejects-tracked-status" bash -c "$clean_check" _ "$RH" "$REHEARSE_REPO"
 
 if [ "${POLYLANE_REHEARSE:-0}" != "1" ]; then
-  pass "rehearse-gated-off (set POLYLANE_REHEARSE=1 to run the live canary)"; finish; exit 0
+  pass "rehearse-gated-off (set POLYLANE_REHEARSE=1 to run the live canary)"; finish; exit $?
 fi
 if ! command -v tmux >/dev/null 2>&1; then
-  pass "rehearse-skipped-no-tmux"; finish; exit 0
+  pass "rehearse-skipped-no-tmux"; finish; exit $?
 fi
 
 out=$("$RH" go 2>&1); rc=$?
-if [ "$rc" = 77 ]; then pass "rehearse-skipped-no-tmux"; finish; exit 0; fi
+if [ "$rc" = 77 ]; then pass "rehearse-skipped-no-tmux"; finish; exit $?; fi
 assert_eq "rehearse-go-reaches-promote" "0" "$rc"
 assert_contains "rehearse-go-host-gate-candidate" \
   "REHEARSE-GO contract-v3=1 ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0" "$out"

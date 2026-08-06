@@ -8,6 +8,14 @@ RUN="$BIN/polylane-run.sh"; MARK="$BIN/polylane-markers.sh"
 command -v tmux >/dev/null 2>&1 || { echo "rehearse: tmux required (skipping)"; exit 77; }
 command -v git >/dev/null 2>&1 || { echo "rehearse: git required" >&2; exit 2; }
 
+rehearse_create_fixture_skills() {
+  local skills_root="$1" skill
+  for skill in fixture-test fixture-debug fixture-review fixture-check; do
+    mkdir -p "$skills_root/$skill"
+    printf '%s\n' '---' "name: $skill" '---' > "$skills_root/$skill/SKILL.md"
+  done
+}
+
 rehearse_promoted_tree_clean() {
   local repo="$1" marker
   git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
@@ -31,8 +39,8 @@ rehearse() {
   (
     cd "$root"
     git init -q -b main .; git config user.email t@t; git config user.name t
-    mkdir -p .polylane/lanes docs/polylane "$root/skills/fixture-test" \
-      "$root/skills/fixture-debug" "$root/skills/fixture-review" "$root/skills/fixture-check"
+    mkdir -p .polylane/lanes docs/polylane
+    rehearse_create_fixture_skills "$root/skills"
     printf '%s\n' '# Goal' 'Contract-v3 rehearsal must prove supervised GO/NO-GO.' > docs/polylane/GOAL.md
     printf '%s\n' '# Acceptance' '- GO promotes.' '- NO-GO retains evidence and stops.' > docs/polylane/ACCEPTANCE.md
     printf '%s\n' '# INDEX' '- [Goal](GOAL.md)' '- [Acceptance](ACCEPTANCE.md)' '- [Cycle](cycle-plan.md)' > docs/polylane/INDEX.md

@@ -31,7 +31,7 @@ SCOUT=bin/polylane-scout.sh
 "$SCOUT" installed <skill>
 "$SCOUT" resolve <skill>
 "$SCOUT" recommend <domain> <activity>
-"$SCOUT" record-outcome docs/polylane/skills-ledger.jsonl <lane> <domain> <skill> <helped|unused|hurt> [why]
+"$SCOUT" record-outcome docs/polylane/skill-outcomes.jsonl <lane> <domain> <skill> <helped|unused|hurt> [why]
 "$SCOUT" arm-role .polylane/lane-skills.json <lane> predefined <skill> <skill>
 "$SCOUT" arm-role .polylane/lane-skills.json <lane> specific <skill> <skill>
 "$SCOUT" github .polylane/lane-skills.json <lane> <repo-or-skill> "<why>"
@@ -116,10 +116,10 @@ appearing in metadata without an invocation instruction is not useful evidence.
 
 ## Ledger
 
-Append to `docs/polylane/skills-ledger.md`:
+Append one JSON object per line to `docs/polylane/skill-outcomes.jsonl`:
 
-```text
-| cycle | lane | skill | role | why | used? | result |
+```json
+{"lane":"builder","domain":"testing","skill":"example","outcome":"helped","why":"caught a regression"}
 ```
 
 At cycle close, inspect that lane’s transcript and verification evidence:
