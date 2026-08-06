@@ -2336,6 +2336,37 @@ repair_integrator_verdict() {
   repipe_pane_log "$INT_PANE_IDX" "$INT_NAME"
 }
 
+# A supervisor can die after a repair integrator commits a fresh, nonce-bound
+# GO verdict but before the runner records the repair node. The immutable ledger
+# then correctly leaves verifier=failed and repair=ready; blindly requiring the
+# verifier again makes every resume fail forever. Reconcile only that exact
+# evidence-backed boundary by appending the declared repair transition. Never
+# rewrite or truncate prior events.
+graph_authority_reconcile_verifier_repair() {
+  local evidence verdict replay verifier_state repair_state verifier_attempt
+  [ "${RESUME:-0}" = "1" ] || return 0
+  graph_authority_enabled || return 0
+  evidence="${INT_WORKTREE:?integrator worktree missing}/docs/verify-integration.md"
+  verdict=$(parse_verdict "$evidence")
+  case "$verdict" in GO|EXTERNAL-EVIDENCE-OPEN) : ;; *) return 0 ;; esac
+  replay=$("$SCRIPT_DIR/polylane-events.sh" replay \
+    "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>/dev/null) || {
+      graph_authority_error "cannot reconcile repaired verifier: ledger replay failed"
+      return 1
+    }
+  verifier_state=$(printf '%s\n' "$replay" | jq -r '.nodes.verifier.state // "pending"')
+  repair_state=$(printf '%s\n' "$replay" | jq -r '.nodes.repair.state // "pending"')
+  [ "$verifier_state" = failed ] || return 0
+  [ "$repair_state" != succeeded ] || return 0
+  [ "$repair_state" = pending ] || [ "$repair_state" = ready ] || {
+    graph_authority_error "cannot reconcile repaired verifier: repair node is $repair_state"
+    return 1
+  }
+  verifier_attempt=$(printf '%s\n' "$replay" | jq -r '.nodes.verifier.attempt // 0')
+  graph_authority_record_ready_node repair succeeded "$((verifier_attempt + 1))" \
+    resume-repair-complete
+}
+
 # gate_with_repairs : exhaust autonomous integration repair before exposing a
 # terminal NO-GO. No report is written between attempts, so the supervisor cannot
 # mistake council feedback for legitimate completion.
@@ -2918,6 +2949,7 @@ main() {
 
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time
+  graph_authority_reconcile_verifier_repair || exit 1
   graph_authority_require verifier "run verifier gate" || exit 1
   if gate_with_repairs; then
     assert_no_conflict "$INT_WORKTREE"
