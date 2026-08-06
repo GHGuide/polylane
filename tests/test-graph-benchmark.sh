@@ -22,7 +22,7 @@ assert_eq "benchmark-fixture-has-64-lanes" "64" "$(jq '[.nodes[] | select(.id | 
 assert_ok "benchmark-fixture-ledger-valid" "$EVENTS" verify "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID"
 assert_eq "benchmark-fixture-ledger-nodes-declared" "0" "$(
   jq -s --slurpfile graph "$FIXTURE/graph.json" '
-    reduce $graph[0].nodes[].id as $id ({}; .[$id] = true) as $declared
+    (reduce $graph[0].nodes[].id as $id ({}; .[$id] = true)) as $declared
     | [.[] | select($declared[.node] != true)] | length
   ' "$FIXTURE/events.jsonl"
 )"

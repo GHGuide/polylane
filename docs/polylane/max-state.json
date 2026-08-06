@@ -12,14 +12,14 @@
       "id": "c2",
       "text": "suite green + shellcheck clean",
       "weight": 4,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c3",
       "text": "rehearse canary GO+NO-GO green",
       "weight": 5,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
@@ -33,7 +33,7 @@
       "id": "c5",
       "text": "real 2-lane self-run reaches GO unattended",
       "weight": 5,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
@@ -41,6 +41,34 @@
       "text": "versioned graph execution is correct, recoverable, auditable, and benchmark-efficient",
       "weight": 10,
       "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c7",
+      "text": "Recovery completes without manual tmux surgery and host-only gates run once in the coordinator",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c8",
+      "text": "Reports preserve truthful token, wall-time, restart, and cleanup evidence across resume",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c9",
+      "text": "Builder prompts use writable lane-local caching and only selected relevant skills",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c10",
+      "text": "Dual-jq graph budget and a fresh zero-intervention efficiency canary pass",
+      "weight": 10,
+      "status": "open",
       "score": 0
     }
   ],
@@ -67,9 +95,9 @@
           "id": "m2.1",
           "text": "rehearse canary green both cases, wired into doctor",
           "weight": 5,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 4,
+          "evidence": "integrator GO; promoted cycle 4"
         }
       ]
     },
@@ -95,9 +123,9 @@
           "id": "m4.1",
           "text": "suite + shellcheck + marker/parity contracts all green",
           "weight": 4,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 4,
+          "evidence": "integrator GO; promoted cycle 4"
         }
       ]
     },
@@ -109,9 +137,9 @@
           "id": "m5.1",
           "text": "tiny 2-lane claude self-run completes to GO",
           "weight": 5,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 4,
+          "evidence": "integrator GO; promoted cycle 4"
         }
       ]
     },
@@ -142,6 +170,52 @@
           "status": "done",
           "cycle": 3,
           "evidence": "integrator GO; promoted cycle 3"
+        }
+      ]
+    },
+    {
+      "id": "m7",
+      "text": "Walk-away efficiency and bounded autonomy",
+      "subgoals": [
+        {
+          "id": "m7.1",
+          "text": "Recover missing or inactive panes and hand host-only verification to the coordinator without model retry churn",
+          "weight": 13,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m7.2",
+          "text": "Generate lean lane prompts with writable worktree-local check caches and only selected domain skills",
+          "weight": 12,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m7.3",
+          "text": "Persist truthful cumulative tokens, wall time, restarts, gate count, and cleanup state across supervisor resumes",
+          "weight": 11,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m7.4",
+          "text": "Keep the production 64-lane 10000-event graph packet inside budget on Homebrew and Apple jq",
+          "weight": 10,
+          "status": "done",
+          "cycle": 4,
+          "evidence": "17/17 graph benchmark assertions on Homebrew jq and Apple jq; ready 54-62ms, append 109-116ms, packet 1845-1882ms"
+        },
+        {
+          "id": "m7.5",
+          "text": "Complete a fresh two-lane efficiency canary with zero manual intervention, one terminal gate, and clean teardown",
+          "weight": 9,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
         }
       ]
     }
@@ -176,6 +250,12 @@
       "kind": "learning",
       "text": "graph shadow parity is exact, but full-ledger reads cost ~0.82s and append ~0.89s at 10k events",
       "meta": "cycle 2 measured baseline"
+    },
+    {
+      "cycle": 4,
+      "kind": "learning",
+      "text": "Graph hot path is efficient; orchestration churn, host-gate ownership, prompt breadth, and resume telemetry are the measured bottlenecks.",
+      "meta": "Homebrew ready=62ms append=116ms packet=1861-1882ms; Apple ready=54ms append=109ms packet=1845-1870ms; cycle report lost token history after resume."
     }
   ],
   "accept": [
@@ -192,7 +272,7 @@
       "sid": "m2.1",
       "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bin/polylane-rehearse.sh go >/dev/null 2>&1 && bin/polylane-rehearse.sh nogo >/dev/null 2>&1",
       "tier": "terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -210,7 +290,7 @@
       "sid": "m4.1",
       "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && tests/run.sh 2>/dev/null | grep -q \"0 failed\" && shellcheck -S warning bin/*.sh",
       "tier": "terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -219,7 +299,7 @@
       "sid": "m5.1",
       "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && test -f docs/polylane/selfrun-proof.md && grep -q \"Outcome: GO\" docs/polylane/selfrun-proof.md",
       "tier": "terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -247,6 +327,51 @@
       "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-graph-benchmark.sh >/dev/null 2>&1 && bash tests/test-graph-authority.sh >/dev/null 2>&1 && bash tests/test-runtime-survival.sh >/dev/null 2>&1",
       "tier": "focused",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m7.1",
+      "cmd": "bash tests/test-runtime-recovery.sh >/dev/null 2>&1 && bash tests/test-verdict-repair.sh >/dev/null 2>&1 && bash tests/test-wedge.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m7.2",
+      "cmd": "bash tests/test-prompt-economy.sh >/dev/null 2>&1 && bash tests/test-promptlint.sh >/dev/null 2>&1 && bash tests/test-skill-parity.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m7.3",
+      "cmd": "bash tests/test-run-stats.sh >/dev/null 2>&1 && bash tests/test-cleanup.sh >/dev/null 2>&1 && bash tests/test-write-report.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m7.4",
+      "cmd": "bash tests/test-graph-benchmark.sh >/dev/null 2>&1 && PATH=/usr/bin:/bin:/usr/sbin:/sbin bash tests/test-graph-benchmark.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m7.5",
+      "cmd": "bash tests/test-efficiency-canary.sh >/dev/null 2>&1 && test -f docs/polylane/efficiency-proof.md",
+      "tier": "terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
