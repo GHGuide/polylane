@@ -68,17 +68,30 @@ INT_WORKTREE="$TEST_TMPDIR/int"; mkdir -p "$INT_WORKTREE/docs"
 RUN_ID=host-gate-run
 printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
 HOST_GATES=0
+EFFICIENCY_PROOFS=0
+write_efficiency_proof() { EFFICIENCY_PROOFS=$((EFFICIENCY_PROOFS + 1)); return 0; }
 contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
 merge_gate; host_rc=$?
 assert_eq "ready-host-gate-passes" "0" "$host_rc"
 assert_eq "ready-host-gate-runs-once" "1" "$HOST_GATES"
+assert_eq "ready-efficiency-proof-runs-once" "1" "$EFFICIENCY_PROOFS"
 assert_eq "ready-host-gate-converts-to-go" "GO" "$VERDICT_RESULT"
 HOST_GATES=0
+EFFICIENCY_PROOFS=0
 contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 1; }
 merge_gate >/dev/null 2>&1; host_fail_rc=$?
 assert_eq "ready-host-gate-failure-is-not-go" "1" "$host_fail_rc"
 assert_eq "ready-host-gate-failure-runs-once" "1" "$HOST_GATES"
+assert_eq "ready-host-gate-failure-proves-once" "1" "$EFFICIENCY_PROOFS"
 assert_eq "ready-host-gate-failure-repairs" "NO-GO" "$VERDICT_RESULT"
+
+HOST_GATES=0
+write_efficiency_proof() { return 1; }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
+merge_gate >/dev/null 2>&1; proof_fail_rc=$?
+assert_eq "ready-efficiency-proof-failure-is-not-go" "1" "$proof_fail_rc"
+assert_eq "ready-efficiency-proof-failure-skips-acceptance" "0" "$HOST_GATES"
+assert_eq "ready-efficiency-proof-failure-repairs" "NO-GO" "$VERDICT_RESULT"
 unset RUN_ID
 
 finish

@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# Emit and verify a bounded-autonomy certificate from durable runner telemetry.
+# bash 3.2 + jq; the proof is written even on failure so a stopped run is diagnosable.
+set -euo pipefail
+
+usage() {
+  echo "usage: polylane-efficiency.sh capture --manifest FILE --stats FILE --proof FILE --phase gate|final | verify --proof FILE [--phase gate|final]" >&2
+  exit 2
+}
+
+capture() {
+  local manifest="" stats="" proof="" phase="" expected actual max_restarts restarts
+  local max_wall wall gates cleanup tokens token_state status="PASS" reasons="" tmp
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --manifest) manifest="${2:-}"; shift 2 ;;
+      --stats) stats="${2:-}"; shift 2 ;;
+      --proof) proof="${2:-}"; shift 2 ;;
+      --phase) phase="${2:-}"; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  [ -s "$manifest" ] && [ -s "$stats" ] && [ -n "$proof" ] || usage
+  case "$phase" in gate|final) ;; *) usage ;; esac
+  jq -e '.efficiency_canary | type == "object"' "$manifest" >/dev/null 2>&1 || {
+    echo "polylane-efficiency: manifest has no efficiency_canary contract" >&2; return 2;
+  }
+  jq -e . "$stats" >/dev/null 2>&1 || {
+    echo "polylane-efficiency: invalid run stats" >&2; return 2;
+  }
+
+  expected=$(jq -r '(.efficiency_canary.expected_launches // ((.lanes | length) + 1))' "$manifest")
+  max_restarts=$(jq -r '(.efficiency_canary.max_restarts // 0)' "$manifest")
+  max_wall=$(jq -r '(.efficiency_canary.max_wall_s // 1800)' "$manifest")
+  actual=$(jq -r '[.lanes[]?.launches] | add // 0' "$stats")
+  restarts=$(jq -r '(([.lanes[]?.restarts] | add // 0) + (.supervisor_restarts // 0))' "$stats")
+  wall=$(jq -r '.wall_s // 0' "$stats")
+  gates=$(jq -r '.terminal_gates // 0' "$stats")
+  cleanup=$(jq -r '.cleanup // "unknown"' "$stats")
+  tokens=$(jq -r 'if .tokens == null then "unknown" else (.tokens|tostring) end' "$stats")
+  token_state=$(jq -r '.token_state // "unknown"' "$stats")
+
+  if [ "$actual" -ne "$expected" ] 2>/dev/null; then
+    status="FAIL"; reasons="$reasons launches=$actual/$expected"
+  fi
+  if [ "$restarts" -gt "$max_restarts" ] 2>/dev/null; then
+    status="FAIL"; reasons="$reasons restarts=$restarts>$max_restarts"
+  fi
+  if [ "$gates" -ne 1 ] 2>/dev/null; then
+    status="FAIL"; reasons="$reasons terminal_gates=$gates"
+  fi
+  if [ "$wall" -gt "$max_wall" ] 2>/dev/null; then
+    status="FAIL"; reasons="$reasons wall_s=$wall>$max_wall"
+  fi
+  case "$tokens:$token_state" in
+    unknown:unknown|*[0-9]:known) ;;
+    *) status="FAIL"; reasons="$reasons token_truth=$tokens/$token_state" ;;
+  esac
+  if [ "$phase" = gate ] && [ "$cleanup" != pending ]; then
+    status="FAIL"; reasons="$reasons cleanup_at_gate=$cleanup"
+  elif [ "$phase" = final ] && [ "$cleanup" != complete ]; then
+    status="FAIL"; reasons="$reasons cleanup_at_final=$cleanup"
+  fi
+
+  mkdir -p "$(dirname "$proof")"
+  tmp="$proof.tmp.$$"
+  {
+    echo "# polylane efficiency proof"
+    echo
+    echo "- Run: $(jq -r '.run_id' "$manifest")"
+    echo "- Phase: $phase"
+    echo "- Status: $status"
+    echo "- Wall seconds: $wall / $max_wall"
+    echo "- Launches: $actual / $expected"
+    echo "- Restarts: $restarts / $max_restarts"
+    echo "- Terminal gates: $gates"
+    echo "- Cleanup: $cleanup"
+    if [ "$tokens" = unknown ]; then
+      echo "- Tokens: unknown"
+    else
+      echo "- Tokens: $tokens ($token_state)"
+    fi
+    echo "- Unexpected launches: $((actual - expected))"
+    echo "- Manual intervention policy: forbidden"
+    [ -z "$reasons" ] || echo "- Failures:${reasons}"
+  } > "$tmp"
+  mv "$tmp" "$proof"
+  [ "$status" = PASS ]
+}
+
+verify() {
+  local proof="" phase=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --proof) proof="${2:-}"; shift 2 ;;
+      --phase) phase="${2:-}"; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  [ -s "$proof" ] || return 1
+  grep -qF -- '- Status: PASS' "$proof" || return 1
+  grep -qF -- '- Terminal gates: 1' "$proof" || return 1
+  grep -qF -- '- Unexpected launches: 0' "$proof" || return 1
+  [ -z "$phase" ] || grep -qF -- "- Phase: $phase" "$proof"
+}
+
+case "${1:-}" in
+  capture) shift; capture "$@" ;;
+  verify) shift; verify "$@" ;;
+  *) usage ;;
+esac

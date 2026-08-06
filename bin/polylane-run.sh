@@ -111,6 +111,27 @@ run_stats() {
     --file "$PROJECT_ROOT/docs/polylane/run-stats.json" "$@"
 }
 
+# write_efficiency_proof PHASE : manifests may opt into a mechanically graded
+# walk-away budget. At the host gate the candidate lives in the integration
+# worktree so frozen acceptance can inspect it; after cleanup the final proof is
+# written into the promoted base. Runs without an efficiency_canary are unchanged.
+write_efficiency_proof() {
+  local phase="$1" proof helper="${SCRIPT_DIR:-.}/polylane-efficiency.sh"
+  [ -n "${MANIFEST:-}" ] && [ -f "$MANIFEST" ] || return 0
+  jq -e '.efficiency_canary | type == "object"' "$MANIFEST" >/dev/null 2>&1 || return 0
+  [ -x "$helper" ] || {
+    echo "efficiency canary configured but helper is missing: $helper" >&2; return 1;
+  }
+  case "$phase" in
+    gate) proof="$INT_WORKTREE/docs/polylane/efficiency-proof.md" ;;
+    final) proof="$PROJECT_ROOT/docs/polylane/efficiency-proof.md" ;;
+    *) return 2 ;;
+  esac
+  "$helper" capture --manifest "$MANIFEST" \
+    --stats "$PROJECT_ROOT/docs/polylane/run-stats.json" \
+    --proof "$proof" --phase "$phase"
+}
+
 # notify_event EVENT MSG : best-effort hook into bin/polylane-notify.sh (a
 # sibling script another lane may install). Fires ONLY if it exists and is
 # executable; missing/broken hook is never fatal to the run.
@@ -2373,7 +2394,7 @@ merge_gate() {
     # This is deliberately not GO: only the outer runner runs the frozen host
     # checks and converts this candidate after that single coordinator gate.
     run_stats terminal-gate
-    if contract_acceptance_gate GO; then v="GO"; else
+    if write_efficiency_proof gate && contract_acceptance_gate GO; then v="GO"; else
       printf '\nACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.\n' >> "$f"
       v="NO-GO"; VERDICT_REPAIRABLE="YES"
     fi
@@ -2722,6 +2743,10 @@ cleanup() {
   else
     run_stats cleanup --state warning || true
   fi
+
+  # The final certificate is generated while the manifest still exists and
+  # after cleanup telemetry has reached its terminal state.
+  write_efficiency_proof final || cleanup_rc=1
 
   safe_rm "$REPO_ROOT/.polylane" || cleanup_rc=1
   # .polylane/ is scratch EXCEPT git-tracked files (e.g. SCHEMA.md); restore those

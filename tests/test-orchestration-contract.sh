@@ -20,24 +20,30 @@ STATE="$P/docs/polylane/max-state.json"
 
 PROMPT="$P/.polylane/lanes/builder.txt"
 cat > "$PROMPT" <<'PROMPT'
+ULTIMATE-GOAL: ship a complete, verified product.
+CURRENT-SUBGOAL: feature works.
 GOAL: ship the feature.
 OWN: src/**. FORBIDDEN: everything else.
 PREDEFINED-SKILLS: testing-strategy debug
 LANE-SPECIFIC-SKILLS: computer-use accessibility-review
+Read only the named kit once; do not enumerate or rediscover skills.
 TEST-CADENCE: focused first; subsystem before DONE; full suite only in integration.
 DELEGATION: forbidden; do not spawn subagents or fan-out.
-CHECK-CACHE: use polylane-check.sh for expensive checks; reuse unchanged results.
+CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks; reuse unchanged results.
 EXTERNAL-EVIDENCE: keep physical-only proof external; continue all autonomous work.
 Write docs/verify-builder.md. Finish STATUS: builder DONE run=run-1.
 PROMPT
 cat > "$P/.polylane/lanes/integrator.txt" <<'PROMPT'
+ULTIMATE-GOAL: ship a complete, verified product.
+CURRENT-SUBGOAL: feature works.
 GOAL: integrate the feature.
 OWN: integrator branch. FORBIDDEN: base branch.
 PREDEFINED-SKILLS: testing-strategy debug
 LANE-SPECIFIC-SKILLS: computer-use accessibility-review
+Read only the named kit once; do not enumerate or rediscover skills.
 TEST-CADENCE: focused failures first; full terminal suite once.
 DELEGATION: forbidden; do not spawn subagents or fan-out.
-CHECK-CACHE: use polylane-check.sh for expensive checks; reuse unchanged results.
+CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks; reuse unchanged results.
 EXTERNAL-EVIDENCE: keep physical-only proof external; continue autonomous work.
 Write docs/verify-integration.md ending POLYLANE-VERDICT: GO run=run-1.
 Finish STATUS: integrator DONE run=run-1.

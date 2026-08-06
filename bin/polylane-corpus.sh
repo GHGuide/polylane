@@ -34,8 +34,9 @@ _oneline() {  # one-line summary: first non-blank, de-#'d, trimmed line of a dig
 _bytes() { wc -c < "$1" | tr -d ' '; }
 
 _render() {   # reads $recent / $early / $WINDOW from caller scope
-  local latest c
+  local latest last c
   latest=$(printf '%s\n' $recent $early | sort -n | tail -1)
+  last=$(printf '%s\n' $recent | tail -1)
   printf '# STORY SO FAR — corpus through cycle %s\n\n' "${latest:-0}"
   printf '## Earlier (one line each)\n'
   if [ -n "$early" ]; then
@@ -47,7 +48,7 @@ _render() {   # reads $recent / $early / $WINDOW from caller scope
   for c in $recent; do
     printf '===== cycle %s =====\n' "$c"
     cat "$DIR/cycle-$c-digest.md"
-    printf '\n'
+    [ "$c" = "$last" ] || printf '\n'
   done
 }
 

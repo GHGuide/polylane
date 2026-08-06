@@ -1,46 +1,10 @@
-# STORY SO FAR — corpus through cycle 4
+# STORY SO FAR — corpus through cycle 5
 
 ## Earlier (one line each)
 cycle 1: Cycle 1 digest — install-test + docs-truth
+cycle 2: Cycle 2 digest — explicit execution graph
 
 ## Recent (verbatim, last 3 cycles)
-
-===== cycle 2 =====
-# Cycle 2 digest — explicit execution graph
-
-## Built
-
-- `bin/polylane-graph.sh`: deterministic contract-v2 manifest compiler, schema-v1
-  validator, bounded-loop checks, terminal reachability, and ready-node routing.
-- `bin/polylane-events.sh`: locked append-only transition ledger with run/graph
-  scoping, strict transition validation, idempotent writes, verification, and replay.
-- Runner shadow integration: each observed builder, integrator, verifier, repair,
-  promotion, resume, and halt transition is checked against the compiled graph.
-- 122 focused assertions across graph contract, event replay, and shadow parity.
-- Failed frozen acceptance checks now name the exact subgoal and command instead of
-  collapsing into an unexplained integrator NO-GO.
-
-## Verified
-
-- Integrator verdict: GO after one repair pass.
-- Merged tree: 852 tests passed, 0 failed, 57 test files.
-- `shellcheck -S warning bin/*.sh`: clean.
-- `m6.1` and `m6.2` frozen acceptance passed in the integration worktree.
-
-## Learned
-
-- The synthetic benchmark fixture emits a schema-invalid graph, so it cannot benchmark
-  production behavior yet.
-- A 64-lane graph plus 10,000-event ledger currently costs about 180 ms per graph
-  validate/ready call, 820 ms per event verify/replay, and 890 ms per append. Re-reading
-  the full ledger on every transition will not scale as an authoritative scheduler.
-- Codex `workspace-write` cannot commit through a linked worktree unless the canonical
-  Git metadata directory is added as writable.
-- The runner's `graphify-out` symlink can make an otherwise complete lane look dirty.
-- A dead tmux session with a live polling runner is not currently self-healing.
-- The dashboard test has a race: non-empty output is not proof that the first frame is
-  complete.
-
 
 ===== cycle 3 =====
 # Cycle 3 digest — authoritative graph runtime
@@ -126,4 +90,36 @@ cycle 1: Cycle 1 digest — install-test + docs-truth
   The cache must live inside the lane worktree.
 - Cycle reporting lost prior-run token and wall evidence on resume, rendering unknown as zero.
   Metrics need an append-only per-run snapshot independent of one runner process.
+
+===== cycle 5 =====
+# Cycle 5 digest — measured recovery and prompt economy
+
+## Built
+
+- Missing and inactive Codex panes can be recreated and remapped without duplicate workers.
+- Integrators can commit `READY-FOR-HOST-GATE`; only the coordinator runs frozen terminal checks
+  and converts the candidate to GO.
+- Builder prompts carry the durable goal and exact sub-goal, a worktree-local check cache, and a
+  bounded kit of selected installed skills with no post-launch inventory search.
+- Durable run telemetry records cumulative wall time, launches, lane/supervisor restarts,
+  terminal gates, cleanup, and truthful known-or-unknown token usage across resumes.
+
+## Verified
+
+- Three builders plus one integrator reached GO in 746 seconds with zero retries, approvals, or
+  manual tmux intervention.
+- Builder usage was 4,316,723 tokens total; this remains too high for such narrow changes and is
+  the next optimization signal, not evidence to weaken verification.
+- Promoted-tree suite: 1,007 passed, 0 failed across 65 files; ShellCheck clean.
+- Live doctor rehearsal passed both GO promotion/cleanup and NO-GO withholding/retention.
+
+## Learned
+
+- The new runtime was merged by a coordinator process loaded before those functions existed, so
+  cycle 5 could verify implementation but not the new host-gate path live. A fresh process must.
+- Strict prompt improvements correctly broke stale test and rehearsal fixtures. Contract fixtures
+  must be generated from the same prompt vocabulary or fail immediately rather than hang.
+- The cycle report scraped wrapped prose and a verdict sentinel as open items. Report extraction
+  needs structured boundaries instead of heading-adjacent text heuristics.
+- Graph execution remains fast; model context and broad implementation turns dominate spend.
 

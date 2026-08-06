@@ -17,6 +17,11 @@ assert_eq       "corpus-window-count"     "3" "$(grep -c '=====' "$C")"
 assert_contains "corpus-old-oneline"      "cycle 1: Cycle 1 headline" "$(cat "$C")"
 # cycle 3 is OUTSIDE the window -> must NOT be verbatim
 if grep -q '===== cycle 3 =====' "$C"; then fail "corpus-3-not-verbatim" "cycle 3 leaked verbatim"; else pass "corpus-3-not-verbatim"; fi
+if [ -n "$(tail -n 1 "$C")" ]; then
+  pass "corpus-no-blank-line-at-eof"
+else
+  fail "corpus-no-blank-line-at-eof" "generated corpus ends with a blank line"
+fi
 
 # hard cap: 30 fat digests -> bytes under cap, newest intact, oldest dropped
 i=1; while [ "$i" -le 30 ]; do
