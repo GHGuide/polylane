@@ -1,6 +1,6 @@
 # Graph authority verification — cycle 3 m6.3
 
-Run: `graph-c3-20260806-194631`  
+Run: `graph-c3-20260806-194631`
 Scope: runner/supervisor authority and runtime recovery only.
 
 ## RED evidence observed first
