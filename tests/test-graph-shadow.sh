@@ -46,6 +46,7 @@ new_shadow_case() {
   RESUME=0
   DRY_RUN=0
   unset POLYLANE_GRAPH_SHADOW GRAPH_FILE EVENTS_FILE GRAPH_ID
+  POLYLANE_GRAPH_MODE=shadow
 }
 
 assert_shadow_init() {
@@ -102,6 +103,7 @@ run_main_fixture() (
   cleanup() { :; }
   write_report() { :; }
 
+  unset POLYLANE_GRAPH_MODE MANIFEST_GRAPH_MODE
   if [ "$mode" = disabled ]; then
     POLYLANE_GRAPH_SHADOW=0 main fixture
   else

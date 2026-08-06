@@ -491,7 +491,7 @@ graph_authority_require() {
     graph_authority_error "cannot $action: cannot create disposable readiness checkpoint"
     return 1
   }
-  if ! printf '%s\n' "$replay" | jq -c '{nodes: (.nodes | with_entries(.value = .value.state))}' > "$tmp"; then
+  if ! printf '%s\n' "$replay" | jq -c '{nodes: .nodes}' > "$tmp"; then
     rm -f "$tmp"
     graph_authority_error "cannot $action: ledger replay has an unreadable state"
     return 1
@@ -521,13 +521,17 @@ graph_authority_record_ready_node() {
   # A supervisor may resume after the runner recorded the same completed
   # boundary but before its next instruction. Idempotent replay is safe; never
   # demand readiness again from an already-final node.
-  local replay state
+  local replay state replay_attempt
   replay=$("$SCRIPT_DIR/polylane-events.sh" replay "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>/dev/null) || {
     graph_authority_error "cannot advance $node: ledger replay failed"
     return 1
   }
   state=$(printf '%s\n' "$replay" | jq -r --arg node "$node" '.nodes[$node].state // "pending"' 2>/dev/null || echo unknown)
-  [ "$state" = "$target" ] && return 0
+  replay_attempt=$(printf '%s\n' "$replay" | jq -r --arg node "$node" '.nodes[$node].attempt // 0' 2>/dev/null || echo 0)
+  if [ "$state" = "$target" ]; then
+    [ "$target" = failed ] || return 0
+    [ "$replay_attempt" -lt "$attempt" ] || return 0
+  fi
   graph_authority_require "$node" "advance" || return 1
   graph_shadow_record_node "$node" "$target" "$attempt" "$reason"
 }
@@ -564,8 +568,7 @@ graph_authority_halt_node() {
 graph_authority_no_go() {
   graph_authority_enabled || { graph_shadow_record_decision NO-GO; return; }
   graph_authority_record_ready_node verifier failed 0 NO-GO || return 1
-  graph_authority_record_ready_node repair failed 0 NO-GO || return 1
-  graph_authority_require halt "halt failed verifier route" || return 1
+  graph_authority_require halt "halt exhausted verifier route" || return 1
   graph_authority_record_ready_node halt succeeded 0 NO-GO
 }
 
@@ -673,7 +676,7 @@ graph_shadow_parity() {
         graph_shadow_edge_exact promote succeeded complete
       ;;
     NO-GO)
-      graph_shadow_edge_exact verifier failed repair &&
+      graph_shadow_edge_exact verifier failed halt,repair &&
         graph_shadow_edge_exact repair failed halt
       ;;
     HALTED)
@@ -758,6 +761,10 @@ graph_shadow_record_node() {
 
 graph_shadow_record_resume() {
   graph_shadow_enabled || return 0
+  if graph_authority_enabled; then
+    graph_authority_record_ready_node "$1" succeeded 0 resume
+    return
+  fi
   graph_shadow_parity RESUME "$1" || return 1
   graph_shadow_record_node "$1" succeeded 0 resume
 }
@@ -2672,8 +2679,8 @@ main() {
   preflight_contract
   graph_shadow_init || exit 1
   mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
-  graph_shadow_record_resumes || exit 1
   graph_authority_start || exit 1
+  graph_shadow_record_resumes || exit 1
 
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees

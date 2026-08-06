@@ -239,10 +239,11 @@ compile_graph() {
         + [
           {from:"builders-joined", to:"integrator", outcome:"succeeded"},
           {from:"integrator", to:"verifier", outcome:"succeeded"},
-          {from:"integrator", to:"halt", outcome:"failed"},
-          {from:"verifier", to:"promote", outcome:"passed"},
-          {from:"verifier", to:"repair", outcome:"failed"},
-          {from:"repair", to:"halt", outcome:"failed"},
+           {from:"integrator", to:"halt", outcome:"failed"},
+           {from:"verifier", to:"promote", outcome:"passed"},
+           {from:"verifier", to:"repair", outcome:"failed"},
+           {from:"verifier", to:"halt", outcome:"failed"},
+           {from:"repair", to:"halt", outcome:"failed"},
           {from:"promote", to:"complete", outcome:"succeeded"}
         ]
       ),
@@ -271,12 +272,28 @@ ready_nodes() {
     . as $graph | ($state[0].nodes // $state[0]) as $states |
     def execution_state:
       if . == "passed" or . == "repaired" then "succeeded" else . end;
+    def node_state($id):
+      ($states[$id] // "pending")
+      | if type == "object" then (.state // "pending") else . end;
+    def node_attempt($id):
+      ($states[$id] // {})
+      | if type == "object" then (.attempt // 0) else 0 end;
     def incoming($id): [($graph.edges[]), ($graph.loops[]) | select(.to == $id)];
+    def incoming_loops($id): [$graph.loops[] | select(.to == $id)];
     def route_matches:
-      (($states[.from] // "pending") | execution_state) == (.outcome | execution_state);
+      (node_state(.from) | execution_state) == (.outcome | execution_state);
     [ $graph.nodes[]
       | . as $node
-      | select(($states[$node.id] // $node.state) == "pending")
+      | node_state($node.id) as $current
+      | select(
+          $current == "pending"
+          or ($current == "failed" and (
+            ($node.kind == "agent"
+             and node_attempt($node.id) < ($node.retry_budget // 0))
+            or any(incoming_loops($node.id)[];
+              route_matches and node_attempt($node.id) < .max_iterations)
+          ))
+        )
       | incoming($node.id) as $routes
       | select(
           if ($routes | length) == 0 then true
