@@ -148,6 +148,58 @@ notify_event() {
   run "$hook" "$1" "$2" 2>/dev/null || true
 }
 
+# Advanced runtime hooks are mandatory runner boundaries.  The adapter owns the
+# helper-specific policy so this supervisor never recreates selection, salvage,
+# risk, or outcome logic.
+advanced_runtime() {
+  local action="$1"; shift
+  local helper="$SCRIPT_DIR/polylane-advanced.sh"
+  [ -x "$helper" ] || { echo "polylane-run: advanced runtime helper missing: $helper" >&2; return 1; }
+  "$helper" "$action" "$MANIFEST" "$@"
+}
+
+quality_judges_requested() {
+  jq -e '.quality_judges | type == "array" and length > 0' "$MANIFEST" >/dev/null 2>&1
+}
+
+seam_gate() {
+  local evidence="$INT_WORKTREE/docs/verify-integration.md" out
+  out=$($SCRIPT_DIR/polylane-seams.sh scan "$INT_WORKTREE" 2>&1) && return 0
+  mkdir -p "$(dirname "$evidence")"
+  printf '\n%s\n' "$out" >> "$evidence"
+  echo "SEAM-GATE: integration has dangling seams; repair required." >&2
+  return 1
+}
+
+quality_judge_gate() {
+  local out_dir="$INT_WORKTREE/docs/polylane/judges" attempt=0
+  QUALITY_JUDGE_ATTEMPT=0
+  "$SCRIPT_DIR/polylane-judges.sh" run "$MANIFEST" "$INT_WORKTREE" "$out_dir" && return 0
+  graph_authority_record_ready_node judges failed "$attempt" judge-failed || return 1
+  attempt=1
+  QUALITY_JUDGE_ATTEMPT=1
+  graph_authority_require judge-repair "route bounded judge repair" || return 1
+  repair_integrator_verdict "$attempt" || return 1
+  poll_done "$INT_NAME:$INT_WORKTREE" || return 1
+  # A repair that rewrites its verdict still has to clear the ordinary host gate
+  # before its fresh judge evidence is trusted.
+  merge_gate || return 1
+  graph_authority_record_ready_node judge-repair succeeded "$attempt" judge-repair || return 1
+  graph_authority_require judges "rerun judges after bounded repair" || return 1
+  "$SCRIPT_DIR/polylane-judges.sh" run "$MANIFEST" "$INT_WORKTREE" "$out_dir"
+}
+
+graph_quality_halt() {
+  if graph_authority_enabled; then
+    graph_authority_record_ready_node judges failed 1 judge-repair-exhausted || return 1
+    graph_authority_require halt "halt after judge repair failure" || return 1
+    graph_authority_record_ready_node halt succeeded 0 judge-repair-exhausted
+  else
+    graph_shadow_record_node judges failed 1 judge-repair-exhausted || return 1
+    graph_shadow_record_node halt succeeded 0 judge-repair-exhausted
+  fi
+}
+
 # run CMD... : in dry-run print it; otherwise execute it (argv form, no eval).
 run() {
   if [ "${DRY_RUN:-0}" = "1" ]; then
@@ -328,6 +380,7 @@ load_manifest() {
   # override it for host-specific recovery without replacing the whole agent
   # command template.
   CODEX_SANDBOX=$(jq -r '.codex_sandbox // "workspace-write"' "$MANIFEST")
+  CODEX_PROFILE=$(jq -r '.codex_profile // "lean"' "$MANIFEST")
   # PROJECT_ROOT = parent of the manifest's own dir (.polylane) = the project root
   # where .polylane/lanes/*.txt actually live. Robust even outside a git checkout.
   local _mdir
@@ -885,6 +938,10 @@ validate_manifest() {
   fi
   case "$(agent_selected)" in
     codex|gpt|openai)
+      case "$(codex_profile_selected)" in
+        lean|user) : ;;
+        *) die "invalid Codex profile '$(codex_profile_selected)' — use lean|user" ;;
+      esac
       case "$(codex_sandbox_selected)" in
         read-only|workspace-write|danger-full-access) : ;;
         *) die "invalid Codex sandbox '$(codex_sandbox_selected)' — use read-only|workspace-write|danger-full-access" ;;
@@ -1115,14 +1172,18 @@ mark_resumed() {
 # %q-quoted. It may also contain {effort}. Effort is additionally passed to EVERY
 # agent as the POLYLANE_EFFORT env var (agents that don't use it are unaffected).
 agent_selected() { printf '%s' "${POLYLANE_AGENT:-${AGENT:-claude}}"; }
+codex_profile_selected() {
+  printf '%s' "${POLYLANE_CODEX_PROFILE:-${CODEX_PROFILE:-lean}}"
+}
 codex_sandbox_selected() {
   printf '%s' "${POLYLANE_CODEX_SANDBOX:-${CODEX_SANDBOX:-workspace-write}}"
 }
 
 agent_template() {
   if [ -n "${POLYLANE_AGENT_CMD:-}" ]; then printf '%s' "$POLYLANE_AGENT_CMD"; return; fi
-  local pmode="${POLYLANE_PERMISSION_MODE:-acceptEdits}" codex_sandbox
+  local pmode="${POLYLANE_PERMISSION_MODE:-acceptEdits}" codex_sandbox codex_profile codex_flags=""
   codex_sandbox=$(codex_sandbox_selected)
+  codex_profile=$(codex_profile_selected)
   case "$(agent_selected)" in
     # acceptEdits: lanes edit only their own files in an isolated worktree, so edits
     # are always safe to auto-accept; the walk-away design can't block per-edit.
@@ -1131,7 +1192,10 @@ agent_template() {
     # effort was pure prompt-discretion ("run at HIGH effort, confirm with /model"),
     # while codex lanes already got it mechanically via model_reasoning_effort.
     claude)            printf 'claude --permission-mode %s --effort {effort} --model {model} "$(cat {prompt})"' "$(printf '%q' "$pmode")" ;;
-    codex|gpt|openai)  printf 'codex exec --json --disable multi_agent --disable multi_agent_v2 --disable enable_fanout --sandbox %s{add_dir} -c approval_policy=never -c model_reasoning_effort={effort} --model {model} - < {prompt}' "$(printf '%q' "$codex_sandbox")" ;;
+    codex|gpt|openai)
+      [ "$codex_profile" = lean ] && codex_flags=' --ephemeral --ignore-user-config'
+      printf 'codex exec --json --disable multi_agent --disable multi_agent_v2 --disable enable_fanout --sandbox %s%s{add_dir} -c approval_policy=never -c model_reasoning_effort={effort} --model {model} - < {prompt}' "$(printf '%q' "$codex_sandbox")" "$codex_flags"
+      ;;
     aider)             printf 'aider --model {model} --message-file {prompt} --yes-always --no-auto-commits' ;;
     *) echo "polylane-run: unknown agent '$(agent_selected)' — set POLYLANE_AGENT_CMD to a template containing {model} and {prompt}" >&2; return 2 ;;
   esac
@@ -2432,6 +2496,11 @@ merge_gate() {
       VERDICT_REPAIRABLE="YES"
     fi
   fi
+  if { [ "$v" = "GO" ] || [ "$v" = "EXTERNAL-EVIDENCE-OPEN" ]; } && ! seam_gate; then
+    printf '\nSEAM-GATE: mechanical seam scan failed; repair autonomously.\n' >> "$f"
+    v="NO-GO"
+    VERDICT_REPAIRABLE="YES"
+  fi
   VERDICT_RESULT="$v"
   case "$v" in
     GO|EXTERNAL-EVIDENCE-OPEN)
@@ -3068,6 +3137,7 @@ main() {
   preflight_agent
   apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
   preflight_contract
+  advanced_runtime preflight || exit 1
   graph_shadow_init || exit 1
   mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
   graph_authority_start || exit 1
@@ -3098,6 +3168,7 @@ main() {
     graph_authority_record_builders succeeded || exit 1
     echo "All builders DONE."
     notify_event "done" "all ${#LANE_NAMES[@]} lane(s) DONE — starting integrator"
+    advanced_runtime select || exit 1
   else
     poll_rc=$?
     [ "$poll_rc" = 75 ] && exit 75
@@ -3106,6 +3177,7 @@ main() {
     notify_event halt "lane(s) failed after retries: ${FAILED_LANES:-?}"
     capture_stats
     write_report "HALTED" || true
+    advanced_runtime record HALTED
     echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
@@ -3129,6 +3201,7 @@ main() {
     notify_event halt "integrator failed after retries — nothing merged"
     capture_stats
     write_report "HALTED" || true
+    advanced_runtime record HALTED
     echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
@@ -3139,10 +3212,26 @@ main() {
   graph_authority_reconcile_verifier_repair || exit 1
   graph_authority_require verifier "run verifier gate" || exit 1
   if gate_with_repairs; then
-    assert_no_conflict "$INT_WORKTREE"
     if graph_authority_enabled; then
       graph_authority_record_ready_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     else
+      graph_shadow_record_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
+    fi
+    if quality_judges_requested; then
+      if ! quality_judge_gate; then
+        graph_quality_halt || exit 1
+        advanced_runtime salvage
+        advanced_runtime record NO-GO
+        echo "Halt: quality judges failed after one bounded repair. Nothing merged." >&2
+        exit 1
+      fi
+      graph_authority_record_ready_node judges succeeded "${QUALITY_JUDGE_ATTEMPT:-0}" judges-passed || exit 1
+    fi
+    assert_no_conflict "$INT_WORKTREE"
+    if ! graph_authority_enabled && quality_judges_requested; then
+      graph_shadow_record_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
+      graph_shadow_record_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
+    elif ! graph_authority_enabled; then
       graph_shadow_record_decision "${VERDICT_RESULT:-GO}" || exit 1
     fi
     graph_authority_require promote "promote verified integration" || exit 1
@@ -3156,6 +3245,7 @@ main() {
     finalize_cycle_state
     graph_authority_require complete "complete verified run" || exit 1
     graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
+    advanced_runtime record "${VERDICT_RESULT:-GO}"
     echo "== cleanup =="
     if ! cleanup; then
       CLEANUP_WARNING="some worktrees, branches, or scratch could not be removed"
@@ -3167,6 +3257,8 @@ main() {
     fi
   else
     graph_authority_no_go || exit 1
+    advanced_runtime salvage
+    advanced_runtime record NO-GO
   fi
 
   echo "== report =="
