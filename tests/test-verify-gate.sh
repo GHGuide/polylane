@@ -7,6 +7,9 @@ GATE="$(cd "$(dirname "$RUNNER")" && pwd)/../assets/verify-gate.sh"
 make_tmpdir
 mkdir -p "$TEST_TMPDIR/docs"
 run_gate() { CLAUDE_PROJECT_DIR="$TEST_TMPDIR" bash "$GATE" <<<'{}'; }
+run_gate_active() {
+  printf '%s\n' '{"stop_hook_active":true}' | CLAUDE_PROJECT_DIR="$TEST_TMPDIR" bash "$GATE"
+}
 
 # no status file at all -> allow (nothing claimed)
 assert_ok "gate-allows-when-no-status" run_gate
@@ -21,7 +24,7 @@ assert_ok "gate-allows-with-verify" run_gate
 
 # stop_hook_active -> never hard-loop, allow even if verify missing
 rm -f "$TEST_TMPDIR/docs/verify-alpha.md"
-assert_ok "gate-no-loop-when-active" sh -c "CLAUDE_PROJECT_DIR='$TEST_TMPDIR' bash '$GATE' <<<'{\"stop_hook_active\":true}'"
+assert_ok "gate-no-loop-when-active" run_gate_active
 
 # B11: integrator's evidence is verify-integration.md (not verify-integrator.md)
 rm -f "$TEST_TMPDIR/docs/"status-* "$TEST_TMPDIR/docs/"verify-*
