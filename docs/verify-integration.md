@@ -1,55 +1,38 @@
-# Walk C6 integration verification
+# Integration verification — walk-c8
 
-Run: `walk-c6-20260806-225228`
-Integrator branch: `codex/walk-c6-integrator`
+Run identifier: `walk-c8-20260806-233854`
 
-## Merged lane tips
+## Merged evidence
 
-- `codex/walk-c6-host-canary` — `2064b3c`
-- `codex/walk-c6-report-truth` — `6efd4ce`
+- Supervisor-hermetic branch tip: `c6a409574a637096e66c710c26e895970cc5801c`
+  (merged by `2ef14ea30babe5f619b730ed9a08f32c87a3a9cc`).
+- Terminal-contract branch tip: `846bead999b47208152344ec510be080f63065c8`
+  (merged by `3593146a88c5b48c05197c02eb6cd9792aea2574`).
 
-## Report-item wiring
+Read merged evidence:
 
-`report_open_items` now passes only explicit current-run paths to
-`bin/polylane-report-items.sh`: each lane worktree's
-`docs/verify-<lane>.md`, plus the integrator worktree's
-`docs/verify-integration.md`. It no longer scans repository-root historical
-evidence. The report fixture proves lane, external, and integration items are
-included from those paths while a historical root file is excluded.
+- `docs/verify-supervisor-hermetic.md` records 22 supervisor checks and the
+  run-stats check passing under the zero-restart policy.
+- `docs/verify-terminal-contract.md` records the terminal-contract, efficiency,
+  and report evidence from its lane.
 
-## Graph path query
+## Independent focused verification
 
-The single Graphify query for the report/gate path identified
-`report_open_items()` and `merge_gate()` in `bin/polylane-run.sh`. The gate
-recognizes the run-tagged `READY-FOR-HOST-GATE` candidate and records
-`terminal_gates` before frozen host acceptance; no graph rebuild was run.
+| Exact command | Exit code | Current-run summary |
+| --- | ---: | --- |
+| `POLYLANE_SUP_MAX_RESTARTS=0 bash tests/test-supervisor.sh` | 0 | 22 pass, 0 fail; revive, halted recovery, single-launch terminal states, restart cap, lock cleanup, and heartbeat checks passed. |
+| `bash tests/test-run-stats.sh` | 0 | Run-stat initialization, resume, usage, snapshot, and concurrency passed. |
+| `bash tests/test-verdict-repair.sh` | 0 | 26 pass, 0 fail; the ready host gate and one-shot efficiency proof are each exercised once, with failure paths stopping repair/loop work. |
+| `bash tests/test-efficiency-canary.sh` | 0 | 13 pass, 0 fail; capture/verify, two-lane launch budget, one gate, restart and stale-run rejection, durable failure, and clean teardown passed. |
+| `bash tests/test-write-report.sh` | 0 | 25 pass, 0 fail; GO, NO-GO, and halted reports preserve only supported current-run evidence. |
 
-## Rehearsal candidate contract
+All five prescribed focused commands were executed once in this integration
+worktree and returned exit code 0. No check cache was used.
 
-The merged rehearsal success path writes exactly
-`POLYLANE-VERDICT: READY-FOR-HOST-GATE run=<nonce>` and its GO assertion
-requires durable `docs/polylane/run-stats.json` telemetry to report
-`terminal_gates=1`, alongside promotion and clean teardown. The live tmux
-terminal acceptance is host-only evidence for the outer coordinator.
+## Candidate verdict and handoff
 
-## Focused verification
+Candidate verdict: focused integration evidence supports a single nonce-bound
+terminal acceptance handoff for `walk-c8-20260806-233854`. The outer coordinator
+must perform the host-only terminal gate and may decide the final frozen verdict.
 
-All test commands were cache-routed through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/" --`.
-
-- `bash tests/test-rehearse.sh` — 5 pass, 0 fail (live rehearsal correctly
-  remains gated to the outer host acceptance).
-- `bash tests/test-report-items.sh` — 1 pass, 0 fail.
-- `bash tests/test-efficiency-canary.sh` — 12 pass, 0 fail.
-- `bash tests/test-write-report.sh` — 25 pass, 0 fail.
-- `shellcheck -S warning bin/polylane-run.sh bin/polylane-report-items.sh` —
-  clean.
-
-## Review
-
-The integration diff has one runner seam: it preserves the existing report
-deduplication and limit while delegating extraction to the exact-path helper.
-No untrusted path expansion or repository-wide evidence discovery remains in
-that call path. No frozen acceptance or efficiency budget changed.
-
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=walk-c6-20260806-225228
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=walk-c8-20260806-233854
