@@ -8,6 +8,10 @@
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 . "$RUNNER"
 
+# Host sandboxes may export an unrelated CODEX_SANDBOX value. This fixture owns
+# that runner-internal variable and sets every policy it asserts explicitly.
+unset CODEX_SANDBOX
+
 # --- template selection by profile ------------------------------------------
 AGENT=claude; unset POLYLANE_AGENT POLYLANE_AGENT_CMD
 assert_contains "tmpl-claude"     "claude --permission-mode" "$(agent_template)"

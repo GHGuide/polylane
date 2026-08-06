@@ -20,23 +20,23 @@ FAIL rehearse-nogo-contract-v2 — output does not contain [REHEARSE-NOGO contra
 
 The fixture now commits durable GOAL, ACCEPTANCE, INDEX, and cycle-plan state;
 uses a structured Codex skill kit; stamps every strict prompt with its current
-nonce; assigns `a/**`, `b/**`, and `docs/**` disjointly; and records immutable
-authoritative graph and event files. The manifest names contract version 2 and
-supervisor lifecycle ownership. The bounded mock validates that material before
-writing nonce-bound markers, makes one lane commit per builder, and sleeps for
-at most 30 seconds.
+nonce; assigns disjoint `a/**` and `b/**` builder scopes; and compiles an
+immutable authoritative graph with an append-only event ledger. The manifest
+names contract version 2 and supervisor lifecycle ownership. The bounded mock
+validates graph identity and ledger validity before every launch, commits each
+lane's current-run marker, and sleeps for at most 30 seconds.
 
 GO checks promoted `a/x` and `b/y`, GO report, exactly three mock launches,
-unchanged graph/events, no tmux or worktree leak before cleanup, and removed
-temporary root after cleanup. NO-GO checks retained NO-GO verdict evidence,
-withheld base promotion, exactly three launches (no repair/restart loop), the
-same immutable state, and the same leak cleanup.
+three graph-authority witnesses, no tmux or worktree leak before cleanup, and
+removed temporary root after cleanup. NO-GO checks retained NO-GO verdict
+evidence and its live session/worktrees, withheld base promotion, and made
+exactly three launches (no repair/restart loop) before fixture-owned cleanup.
 
 Expected local traces:
 
 ```text
 REHEARSE-GO contract-v2=1 promoted=1 cleaned=1 leaks=0
-REHEARSE-NOGO contract-v2=1 promoted=0 evidence=1 bounded=1 leaks=0
+REHEARSE-NOGO contract-v2=1 promoted=0 evidence=1 retained=1 bounded=1 cleaned=1
 ```
 
 ## Local execution constraint

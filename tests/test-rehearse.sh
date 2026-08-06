@@ -19,5 +19,5 @@ assert_contains "rehearse-go-contract-v2" "REHEARSE-GO contract-v2=1 promoted=1 
 
 out=$("$RH" nogo 2>&1); rc=$?
 assert_eq "rehearse-nogo-gate-holds" "0" "$rc"
-assert_contains "rehearse-nogo-contract-v2" "REHEARSE-NOGO contract-v2=1 promoted=0 evidence=1 bounded=1 leaks=0" "$out"
+assert_contains "rehearse-nogo-contract-v2" "REHEARSE-NOGO contract-v2=1 promoted=0 evidence=1 retained=1 bounded=1 cleaned=1" "$out"
 finish
