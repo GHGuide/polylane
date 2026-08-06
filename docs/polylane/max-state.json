@@ -35,6 +35,13 @@
       "weight": 5,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c6",
+      "text": "versioned graph execution is correct, recoverable, auditable, and benchmark-efficient",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -107,6 +114,36 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m6",
+      "text": "Explicit execution graph runtime",
+      "subgoals": [
+        {
+          "id": "m6.1",
+          "text": "cycle manifest compiles to immutable schema-v1 graph and admission rejects unsafe or unbounded topology",
+          "weight": 10,
+          "status": "done",
+          "cycle": 2,
+          "evidence": "integrator GO; promoted cycle 2"
+        },
+        {
+          "id": "m6.2",
+          "text": "append-only node events replay exact state and shadow transitions match current runner outcomes",
+          "weight": 9,
+          "status": "done",
+          "cycle": 2,
+          "evidence": "integrator GO; promoted cycle 2"
+        },
+        {
+          "id": "m6.3",
+          "text": "graph scheduler becomes authoritative after parity and stays within the frozen benchmark budget",
+          "weight": 8,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -127,6 +164,18 @@
       "kind": "learning",
       "text": "resume/respawn path can lose a lane's DONE marker -> finished lanes respawn and 'fail after retries'",
       "meta": "investigate before next launch"
+    },
+    {
+      "cycle": 2,
+      "kind": "decision",
+      "text": "adopt Bash-jq graph contract, append-only event replay, shadow parity, then authoritative scheduler",
+      "meta": "18-source graph-loop research; no Python runtime dependency"
+    },
+    {
+      "cycle": 2,
+      "kind": "learning",
+      "text": "graph shadow parity is exact, but full-ledger reads cost ~0.82s and append ~0.89s at 10k events",
+      "meta": "cycle 2 measured baseline"
     }
   ],
   "accept": [
@@ -170,6 +219,33 @@
       "sid": "m5.1",
       "cmd": "cd /Users/leonardo/Downloads/polylane && test -f docs/polylane/selfrun-proof.md && grep -q \"Outcome: GO\" docs/polylane/selfrun-proof.md",
       "tier": "terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m6.1",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-graph-contract.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m6.2",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-graph-events.sh >/dev/null 2>&1 && bash tests/test-graph-shadow.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m6.3",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-graph-benchmark.sh >/dev/null 2>&1 && bash tests/test-graph-authority.sh >/dev/null 2>&1 && bash tests/test-runtime-survival.sh >/dev/null 2>&1",
+      "tier": "focused",
       "status": "unchecked",
       "deps": [],
       "fp": "",
