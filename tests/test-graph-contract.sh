@@ -103,5 +103,7 @@ invalid_graph '.edges += [{from:"integrator",to:"builders-joined",outcome:"succe
 invalid_graph '.loops[0].max_iterations = 0' loop-zero
 invalid_graph 'del(.edges[] | select((.from=="verifier" and .to=="promote") or (.from=="repair" and .to=="halt")))' no-terminal-path
 invalid_graph '(.nodes[] | select(.id=="lane:alpha")) |= del(.evidence)' malformed-agent
+# Break caught: outcome names cease to be usable as deterministic routing keys.
+invalid_graph '(.nodes[] | select(.id=="start")).outcomes = [1] | (.edges[] | select(.from=="start")).outcome = 1' non-string-outcome
 
 finish

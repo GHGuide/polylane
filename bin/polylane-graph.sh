@@ -52,7 +52,8 @@ validate_graph() {
     all(.nodes[]; . as $node |
       ($kinds | index($node.kind)) != null
       and $node.state == "pending"
-      and ($node.outcomes | type == "array")
+      and ($node.outcomes | type == "array"
+           and all(.[]; type == "string" and length > 0))
     )
   ' "$graph" >/dev/null 2>&1 || invalid "nodes need allowed kind, pending state, and outcomes" || return 1
 
