@@ -59,32 +59,76 @@ _skill_roots() {
   IFS=$old_ifs
 }
 
+# resolve SKILL : print the exact trusted local SKILL.md for a qualified or
+# unqualified skill. Plugin cache entries are read-only metadata, never code.
+resolve() {
+  local skill="$1" namespace member root found
+  namespace="${skill%%:*}"
+  member="${skill#*:}"
+  while IFS= read -r root; do
+    if [ "$namespace" = "$skill" ]; then
+      [ -f "$root/$skill/SKILL.md" ] && { printf '%s\n' "$root/$skill/SKILL.md"; return 0; }
+    else
+      [ -f "$root/$namespace/$member/SKILL.md" ] && { printf '%s\n' "$root/$namespace/$member/SKILL.md"; return 0; }
+    fi
+  done < <(_skill_roots)
+  if [ "$namespace" = "$skill" ]; then
+    found=$(find "${HOME}/.codex/plugins/cache" -type f -path "*/skills/$skill/SKILL.md" -print 2>/dev/null | LC_ALL=C sort | head -n 1)
+  else
+    found=$(find "${HOME}/.codex/plugins/cache" -type f -path "*/$namespace/*/skills/$member/SKILL.md" -print 2>/dev/null | LC_ALL=C sort | head -n 1)
+  fi
+  [ -n "$found" ] || return 1
+  printf '%s\n' "$found"
+}
+
 # installed SKILL : 0 iff an executable local skill/plugin is present. A qualified
 # name such as design:design-critique requires the plugin namespace ("design") and
 # is not satisfied by an unrelated unqualified design-critique directory.
-installed() {
-  local skill="$1" namespace="${1%%:*}" member="${1#*:}" root explicit=0
-  [ -n "${POLYLANE_SKILLS_DIRS:-}${CODEX_SKILLS_DIR:-}${CLAUDE_SKILLS_DIR:-}" ] && explicit=1
-  while IFS= read -r root; do
-    if [ "$namespace" != "$skill" ]; then
-      [ -d "$root/$namespace" ] && return 0
-    else
-      [ -d "$root/$skill" ] && return 0
+installed() { resolve "$1" >/dev/null 2>&1; }
+
+_recommend_candidates() {
+  local domain="$1" activity="$2"
+  case "$domain:$activity" in
+    ui:*critique*|ui:*review*) echo "design:design-critique" ;;
+    test:*|*:test*|*:verify*) echo "superpowers:test-driven-development engineering:testing-strategy" ;;
+    api:*) echo "42crunch-api-security-testing:42crunch-audit" ;;
+    report:*) echo "anthropic-skills:docx anthropic-skills:pdf" ;;
+    *) echo "$(_candidates "$domain")" ;;
+  esac
+}
+
+record_outcome() {
+  local ledger="$1" lane="$2" domain="$3" skill="$4" outcome="$5" why="${6:-}"
+  case "$outcome" in helped|unused|hurt) ;; *)
+    echo "polylane-scout: outcome must be helped, unused, or hurt" >&2; return 2 ;;
+  esac
+  mkdir -p "$(dirname "$ledger")"
+  jq -cn --arg lane "$lane" --arg domain "$domain" --arg skill "$skill" \
+    --arg outcome "$outcome" --arg why "$why" \
+    '{lane:$lane,domain:$domain,skill:$skill,outcome:$outcome,why:$why}' >> "$ledger"
+  printf '\n' >> "$ledger"
+}
+
+recommend() {
+  local domain="$1" activity="$2" ledger="${POLYLANE_OUTCOMES_FILE:-docs/polylane/skill-outcomes.jsonl}"
+  local candidate path items="" score
+  for candidate in $(_recommend_candidates "$domain" "$activity"); do
+    path=$(resolve "$candidate" 2>/dev/null) || continue
+    score='{"helped":0,"unused":0}'
+    if [ -f "$ledger" ]; then
+      score=$(jq -s --arg domain "$domain" --arg skill "$candidate" '
+        map(select(.domain == $domain and .skill == $skill))
+        | if any(.outcome == "hurt") then "hurt"
+          else {helped: ([.[] | select(.outcome == "helped")] | length),
+                unused: ([.[] | select(.outcome == "unused")] | length)} end
+      ' "$ledger" 2>/dev/null) || score='{"helped":0,"unused":0}'
     fi
-  done < <(_skill_roots)
-  [ "$explicit" = "1" ] && return 1
-  if [ "$namespace" != "$skill" ]; then
-    find "${HOME}/.codex/plugins/cache" -type d \
-      -path "*/$namespace/*/skills/$member" -print -quit 2>/dev/null | grep -q . && return 0
-    ls -d "${HOME}"/.claude/plugins/*/"$namespace" >/dev/null 2>&1 && return 0
-    ls -d "${HOME}"/.claude/plugins/marketplaces/*"$namespace"* >/dev/null 2>&1 && return 0
-  else
-    # bare plugin name (superpowers/ponytail/caveman): real installs live in the plugin
-    # CACHE — either cache/<name> (own marketplace) or cache/<marketplace>/<name>.
-    ls -d "${HOME}/.claude/plugins/cache/$skill" >/dev/null 2>&1 && return 0
-    ls -d "${HOME}"/.claude/plugins/cache/*/"$skill" >/dev/null 2>&1 && return 0
-  fi
-  return 1
+    [ "$score" = '"hurt"' ] && continue
+    items="${items}${items:+,}{\"skill\":$(printf '%s' "$candidate" | jq -R .),\"path\":$(printf '%s' "$path" | jq -R .),\"helped\":$(printf '%s' "$score" | jq -r '.helped'),\"unused\":$(printf '%s' "$score" | jq -r '.unused')}"
+  done
+  printf '{"domain":%s,"activity":%s,"skills":[%s]}\n' \
+    "$(printf '%s' "$domain" | jq -R .)" "$(printf '%s' "$activity" | jq -R .)" "$items" \
+    | jq '.skills |= sort_by(-.helped, .unused, .skill)'
 }
 
 # suggest DOMAIN : the candidates for a domain that are ACTUALLY installed (bake-free).
@@ -255,6 +299,9 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     domain)    shift; domain "$@" ;;
     suggest)   shift; suggest "${1:?usage: suggest <domain>}" ;;
     installed) shift; installed "${1:?usage: installed <skill>}" ;;
+    resolve)   shift; resolve "${1:?usage: resolve <skill>}" ;;
+    recommend) shift; recommend "${1:?usage: recommend <domain> <activity>}" "${2:?usage: recommend <domain> <activity>}" ;;
+    record-outcome) shift; record_outcome "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" "${6:-}" ;;
     bake)      shift; bake "$@" ;;
     arm-role)  shift; arm_role "$@" ;;
     armed-role) shift; armed_role "${1:?}" "${2:?}" "${3:?}" ;;
@@ -263,6 +310,6 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     validate)  shift; validate_kits "${1:?}" "${2:?}" ;;
     armed)     shift; armed "${1:?}" "${2:?}" ;;
     lint)      shift; lint "${1:?}" "${2:?}" "${3:?}" ;;
-    *) echo "usage: polylane-scout.sh domain|suggest|installed|bake|arm-role|armed-role|github|github-suggest|validate|armed|lint ..." >&2; exit 2 ;;
+    *) echo "usage: polylane-scout.sh domain|suggest|installed|resolve|recommend|record-outcome|bake|arm-role|armed-role|github|github-suggest|validate|armed|lint ..." >&2; exit 2 ;;
   esac
 fi

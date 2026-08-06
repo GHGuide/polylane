@@ -30,6 +30,26 @@ assert_contains "models-fallback-has-haiku"  "claude-haiku-4-5" "$OUT_FB"
 # Unknown args carry no strict validation — best-effort, still exits 0.
 assert_rc       "models-unknown-arg-rc0"     0 env -u ANTHROPIC_API_KEY "$MODELS" bogus-arg
 
+# --- Codex mode (cache-only, gpt ids only) ----------------------------------
+make_tmpdir
+CODEX_FIXTURE="$TEST_TMPDIR/codex-home"
+mkdir -p "$CODEX_FIXTURE"
+cat > "$CODEX_FIXTURE/models_cache.json" <<'EOF'
+{"models":[{"id":"claude-sonnet-5"},{"id":"gpt-5.6-terra"},{"id":"gpt-5.5-mini"}]}
+EOF
+
+OUT_CODEX=$(CODEX_HOME="$CODEX_FIXTURE" "$MODELS" codex 2>&1)
+assert_eq       "models-codex-cache-first-gpt" "gpt-5.6-terra" "$(printf '%s\n' "$OUT_CODEX" | head -n1)"
+assert_contains "models-codex-cache-second-gpt" "gpt-5.5-mini" "$OUT_CODEX"
+case "$OUT_CODEX" in
+  *claude-*) fail "models-codex-cache-excludes-claude" "output=$OUT_CODEX" ;;
+  *) pass "models-codex-cache-excludes-claude" ;;
+esac
+
+EMPTY_CODEX_HOME="$TEST_TMPDIR/no-codex-cache"
+OUT_CODEX_FALLBACK=$(CODEX_HOME="$EMPTY_CODEX_HOME" "$MODELS" codex 2>&1)
+assert_eq "models-codex-current-fallback" "gpt-5.6-terra" "$OUT_CODEX_FALLBACK"
+
 # --- probe branch (mock curl + real jq) --------------------------------------
 # The script only reaches the probe when both curl and jq exist; we shadow curl
 # with a mock but need real jq to parse the JSON, so skip-pass when jq is absent.
