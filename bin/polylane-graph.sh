@@ -180,6 +180,7 @@ compile_graph() {
   local manifest="$1" graph_out="$2" graph_id tmp_dir tmp
   [ -f "$manifest" ] || { printf 'GRAPH-INVALID: manifest file does not exist: %s\n' "$manifest" >&2; return 2; }
   jq -e '
+    (.quality_judges // null) as $quality_judges |
     .orchestration_contract == 2
     and (.run_id | type == "string" and length > 0)
     and (.cycle | type == "number" and floor == . and . >= 1)
@@ -195,6 +196,16 @@ compile_graph() {
       and (.own_globs | type == "array")
       and (.target_subgoals | type == "array")
     )
+    and (if $quality_judges != null then
+      ($quality_judges | type == "array" and length == 3
+       and all(.[]; type == "object"
+         and (.name | type == "string" and length > 0)
+         and (.lens | type == "string" and length > 0)
+         and (.command | type == "string" and length > 0)
+         and (.timeout_s | type == "number" and floor == . and . >= 1))
+       and ([$quality_judges[].name] | unique | length == 3)
+       and ([$quality_judges[].lens] | unique | length == 3))
+     else true end)
   ' "$manifest" >/dev/null 2>&1 || {
     printf 'GRAPH-INVALID: contract-v2 manifest lacks graph compiler fields\n' >&2
     return 2
@@ -213,6 +224,7 @@ compile_graph() {
         model:$model, effort:$effort, target_subgoals:$targets, write_globs:$globs,
         timeout_s:1800, retry_budget:1, evidence:{required:["status", "verification"]}
       };
+    (.quality_judges? | type == "array" and length > 0) as $has_judges |
     {
       graph_schema: 1,
       graph_id: $graph_id,
@@ -227,6 +239,8 @@ compile_graph() {
           agent("integrator"; .integrator.model; .integrator.effort; .target_subgoals; []),
           node("verifier"; "verifier"; ["passed", "failed"]),
           node("repair"; "repair"; ["repaired", "failed"]),
+          (if $has_judges then node("judges"; "verifier"; ["passed", "failed"]) else empty end),
+          (if $has_judges then node("judge-repair"; "repair"; ["repaired", "failed"]) else empty end),
           node("promote"; "checkpoint"; ["succeeded"]),
           node("complete"; "terminal"; []),
           node("halt"; "terminal"; [])
@@ -240,14 +254,19 @@ compile_graph() {
           {from:"builders-joined", to:"integrator", outcome:"succeeded"},
           {from:"integrator", to:"verifier", outcome:"succeeded"},
            {from:"integrator", to:"halt", outcome:"failed"},
-           {from:"verifier", to:"promote", outcome:"passed"},
-           {from:"verifier", to:"repair", outcome:"failed"},
-           {from:"verifier", to:"halt", outcome:"failed"},
+          {from:"verifier", to:(if $has_judges then "judges" else "promote" end), outcome:"passed"},
+          {from:"verifier", to:"repair", outcome:"failed"},
+          {from:"verifier", to:"halt", outcome:"failed"},
            {from:"repair", to:"halt", outcome:"failed"},
+          (if $has_judges then {from:"judges", to:"promote", outcome:"passed"} else empty end),
+          (if $has_judges then {from:"judges", to:"judge-repair", outcome:"failed"} else empty end),
+          (if $has_judges then {from:"judges", to:"halt", outcome:"failed"} else empty end),
+          (if $has_judges then {from:"judge-repair", to:"halt", outcome:"failed"} else empty end),
           {from:"promote", to:"complete", outcome:"succeeded"}
         ]
       ),
-      loops: [{from:"repair", to:"verifier", outcome:"repaired", max_iterations:1}]
+      loops: ([{from:"repair", to:"verifier", outcome:"repaired", max_iterations:1}]
+        + (if $has_judges then [{from:"judge-repair", to:"judges", outcome:"repaired", max_iterations:1}] else [] end))
     }
   ' "$manifest" > "$tmp" || { rm -f "$tmp"; trap - RETURN; return 1; }
   if ! validate_graph "$tmp"; then
