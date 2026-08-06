@@ -82,6 +82,20 @@ JSON
 assert_eq "ready-join-after-builders" "builders-joined" \
   "$("$GRAPH" ready "$GRAPH_OUT" "$TEST_TMPDIR/builders-succeeded.json")"
 
+# Break caught: a join requires every declared predecessor to take its declared
+# route, while an ordinary node is admitted by one matching route.  The graph
+# outcomes `passed` and `repaired` are terminal successful execution states.
+cat > "$TEST_TMPDIR/verifier-passed.json" <<'JSON'
+{"nodes":{"start":"succeeded","lane:alpha":"succeeded","lane:beta":"succeeded","builders-joined":"succeeded","integrator":"succeeded","verifier":"passed"}}
+JSON
+assert_eq "ready-passed-route-normalizes-success" "promote" \
+  "$("$GRAPH" ready "$GRAPH_OUT" "$TEST_TMPDIR/verifier-passed.json")"
+cat > "$TEST_TMPDIR/failed-builder.json" <<'JSON'
+{"nodes":{"start":"succeeded","lane:alpha":"succeeded","lane:beta":"failed"}}
+JSON
+assert_eq "ready-ordinary-failed-route" "halt" \
+  "$("$GRAPH" ready "$GRAPH_OUT" "$TEST_TMPDIR/failed-builder.json")"
+
 # Break caught: the validator accepts a structurally unsafe graph.  Every bad
 # graph must have one actionable GRAPH-INVALID line and exit 2.
 invalid_graph() {

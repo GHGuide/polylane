@@ -226,11 +226,21 @@ ready_nodes() {
   }
   jq -r --slurpfile state "$state" '
     . as $graph | ($state[0].nodes // $state[0]) as $states |
+    def execution_state:
+      if . == "passed" or . == "repaired" then "succeeded" else . end;
+    def incoming($id): [$graph.edges[] | select(.to == $id)];
+    def route_matches:
+      (($states[.from] // "pending") | execution_state) == (.outcome | execution_state);
     [ $graph.nodes[]
       | . as $node
       | select(($states[$node.id] // $node.state) == "pending")
-      | select(all($graph.edges[] | select(.to == $node.id);
-          ($states[.from] // "pending") == "succeeded"))
+      | incoming($node.id) as $routes
+      | select(
+          if ($routes | length) == 0 then true
+          elif $node.kind == "join" then all($routes[]; route_matches)
+          else any($routes[]; route_matches)
+          end
+        )
       | $node.id
     ] | sort[]
   ' "$graph"

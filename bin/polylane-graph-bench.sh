@@ -16,7 +16,7 @@ valid_integer() {
 }
 
 fixture() {
-  local dir="$1" nodes="$2" events="$3"
+  local dir="$1" nodes="$2" events="$3" graph_tool graph_id
   valid_integer "$nodes" && [ "$nodes" -gt 0 ] || {
     printf 'polylane-graph-bench: nodes must be a positive integer\n' >&2
     return 2
@@ -26,11 +26,20 @@ fixture() {
     return 2
   }
   mkdir -p "$dir" || return 1
+  graph_tool="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-graph.sh"
   jq -cnc --argjson nodes "$nodes" '
-    {graph_schema: 1, run_id: "fixture-run", graph_id: "fixture-graph",
-     nodes: [range(1; $nodes + 1) | {id: ("node-" + tostring), state: "pending"}]}
-  ' > "$dir/graph.json"
-  jq -cnc --argjson nodes "$nodes" --argjson events "$events" '
+    {orchestration_contract: 2, run_id: "fixture-run", cycle: 3,
+     target_subgoals: ["benchmark"],
+     integrator: {name: "integrator", model: "fixture-model", effort: "high"},
+     lanes: [range(1; $nodes + 1) | {
+       name: ("lane-" + tostring), model: "fixture-model", effort: "high",
+       own_globs: [("fixture/lane-" + tostring + "/**")], target_subgoals: ["benchmark"]
+     }]}
+  ' > "$dir/manifest.json"
+  "$graph_tool" compile "$dir/manifest.json" "$dir/graph.json" || return $?
+  graph_id=$(jq -r '.graph_id' "$dir/graph.json") || return 1
+  jq -cnc '{nodes: {start: "succeeded"}}' > "$dir/state.json"
+  jq -cnc --argjson nodes "$nodes" --argjson events "$events" --arg graph_id "$graph_id" '
     range(1; $events + 1) as $seq
     | (($seq - 1) % $nodes + 1) as $node_number
     | ((($seq - 1) / $nodes) | floor) as $turn
@@ -40,7 +49,7 @@ fixture() {
        else {from: "failed", to: "ready"}
        end) as $transition
     | {event_schema: 1, seq: $seq, timestamp: (1700000000 + $seq),
-       run_id: "fixture-run", graph_id: "fixture-graph",
+       run_id: "fixture-run", graph_id: $graph_id,
        node: ("node-" + ($node_number | tostring)),
        from: $transition.from, to: $transition.to, attempt: $turn,
        idempotency_key: ("fixture-" + ($seq | tostring)), reason: "synthetic",

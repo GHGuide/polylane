@@ -37,9 +37,9 @@ allowed_transition() {
   esac
 }
 
-# validate_ledger LEDGER RUN GRAPH checks every prior row before callers rely
-# on it. A missing ledger is the canonical empty history.
-validate_ledger() {
+# strict_validate_ledger LEDGER RUN GRAPH checks every prior row before callers
+# rely on it. A missing ledger is the canonical empty history.
+strict_validate_ledger() {
   local ledger="$1" run_id="$2" graph_id="$3" last_byte static_check transition_check
 
   valid_id "$run_id" && valid_id "$graph_id" || {
@@ -125,6 +125,107 @@ validate_ledger() {
   }
 }
 
+# The checkpoint is strictly disposable derived data.  It is accepted only
+# when its run/graph scope and an exact identity, byte count, and content hash
+# all match the current JSONL audit ledger.  A miss always falls back to the
+# strict validator above; no caller may treat this as a source of truth.
+checkpoint_path() {
+  printf '%s.checkpoint\n' "$1"
+}
+
+ledger_inode() {
+  ls -di "$1" | awk '{print $1}'
+}
+
+ledger_size() {
+  wc -c < "$1" | tr -d ' '
+}
+
+ledger_hash() {
+  cksum "$1" | awk '{print $1}'
+}
+
+checkpoint_matches() {
+  local ledger="$1" run_id="$2" graph_id="$3" checkpoint inode size hash
+  [ -f "$ledger" ] || return 1
+  checkpoint=$(checkpoint_path "$ledger")
+  [ -f "$checkpoint" ] || return 1
+  inode=$(ledger_inode "$ledger") || return 1
+  size=$(ledger_size "$ledger") || return 1
+  hash=$(ledger_hash "$ledger") || return 1
+  jq -e --arg run_id "$run_id" --arg graph_id "$graph_id" --arg inode "$inode" \
+    --arg hash "$hash" --argjson size "$size" '
+      .checkpoint_schema == 1
+      and .run_id == $run_id and .graph_id == $graph_id
+      and .ledger_inode == $inode and .ledger_size == $size and .ledger_hash == $hash
+      and (.last_seq | type == "number" and floor == . and . >= 0)
+      and (.nodes | type == "object"
+           and all(.[]; type == "object"
+             and (.state | type == "string")
+             and (.attempt | type == "number" and floor == . and . >= 0)))
+      and (.idempotency_keys | type == "object" and all(.[]; . == true))
+    ' "$checkpoint" >/dev/null 2>&1
+}
+
+write_checkpoint_from_ledger() {
+  local ledger="$1" run_id="$2" graph_id="$3" checkpoint tmp inode size hash
+  [ -f "$ledger" ] || return 1
+  checkpoint=$(checkpoint_path "$ledger")
+  inode=$(ledger_inode "$ledger") || return 1
+  size=$(ledger_size "$ledger") || return 1
+  hash=$(ledger_hash "$ledger") || return 1
+  tmp=$(mktemp "${checkpoint}.XXXXXX") || return 1
+  jq -cs --arg run_id "$run_id" --arg graph_id "$graph_id" --arg inode "$inode" \
+    --arg hash "$hash" --argjson size "$size" '
+      reduce .[] as $event (
+        {last_seq: 0, nodes: {}, idempotency_keys: {}};
+        .last_seq = $event.seq
+        | .nodes[$event.node] = {state: $event.to, attempt: $event.attempt}
+        | .idempotency_keys[$event.idempotency_key] = true
+      )
+      | {checkpoint_schema: 1, run_id: $run_id, graph_id: $graph_id,
+         ledger_inode: $inode, ledger_size: $size, ledger_hash: $hash,
+         last_seq: .last_seq, nodes: .nodes, idempotency_keys: .idempotency_keys}
+    ' "$ledger" > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$checkpoint"
+}
+
+update_checkpoint_after_append() {
+  local ledger="$1" run_id="$2" graph_id="$3" node="$4" to="$5" attempt="$6"
+  local seq="$7" idempotency_key="$8" checkpoint tmp inode size hash
+  checkpoint=$(checkpoint_path "$ledger")
+  [ -f "$checkpoint" ] || return 1
+  inode=$(ledger_inode "$ledger") || return 1
+  size=$(ledger_size "$ledger") || return 1
+  hash=$(ledger_hash "$ledger") || return 1
+  tmp=$(mktemp "${checkpoint}.XXXXXX") || return 1
+  jq -cS --arg run_id "$run_id" --arg graph_id "$graph_id" --arg inode "$inode" \
+    --arg hash "$hash" --arg node "$node" --arg to "$to" --arg key "$idempotency_key" \
+    --argjson size "$size" --argjson attempt "$attempt" --argjson seq "$seq" '
+      .checkpoint_schema = 1
+      | .run_id = $run_id | .graph_id = $graph_id
+      | .ledger_inode = $inode | .ledger_size = $size | .ledger_hash = $hash
+      | .last_seq = $seq
+      | .nodes[$node] = {state: $to, attempt: $attempt}
+      | .idempotency_keys[$key] = true
+    ' "$checkpoint" > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$checkpoint"
+}
+
+checkpoint_context() {
+  local ledger="$1" node="$2" idempotency_key="$3"
+  jq -r --arg node "$node" --arg key "$idempotency_key" '
+    [.last_seq, (.idempotency_keys[$key] // false), (.nodes[$node].state // "pending")]
+    | @tsv
+  ' "$(checkpoint_path "$ledger")"
+}
+
+validate_ledger() {
+  local ledger="$1" run_id="$2" graph_id="$3"
+  checkpoint_matches "$ledger" "$run_id" "$graph_id" && return 0
+  strict_validate_ledger "$ledger" "$run_id" "$graph_id"
+}
+
 LOCK_DIR=''
 
 release_lock() {
@@ -171,6 +272,7 @@ acquire_lock() {
 append_event() {
   local ledger="$1" run_id="$2" graph_id="$3" node="$4" from="$5" to="$6"
   local attempt="$7" idempotency_key="$8" reason="${9:-}" current_state next_seq timestamp row has_key
+  local checkpoint_ready=false checkpoint_data last_seq
 
   valid_id "$run_id" && valid_id "$graph_id" && valid_id "$node" && valid_id "$idempotency_key" || {
     event_invalid 'run_id, graph_id, node, and idempotency_key must be well-formed identifiers'
@@ -192,7 +294,24 @@ append_event() {
   # first append on a new ledger from asking jq to open a non-existent input.
   [ -e "$ledger" ] || : > "$ledger"
 
-  has_key=$(jq -r -s --arg key "$idempotency_key" 'any(.[]; .idempotency_key == $key)' "$ledger")
+  if ! checkpoint_matches "$ledger" "$run_id" "$graph_id"; then
+    write_checkpoint_from_ledger "$ledger" "$run_id" "$graph_id" || true
+  fi
+  if checkpoint_matches "$ledger" "$run_id" "$graph_id"; then
+    checkpoint_data=$(checkpoint_context "$ledger" "$node" "$idempotency_key") || checkpoint_data=''
+    if [ -n "$checkpoint_data" ]; then
+      IFS='	' read -r last_seq has_key current_state <<EOF
+$checkpoint_data
+EOF
+      checkpoint_ready=true
+    fi
+  fi
+
+  if [ "$checkpoint_ready" = true ]; then
+    :
+  else
+    has_key=$(jq -r -s --arg key "$idempotency_key" 'any(.[]; .idempotency_key == $key)' "$ledger")
+  fi
   if [ "$has_key" = 'true' ]; then
     jq -e --arg run_id "$run_id" --arg graph_id "$graph_id" --arg node "$node" \
       --arg from "$from" --arg to "$to" --argjson attempt "$attempt" --arg key "$idempotency_key" \
@@ -206,15 +325,23 @@ append_event() {
     return 2
   fi
 
-  current_state=$(jq -r -s --arg node "$node" '
-    [.[] | select(.node == $node)]
-    | if length == 0 then "pending" else .[-1].to end
-  ' "$ledger" 2>/dev/null)
+  if [ "$checkpoint_ready" = true ]; then
+    :
+  else
+    current_state=$(jq -r -s --arg node "$node" '
+      [.[] | select(.node == $node)]
+      | if length == 0 then "pending" else .[-1].to end
+    ' "$ledger" 2>/dev/null)
+  fi
   [ "$current_state" = "$from" ] || {
     event_invalid "node $node is $current_state, not $from"
     return 2
   }
-  next_seq=$(( $(wc -l < "$ledger" | tr -d ' ') + 1 ))
+  if [ "$checkpoint_ready" = true ]; then
+    next_seq=$((last_seq + 1))
+  else
+    next_seq=$(( $(wc -l < "$ledger" | tr -d ' ') + 1 ))
+  fi
   timestamp=$(date +%s)
   row=$(jq -cnc --argjson seq "$next_seq" --argjson timestamp "$timestamp" \
     --arg run_id "$run_id" --arg graph_id "$graph_id" --arg node "$node" \
@@ -225,6 +352,10 @@ append_event() {
        idempotency_key: $idempotency_key, reason: $reason, artifact_hash: ""}
     ')
   printf '%s\n' "$row" >> "$ledger"
+  if [ "$checkpoint_ready" = true ]; then
+    update_checkpoint_after_append "$ledger" "$run_id" "$graph_id" "$node" "$to" "$attempt" \
+      "$next_seq" "$idempotency_key" || true
+  fi
 }
 
 replay_ledger() {
@@ -233,6 +364,11 @@ replay_ledger() {
   if [ ! -e "$ledger" ]; then
     jq -cncS --arg run_id "$run_id" --arg graph_id "$graph_id" \
       '{run_id: $run_id, graph_id: $graph_id, last_seq: 0, nodes: {}}'
+    return 0
+  fi
+  if checkpoint_matches "$ledger" "$run_id" "$graph_id"; then
+    jq -cS '{run_id: .run_id, graph_id: .graph_id, last_seq: .last_seq, nodes: .nodes}' \
+      "$(checkpoint_path "$ledger")"
     return 0
   fi
   jq -cS -s --arg run_id "$run_id" --arg graph_id "$graph_id" '
