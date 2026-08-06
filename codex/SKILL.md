@@ -92,7 +92,8 @@ The canonical control room is
 `scripts/polylane-dashboard.sh .polylane/run.json --once --json`: it projects
 state, max-state, graph/events, report, ledger, heartbeat, and cleanup without a
 competing state engine. Unknown values remain unknown; only the literal current
-nonce can qualify a DONE marker.
+nonce can qualify a DONE marker, with or without a final newline after that exact
+first line.
 
 ## Entry and goal lock
 

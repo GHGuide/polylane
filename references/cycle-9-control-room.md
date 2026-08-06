@@ -55,5 +55,7 @@ dashboard rendering repeatedly consumes that same snapshot.
 
 Lane status comes solely from `polylane-state` and runner helpers. A DONE marker
 must be the exact current-run first line `STATUS: <lane> DONE run=<run_id>` with
-the literal nonce; bare, stale, mismatched, or incomplete markers are not done.
+the literal nonce. A final newline is optional: `polylane-markers.sh done` emits
+the exact marker without one. Bare, stale, mismatched, incomplete, or
+first-line-extra markers are not done.
 The dashboard must not grow a competing marker parser or state engine.

@@ -362,7 +362,8 @@ outcome-learned scout kit, and route outcomes/selection/salvage only through
 For observation, `bin/polylane-dashboard.sh .polylane/run.json --once --json`
 is the canonical control room. It projects state, durable max-state, graph/events,
 report, ledger, heartbeat, and cleanup; unknown values remain unknown. Never parse
-bare DONE markers: the literal current run nonce is authoritative.
+bare DONE markers: the literal current run nonce is authoritative, and its exact
+first line is valid with or without a final newline.
 
 ## Phase 2 — build the on-disk digest (the record, not the chat report)
 As soon as the cycle merges, gather the raw inventory and turn it into the durable RECORD —

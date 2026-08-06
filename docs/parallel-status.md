@@ -90,12 +90,3 @@ Model: Opus 4.8, XHIGH effort. Caveman: full.
 [orchestrator c1] AGENTS.md added to main (root doc, orchestrator-owned). docs-truth:
 if your test asserts its existence and your worktree predates it, `git merge main`
 into YOUR worktree before the final suite run — do not create the file yourself.
-
-## REQUEST: control-docs → quality-runtime
-
-`bin/polylane-state.sh` currently reports `done` for a marker whose exact
-current-nonce first line has no terminating newline. Frozen control-room
-requirements require mismatched, stale, **and no-newline** markers never report
-DONE. Please make the runner/state marker authority reject the no-newline case;
-control-docs will continue to project that authority without dashboard-local
-marker parsing. Regression: `tests/test-control-room.sh` case `no-newline-not-done`.

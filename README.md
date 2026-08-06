@@ -189,7 +189,9 @@ resumed supervisors recover the exact attach command without chat memory.
 
 The read-only control room projects the runner's canonical state rather than
 reconstructing panes or markers. For automation or a support handoff, take one
-truthful snapshot; unknown spend, cleanup, or graph facts stay unknown.
+truthful snapshot; unknown spend, cleanup, or graph facts stay unknown. Completion
+still belongs to the shared current-nonce marker contract; its exact first line is
+valid with or without a final newline.
 
 ```
 bin/polylane-dashboard.sh .polylane/run.json --once --json

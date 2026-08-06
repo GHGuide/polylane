@@ -36,11 +36,17 @@ assert_not_done() {
 
 assert_not_done "bare-marker" 'STATUS: api DONE\n'
 assert_not_done "mismatched-nonce" 'STATUS: api DONE run=old-nonce\n'
-assert_not_done "no-newline" 'STATUS: api DONE run=fresh-nonce'
 assert_not_done "stale-run-marker" 'STATUS: api DONE run=old-nonce\nSTATUS: api DONE run=fresh-nonce\n'
+assert_not_done "extra-first-line-marker" 'STATUS: api DONE run=fresh-nonce extra\n'
 
 printf 'STATUS: api DONE run=fresh-nonce\n' > "$WT/docs/status-api.md"
 snapshot=$("$DASH" "$MAN" --once --json)
 assert_eq "current-nonce-done" "done" "$(jq -r '.lanes[0].status' <<<"$snapshot")"
+
+# polylane-markers.sh intentionally emits an exact current-nonce marker without
+# a final newline. The shared state helper must accept that valid wire format.
+printf 'STATUS: api DONE run=fresh-nonce' > "$WT/docs/status-api.md"
+snapshot=$("$DASH" "$MAN" --once --json)
+assert_eq "current-nonce-no-final-newline-done" "done" "$(jq -r '.lanes[0].status' <<<"$snapshot")"
 
 finish
