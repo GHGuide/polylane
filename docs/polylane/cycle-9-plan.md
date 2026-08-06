@@ -49,6 +49,8 @@ adapter to write result JSON. `summarize <out-dir> [--json]` never turns unknown
 
 `bin/polylane-discovery.sh init <state> <brief>`; `next <state> [limit]`;
 `answer <state> <question-id> <recommended|deep|bold|custom> [text]`;
+`contradict <state> <answer-id> <answer-id> <reason>`;
+`resolve <state> <contradiction-id> <accept-left|accept-right|accept-both> [note]`;
 `summary <state>`; `lock <state> <docs-dir>`. State is JSON and contains version, brief, nodes,
 answers, contradictions, and strategy status. Deep/bold answers must create or activate a child.
 
@@ -69,7 +71,7 @@ per role and at most four unique; no fixed filler count.
 
 ### Advanced runtime and judges
 
-`bin/polylane-advanced.sh preflight|select|salvage|record <manifest> ...` is the only runner-facing
+`bin/polylane-advanced.sh preflight|select|salvage|seams|record <manifest> ...` is the only runner-facing
 adapter for existing helpers. Risk prediction and outcome recording always run. Selection requires
 explicit `champion_candidates`; salvage requires at least three lanes plus `salvage_verify_cmd`.
 Absence is reported as `not-requested`, never claimed as executed.

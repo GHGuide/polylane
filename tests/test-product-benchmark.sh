@@ -52,6 +52,9 @@ assert_eq "benchmark-captures-completion" "1" "$(jq -r 'select(.id == "pantry-pl
 assert_eq "benchmark-captures-product-quality" "0.7" "$(jq -r 'select(.id == "shift-handoff") | .product_quality' "$OUT/results.jsonl")"
 assert_eq "benchmark-records-adapter-rc" "0" "$(jq -r 'select(.id == "pantry-planner") | .adapter_rc' "$OUT/results.jsonl")"
 assert_eq "benchmark-preserves-unknown-metric" "null" "$(jq -r 'select(.id == "shift-handoff") | .tokens' "$OUT/results.jsonl")"
+printf '[]\n' > "$TEST_TMPDIR/wrong-shape.json"
+assert_eq "benchmark-wrong-shaped-result-is-unknown" "null" \
+  "$(bash -c '. "$1"; json_metric "$2" tokens' _ "$BENCH" "$TEST_TMPDIR/wrong-shape.json")"
 
 SUMMARY_JSON=$("$BENCH" summarize "$OUT" --json)
 assert_eq "benchmark-summary-reproducible-count" "2" "$(printf '%s' "$SUMMARY_JSON" | jq -r '.cases')"

@@ -74,6 +74,14 @@ JSON
   assert_eq "once-json-lane-from-state" "done" "$(jq -r '.lanes[0].status' <<<"$snapshot")"
   assert_eq "once-json-canonical-spend" "12" "$(jq -r '.spend.total' <<<"$snapshot")"
   assert_eq "once-json-graph-ready" "start" "$(jq -r '.graph.ready[0]' <<<"$snapshot")"
+  graph_id=$(jq -r '.graph_id' "$SNAP_ROOT/.polylane/graph.json")
+  events="$(dirname "$DASH")/polylane-events.sh"
+  "$events" append "$SNAP_ROOT/.polylane/events.jsonl" current-nonce "$graph_id" start pending ready 0 dashboard-start-ready
+  "$events" append "$SNAP_ROOT/.polylane/events.jsonl" current-nonce "$graph_id" start ready running 0 dashboard-start-running
+  "$events" append "$SNAP_ROOT/.polylane/events.jsonl" current-nonce "$graph_id" start running succeeded 0 dashboard-start-succeeded
+  replayed_snapshot=$("$DASH" "$SNAP_MAN" --once --json)
+  assert_eq "once-json-replayed-event-count" "3" "$(jq -r '.graph.events' <<<"$replayed_snapshot")"
+  assert_eq "once-json-replayed-graph-ready" "lane:api" "$(jq -r '.graph.ready[0]' <<<"$replayed_snapshot")"
   text_snapshot=$("$DASH" "$SNAP_MAN" --once)
   assert_contains "once-text-goal" "goal: ship canonical control room" "$text_snapshot"
   assert_contains "once-text-graph" "graph:" "$text_snapshot"

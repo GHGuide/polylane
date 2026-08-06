@@ -355,7 +355,7 @@ durable with `bin/polylane-discovery.sh`, and use agent-aware
 `bin/polylane-models.sh` rather than crossing model families. For Codex manifests,
 `codex_profile` defaults to `lean`; preserve the explicit lean launch contract.
 Run `bin/polylane-promptopt.sh check` before launch, choose a minimal
-outcome-learned scout kit, and route outcomes/selection/salvage only through
+outcome-learned scout kit, and route outcomes/selection/salvage/seams only through
 `bin/polylane-advanced.sh`. Quality uses exactly three `quality_judges` through
 `bin/polylane-judges.sh` and its one bounded graph repair route.
 

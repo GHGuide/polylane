@@ -142,8 +142,17 @@ cmd_resolve() {
     echo "discovery: open contradiction not found: $id" >&2; return 1;
   }
   tmp=$(mktemp "${state}.tmp.XXXXXX")
-  jq --arg id "$id" --arg resolution "$resolution" --arg note "$note" \
-    '.contradictions |= map(if .id == $id then .status = "resolved" | .resolution = $resolution | .resolution_note = $note else . end)' \
+  jq --arg id "$id" --arg resolution "$resolution" --arg note "$note" '
+    (.contradictions[] | select(.id == $id)) as $conflict |
+    .contradictions |= map(if .id == $id then
+      .status = "resolved" | .resolution = $resolution | .resolution_note = $note
+    else . end) |
+    if $resolution == "accept-left" then
+      .answers |= map(if .id == $conflict.right_answer_id then .accepted = false else . end)
+    elif $resolution == "accept-right" then
+      .answers |= map(if .id == $conflict.left_answer_id then .accepted = false else . end)
+    else . end
+  ' \
     "$state" > "$tmp"
   mv "$tmp" "$state"
 }

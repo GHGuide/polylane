@@ -66,6 +66,8 @@ assert_eq "unrepairable-spawns-zero-repairs" "0" "$(wc -l < "$LOG" | tr -d ' ')"
 . "$RUNNER"
 make_tmpdir
 INT_WORKTREE="$TEST_TMPDIR/int"; mkdir -p "$INT_WORKTREE/docs"
+MANIFEST="$TEST_TMPDIR/manifest.json"
+printf '%s\n' '{"lanes":[]}' > "$MANIFEST"
 RUN_ID=host-gate-run
 printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
 HOST_GATES=0

@@ -13,6 +13,8 @@ invent flags, defaults, success states, or substitute a local reconstruction.
   unknown; it never turns them into zero.
 - `bin/polylane-discovery.sh init <state> <brief>`, `next <state> [limit]`,
   `answer <state> <question-id> <recommended|deep|bold|custom> [text]`,
+  `contradict <state> <answer-id> <answer-id> <reason>`,
+  `resolve <state> <contradiction-id> <accept-left|accept-right|accept-both> [note]`,
   `summary <state>`, and `lock <state> <docs-dir>` provide durable discovery.
   Deep and bold answers create or activate a child; strategy summaries stay
   transcript-free.
@@ -27,6 +29,8 @@ invent flags, defaults, success states, or substitute a local reconstruction.
   and approval policy remain visible in the launch contract.
 - `bin/polylane-promptopt.sh check <prompt> [budget]` and `metrics <prompt>`
   preserve all strict blocks and reject an over-budget prompt before launch.
+  Manifest `prompt_token_budget` defaults to 8000; optional `prompt_byte_budget`
+  adds a separate byte ceiling.
 - `polylane-scout.sh resolve <skill>` prints the trusted installed `SKILL.md`.
   `recommend <domain> <activity>` is installed-only and ledger-ranked;
   `record-outcome <ledger> <lane> <domain> <skill> <helped|unused|hurt> [why]`
@@ -35,7 +39,7 @@ invent flags, defaults, success states, or substitute a local reconstruction.
 
 ## Runtime quality boundary
 
-- `bin/polylane-advanced.sh preflight|select|salvage|record <manifest> ...` is
+- `bin/polylane-advanced.sh preflight|select|salvage|seams|record <manifest> ...` is
   the only runner-facing adapter for outcomes, seams, champion selection, and
   configured salvage. It reports absent optional work as `not-requested`.
 - `bin/polylane-judges.sh run <manifest> <tree> <out-dir>` requires exactly

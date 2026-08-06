@@ -25,6 +25,9 @@ assert_eq "discovery-contradiction-open" "open" "$(jq -r '.contradictions[0].sta
 assert_fail "discovery-lock-blocks-open-contradiction" "$DISCOVERY" lock "$STATE" "$DOCS"
 assert_ok "discovery-resolves-contradiction" "$DISCOVERY" resolve "$STATE" c-1 accept-both "conscious tradeoff"
 assert_eq "discovery-contradiction-resolved" "resolved" "$(jq -r '.contradictions[0].status' "$STATE")"
+assert_ok "discovery-records-second-contradiction" "$DISCOVERY" contradict "$STATE" a-q-user a-q-workflow "choose one assumption"
+assert_ok "discovery-accept-left-resolution" "$DISCOVERY" resolve "$STATE" c-2 accept-left
+assert_eq "discovery-rejected-answer-not-synthesized" "false" "$(jq -r '.answers[] | select(.id == "a-q-workflow") | .accepted' "$STATE")"
 assert_ok "discovery-lock-resolved" "$DISCOVERY" lock "$STATE" "$DOCS"
 assert_ok "discovery-lock-strategy-artifact" test -s "$DOCS/strategy.md"
 assert_ok "discovery-lock-north-star-artifact" test -s "$DOCS/north-star.md"

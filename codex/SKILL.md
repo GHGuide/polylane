@@ -86,7 +86,7 @@ model, effort, sandbox, and approval contract.
 
 Before launch run `scripts/polylane-promptopt.sh check`, choose the smallest
 outcome-learned kit, and use `scripts/polylane-advanced.sh` for outcomes, champion
-selection, and salvage. Require exactly three `quality_judges` through
+selection, salvage, and seams. Require exactly three `quality_judges` through
 `scripts/polylane-judges.sh`; the typed graph permits one bounded repair route.
 The canonical control room is
 `scripts/polylane-dashboard.sh .polylane/run.json --once --json`: it projects

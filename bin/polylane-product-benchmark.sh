@@ -62,7 +62,8 @@ json_metric() {
   local result="$1" metric="$2"
   if [ -f "$result" ] && jq -e . "$result" >/dev/null 2>&1; then
     jq -c --arg metric "$metric" '
-      if .[$metric] == null then null
+      if type != "object" then null
+      elif .[$metric] == null and ((.metrics // null) | type) != "object" then null
       elif .[$metric] | type == "number" then .[$metric]
       elif .metrics[$metric] | type == "number" then .metrics[$metric]
       else null end
