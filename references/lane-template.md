@@ -1,6 +1,8 @@
 # Lane prompt template — assemble from prompt-blocks.md
 
-Emit ONE of these per lane, as: a launch line + a fenced paste block. Order the blocks exactly A→J. Everything in `<...>` is filled from recon + derivation; blocks C, E, G, H, I are verbatim.
+Emit ONE of these per lane, as: a launch line + a fenced paste block. Order the blocks exactly A→J. Everything in `<...>` is filled from recon + derivation; blocks C, E, G, H, I are verbatim. A Codex builder receives native instructions, never fictional Claude slash-command requirements.
+
+Codex builder: state the locked goals directly and read only the selected kit once.
 
 ## Launch line
 ```
@@ -11,8 +13,10 @@ cd "<WORKTREE_ABS_PATH>" && <selected-agent-cli> <MODEL/EXEC FLAGS>
 ## Paste block skeleton (fill and inline the blocks)
 ```
 [A identity + context]
+ULTIMATE-GOAL: <verbatim durable product goal>
+CURRENT-SUBGOAL: <verbatim cycle subgoal>
 [B model + effort header]
-[0 MANDATORY preamble: caveman(full) · /goal <lane goal> · superpowers:using-superpowers (graph comes pre-refreshed via symlink — query only)]
+[0 selected-skill preamble: Claude/Codex platform-native instruction; read only named kit once (graph comes pre-refreshed via symlink — query only)]
 [C terse output]
 [D skills for this lane]
 [E graphify-first]   (omit only if graphify-out/ absent AND graphify skill unavailable — then substitute: "Use one read-only Explore agent to map <subsystem> before editing.")
@@ -28,7 +32,7 @@ WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [J done checklist]
 
 DELEGATION: forbidden — this tmux CLI is the sole agent for the lane; do not spawn subagents or fan-out.
-CHECK-CACHE: use polylane-check.sh for expensive checks; reuse unchanged pass/fail results.
+CHECK-CACHE: use bin/polylane-check.sh "$PWD/.polylane/check-cache/<lane>" -- <command>; reuse unchanged pass/fail results.
 
 DONE-SIGNAL: on completion write docs/status-<lane>.md, first line EXACTLY `STATUS: <lane> DONE run=<RUN_ID>` — per-lane + worktree-safe; the runner reads this file to know the lane finished.
 ```
@@ -80,16 +84,18 @@ Paste block:
 ```
 Project: Vue 3 todo app (Vite + Pinia). Read THIS project's CLAUDE.md and memory/MEMORY.md first. IGNORE any unrelated CLAUDE.md from other projects. YOUR LANE = dark-theme. Other Claudes run api-lane and test-lane in parallel — do NOT touch their files.
 
+ULTIMATE-GOAL: build an idea into a verified product through questions, strategy, parallel execution, and autonomous cycles.
+CURRENT-SUBGOAL: Ship a full dark theme across every rendered surface, screenshot-verified.
+
 Run on claude-opus-4-8 at high effort: confirm with /model, ultrathink before non-trivial steps.
 
-Before anything else, in order:
-1. Invoke the caveman skill (full)
-2. /goal Ship a full dark theme across every rendered surface, screenshot-verified.
-3. superpowers:using-superpowers
+Read only the named kit once, in listed order. Do not browse skill inventories after launch.
 
 Keep output terse (caveman-style: drop articles/filler/hedging, fragments OK). Write code, commits, and PRs in normal prose. Act when you have enough information; do not re-derive settled facts or narrate options you won't pursue.
 
-Invoke: superpowers:using-superpowers, then design skills + /design-critique + verification-before-completion. Your goal is LOCKED (below) — do NOT open superpowers:brainstorming; go straight to writing-plans/execution.
+PREDEFINED-SKILLS: <selected installed execution skill>
+LANE-SPECIFIC-SKILLS: <selected installed design skill>
+Your goal is LOCKED (below); go straight to execution.
 
 STEP 1 (before ANY Read/Grep): map the styling subsystem by QUERYING the graph (pre-refreshed, read-only symlink — do NOT run /graphify-auto) — do NOT grep to discover where things are:
   python graphify-out/q.py theme

@@ -39,25 +39,28 @@ assert_rc   "lint-skill-missing-rc5" 5 lint "$F" ui-lane "$BADP"
 # a lane with no baked skills lints clean
 assert_ok   "lint-empty-lane-ok" lint "$F" other-lane "$BADP"
 
-# --- strict structured kits: >=2 predefined + >=2 lane-specific installed skills
+# --- strict structured kits: a bounded selected kit (1-2 skills per role) ----
 KIT="$TEST_TMPDIR/lane-kits.json"
-arm_role "$KIT" ui-lane predefined testing-strategy dataviz
-arm_role "$KIT" ui-lane specific design-critique dataviz
+arm_role "$KIT" ui-lane predefined testing-strategy
+arm_role "$KIT" ui-lane specific dataviz
 record_github "$KIT" ui-lane "owner/repo-skill" "informational only"
-assert_eq "kit-predefined" "testing-strategy dataviz" "$(armed_role "$KIT" ui-lane predefined)"
-assert_eq "kit-specific" "design-critique dataviz" "$(armed_role "$KIT" ui-lane specific)"
+assert_eq "kit-predefined" "testing-strategy" "$(armed_role "$KIT" ui-lane predefined)"
+assert_eq "kit-specific" "dataviz" "$(armed_role "$KIT" ui-lane specific)"
 
 MANIFEST="$TEST_TMPDIR/run.json"
 cat > "$MANIFEST" <<'JSON'
 {"lanes":[{"name":"ui-lane"}],"integrator":{"name":"integrator"}}
 JSON
-assert_ok "kit-valid-two-plus-two" validate_kits "$KIT" "$MANIFEST"
+assert_ok "kit-valid-bounded" validate_kits "$KIT" "$MANIFEST"
+arm_role "$KIT" ui-lane specific
+assert_rc "kit-rejects-missing-specific" 7 validate_kits "$KIT" "$MANIFEST"
 arm_role "$KIT" ui-lane specific dataviz
-assert_rc "kit-rejects-too-few-specific" 7 validate_kits "$KIT" "$MANIFEST"
+arm_role "$KIT" ui-lane predefined testing-strategy dataviz design-critique
+assert_rc "kit-rejects-predefined-inventory-dump" 7 validate_kits "$KIT" "$MANIFEST"
+arm_role "$KIT" ui-lane predefined testing-strategy
 
 P2="$TEST_TMPDIR/kit-prompt.txt"
-printf 'PREDEFINED-SKILLS: testing-strategy dataviz\nLANE-SPECIFIC-SKILLS: design-critique dataviz\n' > "$P2"
-arm_role "$KIT" ui-lane specific design-critique dataviz
+printf 'PREDEFINED-SKILLS: testing-strategy\nLANE-SPECIFIC-SKILLS: dataviz\n' > "$P2"
 assert_ok "kit-lint-structured-prompt" lint "$KIT" ui-lane "$P2"
 
 # --- GitHub suggester is read-only/informational and ranked ------------------

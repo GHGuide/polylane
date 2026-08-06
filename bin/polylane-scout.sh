@@ -12,7 +12,7 @@
 #   github <file> <lane> <repo-or-skill> <why> -> informational suggestion
 #   github-suggest <activity> [limit] -> read-only ranked GitHub candidates
 #   armed <file> <lane>         -> print every executable skill in a lane's kit
-#   validate <file> <manifest>  -> require >=2 predefined + >=2 specific per lane
+#   validate <file> <manifest>  -> require 1-2 selected installed skills per role
 #   lint <file> <lane> <prompt> -> exit 5 iff a baked skill is missing from the prompt
 # bash-3.2 + jq (jq only for the json verbs); main-guarded.
 set -euo pipefail
@@ -217,8 +217,8 @@ validate_kits() {
     for role in predefined specific; do
       count=$(jq -r --arg l "$lane" --arg r "$role" \
         '(.lanes[$l][$r] // []) | unique | length' "$f")
-      if [ "$count" -lt 2 ]; then
-        echo "SCOUT-KIT: lane '$lane' needs >=2 $role skills; found $count" >&2
+      if [ "$count" -lt 1 ] || [ "$count" -gt 2 ]; then
+        echo "SCOUT-KIT: lane '$lane' needs 1-2 $role skills; found $count" >&2
         return 7
       fi
       for skill in $(armed_role "$f" "$lane" "$role"); do
@@ -228,6 +228,11 @@ validate_kits() {
         }
       done
     done
+    count=$(jq -r --arg l "$lane" '((.lanes[$l].predefined // []) + (.lanes[$l].specific // [])) | unique | length' "$f")
+    if [ "$count" -gt 4 ]; then
+      echo "SCOUT-KIT: lane '$lane' has inventory-dump kit ($count unique skills; max 4)" >&2
+      return 7
+    fi
     jq -e --arg l "$lane" '(.lanes[$l].github_suggestions // []) | type == "array"' "$f" >/dev/null || {
       echo "SCOUT-KIT: lane '$lane' has invalid GitHub suggestion metadata" >&2; return 7
     }
