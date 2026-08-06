@@ -10,6 +10,18 @@ if ! command -v tmux >/dev/null 2>&1; then
   exit 0
 fi
 
+# An installed client is not a usable runtime when host policy blocks its Unix
+# socket. Probe an actual session so this integration test does not report five
+# misleading product failures before any runner code executes.
+TMUX_PROBE_SESSION="polylane-test-probe-$$"
+tmux new-session -d -s "$TMUX_PROBE_SESSION" "sh -c 'sleep 5'" >/dev/null 2>&1 || true
+if ! tmux has-session -t "$TMUX_PROBE_SESSION" 2>/dev/null; then
+  pass "session-resume-skipped-unusable-tmux"
+  finish
+  exit 0
+fi
+tmux kill-session -t "$TMUX_PROBE_SESSION" 2>/dev/null || true
+
 make_tmpdir
 TMUX_SESSION="polylane-test-adopt-$$"
 trap 'tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true; cleanup_tmpdirs' EXIT

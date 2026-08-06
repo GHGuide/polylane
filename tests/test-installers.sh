@@ -4,8 +4,14 @@
 
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 
-REPO="$(cd "$TESTS_DIR/.." && pwd)"
-trap 'rm -rf "$REPO/.codex/skills/polylane" "$REPO/.claude/skills/polylane"; cleanup_tmpdirs' EXIT
+# Repo-scoped installation must not mutate the checkout running the test. A
+# fresh copied checkout also proves both installers derive every artifact from the
+# repository rather than ambient repo-local state.
+SOURCE_REPO="$(cd "$TESTS_DIR/.." && pwd)"
+make_tmpdir
+REPO="$TEST_TMPDIR/repo"
+mkdir -p "$REPO"
+cp -R "$SOURCE_REPO/." "$REPO/"
 
 (cd "$REPO" && ./codex/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-codex-skill" test -f "$REPO/.codex/skills/polylane/SKILL.md"

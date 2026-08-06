@@ -5,6 +5,27 @@
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 RH="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-rehearse.sh"
 
+# The live fixture writes reports after cleanup, so cleanliness means no dirty
+# tracked files and no tracked or untracked current-run status markers.
+make_tmpdir
+REHEARSE_REPO="$TEST_TMPDIR/repo"
+mkdir -p "$REHEARSE_REPO"
+git -C "$REHEARSE_REPO" init -q
+git -C "$REHEARSE_REPO" config user.email t@t
+git -C "$REHEARSE_REPO" config user.name t
+printf '%s\n' seed > "$REHEARSE_REPO/seed.txt"
+git -C "$REHEARSE_REPO" add seed.txt
+git -C "$REHEARSE_REPO" commit -qm seed
+clean_check='source "$1"; rehearse_promoted_tree_clean "$2"'
+assert_ok "rehearse-clean-promoted-tree" bash -c "$clean_check" _ "$RH" "$REHEARSE_REPO"
+assert_fail "rehearse-rejects-non-repository" bash -c "$clean_check" _ "$RH" "$TEST_TMPDIR/missing"
+mkdir -p "$REHEARSE_REPO/docs"
+printf '%s\n' stale > "$REHEARSE_REPO/docs/status-lane-a.md"
+assert_fail "rehearse-rejects-untracked-status" bash -c "$clean_check" _ "$RH" "$REHEARSE_REPO"
+git -C "$REHEARSE_REPO" add docs/status-lane-a.md
+git -C "$REHEARSE_REPO" commit -qm marker
+assert_fail "rehearse-rejects-tracked-status" bash -c "$clean_check" _ "$RH" "$REHEARSE_REPO"
+
 if [ "${POLYLANE_REHEARSE:-0}" != "1" ]; then
   pass "rehearse-gated-off (set POLYLANE_REHEARSE=1 to run the live canary)"; finish; exit 0
 fi

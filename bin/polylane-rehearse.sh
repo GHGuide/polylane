@@ -8,8 +8,18 @@ RUN="$BIN/polylane-run.sh"; MARK="$BIN/polylane-markers.sh"
 command -v tmux >/dev/null 2>&1 || { echo "rehearse: tmux required (skipping)"; exit 77; }
 command -v git >/dev/null 2>&1 || { echo "rehearse: git required" >&2; exit 2; }
 
+rehearse_promoted_tree_clean() {
+  local repo="$1" marker
+  git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  [ -z "$(git -C "$repo" status --porcelain --untracked-files=no)" ] || return 1
+  for marker in docs/status-lane-a.md docs/status-lane-b.md docs/status-integrator.md; do
+    [ ! -e "$repo/$marker" ] || return 1
+    ! git -C "$repo" ls-files --error-unmatch -- "$marker" >/dev/null 2>&1 || return 1
+  done
+}
+
 rehearse() {
-  local want="${1:-go}" root sess nonce rc=0 report evidence promoted cleaned leaks=0 calls graph_witnesses retained=0
+  local want="${1:-go}" root sess nonce rc=0 report evidence promoted cleaned leaks=0 calls graph_witnesses retained=0 tree_clean=0
   root=$(mktemp -d "${TMPDIR:-/tmp}/polylane-rehearse.XXXXXX")
   sess="plrh-$$"; nonce="rh-$$-$(date +%s)"
   # shellcheck disable=SC2064 # expand root/session now
@@ -72,6 +82,9 @@ JSON
       POLYLANE_SESSION="$sess" POLYLANE_POLL_INTERVAL=1 POLYLANE_HEALTH_INTERVAL=9999 POLYLANE_INTEGRATOR_REPAIRS=0 \
       "$RUN" "$root/.polylane/run.json" --yes > "$root/rehearse.log" 2>&1 || true
   )
+  if [ "${POLYLANE_REHEARSE_DEBUG:-0}" = "1" ]; then
+    sed -n '1,240p' "$root/rehearse.log" >&2
+  fi
   report="$root/docs/polylane-report.md"; evidence="$root/docs/verify-integration.md"
   calls=$([ -f "$root/mock-invocations" ] && wc -l < "$root/mock-invocations" | tr -d ' ' || echo 0)
   graph_witnesses=$([ -f "$root/graph-witness" ] && wc -l < "$root/graph-witness" | tr -d ' ' || echo 0)
@@ -82,8 +95,9 @@ JSON
     grep -qE 'Outcome:\*\*[[:space:]]*GO|^\*\*GO\*\*' "$report" 2>/dev/null || rc=1
     [ "$calls" = 3 ] || rc=1
     [ "$leaks" = 0 ] || rc=1
+    if rehearse_promoted_tree_clean "$root"; then tree_clean=1; else rc=1; fi
     [ "$rc" = 0 ] && promoted=1 || promoted=0
-    [ "$leaks" = 0 ] && cleaned=1 || cleaned=0
+    [ "$leaks" = 0 ] && [ "$tree_clean" = 1 ] && cleaned=1 || cleaned=0
     tmux kill-session -t "$sess" 2>/dev/null || true; rm -rf "$root"; trap - RETURN
     [ ! -e "$root" ] || { leaks=1; rc=1; }
     echo "REHEARSE-GO contract-v2=1 promoted=$promoted cleaned=$cleaned leaks=$leaks"
