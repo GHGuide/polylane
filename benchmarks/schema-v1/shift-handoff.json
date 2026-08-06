@@ -1,0 +1,9 @@
+{
+  "schema": "schema-v1",
+  "id": "shift-handoff",
+  "title": "No surprises at shift change",
+  "brief": "Our volunteer clinic loses important details whenever one shift hands work to the next.",
+  "product_shape": "responsive web app",
+  "feasibility": "feasible",
+  "rubric": ["create a clear handoff", "surface unresolved items", "make authorship visible"]
+}

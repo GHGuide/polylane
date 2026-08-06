@@ -1,0 +1,9 @@
+{
+  "schema": "schema-v1",
+  "id": "dog-walk-route",
+  "title": "Choose a good dog walk",
+  "brief": "I want a quick way to choose a dog walk based on the time I have, weather, and how energetic my dog is today.",
+  "product_shape": "single-page web app",
+  "feasibility": "feasible",
+  "rubric": ["accept a short time budget", "recommend a suitable route", "explain the recommendation"]
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "schema-v1",
+  "id": "study-circle",
+  "title": "Keep a study group moving",
+  "brief": "My adult-learning group struggles to choose topics, schedule practice, and share progress without another chat thread.",
+  "product_shape": "collaborative web app",
+  "feasibility": "feasible",
+  "rubric": ["organize a shared plan", "let members record progress", "keep the primary action discoverable"]
+}
