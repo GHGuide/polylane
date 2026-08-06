@@ -94,8 +94,8 @@ above, so the four builders can run concurrently.
 | Lane | Owns | Current subgoals | Skills |
 |---|---|---|---|
 | `product-foundation` | `bin/polylane-product-benchmark.sh`, `bin/polylane-discovery.sh`, `benchmarks/**`, `tests/test-product-benchmark.sh`, `tests/test-discovery-graph.sh` | `m8.1,m8.2` | TDD, verification, product brainstorming, write spec |
-| `worker-efficiency` | `bin/polylane-models.sh`, `bin/polylane-scout.sh`, `bin/polylane-promptopt.sh`, `tests/test-models.sh`, `tests/test-intensity.sh`, `tests/test-codex-profile.sh`, `tests/test-promptopt.sh`, `tests/test-scout-outcomes.sh` | `m8.3,m8.7` | TDD, verification, testing strategy, system design |
-| `quality-runtime` | `bin/polylane-advanced.sh`, `bin/polylane-judges.sh`, `bin/polylane-graph.sh`, `bin/polylane-run.sh`, `tests/test-advanced-runtime.sh`, `tests/test-graph-quality-loop.sh`, `tests/test-judges.sh`, existing graph/adapter/contract tests it must update | `m8.4,m8.5,m8.6` | TDD, verification, architecture, code review |
+| `worker-efficiency` | `bin/polylane-models.sh`, `bin/polylane-scout.sh`, `bin/polylane-promptopt.sh`, `tests/test-models.sh`, `tests/test-intensity.sh`, `tests/test-promptopt.sh`, `tests/test-scout-outcomes.sh` | `m8.3,m8.7` | TDD, verification, testing strategy, system design |
+| `quality-runtime` | `bin/polylane-advanced.sh`, `bin/polylane-judges.sh`, `bin/polylane-graph.sh`, `bin/polylane-run.sh`, `tests/test-codex-profile.sh`, `tests/test-advanced-runtime.sh`, `tests/test-graph-quality-loop.sh`, `tests/test-judges.sh`, existing graph/adapter/contract tests it must update | `m8.4,m8.5,m8.6` plus the runner half of `m8.3` | TDD, verification, architecture, code review |
 | `control-docs` | `bin/polylane-dashboard.sh`, `tests/test-dashboard.sh`, `tests/test-control-room.sh`, `SKILL.md`, `codex/SKILL.md`, `README.md`, `references/**`, `codex/install.sh` | `m8.8` plus shared docs truth | TDD, verification, documentation, process optimization |
 
 Each lane forbids every other row's paths. `quality-runtime` is the sole owner of runner and graph
