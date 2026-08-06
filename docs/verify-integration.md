@@ -51,3 +51,5 @@ Branch: `lane/c9-integrator`
 DEFERRED: none. No credential or hardware evidence was required or counted as PASS.
 
 POLYLANE-VERDICT: GO run=c9-product-autonomy-1786054003
+
+ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.
