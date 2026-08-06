@@ -94,7 +94,7 @@ The integrator prompt also requires:
 - scope checks and seam scan; when only coordinator-owned terminal checks remain, commit `READY-FOR-HOST-GATE run=<RUN_ID>` instead of rerunning the terminal suite;
 - repair every autonomous issue it can;
 - exactly one current-nonce sentinel:
-  `GO`, `EXTERNAL-EVIDENCE-OPEN`, or `NO-GO`;
+  `GO`, `READY-FOR-HOST-GATE`, `EXTERNAL-EVIDENCE-OPEN`, or `NO-GO`;
 - its own exact DONE marker.
 
 Run:

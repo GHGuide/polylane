@@ -107,11 +107,14 @@ Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `mod
 - **Mechanical seam scan (before you decide).** Run `bin/polylane-seams.sh scan <your integrator worktree> >> docs/verify-integration.md` — it greps the merged tree for cross-file name danglers (a DOM id referenced in JS that no HTML produces — the classic "two halves don't wire up" bug). A `SEAM-DANGLING:` line it appends is an AUTO-NO-GO the gate enforces regardless of your prose, so fix the wiring (or reassign the lane) before issuing GO.
 - **End docs/verify-integration.md with exactly one verdict sentinel on its OWN line:**
   `POLYLANE-VERDICT: GO run=<RUN_ID>`,
+  `POLYLANE-VERDICT: READY-FOR-HOST-GATE run=<RUN_ID>`,
   `POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=<RUN_ID>`, or
-  `POLYLANE-VERDICT: NO-GO run=<RUN_ID>`. External-open is valid only after
-  engineering is verified and remaining proof truly requires a person/physical
-  system. NO-GO is repair feedback, not a stopping point. The runner trusts only
-  the current nonce and commits the evidence.
+  `POLYLANE-VERDICT: NO-GO run=<RUN_ID>`. Ready-for-host-gate is valid only when
+  frozen coordinator-owned terminal checks remain; the outer runner runs them once
+  before converting it to GO. External-open is valid only after engineering is
+  verified and remaining proof truly requires a person/physical system. NO-GO is
+  repair feedback, not a stopping point. The runner trusts only the current nonce
+  and commits the evidence.
 - **Skip impossible identical repair waves:** only when the current
   host/account/hardware blocks a required gate before source execution and no
   owned source change can alter it, add

@@ -16,7 +16,13 @@ LANE_STATS=("Goal achieved (42k tokens)" "completed")
 # --- GO report ---------------------------------------------------------------
 make_tmpdir
 REPO_ROOT="$TEST_TMPDIR"
+PROJECT_ROOT="$TEST_TMPDIR"
 FAILED_LANES=""
+run_stats init
+run_stats lane-launch --lane alpha
+run_stats lane-restart --lane alpha
+run_stats terminal-gate
+run_stats cleanup --state complete
 write_report GO
 R="$TEST_TMPDIR/docs/polylane-report.md"
 
@@ -29,6 +35,8 @@ assert_contains "go-lane-row-beta"  "| beta | claude-haiku-4-5 | lane/beta | com
 assert_contains "go-merged-text"    "all lanes merged"       "$go"
 assert_contains "go-push-step"      "git push"               "$go"
 assert_contains "go-no-open-items"  "No open items"          "$go"
+assert_contains "go-telemetry" "Run telemetry:" "$go"
+assert_contains "go-telemetry-tokens-unknown" "tokens=unknown" "$go"
 assert_eq "go-ledger-cycle" "7" "$(jq -r '.cycle' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
 assert_eq "go-ledger-tokens" "42000" "$(jq -r '.tokens' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
 

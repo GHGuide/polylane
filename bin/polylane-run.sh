@@ -98,6 +98,19 @@ TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
 # dir this script lives in — the notify hook is resolved as a sibling.
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)
 
+# run_stats OP ... : keep the one durable telemetry implementation at the
+# process boundaries. The file lives with durable cycle evidence rather than
+# .polylane scratch so the final report can describe cleanup truthfully.
+run_stats() {
+  local op="$1"
+  shift
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  [ -n "${PROJECT_ROOT:-}" ] || return 0
+  [ -x "$SCRIPT_DIR/polylane-run-stats.sh" ] || return 0
+  "$SCRIPT_DIR/polylane-run-stats.sh" "$op" \
+    --file "$PROJECT_ROOT/docs/polylane/run-stats.json" "$@"
+}
+
 # notify_event EVENT MSG : best-effort hook into bin/polylane-notify.sh (a
 # sibling script another lane may install). Fires ONLY if it exists and is
 # executable; missing/broken hook is never fatal to the run.
@@ -1313,6 +1326,7 @@ launch_panes() {
     LANE_PANE_IDX[i]="$NEW_PANE_IDX"
     seed_pane "$NEW_PANE_IDX" "$pc"
     pipe_pane_log "$NEW_PANE_IDX" "${LANE_NAMES[$i]}"
+    run_stats lane-launch --lane "${LANE_NAMES[$i]}"
     LAUNCHED=$(( LAUNCHED + 1 ))
   done
 }
@@ -1764,6 +1778,7 @@ respawn_lane() {
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
   fi
   repipe_pane_log "$idx" "$name"
+  run_stats lane-restart --lane "$name"
 }
 
 # recreate_lane_pane NAME WT : replace a vanished mapped pane in this owned
@@ -1783,6 +1798,7 @@ recreate_lane_pane() {
   progress_hash_set "$name" ""; progress_count_set "$name" 0
   seed_pane "$idx" "$cmd" || return 1
   pipe_pane_log "$idx" "$name"
+  run_stats lane-restart --lane "$name"
 }
 
 # --- Reflexion: reflect-then-repair before giving up on a lane ----------------
@@ -2203,6 +2219,7 @@ run_integrator() {
   INT_PANE_IDX="$NEW_PANE_IDX"
   seed_pane "$NEW_PANE_IDX" "$pc"
   pipe_pane_log "$NEW_PANE_IDX" "$INT_NAME"
+  run_stats lane-launch --lane "$INT_NAME"
 }
 
 adopt_integrator() {
@@ -2355,6 +2372,7 @@ merge_gate() {
   if [ "$v" = "READY-FOR-HOST-GATE" ]; then
     # This is deliberately not GO: only the outer runner runs the frozen host
     # checks and converts this candidate after that single coordinator gate.
+    run_stats terminal-gate
     if contract_acceptance_gate GO; then v="GO"; else
       printf '\nACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.\n' >> "$f"
       v="NO-GO"; VERDICT_REPAIRABLE="YES"
@@ -2433,6 +2451,7 @@ repair_integrator_verdict() {
     run tmux send-keys -t "$TMUX_SESSION:0.$INT_PANE_IDX" C-m 2>/dev/null || true
   fi
   repipe_pane_log "$INT_PANE_IDX" "$INT_NAME"
+  run_stats lane-restart --lane "$INT_NAME"
 }
 
 # A supervisor can die after a repair integrator commits a fresh, nonce-bound
@@ -2694,11 +2713,20 @@ cleanup() {
   cleanup_delete_branch "$INT_BRANCH" || cleanup_rc=1
 
   # remove scratch — .polylane and the DONE status files only
+  cleanup_status_markers || cleanup_rc=1
+
+  # Record the outcome before removing scratch. The telemetry itself is durable
+  # under docs/polylane/, so write_report can still snapshot it afterwards.
+  if [ "$cleanup_rc" -eq 0 ]; then
+    run_stats cleanup --state complete || cleanup_rc=1
+  else
+    run_stats cleanup --state warning || true
+  fi
+
   safe_rm "$REPO_ROOT/.polylane" || cleanup_rc=1
   # .polylane/ is scratch EXCEPT git-tracked files (e.g. SCHEMA.md); restore those
   # from HEAD so cleanup never deletes committed content.
   run git -C "$REPO_ROOT" checkout -q -- .polylane || true
-  cleanup_status_markers || cleanup_rc=1
 
   if [ "$cleanup_rc" -eq 0 ]; then
     echo "Cleanup complete. Kept: docs/verify-*.md, docs/parallel-status.md, docs/polylane-report.md"
@@ -2712,12 +2740,12 @@ cleanup() {
 # report — plain-terms rollup the chat surfaces after the run
 # ---------------------------------------------------------------------------
 
-# capture_stats : best-effort grab Claude's "Goal achieved" line or Codex exec's
-# JSON turn.completed usage while panes/logs still exist.
+# capture_stats : preserve Claude's display line and hand Codex JSONL usage to
+# run_stats. Token parsing intentionally lives only in polylane-run-stats.sh.
 capture_stats() {
   LANE_STATS=()
   [ "${DRY_RUN:-0}" = "1" ] && return 0
-  local i idx line tok log
+  local i idx line log
   for i in "${!LANE_NAMES[@]}"; do
     if lane_resumed "$i"; then
       LANE_STATS+=("DONE (resumed — prior run)")
@@ -2729,14 +2757,14 @@ capture_stats() {
       line=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null \
              | grep -oE 'Goal achieved \([^)]*\)' | tail -1 || true)
     fi
-    if [ -z "$line" ]; then
-      log="$REPO_ROOT/docs/lane-logs/${LANE_NAMES[$i]}.log"
-      tok=$(grep '"type":"turn.completed"' "$log" 2>/dev/null | tail -1 |
-        jq -r '(.usage.input_tokens // 0) + (.usage.output_tokens // 0)' 2>/dev/null || true)
-      [ -n "$tok" ] && [ "$tok" != "0" ] && line="Codex completed ($tok tokens)"
-    fi
+    log="$REPO_ROOT/docs/lane-logs/${LANE_NAMES[$i]}.log"
+    run_stats capture-usage --lane "${LANE_NAMES[$i]}" --log "$log" --offset 0 ||
+      echo "run-stats: could not capture usage for ${LANE_NAMES[$i]}" >&2
     LANE_STATS+=("${line:-completed}")
   done
+  log="$REPO_ROOT/docs/lane-logs/${INT_NAME:-integrator}.log"
+  run_stats capture-usage --lane "${INT_NAME:-integrator}" --log "$log" --offset 0 ||
+    echo "run-stats: could not capture usage for ${INT_NAME:-integrator}" >&2
   return 0
 }
 
@@ -2799,7 +2827,7 @@ report_open_items() {
 }
 
 write_report() {
-  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0 telemetry telemetry_tokens=""
   # dry-run must never touch the tree — print the intent, write nothing.
   if [ "${DRY_RUN:-0}" = "1" ]; then
     printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
@@ -2814,6 +2842,10 @@ write_report() {
 
   # Only current-run lane/integration evidence may nominate an open item.
   steps=$(report_open_items | sort -u | head -8 || true)
+  telemetry=$(run_stats snapshot 2>/dev/null || true)
+  if [ -n "$telemetry" ] && printf '%s\n' "$telemetry" | jq -e '.tokens != null' >/dev/null 2>&1; then
+    telemetry_tokens=$(printf '%s\n' "$telemetry" | jq -r '.tokens')
+  fi
 
   {
     echo "# polylane run report"
@@ -2843,6 +2875,10 @@ write_report() {
     done
     echo
     echo "**Estimated total: \$${_total}** — rough, output-rate pricing from \`references/model-selection.md\`; lanes without a token count are excluded."
+    if [ -n "$telemetry" ] && printf '%s\n' "$telemetry" | jq -e . >/dev/null 2>&1; then
+      echo "**Run telemetry:** $(printf '%s\n' "$telemetry" | jq -r '"wall_s=" + (.wall_s|tostring) + " · launches=" + ([.lanes[]?.launches] | add // 0 | tostring) + " · restarts=" + (([.lanes[]?.restarts] | add // 0) + .supervisor_restarts | tostring) + " · terminal_gates=" + (.terminal_gates|tostring) + " · cleanup=" + .cleanup + " · tokens=" + (if .tokens == null then "unknown" else (.tokens|tostring) end)')"
+      [ -n "$telemetry_tokens" ] && _tokens_total="$telemetry_tokens"
+    fi
     # durable spend ledger (best-effort; never fails the report).
     if [ -x "$SCRIPT_DIR/polylane-ledger.sh" ]; then
       "$SCRIPT_DIR/polylane-ledger.sh" record --file "$REPO_ROOT/docs/polylane/spend-ledger.jsonl" \
@@ -2973,6 +3009,7 @@ main() {
   parse_args "$@"
   preflight_basic
   load_manifest
+  run_stats init
   if post_promote_resume_ready; then
     recover_post_promote_run
     return 0

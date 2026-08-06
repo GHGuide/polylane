@@ -51,6 +51,7 @@ RUN_ID=$(jq -r '.run_id // ""' "$SUP_MANIFEST")
 MDIR=$(cd "$(dirname "$SUP_MANIFEST")" && pwd -P)
 PROJECT_ROOT=$(cd "$MDIR/.." && pwd -P)
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
+RUN_STATS="$PROJECT_ROOT/docs/polylane/run-stats.json"
 HEARTBEAT="$MDIR/supervisor-heartbeat"
 RUNNER_LOG="$MDIR/runner.log"
 SUP_LOCK="$MDIR/supervisor.lock"
@@ -58,6 +59,11 @@ DECIDED=""            # lanes parked on a critical approval (notified once)
 SUP_START=$(date +%s)
 
 sup_log() { printf '[supervisor %s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
+
+record_supervisor_restart() {
+  [ -x "$SCRIPT_DIR/polylane-run-stats.sh" ] || return 0
+  "$SCRIPT_DIR/polylane-run-stats.sh" supervisor-restart --file "$RUN_STATS"
+}
 
 # report_fresh : 0 iff the run report exists and was written AFTER we started —
 # a stale report from a previous cycle must not read as "this run finished"
@@ -159,6 +165,9 @@ supervisor_main() {
   case " $* " in *" --yes "*) args_line="$*" ;; *) args_line="--yes${*:+ $*}" ;; esac
 
   while :; do
+    if [ "$restarts" -gt 0 ]; then
+      record_supervisor_restart || sup_log "could not record supervisor restart telemetry"
+    fi
     sup_log "launching runner (attempt $((restarts + 1))/$((SUP_MAX_RESTARTS + 1))): polylane-run.sh $SUP_MANIFEST $args_line"
     sup_log "watch active tmux: $(tmux_watch_command)"
     # shellcheck disable=SC2086  # args_line is intentionally word-split
