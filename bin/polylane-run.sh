@@ -428,6 +428,266 @@ preflight_contract() {
   echo "ORCHESTRATION-CONTRACT: v2 cycle=$CYCLE target=$next_id"
 }
 
+# ---------------------------------------------------------------------------
+# contract-v2 execution graph shadow (observer only; never schedules work)
+# ---------------------------------------------------------------------------
+
+graph_shadow_enabled() {
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  [ "${POLYLANE_GRAPH_SHADOW:-1}" != "0" ]
+}
+
+graph_shadow_error() {
+  printf 'GRAPH-SHADOW: %s\n' "$*" >&2
+  return 1
+}
+
+# graph_shadow_validate checks both immutable inputs before a caller relies on
+# the shadow. The graph remains observational: this never returns ready work.
+graph_shadow_validate() {
+  graph_shadow_enabled || return 0
+  local graph_tool="$SCRIPT_DIR/polylane-graph.sh"
+  local events_tool="$SCRIPT_DIR/polylane-events.sh" out current_graph_id
+  [ -n "${GRAPH_FILE:-}" ] && [ -n "${EVENTS_FILE:-}" ] && [ -n "${GRAPH_ID:-}" ] || {
+    graph_shadow_error 'graph shadow was not initialized'
+    return 1
+  }
+  if ! out=$("$graph_tool" validate "$GRAPH_FILE" 2>&1); then
+    graph_shadow_error "invalid graph at $GRAPH_FILE: ${out:-validation failed}"
+    return 1
+  fi
+  current_graph_id=$(jq -r '.graph_id // ""' "$GRAPH_FILE" 2>/dev/null) || {
+    graph_shadow_error "cannot read graph_id from $GRAPH_FILE"
+    return 1
+  }
+  [ "$current_graph_id" = "$GRAPH_ID" ] || {
+    graph_shadow_error "graph_id changed after compile (expected $GRAPH_ID, got ${current_graph_id:-empty})"
+    return 1
+  }
+  if ! out=$("$events_tool" verify "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>&1); then
+    graph_shadow_error "invalid event ledger at $EVENTS_FILE: ${out:-verification failed}"
+    return 1
+  fi
+}
+
+# graph_shadow_init compiles atomically via polylane-graph.sh, then creates the
+# ledger with an atomic rename. Resume preserves and validates prior events.
+graph_shadow_init() {
+  graph_shadow_enabled || {
+    GRAPH_FILE=''; EVENTS_FILE=''; GRAPH_ID=''
+    return 0
+  }
+  local dir graph_tool="$SCRIPT_DIR/polylane-graph.sh" events_tool="$SCRIPT_DIR/polylane-events.sh"
+  local out tmp
+  dir=$(dirname "$MANIFEST")
+  GRAPH_FILE="$dir/graph.json"
+  EVENTS_FILE="$dir/events.jsonl"
+  if ! out=$("$graph_tool" compile "$MANIFEST" "$GRAPH_FILE" 2>&1); then
+    graph_shadow_error "compile failed for $MANIFEST: ${out:-compiler failed}"
+    return 1
+  fi
+  if ! out=$("$graph_tool" validate "$GRAPH_FILE" 2>&1); then
+    graph_shadow_error "compiled graph is invalid at $GRAPH_FILE: ${out:-validation failed}"
+    return 1
+  fi
+  GRAPH_ID=$(jq -r '.graph_id // ""' "$GRAPH_FILE" 2>/dev/null) || {
+    graph_shadow_error "cannot read graph_id from $GRAPH_FILE"
+    return 1
+  }
+  [ -n "$GRAPH_ID" ] || {
+    graph_shadow_error "compiled graph has no graph_id: $GRAPH_FILE"
+    return 1
+  }
+  if [ "${RESUME:-0}" = "1" ] && [ -e "$EVENTS_FILE" ]; then
+    if ! out=$("$events_tool" verify "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>&1); then
+      graph_shadow_error "resume ledger is invalid at $EVENTS_FILE: ${out:-verification failed}"
+      return 1
+    fi
+  else
+    tmp=$(mktemp "$dir/.polylane-events.XXXXXX") || {
+      graph_shadow_error "cannot initialize event ledger beside $MANIFEST"
+      return 1
+    }
+    if ! mv "$tmp" "$EVENTS_FILE"; then
+      rm -f "$tmp"
+      graph_shadow_error "cannot install event ledger at $EVENTS_FILE"
+      return 1
+    fi
+  fi
+  graph_shadow_validate
+}
+
+graph_shadow_edge_exact() {
+  local from="$1" outcome="$2" expected="$3" actual
+  actual=$(jq -r --arg from "$from" --arg outcome "$outcome" '
+    [(.edges[]?, .loops[]?)
+      | select(.from == $from and .outcome == $outcome)
+      | .to]
+    | sort | join(",")
+  ' "$GRAPH_FILE" 2>/dev/null) || {
+    graph_shadow_error "cannot inspect route $from/$outcome in $GRAPH_FILE"
+    return 1
+  }
+  [ "$actual" = "$expected" ] || {
+    graph_shadow_error "route mismatch for $from/$outcome (runner=$expected graph=${actual:-none})"
+    return 1
+  }
+}
+
+# graph_shadow_parity compares only decisions the current runner already made.
+# It never calls graph ready-routing and therefore cannot change scheduling.
+graph_shadow_parity() {
+  graph_shadow_enabled || return 0
+  local decision="$1" node="${2:-}"
+  graph_shadow_validate || return 1
+  case "$decision" in
+    GO|EXTERNAL-EVIDENCE-OPEN)
+      graph_shadow_edge_exact verifier passed promote &&
+        graph_shadow_edge_exact promote succeeded complete
+      ;;
+    NO-GO)
+      graph_shadow_edge_exact verifier failed repair &&
+        graph_shadow_edge_exact repair failed halt
+      ;;
+    HALTED)
+      [ -n "$node" ] || {
+        graph_shadow_error 'HALTED parity needs the failed runner node'
+        return 1
+      }
+      graph_shadow_edge_exact "$node" failed halt
+      ;;
+    RESUME)
+      case "$node" in
+        lane:*) graph_shadow_edge_exact "$node" succeeded builders-joined ;;
+        integrator) graph_shadow_edge_exact integrator succeeded verifier ;;
+        *) graph_shadow_error "resume parity has unknown node: ${node:-empty}"; return 1 ;;
+      esac
+      ;;
+    *) graph_shadow_error "unsupported runner decision: $decision"; return 1 ;;
+  esac
+}
+
+graph_shadow_append() {
+  graph_shadow_enabled || return 0
+  local node="$1" from="$2" to="$3" attempt="$4" key="$5" reason="$6" out
+  if ! out=$("$SCRIPT_DIR/polylane-events.sh" append "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" \
+      "$node" "$from" "$to" "$attempt" "$key" "$reason" 2>&1); then
+    graph_shadow_error "event append failed for $node $from->$to: ${out:-append failed}"
+    return 1
+  fi
+}
+
+# graph_shadow_record_node advances one observed node to the runner's final
+# state. Replay makes interrupted writes and supervisor resume safe.
+graph_shadow_record_node() {
+  graph_shadow_enabled || return 0
+  local node="$1" target="$2" attempt="${3:-0}" reason="${4:-runner-boundary}"
+  local replay state replay_attempt key
+  graph_shadow_validate || return 1
+  if ! replay=$("$SCRIPT_DIR/polylane-events.sh" replay "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>&1); then
+    graph_shadow_error "event replay failed before recording $node: ${replay:-replay failed}"
+    return 1
+  fi
+  state=$(printf '%s\n' "$replay" | jq -r --arg node "$node" '.nodes[$node].state // "pending"' 2>/dev/null) || {
+    graph_shadow_error "cannot read replayed state for $node"
+    return 1
+  }
+  replay_attempt=$(printf '%s\n' "$replay" | jq -r --arg node "$node" '.nodes[$node].attempt // 0' 2>/dev/null) || {
+    graph_shadow_error "cannot read replayed attempt for $node"
+    return 1
+  }
+  [ "$state" != "$target" ] || return 0
+  case "$state" in
+    pending)
+      key="shadow:$node:$attempt"
+      graph_shadow_append "$node" pending ready "$attempt" "$key:ready" "$reason" || return 1
+      state=ready
+      ;;
+    failed)
+      attempt=$((replay_attempt + 1))
+      key="shadow:$node:$attempt"
+      graph_shadow_append "$node" failed ready "$attempt" "$key:retry" "$reason" || return 1
+      state=ready
+      ;;
+    ready|running)
+      attempt="$replay_attempt"
+      key="shadow:$node:$attempt"
+      ;;
+    *)
+      graph_shadow_error "cannot move $node from terminal shadow state $state to $target"
+      return 1
+      ;;
+  esac
+  if [ "$state" = ready ]; then
+    graph_shadow_append "$node" ready running "$attempt" "$key:running" "$reason" || return 1
+    state=running
+  fi
+  case "$target" in succeeded|failed|blocked) : ;;
+    *) graph_shadow_error "unsupported event target for $node: $target"; return 1 ;;
+  esac
+  graph_shadow_append "$node" "$state" "$target" "$attempt" "$key:$target" "$reason" || return 1
+  graph_shadow_validate
+}
+
+graph_shadow_record_resume() {
+  graph_shadow_enabled || return 0
+  graph_shadow_parity RESUME "$1" || return 1
+  graph_shadow_record_node "$1" succeeded 0 resume
+}
+
+graph_shadow_record_resumes() {
+  graph_shadow_enabled || return 0
+  local i
+  for i in "${!LANE_NAMES[@]}"; do
+    lane_resumed "$i" || continue
+    graph_shadow_record_resume "lane:${LANE_NAMES[$i]}" || return 1
+  done
+}
+
+graph_shadow_record_builders() {
+  graph_shadow_enabled || return 0
+  local outcome="$1" i node first_failed=''
+  for i in "${!LANE_NAMES[@]}"; do
+    node="lane:${LANE_NAMES[$i]}"
+    if [ "$outcome" = succeeded ] || lane_done "${LANE_WORKTREES[$i]}" "${LANE_NAMES[$i]}"; then
+      graph_shadow_record_node "$node" succeeded 0 builder-done || return 1
+    else
+      graph_shadow_record_node "$node" failed 0 builder-halted || return 1
+      [ -n "$first_failed" ] || first_failed="$node"
+    fi
+  done
+  if [ "$outcome" != succeeded ]; then
+    [ -n "$first_failed" ] || {
+      graph_shadow_error 'builder halt had no failed graph node'
+      return 1
+    }
+    graph_shadow_record_decision HALTED "$first_failed"
+  fi
+}
+
+graph_shadow_record_decision() {
+  graph_shadow_enabled || return 0
+  local decision="$1" node="${2:-}" attempt="${GRAPH_SHADOW_VERIFIER_ATTEMPT:-0}"
+  graph_shadow_parity "$decision" "$node" || return 1
+  case "$decision" in
+    GO|EXTERNAL-EVIDENCE-OPEN)
+      graph_shadow_record_node verifier succeeded "$attempt" "$decision" || return 1
+      graph_shadow_record_node promote succeeded 0 "$decision" || return 1
+      graph_shadow_record_node complete succeeded 0 "$decision" || return 1
+      ;;
+    NO-GO)
+      graph_shadow_record_node verifier failed "$attempt" NO-GO || return 1
+      graph_shadow_record_node repair failed "$attempt" NO-GO || return 1
+      graph_shadow_record_node halt succeeded 0 NO-GO || return 1
+      ;;
+    HALTED)
+      graph_shadow_record_node "$node" failed 0 HALTED || return 1
+      graph_shadow_record_node halt succeeded 0 HALTED || return 1
+      ;;
+  esac
+  graph_shadow_validate
+}
+
 # validate_manifest : fail LOUD before any git/tmux side effect on a malformed plan.
 # jq -r turns a missing key into the literal string "null", so an under-specified
 # lane would otherwise `git worktree add null -b null` and a 0-lane manifest would
@@ -2232,7 +2492,9 @@ main() {
   preflight_agent
   apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
   preflight_contract
+  graph_shadow_init || exit 1
   mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
+  graph_shadow_record_resumes || exit 1
 
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees
@@ -2256,9 +2518,11 @@ main() {
 
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
+    graph_shadow_record_builders succeeded || exit 1
     echo "All builders DONE."
     notify_event "done" "all ${#LANE_NAMES[@]} lane(s) DONE — starting integrator"
   else
+    graph_shadow_record_builders failed || exit 1
     echo "Halt: lane(s) failed after retries: ${FAILED_LANES:-?}. Not integrating." >&2
     notify_event halt "lane(s) failed after retries: ${FAILED_LANES:-?}"
     capture_stats
@@ -2270,12 +2534,14 @@ main() {
   echo "== integrator: $INT_NAME =="
   if [ "${RESUME:-0}" = "1" ] && lane_done "$INT_WORKTREE" "$INT_NAME"; then
     echo "resume: integrator already DONE — skipping launch"
+    graph_shadow_record_resume integrator || exit 1
   elif adopt_integrator; then
     :
   else
     run_integrator
   fi
   if ! poll_done "$INT_NAME:$INT_WORKTREE"; then
+    graph_shadow_record_decision HALTED integrator || exit 1
     echo "Halt: integrator failed after retries. Nothing merged." >&2
     notify_event halt "integrator failed after retries — nothing merged"
     capture_stats
@@ -2283,11 +2549,13 @@ main() {
     echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
+  graph_shadow_record_node integrator succeeded 0 integrator-done || exit 1
 
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time
   if gate_with_repairs; then
     assert_no_conflict "$INT_WORKTREE"
+    graph_shadow_record_decision "${VERDICT_RESULT:-GO}" || exit 1
     echo "== promote: base -> integrator branch (verified outcome) =="
     if ! promote_to_main; then
       write_report "${VERDICT_RESULT:-GO}" || true
@@ -2301,6 +2569,8 @@ main() {
       echo "== push: current branch =="
       run git -C "$REPO_ROOT" push
     fi
+  else
+    graph_shadow_record_decision NO-GO || exit 1
   fi
 
   echo "== report =="
