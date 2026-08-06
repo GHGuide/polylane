@@ -1,0 +1,9 @@
+{
+  "schema": "schema-v1",
+  "id": "pantry-planner",
+  "title": "Use the food already at home",
+  "brief": "I waste groceries because I cannot see what is in my pantry or turn it into a simple weeknight plan.",
+  "product_shape": "mobile-first web app",
+  "feasibility": "feasible",
+  "rubric": ["capture pantry items", "suggest a practical meal plan", "show a useful empty state"]
+}

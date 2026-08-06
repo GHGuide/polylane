@@ -1,0 +1,9 @@
+{
+  "schema": "schema-v1",
+  "id": "repair-reminder",
+  "title": "Remember the small repairs",
+  "brief": "I manage a small rental and forget recurring maintenance until a tenant complains.",
+  "product_shape": "web dashboard",
+  "feasibility": "feasible",
+  "rubric": ["track maintenance tasks", "prioritize due work", "make next actions explicit"]
+}
