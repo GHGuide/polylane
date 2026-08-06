@@ -12,6 +12,15 @@ Polylane turns a prompt into a durable product loop:
 This is the Codex-native entrypoint. Shared deterministic helpers live in `scripts/`.
 Do not import Claude Code assumptions, commands, models, memory, or skills.
 
+## Cross-lane relay
+
+For live requests, decisions, and resource mutexes, use the runner-exported
+`POLYLANE_COORDINATION_FILE` with
+`"$POLYLANE_PROJECT_ROOT/scripts/polylane-coordinate.sh"`. Use `request`,
+`decision`, `claim`, `release`, `pending`, and `snapshot`; never edit the JSONL.
+`docs/parallel-status.md` is a durable post-cycle summary only, never the live
+cross-worktree channel.
+
 ## Non-negotiable runtime
 
 - Execute every builder and integrator as a real `codex exec` CLI inside the tmux

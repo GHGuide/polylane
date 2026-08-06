@@ -125,6 +125,15 @@ polylane-run.sh <manifest> [--dry-run] [--yes] [--push] [--resume] [--intensity 
 
 `--dry-run` previews every pane before anything launches; `--yes` pre-approves the runner's own prompts for unattended runs; `--intensity <economy|balanced|performance|max>` remaps every lane's model at launch and `--model lane=id` pins one lane on top of it — no manifest editing.
 
+### Cross-lane relay
+
+The runner exports `POLYLANE_PROJECT_ROOT` and `POLYLANE_COORDINATION_FILE` into
+every pane. Builders use `bin/polylane-coordinate.sh` for append-only `request`,
+`decision`, `claim`, `release`, `pending`, and `snapshot` operations. This keeps
+live coordination and resource mutexes outside isolated worktrees; stale locks are
+recovered safely. `docs/parallel-status.md` is a post-cycle summary, not the live
+coordination channel.
+
 ### End-of-run report
 
 The run happens in tmux, so the runner writes `docs/polylane-report.md` with the

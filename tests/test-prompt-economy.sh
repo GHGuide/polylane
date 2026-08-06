@@ -13,6 +13,8 @@ assert_contains "economy-local-cache" '$PWD/.polylane/check-cache/<lane>' "$bloc
 assert_contains "economy-selected-kit-once" "only the named kit once" "$blocks"
 assert_contains "economy-no-full-builder-suite" "only coordinator-owned terminal checks remain" "$blocks"
 assert_contains "economy-host-gate-handoff" "READY-FOR-HOST-GATE run=<RUN_ID>" "$blocks"
+assert_contains "economy-coordination-helper" "polylane-coordinate.sh" "$blocks"
+assert_contains "economy-coordination-env" "POLYLANE_COORDINATION_FILE" "$blocks"
 if printf '%s' "$blocks" | grep -qF '<CANONICAL_PROJECT>/.polylane/check-cache'; then fail "economy-no-canonical-cache" "canonical cache found"; else pass "economy-no-canonical-cache"; fi
 if printf '%s' "$blocks" | grep -qF 'superpowers:using-superpowers'; then fail "economy-no-generic-stack" "generic stack found"; else pass "economy-no-generic-stack"; fi
 

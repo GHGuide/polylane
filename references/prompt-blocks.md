@@ -67,7 +67,7 @@ If `graphify-out/q.py` is absent: substitute one read-only Explore agent to map 
 ```
 YOU OWN (edit only these): <OWN globs>
 FORBIDDEN (other lanes own — do not edit/refactor): <FORBIDDEN globs>
-HARD CONTRACT: <frozen public APIs>. If you need a change in a file you don't own, log the request in docs/parallel-status.md addressed to the owning lane; do NOT edit it.
+HARD CONTRACT: <frozen public APIs>. If you need a change in a file you do not own, use the canonical relay; do NOT edit it.
 ```
 
 ## G. Forced verification (no done without proof)
@@ -87,7 +87,7 @@ external; continue every autonomous task and never turn missing evidence into PA
 
 ## H. Coordination + resource mutex
 ```
-Use docs/parallel-status.md ONLY for cross-lane requests: a shared-file edit ask addressed to the owning lane, or a NEEDS DECISION: line if you hit a fork only the user can resolve (then continue other work, don't stall). It is not a general status log and not the done signal. <If shared resource:> Before using <device/DB/deploy>, claim it in docs/parallel-status.md: append "IN USE — @<lane> <time>"; release when done. Never use it while another lane holds it.
+Live cross-worktree coordination uses the runner-provided canonical environment only: `POLYLANE_PROJECT_ROOT` and `POLYLANE_COORDINATION_FILE`. Set `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"`, then use `"$COORD" request "$POLYLANE_COORDINATION_FILE" <from-lane> <to-lane> "<shared-file change>"`, `decision ...`, `claim ... <resource>`, and `release ... <resource>`. A failed claim means another lane owns that resource: do other work, inspect `"$COORD" pending "$POLYLANE_COORDINATION_FILE"`, and retry only after release. The relay is append-only; do not edit it. `docs/parallel-status.md` is a durable post-cycle summary only, never the live channel or done signal.
 ```
 
 ## I. Scoped git
@@ -104,7 +104,7 @@ Also write a `## DEFERRED` section at the END of docs/verify-<lane>.md: every fo
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
 - **Merge into YOUR OWN integrator branch — NEVER the base branch.** You run in your own worktree on your own branch. Merge each lane branch's CURRENT tip INTO THIS branch and verify the combined tree HERE. Do NOT check out or merge into `main`/base — the runner fast-forwards the base to your branch itself, and ONLY on a GO, so a NO-GO can never touch the base. Never trust a prior GO: if commits followed one, re-verify from scratch.
-- Read all verify-*.md + status, build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in status. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite in this sandbox.
+- Read all verify-*.md plus the canonical relay snapshot, build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in the relay; write `docs/parallel-status.md` once as the durable post-cycle summary. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite in this sandbox.
 - **If ponytail is installed, run `/ponytail-review` on the merged diff** — flag any over-engineering a lane introduced (dead abstraction, speculative generality, needless deps). Note findings in verify-integration.md; a lane that grossly over-built against its goal is a quality regression worth a NO-GO. Keeps the token-efficiency mission enforced at the gate, not just per-lane.
 - **Independent evidence, never a vibes-only GO.** Use independent verifier lanes
   when the plan includes them; otherwise combine mechanical acceptance, seam checks,

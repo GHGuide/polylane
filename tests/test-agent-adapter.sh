@@ -60,6 +60,11 @@ assert_contains "panecmd-sandbox-default" "--sandbox workspace-write" "$CMD"
 assert_contains "panecmd-no-multi-agent" "--disable multi_agent" "$CMD"
 assert_contains "panecmd-no-multi-agent-v2" "--disable multi_agent_v2" "$CMD"
 assert_contains "panecmd-no-fanout" "--disable enable_fanout" "$CMD"
+REPO_ROOT='/tmp/canonical project' POLYLANE_COORDINATION_FILE='/tmp/canonical project/.polylane/coordination.jsonl'
+CMD=$(pane_cmd '/tmp/lane worktree' gpt-5-codex '/tmp/prompt;unsafe.txt' high)
+assert_contains "panecmd-canonical-project-env" "POLYLANE_PROJECT_ROOT=/tmp/canonical\\ project" "$CMD"
+assert_contains "panecmd-coordination-file-env" "POLYLANE_COORDINATION_FILE=/tmp/canonical\\ project/.polylane/coordination.jsonl" "$CMD"
+if printf '%s' "$CMD" | grep -q 'unsafe.txt.*POLYLANE_COORDINATION'; then fail "panecmd-coordination-not-prompt-interpolated" "relay env was derived from prompt"; else pass "panecmd-coordination-not-prompt-interpolated"; fi
 
 # Break caught: a linked-worktree Codex workspace-write command cannot commit
 # because its shared Git metadata is not writable. Read-only and explicit danger

@@ -52,8 +52,13 @@ Every builder has non-empty `own_globs`; run:
 bin/polylane-scope.sh check-static .polylane/run.json
 ```
 
-A shared file has one owner. Other lanes request changes through
-`docs/parallel-status.md`. One lane at a time holds any shared physical resource.
+A shared file has one owner. Other lanes use the canonical append-only relay at
+`$POLYLANE_COORDINATION_FILE` through
+`$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh`; the runner exports both into
+every pane. Use `request`, `decision`, `claim`, and `release`; inspect `pending` or
+`snapshot` rather than editing relay JSONL. One lane at a time holds any shared
+physical resource. `docs/parallel-status.md` is written only as a durable post-cycle
+summary, never as the live cross-worktree channel.
 
 ## 4. Select models and skills
 

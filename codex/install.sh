@@ -36,6 +36,7 @@ cp "$REPO/codex/openai.yaml" "$DEST/agents/openai.yaml"   # interface metadata (
 # sanity: SKILL.md frontmatter present + helpers landed
 grep -q '^name: polylane' "$DEST/SKILL.md" || { echo "install: bad SKILL.md" >&2; exit 1; }
 test -x "$DEST/scripts/polylane-run.sh" || { echo "install: helpers missing" >&2; exit 1; }
+test -x "$DEST/scripts/polylane-coordinate.sh" || { echo "install: coordination helper missing" >&2; exit 1; }
 
 echo "installed Codex skill -> $DEST"
 echo "deps: tmux + jq + codex on PATH. Invoke in Codex with: \$polylane  (or /skills)"

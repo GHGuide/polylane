@@ -18,6 +18,7 @@ printf 'cycle-9 benchmark fixture\n' > "$REPO/benchmarks/install-sentinel.txt"
 (cd "$REPO" && ./codex/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-codex-skill" test -f "$REPO/.codex/skills/polylane/SKILL.md"
 assert_ok "install-codex-runner" test -x "$REPO/.codex/skills/polylane/scripts/polylane-run.sh"
+assert_ok "install-codex-coordination-helper" test -x "$REPO/.codex/skills/polylane/scripts/polylane-coordinate.sh"
 assert_ok "install-codex-cycle-guard" test -x "$REPO/.codex/skills/polylane/scripts/polylane-cycle.sh"
 assert_ok "install-codex-control-reference" test -f "$REPO/.codex/skills/polylane/references/cycle-9-control-room.md"
 assert_ok "install-codex-benchmark-artifact" test -f "$REPO/.codex/skills/polylane/benchmarks/install-sentinel.txt"

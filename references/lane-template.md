@@ -27,7 +27,7 @@ GOAL (LOCKED — do not re-scope):
 
 WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [G forced verification]
-[H coordination + mutex]   (docs/parallel-status.md = cross-lane requests + NEEDS DECISION only, never the done signal)
+[H coordination + mutex]   (canonical relay = live requests/decisions/mutexes; docs/parallel-status.md = post-cycle summary only)
 [I scoped git]
 [J done checklist]
 
@@ -107,7 +107,7 @@ Print the resulting map and work from it. Use Grep/Glob ONLY to confirm an exact
 
 YOU OWN (edit only these): src/styles/**, src/components/**/*.css, tailwind.config.*
 FORBIDDEN (other lanes own — do not edit/refactor): src/api/**, tests/**
-HARD CONTRACT: the CSS custom-property names in src/styles/tokens.css are frozen (api-lane reads them). If you need a change in a file you don't own, log the request in docs/parallel-status.md addressed to the owning lane; do NOT edit it.
+HARD CONTRACT: the CSS custom-property names in src/styles/tokens.css are frozen (api-lane reads them). If you need a change in a file you do not own, use `"$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh" request "$POLYLANE_COORDINATION_FILE" dark-theme api-lane "<request>"`; do NOT edit it.
 
 GOAL (LOCKED — do not re-scope):
 1. Dark theme on every surface — done when app, modals, and menus render the dark palette with no light-mode bleed, screenshot-verified.
@@ -117,7 +117,7 @@ WORKFLOW: writing-plans → smallest steps → verify each → commit.
 
 VERIFY with evidence — no claim without it. Write docs/verify-dark-theme.md containing: preview_start command output + before/after screenshots of app, a modal, and a menu in dark mode. Never say "done"/"works"/"looks good" without the artifact in that file.
 
-Use docs/parallel-status.md ONLY for cross-lane requests: a shared-file edit ask addressed to the owning lane, or a NEEDS DECISION: line if you hit a fork only the user can resolve (then continue other work, don't stall). It is not a general status log and not the done signal.
+Use the canonical append-only relay for live work: `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"`; `"$COORD" request|decision|claim|release "$POLYLANE_COORDINATION_FILE" ...`, and inspect `pending` before retrying a claimed resource. `docs/parallel-status.md` is a durable post-cycle summary only, never the live channel or done signal.
 
 Commit often. Stage ONLY your paths (git add src/styles src/components tailwind.config.*) — NEVER git add -A or git add . (scope every add to your own paths; on a shared tree you'd sweep other lanes' staged work). On index.lock, wait + retry.
 
