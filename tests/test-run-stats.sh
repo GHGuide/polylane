@@ -53,6 +53,22 @@ printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":0,"output_tokens
 "$STATS" capture-usage --file "$state" --now 240 --lane telemetry --log "$log" --offset "$before"
 assert_jq "$state" '.tokens' '21'
 
+# Real Codex pane logs are append-only across cycles and contain warning/prompt
+# lines around valid JSON events. A fresh run with one launch must ignore both
+# that noise and an older turn.completed event for the same lane name.
+noisy_state="$TMP/noisy-stats.json"
+noisy_log="$TMP/noisy-codex.log"
+"$STATS" init --file "$noisy_state" --now 10 --run-id noisy-run
+"$STATS" lane-launch --file "$noisy_state" --now 11 --lane integrator
+printf '%s\n' \
+  '{"type":"turn.completed","usage":{"total_tokens":999}}' \
+  'WARN marketplace refresh timed out' \
+  '{"type":"turn.completed","usage":{"input_tokens":5,"output_tokens":6}}' \
+  '(base) prompt %' > "$noisy_log"
+"$STATS" capture-usage --file "$noisy_state" --now 12 --lane integrator --log "$noisy_log" --offset 0
+assert_jq "$noisy_state" '.tokens' '11'
+assert_jq "$noisy_state" '.token_state' '"known"'
+
 "$STATS" snapshot --file "$state" --now 300 > "$TMP/snapshot.json"
 assert_jq "$TMP/snapshot.json" '.started_at' '100'
 assert_jq "$TMP/snapshot.json" '.wall_s' '200'

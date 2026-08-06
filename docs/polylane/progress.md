@@ -4,13 +4,13 @@ Generated mechanically from `max-state.json`. Conversation summaries are not aut
 
 ## Cycle 8
 
-subgoals: 12/13 done · criteria: 6/10 done · 78%
+subgoals: 13/13 done · criteria: 10/10 done · 100%
 
-**Route:** `CONTINUE m7.5  Complete a fresh two-lane efficiency canary with zero manual intervention, one terminal gate, and clean teardown`
+**Route:** `COMPLETE`
 
 ## Open autonomous work
 
-- `m7.5` [open, w9] — Complete a fresh two-lane efficiency canary with zero manual intervention, one terminal gate, and clean teardown
+- None
 
 ## External/user evidence
 
@@ -28,10 +28,10 @@ subgoals: 12/13 done · criteria: 6/10 done · 78%
 - `c4` [done] — docs executable as written
 - `c5` [done] — real 2-lane self-run reaches GO unattended
 - `c6` [done] — versioned graph execution is correct, recoverable, auditable, and benchmark-efficient
-- `c7` [open] — Recovery completes without manual tmux surgery and host-only gates run once in the coordinator
-- `c8` [open] — Reports preserve truthful token, wall-time, restart, and cleanup evidence across resume
-- `c9` [open] — Builder prompts use writable lane-local caching and only selected relevant skills
-- `c10` [open] — Dual-jq graph budget and a fresh zero-intervention efficiency canary pass
+- `c7` [done] — Recovery completes without manual tmux surgery and host-only gates run once in the coordinator
+- `c8` [done] — Reports preserve truthful token, wall-time, restart, and cleanup evidence across resume
+- `c9` [done] — Builder prompts use writable lane-local caching and only selected relevant skills
+- `c10` [done] — Dual-jq graph budget and a fresh zero-intervention efficiency canary pass
 
 ## Acceptance checks
 

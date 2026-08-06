@@ -47,28 +47,28 @@
       "id": "c7",
       "text": "Recovery completes without manual tmux surgery and host-only gates run once in the coordinator",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c8",
       "text": "Reports preserve truthful token, wall-time, restart, and cleanup evidence across resume",
       "weight": 9,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c9",
       "text": "Builder prompts use writable lane-local caching and only selected relevant skills",
       "weight": 9,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c10",
       "text": "Dual-jq graph budget and a fresh zero-intervention efficiency canary pass",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -213,9 +213,9 @@
           "id": "m7.5",
           "text": "Complete a fresh two-lane efficiency canary with zero manual intervention, one terminal gate, and clean teardown",
           "weight": 9,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 8,
+          "evidence": "integrator GO; promoted cycle 8"
         }
       ]
     }

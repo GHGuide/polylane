@@ -1228,6 +1228,18 @@ pipe_pane_log() {
   run tmux pipe-pane -o -t "$TMUX_SESSION:0.$idx" "cat >> $qlog" 2>/dev/null || true
 }
 
+# baseline_usage_log NAME : append-only lane logs survive cleanup and lane names
+# repeat across cycles. Record the current byte boundary before a fresh process
+# writes so final token capture reads only this run. Resumes preserve the stored
+# offset; respawns intentionally continue from it and accumulate every attempt.
+baseline_usage_log() {
+  local name="$1" log="${REPO_ROOT:-.}/docs/lane-logs/$1.log" bytes=0
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  if [ -f "$log" ]; then bytes=$(wc -c < "$log" | tr -d ' '); fi
+  run_stats capture-usage --lane "$name" --log "$log" --offset "$bytes" ||
+    echo "run-stats: could not baseline usage log for $name" >&2
+}
+
 # repipe_pane_log IDX NAME : explicitly close any stale pipe left by
 # `respawn-pane`, then attach a fresh logger to the replacement process.
 repipe_pane_log() {
@@ -1351,8 +1363,9 @@ launch_panes() {
     graph_authority_require "lane:${LANE_NAMES[$i]}" "launch lane '${LANE_NAMES[$i]}'" || return 1
     new_pane "${LANE_NAMES[$i]}"
     LANE_PANE_IDX[i]="$NEW_PANE_IDX"
-    seed_pane "$NEW_PANE_IDX" "$pc"
+    baseline_usage_log "${LANE_NAMES[$i]}"
     pipe_pane_log "$NEW_PANE_IDX" "${LANE_NAMES[$i]}"
+    seed_pane "$NEW_PANE_IDX" "$pc"
     run_stats lane-launch --lane "${LANE_NAMES[$i]}"
     LAUNCHED=$(( LAUNCHED + 1 ))
   done
@@ -2244,8 +2257,9 @@ run_integrator() {
   # new_pane also handles the all-lanes-resumed case (no session yet).
   new_pane "$INT_NAME"
   INT_PANE_IDX="$NEW_PANE_IDX"
-  seed_pane "$NEW_PANE_IDX" "$pc"
+  baseline_usage_log "$INT_NAME"
   pipe_pane_log "$NEW_PANE_IDX" "$INT_NAME"
+  seed_pane "$NEW_PANE_IDX" "$pc"
   run_stats lane-launch --lane "$INT_NAME"
 }
 

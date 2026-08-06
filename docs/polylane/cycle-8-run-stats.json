@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "run_id": "walk-c8-20260806-233854",
+  "started_at": 1786048820,
+  "updated_at": 1786049125,
+  "wall_s": 305,
+  "lanes": {
+    "supervisor-hermetic": {"launches": 1, "restarts": 0},
+    "terminal-contract": {"launches": 1, "restarts": 0},
+    "integrator": {"launches": 1, "restarts": 0}
+  },
+  "supervisor_restarts": 0,
+  "terminal_gates": 1,
+  "tokens": 780626,
+  "token_state": "known",
+  "usage_offsets": {
+    "supervisor-hermetic": 31926,
+    "terminal-contract": 31328,
+    "integrator": 15697996
+  },
+  "cleanup": "complete",
+  "events": [
+    {"type": "initialized", "at": 1786048820},
+    {"type": "launches", "lane": "supervisor-hermetic", "at": 1786048822},
+    {"type": "launches", "lane": "terminal-contract", "at": 1786048822},
+    {"type": "launches", "lane": "integrator", "at": 1786048903},
+    {"type": "usage_capture", "lane": "supervisor-hermetic", "at": 1786048990, "added": 275187},
+    {"type": "usage_capture", "lane": "terminal-contract", "at": 1786048990, "added": 249303},
+    {"type": "usage_capture", "lane": "integrator", "at": 1786048990, "added": 256136},
+    {"type": "terminal_gate", "at": 1786048991},
+    {"type": "cleanup", "state": "complete", "at": 1786049125}
+  ]
+}

@@ -67,13 +67,31 @@ capture() {
   while [ "$#" -gt 0 ]; do case "$1" in --lane) lane="$2";shift 2;;--log)log="$2";shift 2;;--offset)off="$2";shift 2;;*)return 2;;esac; done
   [ -n "$lane" ] && [ -n "$log" ] && uint "$off" || { usage; return 2; }
   lock "$FILE" || return 1
-  local s seen start bytes add t
+  local s seen start bytes add t attempts limit
   if [ -s "$FILE" ]; then s=$(cat "$FILE"); else s=$(fresh "$NOW"); fi
   seen=$(printf '%s' "$s"|jq -r --arg l "$lane" '.usage_offsets[$l] // 0'); uint "$seen" || seen=0
   start="$off"; [ "$seen" -gt "$start" ] && start="$seen"
+  attempts=$(printf '%s' "$s" | jq -r --arg l "$lane" '((.lanes[$l].launches // 0) + (.lanes[$l].restarts // 0))')
+  uint "$attempts" || attempts=0
+  # On the first capture of a fresh run, append-only logs may contain valid JSON
+  # turns from older runs under the same lane name. Keep only as many trailing
+  # completions as this run actually launched. Once an offset exists, every valid
+  # completion in the unseen suffix belongs to the current run.
+  limit=0
+  [ "$seen" = 0 ] && [ "$off" = 0 ] && limit="$attempts"
   if [ -f "$log" ]; then
     bytes=$(wc -c < "$log"|tr -d ' '); [ "$start" -le "$bytes" ] || start=0
-    add=$(tail -c "+$((start+1))" "$log" 2>/dev/null|jq -s '[.[]|select(.type=="turn.completed")|.usage?|if (.total_tokens?|type)=="number" then .total_tokens elif ((.input_tokens?|type)=="number" and (.output_tokens?|type)=="number") then (.input_tokens+.output_tokens) else empty end]|add//null' 2>/dev/null||true)
+    add=$(tail -c "+$((start+1))" "$log" 2>/dev/null | jq -Rrs --argjson limit "$limit" '
+      [split("\n")[]
+       | fromjson?
+       | select(.type=="turn.completed")
+       | .usage?
+       | if (.total_tokens?|type)=="number" then .total_tokens
+         elif ((.input_tokens?|type)=="number" and (.output_tokens?|type)=="number")
+         then (.input_tokens+.output_tokens)
+         else empty end]
+      | if $limit > 0 then .[-$limit:] else . end
+      | add // null' 2>/dev/null || true)
   else bytes="$start"; add=; fi
   [ "$add" = null ] && add=
   [ -n "$add" ] || add=null
