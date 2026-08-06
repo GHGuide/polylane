@@ -2,7 +2,7 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 7
+## Cycle 8
 
 subgoals: 12/13 done · criteria: 6/10 done · 78%
 
@@ -36,7 +36,6 @@ subgoals: 12/13 done · criteria: 6/10 done · 78%
 ## Acceptance checks
 
 - Total: 13
-- Pass: 12
+- Pass: 13
 - Fail: 0
-- Unchecked: 1
-  - `m7.5` [unchecked] — bash tests/test-efficiency-canary.sh >/dev/null 2>&1 && test -f docs/polylane/efficiency-proof.md
+- Unchecked: 0

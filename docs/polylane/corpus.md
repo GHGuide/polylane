@@ -1,52 +1,12 @@
-# STORY SO FAR — corpus through cycle 6
+# STORY SO FAR — corpus through cycle 7
 
 ## Earlier (one line each)
 cycle 1: Cycle 1 digest — install-test + docs-truth
 cycle 2: Cycle 2 digest — explicit execution graph
 cycle 3: Cycle 3 digest — authoritative graph runtime
+cycle 4: Cycle 4 digest — real walk-away proof
 
 ## Recent (verbatim, last 3 cycles)
-
-===== cycle 4 =====
-# Cycle 4 digest — real walk-away proof
-
-## Built
-
-- The contract-v2 rehearsal now executes real supervised GO and NO-GO lifecycles. GO promotes
-  and cleans; NO-GO withholds promotion, retains evidence, bounds repair, then cleans its fixture.
-- Runtime paywall detection requires an actionable credits/upgrade decision instead of matching
-  source or prose that happens to say “usage limit”.
-- Cleanup canonicalizes macOS `/var` and `/private/var` worktree paths and accepts intentional
-  durable goal-state updates while still rejecting leaked runtime markers.
-- Graph and event CLIs run on Apple jq as well as Homebrew jq; the benchmark harness now does too.
-- A failed verifier can resume through the declared repair loop when committed current-run GO
-  evidence proves the repair finished before the prior runner died.
-- Fresh-clone installers and session tests distinguish a real product failure from a worker
-  sandbox that cannot write the project or open the host tmux socket.
-
-## Verified
-
-- Real two-builder + integrator Codex cycle reached a legitimate supervised GO and promoted.
-- `tests/run.sh`: 954 passed, 0 failed across 62 test files; ShellCheck clean.
-- Host rehearsal: `REHEARSE-GO ... promoted=1 cleaned=1 leaks=0`; `REHEARSE-NOGO ...
-  promoted=0 evidence=1 retained=1 bounded=1 cleaned=1`.
-- Homebrew jq: ready 62 ms, append 116 ms, full packet 1,861–1,882 ms.
-- Apple jq: ready 54 ms, append 109 ms, full packet 1,845–1,870 ms.
-
-## Learned
-
-- Graph execution is not the current bottleneck. Prompt breadth, repeated skill reads, repeated
-  terminal suites, dead-pane recovery, and lost resume telemetry dominate time and tokens.
-- A live Codex PID is not proof of progress: one worker wedged after a skills-context error and
-  stayed “working” indefinitely until externally interrupted.
-- `tmux respawn-pane` against a vanished pane fails, but the old fallback sent keys to that same
-  nonexistent target and still consumed retries. Recovery must recreate and remap the pane.
-- Worker sandboxes cannot truthfully grade host-only tmux behavior. They need an explicit
-  host-gate handoff; only the outer runner should execute and certify terminal host checks.
-- The canonical project `.polylane/check-cache` is outside a linked worktree's write sandbox.
-  The cache must live inside the lane worktree.
-- Cycle reporting lost prior-run token and wall evidence on resume, rendering unknown as zero.
-  Metrics need an append-only per-run snapshot independent of one runner process.
 
 ===== cycle 5 =====
 # Cycle 5 digest — measured recovery and prompt economy
@@ -111,3 +71,29 @@ cycle 3: Cycle 3 digest — authoritative graph runtime
 - GO report extraction cannot depend on worktrees after cleanup; it must read promoted exact-path
   evidence. NO-GO reports should continue reading retained worktrees.
 
+===== cycle 7 =====
+# Cycle 7 digest — efficient execution exposed a hostile-environment leak
+
+## Benchmark result
+
+- Two low-effort audit builders and one medium integrator completed in three initial launches,
+  with zero restarts, no approval prompt, one terminal gate, and no manual pane input.
+- The candidate reached its gate in 151 seconds. The complete run stopped NO-GO after 280 seconds,
+  below the 900-second ceiling, with cleanup correctly left pending.
+- The host suite reported 1,025 passes and seven failures, all in `test-supervisor.sh`; the one-shot
+  gate prevented a repair wave or second terminal run.
+
+## Root cause and fix
+
+- The canary's outer policy intentionally exported `POLYLANE_SUP_MAX_RESTARTS=0`.
+- Nested supervisor recovery fixtures inherited that policy, so scenarios requiring one simulated
+  recovery were forced to stop after their first launch. The product supervisor was not failing.
+- `test-supervisor.sh` now owns its fixture retry policy explicitly. It passes 22/22 both normally
+  and with the hostile outer value, and the complete hostile-environment suite passes 1,031/1,031.
+
+## Learned
+
+- Terminal tests must be hermetic against orchestration environment variables, not only filesystem
+  state. A canary can otherwise invalidate its own grader.
+- The one-shot terminal gate behaved correctly: it retained all worktrees, produced a truthful
+  NO-GO report, and spawned no model repair for a consumed host fact.

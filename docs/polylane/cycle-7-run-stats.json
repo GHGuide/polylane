@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "run_id": "walk-c7-20260806-232441",
+  "started_at": 1786048092,
+  "updated_at": 1786048243,
+  "wall_s": 151,
+  "lanes": {
+    "fresh-stats": {"launches": 1, "restarts": 0},
+    "single-gate": {"launches": 1, "restarts": 0},
+    "integrator": {"launches": 1, "restarts": 0}
+  },
+  "supervisor_restarts": 0,
+  "terminal_gates": 1,
+  "tokens": null,
+  "token_state": "unknown",
+  "usage_offsets": {
+    "fresh-stats": 26234,
+    "single-gate": 37003,
+    "integrator": 15661694
+  },
+  "cleanup": "pending",
+  "events": [
+    {"type": "initialized", "at": 1786048092},
+    {"type": "launches", "lane": "fresh-stats", "at": 1786048093},
+    {"type": "launches", "lane": "single-gate", "at": 1786048094},
+    {"type": "launches", "lane": "integrator", "at": 1786048176},
+    {"type": "usage_capture", "lane": "fresh-stats", "at": 1786048243, "added": null},
+    {"type": "usage_capture", "lane": "single-gate", "at": 1786048243, "added": null},
+    {"type": "usage_capture", "lane": "integrator", "at": 1786048243, "added": null},
+    {"type": "terminal_gate", "at": 1786048243}
+  ]
+}

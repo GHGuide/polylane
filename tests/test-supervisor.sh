@@ -11,6 +11,11 @@ SUP_SRC="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-supervisor.sh"
 
 if ! command -v jq >/dev/null 2>&1; then pass "supervisor-skipped-no-jq"; finish; exit 0; fi
 
+# Keep the fake-runner recovery fixtures hermetic. A real outer efficiency canary
+# intentionally sets this to 0, but that policy must not leak into the nested
+# supervisor-under-test and disable the recovery behavior these cases exercise.
+export POLYLANE_SUP_MAX_RESTARTS=10
+
 make_tmpdir
 BIN="$TEST_TMPDIR/bin"; PROJ="$TEST_TMPDIR/proj"
 mkdir -p "$BIN" "$PROJ/.polylane" "$PROJ/docs"

@@ -371,7 +371,7 @@
       "sid": "m7.5",
       "cmd": "bash tests/test-efficiency-canary.sh >/dev/null 2>&1 && test -f docs/polylane/efficiency-proof.md",
       "tier": "terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
