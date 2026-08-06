@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# polylane-models.sh — print available Claude model ids, one per line.
+# polylane-models.sh — print available agent model ids, one per line.
 #
 # Probes the Anthropic /v1/models API when ANTHROPIC_API_KEY is set and curl+jq
 # are available; on missing key, missing tool, network/HTTP failure, or empty
@@ -17,13 +17,15 @@ set -uo pipefail
 
 # Curated fallback — the models polylane tunes against, newest-family first.
 FALLBACK=(claude-fable-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5)
+CODEX_FALLBACK="gpt-5.6-terra"
 
 usage() {
   cat <<'EOF'
 polylane-models.sh — print available Claude model ids, one per line.
 
 USAGE:
-  bin/polylane-models.sh          probe the Anthropic API, else print fallback
+  bin/polylane-models.sh [claude|codex]
+                                  print models for the selected agent
   -h, --help                      show this help and exit 0
 
 Probes https://api.anthropic.com/v1/models when ANTHROPIC_API_KEY is set and
@@ -34,9 +36,23 @@ EOF
 
 fallback() { printf '%s\n' "${FALLBACK[@]}"; }
 
+codex_models() {
+  local cache="${CODEX_HOME:-$HOME/.codex}/models_cache.json" ids
+  if [ -f "$cache" ] && command -v jq >/dev/null 2>&1; then
+    ids=$(jq -r '.. | objects | .id? // empty' "$cache" 2>/dev/null \
+      | awk '/^gpt-[[:alnum:]._-]+$/ && !seen[$0]++')
+    if [ -n "$ids" ]; then
+      printf '%s\n' "$ids"
+      return 0
+    fi
+  fi
+  printf '%s\n' "$CODEX_FALLBACK"
+}
+
 main() {
   case "${1:-}" in
     -h|--help) usage; exit 0 ;;
+    codex) codex_models; return 0 ;;
   esac
 
   # No key or missing tooling → fallback.
