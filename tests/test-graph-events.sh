@@ -85,15 +85,36 @@ assert_eq "events-concurrent-second-rc" "0" "$second_rc"
 assert_eq "events-concurrent-two-rows" "2" "$(wc -l < "$CONCURRENT" | tr -d ' ')"
 assert_ok "events-concurrent-verify" "$EVENTS" verify "$CONCURRENT" run-a graph-a
 
-# The benchmark only creates deterministic inputs; the expensive threshold is
-# intentionally not part of this lane.
+# Break caught: compiling the production-schema 10,000-lane fixture regresses
+# to superlinear graph validation and wedges this focused suite for minutes.
+# Keep the full fixture, but bound one real public-CLI build.  The CPU limit
+# ensures a pathological jq child cannot leave the suite stuck indefinitely;
+# the wall assertion catches equivalent multi-process regressions.
 FIXTURE="$TEST_TMPDIR/fixture"
 FIXTURE_COPY="$TEST_TMPDIR/fixture-copy"
-assert_ok "events-fixture-10000-create" "$BENCH" fixture "$FIXTURE" 10000 10000
+FIXTURE_LIMIT_SECONDS=10
+[ -n "${CI:-}" ] && FIXTURE_LIMIT_SECONDS=20
+fixture_bounded() (
+  ulimit -t "$FIXTURE_LIMIT_SECONDS"
+  "$BENCH" fixture "$1" 10000 10000
+)
+fixture_started=$(date +%s)
+fixture_bounded "$FIXTURE"
+fixture_rc=$?
+fixture_elapsed=$(( $(date +%s) - fixture_started ))
+assert_eq "events-fixture-10000-linear-time-rc" "0" "$fixture_rc"
+case "$fixture_elapsed" in
+  ''|*[!0-9]*) fixture_within_limit=false ;;
+  *) [ "$fixture_elapsed" -le "$FIXTURE_LIMIT_SECONDS" ] && fixture_within_limit=true || fixture_within_limit=false ;;
+esac
+assert_eq "events-fixture-10000-linear-time" "true" "$fixture_within_limit"
+printf 'TIMING events-fixture-10000=%ss\n' "$fixture_elapsed"
 assert_eq "events-fixture-10000-rows" "10000" "$(wc -l < "$FIXTURE/events.jsonl" | tr -d ' ')"
-assert_eq "events-fixture-node-count" "10000" "$(jq '.nodes | length' "$FIXTURE/graph.json")"
-assert_ok "events-fixture-10000-valid" "$EVENTS" verify "$FIXTURE/events.jsonl" fixture-run fixture-graph
-assert_ok "events-fixture-copy-create" "$BENCH" fixture "$FIXTURE_COPY" 10000 10000
+assert_eq "events-fixture-lane-count" "10000" \
+  "$(jq '[.nodes[] | select(.id | startswith("lane:"))] | length' "$FIXTURE/graph.json")"
+FIXTURE_GRAPH_ID=$(jq -r '.graph_id' "$FIXTURE/graph.json")
+assert_ok "events-fixture-10000-valid" "$EVENTS" verify "$FIXTURE/events.jsonl" fixture-run "$FIXTURE_GRAPH_ID"
+assert_ok "events-fixture-copy-create" fixture_bounded "$FIXTURE_COPY"
 assert_ok "events-fixture-deterministic" cmp "$FIXTURE/events.jsonl" "$FIXTURE_COPY/events.jsonl"
 
 finish
