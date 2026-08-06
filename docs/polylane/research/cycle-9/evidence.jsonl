@@ -1,0 +1,15 @@
+{"evidence_id":"e1","source_id":"openai-harness","claim":"Agent-first teams improve reliability by making missing capabilities legible and enforceable, not by asking agents to try harder.","locator":"Redefining the role of the engineer"}
+{"evidence_id":"e2","source_id":"openai-harness","claim":"Repository knowledge should be a small map with progressive disclosure and mechanical freshness checks.","locator":"We made repository knowledge the system of record"}
+{"evidence_id":"e3","source_id":"openai-symphony","claim":"Long-running orchestration should continuously ensure active work has an agent until completion.","locator":"overview"}
+{"evidence_id":"e4","source_id":"openai-loop","claim":"A coding harness is an execution loop whose context, tools, and observations determine reliability.","locator":"overview"}
+{"evidence_id":"e5","source_id":"openai-codex-upgrades","claim":"Codex is evaluated on full project creation, features, refactors, debugging, and review, not only short code generation.","locator":"GPT-5-Codex"}
+{"evidence_id":"e6","source_id":"openai-guardrails","claim":"Blocking guardrails prevent expensive model execution and side effects when a cheap gate fails.","locator":"Execution modes"}
+{"evidence_id":"e7","source_id":"openai-tracing","claim":"End-to-end traces should preserve workflow, task, turn, tool, guardrail, and handoff events.","locator":"Traces and spans"}
+{"evidence_id":"e8","source_id":"openai-evals","claim":"Private evals should represent the recurring patterns of the actual workflow being optimized.","locator":"README"}
+{"evidence_id":"e9","source_id":"swe-bench","claim":"Real repository tasks plus executable tests provide a reproducible agent evaluation substrate.","locator":"README"}
+{"evidence_id":"e10","source_id":"swe-verified","claim":"Benchmark tasks require feasibility review because impossible or ambiguous samples distort results.","locator":"benchmark audit"}
+{"evidence_id":"e11","source_id":"metr-rebench","claim":"A common task format enables repeatable long-horizon agent evaluation across tasks.","locator":"METR Task Standard"}
+{"evidence_id":"e12","source_id":"langgraph","claim":"Durable execution, persistence, and human-in-the-loop are runtime properties, not prompt conventions.","locator":"overview"}
+{"evidence_id":"e13","source_id":"dspy-optimizers","claim":"Prompt instructions should be optimized against an explicit metric and dataset rather than subjective rewriting.","locator":"optimizers overview"}
+{"evidence_id":"e14","source_id":"miprov2-paper","claim":"Program- and data-aware instruction proposals can be selected through measured downstream evaluation.","locator":"abstract"}
+{"evidence_id":"e15","source_id":"openai-codex-intro","claim":"Parallel coding tasks are isolated by repository-preloaded environments and should expose progress to operators.","locator":"overview"}

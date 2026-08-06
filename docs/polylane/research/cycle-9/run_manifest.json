@@ -1,0 +1,24 @@
+{
+  "query": "Which measured, bounded mechanisms should Polylane add to improve autonomous product discovery, execution quality, prompt efficiency, and operator control?",
+  "mode": "deep",
+  "date": "2026-08-07",
+  "scope": [
+    "realistic product benchmark design",
+    "durable discovery state",
+    "lean Codex worker startup",
+    "bounded execution graphs",
+    "independent product judges",
+    "prompt and skill optimization from outcome data",
+    "one truthful control surface"
+  ],
+  "excluded": [
+    "re-evaluating the already-certified graph event hot path",
+    "restructuring the Claude-root/Codex-overlay repository layout",
+    "unbounded general-purpose agent graph frameworks"
+  ],
+  "assumptions": [
+    "Polylane remains Bash 3.2 plus jq plus tmux",
+    "Codex lanes remain isolated CLI processes",
+    "quality gates must fail before expensive fan-out whenever possible"
+  ]
+}

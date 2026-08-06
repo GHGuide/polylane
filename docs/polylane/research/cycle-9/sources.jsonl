@@ -1,0 +1,14 @@
+{"source_id":"openai-harness","title":"Harness engineering: leveraging Codex in an agent-first world","url":"https://openai.com/index/harness-engineering/","type":"primary engineering report","year":2026}
+{"source_id":"openai-symphony","title":"An open-source spec for Codex orchestration: Symphony","url":"https://openai.com/index/open-source-codex-orchestration-symphony/","type":"primary engineering report","year":2026}
+{"source_id":"openai-loop","title":"Unrolling the Codex agent loop","url":"https://openai.com/index/unrolling-the-codex-agent-loop/","type":"primary technical report","year":2026}
+{"source_id":"openai-codex-upgrades","title":"Introducing upgrades to Codex","url":"https://openai.com/index/introducing-upgrades-to-codex/","type":"primary product and evaluation report","year":2025}
+{"source_id":"openai-guardrails","title":"Guardrails - OpenAI Agents SDK","url":"https://openai.github.io/openai-agents-python/guardrails/","type":"official technical documentation","year":2026}
+{"source_id":"openai-tracing","title":"Tracing - OpenAI Agents SDK","url":"https://openai.github.io/openai-agents-python/tracing/","type":"official technical documentation","year":2026}
+{"source_id":"openai-evals","title":"OpenAI Evals","url":"https://github.com/openai/evals","type":"official open-source framework","year":2026}
+{"source_id":"swe-bench","title":"SWE-bench: Can Language Models Resolve Real-World GitHub Issues?","url":"https://github.com/SWE-bench/SWE-bench","type":"primary benchmark repository","year":2026}
+{"source_id":"swe-verified","title":"Introducing SWE-bench Verified","url":"https://openai.com/index/introducing-swe-bench-verified/","type":"primary benchmark audit","year":2024}
+{"source_id":"metr-rebench","title":"RE-Bench","url":"https://github.com/METR/RE-Bench","type":"primary benchmark repository","year":2026}
+{"source_id":"langgraph","title":"LangGraph overview","url":"https://langchain-ai.github.io/langgraph/index.html","type":"official technical documentation","year":2026}
+{"source_id":"dspy-optimizers","title":"DSPy optimizers","url":"https://github.com/stanfordnlp/dspy/blob/main/docs/docs/learn/optimization/optimizers.md","type":"official technical documentation","year":2026}
+{"source_id":"miprov2-paper","title":"Optimizing Instructions and Demonstrations for Multi-Stage Language Model Programs","url":"https://arxiv.org/abs/2406.11695","type":"primary research paper","year":2024}
+{"source_id":"openai-codex-intro","title":"Introducing Codex","url":"https://openai.com/index/introducing-codex/","type":"primary product report","year":2025}

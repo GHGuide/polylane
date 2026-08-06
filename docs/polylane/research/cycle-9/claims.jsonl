@@ -1,0 +1,6 @@
+{"claim_id":"c1","text":"Polylane needs a product-level corpus, because its current self-audit proves the harness but not vague-idea-to-usable-app performance.","support":["e5","e8","e9","e11"],"status":"supported"}
+{"claim_id":"c2","text":"Discovery choices must be persisted as typed nodes and edges so resume does not depend on transcript memory.","support":["e2","e7","e12"],"status":"supported"}
+{"claim_id":"c3","text":"Cheap deterministic gates should run before Codex fan-out, and worker context should be explicitly bounded.","support":["e1","e2","e6"],"status":"supported"}
+{"claim_id":"c4","text":"Quality loops should be typed, bounded, replayable, and visible instead of implemented as unbounded retry prose.","support":["e3","e7","e12"],"status":"supported"}
+{"claim_id":"c5","text":"Prompt and skill recommendations should learn only from reproducible downstream outcomes.","support":["e8","e13","e14"],"status":"supported"}
+{"claim_id":"c6","text":"The operator surface should be a projection of canonical event and goal state rather than a second state machine.","support":["e7","e15"],"status":"supported"}

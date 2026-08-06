@@ -17,3 +17,24 @@ actually working, proven by executable checks, live canaries, and a real self-ru
   cache, and only the selected relevant skills—never a broad skill-inventory reading task.
 - c9 The 64-lane/10,000-event graph packet stays within its frozen dual-jq budget and a fresh
   efficiency canary reaches GO with zero manual intervention and clean teardown.
+- c10 The same clean canary proves truthful cumulative usage, one coordinator-owned terminal
+  gate, and complete runtime cleanup on the promoted tree.
+
+## Measured product-autonomy expansion (cycle 9)
+
+- c11 A versioned corpus of realistic vague app briefs runs reproducibly and scores completion,
+  product quality, time, and tokens.
+- c12 Discovery persists an adaptive question graph with recommended, deeper, and bold routes,
+  so a fresh task can reconstruct and lock the strategy without transcript memory.
+- c13 Codex workers use a measured lean profile and generated prompts stay inside a mechanical
+  context budget without dropping goal, ownership, evidence, or safety contracts.
+- c14 Risk, seam, outcome, champion-selection, and configured salvage helpers are executable
+  Codex runtime gates rather than documentation-only claims.
+- c15 The immutable execution graph exposes typed, bounded quality routes and remains
+  deterministic and benchmark-safe.
+- c16 Three independent product judges can block promotion with actionable evidence and a
+  bounded repair route.
+- c17 Per-lane skill recommendations are installed-only by default, activity-specific,
+  path-resolved, and ranked by measured helped/unused/hurt outcomes.
+- c18 One canonical control-room surface reports goal, cycle, graph, lanes, spend, verdict,
+  cleanup, and next action without trusting stale markers.

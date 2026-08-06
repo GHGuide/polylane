@@ -70,6 +70,62 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c11",
+      "text": "A versioned corpus of realistic vague app briefs runs reproducibly and scores completion, product quality, time, and tokens.",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c12",
+      "text": "Discovery persists an adaptive question graph with recommended, deeper, and bold routes and can synthesize a locked strategy without transcript memory.",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c13",
+      "text": "Codex workers launch through a measured lean profile and generated prompts obey a mechanical context budget without losing required contracts.",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c14",
+      "text": "Codex orchestration mechanically wires preflight risk, seam and judge gates, outcome learning, selection, and configured salvage instead of leaving helpers dormant.",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c15",
+      "text": "The execution graph exposes only typed, bounded quality routes and replay remains deterministic and benchmark-safe.",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c16",
+      "text": "At least three independent product-quality judges can block promotion with actionable evidence and bounded repair.",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c17",
+      "text": "Per-lane skill recommendations are installed-only by default, activity-specific, path-resolved, and ranked by measured helped/unused/hurt outcomes.",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c18",
+      "text": "A truthful one-shot control-room surface reports goal, cycle, graph, lanes, spend, verdict, and next action from canonical state without stale markers.",
+      "weight": 8,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -218,6 +274,76 @@
           "evidence": "integrator GO; promoted cycle 8"
         }
       ]
+    },
+    {
+      "id": "m8",
+      "text": "Measured product autonomy expansion",
+      "subgoals": [
+        {
+          "id": "m8.1",
+          "text": "Ship a realistic vague-brief product benchmark corpus and reproducible scorecard runner",
+          "weight": 18,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m8.2",
+          "text": "Ship a durable adaptive discovery question graph and strategy synthesis surface",
+          "weight": 17,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m8.3",
+          "text": "Ship measured lean Codex worker profiles plus prompt-budget optimization gates",
+          "weight": 16,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m8.4",
+          "text": "Wire advanced risk, seam, outcome, selection, and salvage helpers into the Codex runtime contract",
+          "weight": 15,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m8.5",
+          "text": "Extend the immutable graph with typed bounded quality routing while preserving deterministic replay budgets",
+          "weight": 14,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m8.6",
+          "text": "Gate promotion through three independent product judges with actionable bounded repair evidence",
+          "weight": 13,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m8.7",
+          "text": "Make skill scouting activity-specific, path-resolved, and self-improving from outcome evidence",
+          "weight": 12,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m8.8",
+          "text": "Upgrade the dashboard into a canonical one-shot control room and certify the complete expansion",
+          "weight": 11,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -256,6 +382,18 @@
       "kind": "learning",
       "text": "Graph hot path is efficient; orchestration churn, host-gate ownership, prompt breadth, and resume telemetry are the measured bottlenecks.",
       "meta": "Homebrew ready=62ms append=116ms packet=1861-1882ms; Apple ready=54ms append=109ms packet=1845-1870ms; cycle report lost token history after resume."
+    },
+    {
+      "cycle": 8,
+      "kind": "learning",
+      "text": "Certified cycle-8 evidence exists; the earlier resume packet reported cycle 4 because no later blackboard entry was recorded.",
+      "meta": "Context integrity must follow durable artifacts, not stale transcript metadata."
+    },
+    {
+      "cycle": 9,
+      "kind": "decision",
+      "text": "Expand the completed self-run into measured product autonomy",
+      "meta": "User requested implementation of all eight improvement suggestions; each is now an executable goal-tree item."
     }
   ],
   "accept": [
@@ -372,6 +510,87 @@
       "cmd": "bash tests/test-efficiency-canary.sh >/dev/null 2>&1 && test -f docs/polylane/efficiency-proof.md",
       "tier": "terminal",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.1",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-product-benchmark.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.2",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-discovery-graph.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.3",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-codex-profile.sh >/dev/null 2>&1 && bash tests/test-promptopt.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.4",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-advanced-runtime.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.5",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-graph-quality-loop.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.6",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-judges.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.7",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-scout-outcomes.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.8",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-control-room.sh >/dev/null 2>&1",
+      "tier": "focused",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m8.8",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bin/polylane-check.sh \"$PWD/.polylane/check-cache/terminal-m8\" -- tests/run.sh && shellcheck -S warning bin/*.sh",
+      "tier": "terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
