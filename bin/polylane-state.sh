@@ -140,7 +140,10 @@ verdict="UNKNOWN"
 report="absent"; [ -f "$REPORT" ] && report="present"
 hb="$MDIR/supervisor-heartbeat"; hb_age="-"
 if [ -f "$hb" ]; then
-  now=$(date +%s); mt=$(stat -f %m "$hb" 2>/dev/null || stat -c %Y "$hb" 2>/dev/null || echo "$now")
+  # GNU stat accepts BSD's `-f` but prints a multi-line filesystem report, so
+  # probing BSD syntax first corrupts arithmetic on Linux. GNU `-c` fails
+  # cleanly on BSD/macOS, making this order portable across both CI runners.
+  now=$(date +%s); mt=$(stat -c %Y "$hb" 2>/dev/null || stat -f %m "$hb" 2>/dev/null || echo "$now")
   hb_age="$((now - mt))s"
   if [ "$((now - mt))" -le "${POLYLANE_STATE_HEARTBEAT_LIVE_SECS:-90}" ] && grep -q 'runner=alive' "$hb" 2>/dev/null; then
     runner_alive="alive"

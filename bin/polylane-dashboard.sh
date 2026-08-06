@@ -267,7 +267,7 @@ launch_epoch() {
   t=$(tmux display-message -p -t "$TMUX_SESSION:$loc" '#{pane_start_time}' 2>/dev/null)
   case "$t" in *[!0-9]*|'') t="" ;; esac
   if [ -z "$t" ] && [ -d "${L_WTS[$i]}" ]; then
-    t=$(stat -f %m "${L_WTS[$i]}" 2>/dev/null || stat -c %Y "${L_WTS[$i]}" 2>/dev/null)
+    t=$(stat -c %Y "${L_WTS[$i]}" 2>/dev/null || stat -f %m "${L_WTS[$i]}" 2>/dev/null)
     case "$t" in *[!0-9]*|'') t="" ;; esac
   fi
   [ -n "$t" ] || t="$DASH_START"

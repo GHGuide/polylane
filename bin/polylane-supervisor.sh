@@ -64,7 +64,7 @@ sup_log() { printf '[supervisor %s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
 # (a stale report file fooled finish-detection in a real run).
 report_fresh() {
   [ -f "$REPORT" ] || return 1
-  local mt; mt=$(stat -f %m "$REPORT" 2>/dev/null || stat -c %Y "$REPORT" 2>/dev/null || echo 0)
+  local mt; mt=$(stat -c %Y "$REPORT" 2>/dev/null || stat -f %m "$REPORT" 2>/dev/null || echo 0)
   [ "$mt" -ge "$SUP_START" ]
 }
 

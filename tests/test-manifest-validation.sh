@@ -31,7 +31,8 @@ dies "{\"base\":\"main\",\"agent\":\"codex\",\"codex_sandbox\":\"unconfined-ish\
 # a WELL-FORMED manifest still dry-runs clean (rc 0) — validation isn't over-eager
 GOOD="{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}"
 printf '%s' "$GOOD" > "$TEST_TMPDIR/good.json"
-POLYLANE_MIN_DISK_GB=0 POLYLANE_SESSION=vtest "$RUN" "$TEST_TMPDIR/good.json" --dry-run >/dev/null 2>&1
+POLYLANE_MIN_DISK_GB=0 POLYLANE_SESSION=vtest POLYLANE_AGENT_CMD=true \
+  "$RUN" "$TEST_TMPDIR/good.json" --dry-run >/dev/null 2>&1
 assert_eq "good-manifest-rc0" "0" "$?"
 
 finish
