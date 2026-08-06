@@ -2,21 +2,21 @@
 
 Run: `walk-c4-20260806-210324`
 
-Outcome: NO-GO
+Outcome: GO
 
 ## Runtime identity
 
 - Requested integrator: `gpt-5.6-sol`, high effort.
 - Fixture models: builders `gpt-5.6-terra`/medium; integrator `gpt-5.6-terra`/high.
-- Fixture session: `plrh-<pid>`; no session was created in this host because tmux socket creation was denied.
+- Fixture sessions: isolated `plrh-<pid>` tmux sessions for the GO and NO-GO rehearsals.
 - Exact merged lane tips: runtime `3d41c2bdaddb486cb8f7c041664ab8de51caa592`; rehearsal `838f01cde5e601ac8f3ded864b67eabdc7837eb9`.
 - Integration merges: `cad1097b9aa84197e2d65fed88f3c91fab0e237d` and `f4cd17bb6c04decd69191cd47444c3890e95b210`.
 - Both exact lane tips are ancestors of `HEAD`.
 
 ## Evidence
 
-- `bin/polylane-doctor.sh --rehearse`: NO-GO. GO fixture reached strict contract-v2 preflight, then tmux returned `Operation not permitted` before mock launch.
-- Full suite: `943 passed, 11 failed, 62 test files`. Failures are six `test-installers.sh` checks blocked from creating repo `.codex/`, and five `test-session-resume.sh` checks blocked from tmux socket access.
+- `bin/polylane-doctor.sh --rehearse`: GO. The host coordinator observed `REHEARSE-GO contract-v2=1 promoted=1 cleaned=1 leaks=0` and `REHEARSE-NOGO contract-v2=1 promoted=0 evidence=1 retained=1 bounded=1 cleaned=1`.
+- Full suite: `954 passed, 0 failed, 62 test files` from the integrated commit.
 - ShellCheck: passed with no warnings.
 - Benchmark sample: warm ready `60ms`; warm append `110ms`; packets `1859ms`, `1833ms`, `1841ms`.
 - Graph authority: `test-graph-authority.sh` passed `43` assertions in the full suite; fixture mock verifies compiled graph identity and append-only ledger validity before each launch.
@@ -25,6 +25,4 @@ Outcome: NO-GO
 
 ## Clean-worktree evidence
 
-Not clean at certification: integration repair sources, this evidence, and `graphify-out/` are present. No clean promoted-tree GO fixture exists because tmux cannot create its Unix socket in this sandbox.
-
-This is not a GO claim. Re-run on a host that permits tmux Unix sockets and repo-scoped `.codex/` writes.
+Both rehearsal fixtures certified their own promoted-tree contract: GO removed runtime markers, worktrees, and temporary branches; NO-GO retained its evidence and worktrees until the bounded fixture cleanup. The live cycle worktree remains intentionally present until the outer runner promotes and cleans it.
