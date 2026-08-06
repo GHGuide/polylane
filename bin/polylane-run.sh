@@ -511,8 +511,7 @@ graph_authority_require() {
 
 graph_authority_start() {
   graph_authority_enabled || return 0
-  graph_authority_require start initialize || return 1
-  graph_shadow_record_node start succeeded 0 graph-start
+  graph_authority_record_ready_node start succeeded 0 graph-start
 }
 
 graph_authority_record_ready_node() {
@@ -726,7 +725,10 @@ graph_shadow_record_node() {
     graph_shadow_error "cannot read replayed attempt for $node"
     return 1
   }
-  [ "$state" != "$target" ] || return 0
+  if [ "$state" = "$target" ]; then
+    [ "$target" = failed ] || return 0
+    [ "$replay_attempt" -lt "$attempt" ] || return 0
+  fi
   case "$state" in
     pending)
       key="shadow:$node:$attempt"
@@ -2339,8 +2341,8 @@ repair_integrator_verdict() {
 gate_with_repairs() {
   local attempt=0 max="${POLYLANE_INTEGRATOR_REPAIRS:-3}"
   while :; do
+    graph_authority_require verifier "run verifier gate attempt $attempt" || return 1
     if merge_gate; then
-      graph_authority_require verifier "pass verifier gate" || return 1
       return 0
     fi
     graph_authority_record_ready_node verifier failed "$attempt" verifier-failed || return 1

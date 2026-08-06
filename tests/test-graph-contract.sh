@@ -101,8 +101,13 @@ assert_eq "ready-passed-route-normalizes-success" "promote" \
 cat > "$TEST_TMPDIR/failed-builder.json" <<'JSON'
 {"nodes":{"start":"succeeded","lane:alpha":"succeeded","lane:beta":"failed"}}
 JSON
-assert_eq "ready-ordinary-failed-route" "halt" \
+assert_eq "ready-ordinary-failed-route-and-retry" $'halt\nlane:beta' \
   "$("$GRAPH" ready "$GRAPH_OUT" "$TEST_TMPDIR/failed-builder.json")"
+cat > "$TEST_TMPDIR/exhausted-builder.json" <<'JSON'
+{"nodes":{"start":"succeeded","lane:alpha":"succeeded","lane:beta":{"state":"failed","attempt":1}}}
+JSON
+assert_eq "ready-ordinary-failed-route-after-retry-exhausted" "halt" \
+  "$("$GRAPH" ready "$GRAPH_OUT" "$TEST_TMPDIR/exhausted-builder.json")"
 
 # Break caught: the validator accepts a structurally unsafe graph.  Every bad
 # graph must have one actionable GRAPH-INVALID line and exit 2.
@@ -123,7 +128,7 @@ invalid_graph '.nodes |= map(if .id=="promote" then .kind="terminal" else . end)
 invalid_graph 'del(.edges[] | select(.from=="promote"))' missing-route
 invalid_graph '.edges += [{from:"integrator",to:"builders-joined",outcome:"succeeded"}]' ordinary-cycle
 invalid_graph '.loops[0].max_iterations = 0' loop-zero
-invalid_graph 'del(.edges[] | select((.from=="verifier" and .to=="promote") or (.from=="repair" and .to=="halt")))' no-terminal-path
+invalid_graph 'del(.edges[] | select((.from=="verifier" and (.to=="promote" or .to=="halt")) or (.from=="repair" and .to=="halt")))' no-terminal-path
 invalid_graph '(.nodes[] | select(.id=="lane:alpha")) |= del(.evidence)' malformed-agent
 # Break caught: outcome names cease to be usable as deterministic routing keys.
 invalid_graph '(.nodes[] | select(.id=="start")).outcomes = [1] | (.edges[] | select(.from=="start")).outcome = 1' non-string-outcome

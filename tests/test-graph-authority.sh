@@ -136,5 +136,35 @@ assert_ok "authority-resume-first" graph_shadow_record_resume lane:blocked
 resume_rows=$(wc -l < "$EVENTS_FILE" | tr -d ' ')
 assert_ok "authority-resume-duplicate" graph_shadow_record_resume lane:blocked
 assert_eq "authority-resume-idempotent" "$resume_rows" "$(wc -l < "$EVENTS_FILE" | tr -d ' ')"
+resume_started_rows=$(wc -l < "$EVENTS_FILE" | tr -d ' ')
+assert_ok "authority-resume-start-idempotent" graph_authority_start
+assert_eq "authority-resume-start-no-duplicate" "$resume_started_rows" \
+  "$(wc -l < "$EVENTS_FILE" | tr -d ' ')"
+
+# Break caught: the second verifier action after a repair runs before graph
+# admission, so an undeclared/not-ready retry can execute and only fail later.
+GATE_ORDER="$TEST_TMPDIR/gate-order.log"
+: > "$GATE_ORDER"
+GATE_MERGES=0
+graph_authority_enabled() { return 0; }
+graph_authority_require() { printf 'require:%s\n' "$1" >> "$GATE_ORDER"; }
+graph_authority_record_ready_node() {
+  printf 'record:%s:%s:%s\n' "$1" "$2" "${3:-0}" >> "$GATE_ORDER"
+}
+merge_gate() {
+  GATE_MERGES=$((GATE_MERGES + 1))
+  printf 'merge:%s\n' "$GATE_MERGES" >> "$GATE_ORDER"
+  if [ "$GATE_MERGES" -eq 1 ]; then VERDICT_RESULT=NO-GO; return 1; fi
+  VERDICT_RESULT=GO
+}
+repair_integrator_verdict() { printf 'repair:%s\n' "$1" >> "$GATE_ORDER"; }
+poll_done() { printf 'poll\n' >> "$GATE_ORDER"; }
+capture_stats() { :; }
+POLYLANE_INTEGRATOR_REPAIRS=1
+unset VERDICT_REPAIRABLE
+assert_ok "authority-gate-repair-eventually-go" gate_with_repairs
+assert_eq "authority-gate-before-every-verifier-action" \
+  $'require:verifier\nmerge:1\nrecord:verifier:failed:0\nrequire:repair\nrepair:1\npoll\nrecord:repair:succeeded:1\nrequire:verifier\nmerge:2' \
+  "$(cat "$GATE_ORDER")"
 
 finish
