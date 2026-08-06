@@ -5,7 +5,7 @@
       "id": "c1",
       "text": "fresh-clone install works on both platforms",
       "weight": 5,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
@@ -40,7 +40,7 @@
       "id": "c6",
       "text": "versioned graph execution is correct, recoverable, auditable, and benchmark-efficient",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -139,9 +139,9 @@
           "id": "m6.3",
           "text": "graph scheduler becomes authoritative after parity and stays within the frozen benchmark budget",
           "weight": 8,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 3,
+          "evidence": "integrator GO; promoted cycle 3"
         }
       ]
     }
@@ -183,14 +183,14 @@
       "sid": "m1.1",
       "cmd": "bash tests/test-install-fresh.sh >/dev/null 2>&1",
       "tier": "focused",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
     },
     {
       "sid": "m2.1",
-      "cmd": "cd /Users/leonardo/Downloads/polylane && bin/polylane-rehearse.sh go >/dev/null 2>&1 && bin/polylane-rehearse.sh nogo >/dev/null 2>&1",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bin/polylane-rehearse.sh go >/dev/null 2>&1 && bin/polylane-rehearse.sh nogo >/dev/null 2>&1",
       "tier": "terminal",
       "status": "unchecked",
       "deps": [],
@@ -201,14 +201,14 @@
       "sid": "m3.1",
       "cmd": "cd /Users/leonardo/Downloads/polylane && bash tests/test-docs-truth.sh >/dev/null 2>&1",
       "tier": "focused",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
     },
     {
       "sid": "m4.1",
-      "cmd": "cd /Users/leonardo/Downloads/polylane && tests/run.sh 2>/dev/null | grep -q \"0 failed\"",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && tests/run.sh 2>/dev/null | grep -q \"0 failed\" && shellcheck -S warning bin/*.sh",
       "tier": "terminal",
       "status": "unchecked",
       "deps": [],
@@ -217,7 +217,7 @@
     },
     {
       "sid": "m5.1",
-      "cmd": "cd /Users/leonardo/Downloads/polylane && test -f docs/polylane/selfrun-proof.md && grep -q \"Outcome: GO\" docs/polylane/selfrun-proof.md",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && test -f docs/polylane/selfrun-proof.md && grep -q \"Outcome: GO\" docs/polylane/selfrun-proof.md",
       "tier": "terminal",
       "status": "unchecked",
       "deps": [],
@@ -246,7 +246,7 @@
       "sid": "m6.3",
       "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bash tests/test-graph-benchmark.sh >/dev/null 2>&1 && bash tests/test-graph-authority.sh >/dev/null 2>&1 && bash tests/test-runtime-survival.sh >/dev/null 2>&1",
       "tier": "focused",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
