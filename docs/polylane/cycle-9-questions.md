@@ -24,3 +24,16 @@ scope question remains. Polylane autonomous mode took these recommended defaults
 No relevant product-idea question emerged before building: the current work is infrastructure
 needed to measure future creative improvements, so inventing a new product direction would be
 scope drift.
+
+## Emergent questions after the cycle
+
+No user decision is required; the evidence picks conservative defaults:
+
+- **Equivalent terminal checks:** use an explicit frozen `dedupe_key`; never infer equivalence
+  from similar shell text and never enable broad result memoization.
+- **Session precedence:** the manifest/session ownership tag is authoritative; an observer's
+  ambient `POLYLANE_SESSION` is only a legacy fallback.
+- **Outcome location:** derive the canonical project from the manifest and write there unless an
+  explicit test/embedding override is supplied.
+- **Cross-lane communication:** add an append-only locked JSONL relay in canonical `.polylane/`;
+  keep `docs/parallel-status.md` as the durable post-cycle summary, not a fake live bus.

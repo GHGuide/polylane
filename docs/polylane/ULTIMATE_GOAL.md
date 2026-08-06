@@ -38,3 +38,14 @@ actually working, proven by executable checks, live canaries, and a real self-ru
   path-resolved, and ranked by measured helped/unused/hurt outcomes.
 - c18 One canonical control-room surface reports goal, cycle, graph, lanes, spend, verdict,
   cleanup, and next action without trusting stale markers.
+
+## Walk-away truth and economy hardening (cycle 10)
+
+- c19 Explicitly keyed frozen acceptance checks execute once per gate and propagate the same
+  truthful result to every member without cross-source caching.
+- c20 Runner, state, and control-room views agree on DONE and tmux session truth even when a
+  marker is committed but the worktree is dirty or the observer exports a stale session.
+- c21 Outcome learning is rooted to the canonical run project and cannot dirty an isolated
+  builder or integrator worktree with generated ledgers.
+- c22 Cross-lane requests, decisions, and resource claims use one atomic shared relay visible
+  from every isolated worktree.

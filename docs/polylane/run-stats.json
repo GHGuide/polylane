@@ -1,79 +1,219 @@
 {
   "version": 1,
-  "run_id": "walk-c8-20260806-233854",
-  "started_at": 1786048820,
-  "updated_at": 1786049125,
-  "wall_s": 305,
+  "run_id": "c9-product-autonomy-1786054003",
+  "started_at": 1786054286,
+  "updated_at": 1786059344,
+  "wall_s": 5058,
   "lanes": {
-    "supervisor-hermetic": {
+    "product-foundation": {
       "launches": 1,
       "restarts": 0
     },
-    "terminal-contract": {
+    "worker-efficiency": {
+      "launches": 1,
+      "restarts": 1
+    },
+    "quality-runtime": {
       "launches": 1,
       "restarts": 0
+    },
+    "control-docs": {
+      "launches": 1,
+      "restarts": 3
     },
     "integrator": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 6
     }
   },
-  "supervisor_restarts": 0,
+  "supervisor_restarts": 2,
   "terminal_gates": 1,
-  "tokens": 780626,
+  "tokens": 58813276,
   "token_state": "known",
   "usage_offsets": {
-    "supervisor-hermetic": 31926,
-    "terminal-contract": 31328,
-    "integrator": 15697996
+    "product-foundation": 113852,
+    "worker-efficiency": 217127,
+    "quality-runtime": 426569,
+    "control-docs": 655315,
+    "integrator": 29615344
   },
   "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
-      "at": 1786048820
+      "at": 1786054286
+    },
+    {
+      "type": "usage_capture",
+      "lane": "product-foundation",
+      "at": 1786054288,
+      "added": null
     },
     {
       "type": "launches",
-      "lane": "supervisor-hermetic",
-      "at": 1786048822
+      "lane": "product-foundation",
+      "at": 1786054288
+    },
+    {
+      "type": "usage_capture",
+      "lane": "worker-efficiency",
+      "at": 1786054288,
+      "added": null
     },
     {
       "type": "launches",
-      "lane": "terminal-contract",
-      "at": 1786048822
+      "lane": "worker-efficiency",
+      "at": 1786054288
+    },
+    {
+      "type": "usage_capture",
+      "lane": "quality-runtime",
+      "at": 1786054288,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "quality-runtime",
+      "at": 1786054289
+    },
+    {
+      "type": "usage_capture",
+      "lane": "control-docs",
+      "at": 1786054289,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "control-docs",
+      "at": 1786054289
+    },
+    {
+      "type": "restarts",
+      "lane": "worker-efficiency",
+      "at": 1786054378
+    },
+    {
+      "type": "restarts",
+      "lane": "control-docs",
+      "at": 1786054805
+    },
+    {
+      "type": "restarts",
+      "lane": "control-docs",
+      "at": 1786054824
+    },
+    {
+      "type": "restarts",
+      "lane": "control-docs",
+      "at": 1786054977
+    },
+    {
+      "type": "usage_capture",
+      "lane": "product-foundation",
+      "at": 1786055000,
+      "added": 1310038
+    },
+    {
+      "type": "usage_capture",
+      "lane": "worker-efficiency",
+      "at": 1786055000,
+      "added": 1621303
+    },
+    {
+      "type": "usage_capture",
+      "lane": "quality-runtime",
+      "at": 1786055000,
+      "added": 5288060
+    },
+    {
+      "type": "usage_capture",
+      "lane": "control-docs",
+      "at": 1786055000,
+      "added": 3485341
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786055000,
+      "added": 6889396
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786055003
+    },
+    {
+      "type": "initialized",
+      "at": 1786055004
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786055134,
+      "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786048903
+      "at": 1786055134
     },
     {
-      "type": "usage_capture",
-      "lane": "supervisor-hermetic",
-      "at": 1786048990,
-      "added": 275187
+      "type": "restarts",
+      "lane": "integrator",
+      "at": 1786055150
     },
     {
-      "type": "usage_capture",
-      "lane": "terminal-contract",
-      "at": 1786048990,
-      "added": 249303
+      "type": "restarts",
+      "lane": "integrator",
+      "at": 1786055598
+    },
+    {
+      "type": "restarts",
+      "lane": "integrator",
+      "at": 1786056344
+    },
+    {
+      "type": "restarts",
+      "lane": "integrator",
+      "at": 1786056559
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786056668
+    },
+    {
+      "type": "initialized",
+      "at": 1786056668
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786048990,
-      "added": 256136
+      "at": 1786057381,
+      "added": 8398058
+    },
+    {
+      "type": "restarts",
+      "lane": "integrator",
+      "at": 1786057628
+    },
+    {
+      "type": "restarts",
+      "lane": "integrator",
+      "at": 1786058991
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786059088,
+      "added": 31821080
     },
     {
       "type": "terminal_gate",
-      "at": 1786048991
+      "at": 1786059088
     },
     {
       "type": "cleanup",
       "state": "complete",
-      "at": 1786049125
+      "at": 1786059344
     }
   ]
 }
