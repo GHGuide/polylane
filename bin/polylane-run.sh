@@ -395,6 +395,7 @@ load_manifest() {
   LANE_SKILLS_FILE=$(jq -r '.lane_skills_file // ""' "$MANIFEST")
   CYCLE_PLAN_FILE=$(jq -r '.cycle_plan_file // ""' "$MANIFEST")
   PROMPT_TOKEN_BUDGET=$(jq -r '.prompt_token_budget // 8000' "$MANIFEST")
+  PROMPT_BYTE_BUDGET=$(jq -r '.prompt_byte_budget // ""' "$MANIFEST")
   [ -z "$STATE_FILE" ] || STATE_FILE=$(abs_project_path "$STATE_FILE")
   [ -z "$LANE_SKILLS_FILE" ] || LANE_SKILLS_FILE=$(abs_project_path "$LANE_SKILLS_FILE")
   [ -z "$CYCLE_PLAN_FILE" ] || CYCLE_PLAN_FILE=$(abs_project_path "$CYCLE_PLAN_FILE")
@@ -438,6 +439,15 @@ load_manifest() {
   validate_manifest
 }
 
+prompt_budget_check() {
+  local prompt="$1" name="$2"
+  POLYLANE_PROMPT_BYTE_BUDGET="${PROMPT_BYTE_BUDGET:-}" \
+    "$SCRIPT_DIR/polylane-promptopt.sh" check "$prompt" "${PROMPT_TOKEN_BUDGET:-8000}" >/dev/null || {
+      echo "PROMPT-BUDGET: $name failed strict-block or size admission" >&2
+      return 1
+    }
+}
+
 # preflight_contract : Codex runs use orchestration contract v2 by default. This
 # converts the workflow promises into executable launch gates, before worktrees or
 # tmux exist. POLYLANE_ALLOW_LEGACY=1 is an explicit compatibility escape hatch.
@@ -466,6 +476,13 @@ preflight_contract() {
     *) die "graph_mode must be authoritative, shadow, or off" ;;
   esac
   [ "$strict" = "1" ] || return 0
+
+  case "${PROMPT_TOKEN_BUDGET:-}" in ''|*[!0-9]*) die "contract v2 prompt_token_budget must be a positive integer" ;; esac
+  [ "$PROMPT_TOKEN_BUDGET" -gt 0 ] || die "contract v2 prompt_token_budget must be a positive integer"
+  if [ -n "${PROMPT_BYTE_BUDGET:-}" ]; then
+    case "$PROMPT_BYTE_BUDGET" in *[!0-9]*) die "contract v2 prompt_byte_budget must be a positive integer" ;; esac
+    [ "$PROMPT_BYTE_BUDGET" -gt 0 ] || die "contract v2 prompt_byte_budget must be a positive integer"
+  fi
 
   [ "${CYCLE:-0}" -ge 1 ] 2>/dev/null || die "contract v2 needs integer cycle >= 1"
   [ -n "${RUN_ID:-}" ] || die "contract v2 needs a fresh non-empty run_id"
@@ -498,14 +515,14 @@ preflight_contract() {
       die "contract v2 lane '$lane' prompt does not invoke its armed skills"
     grep -qF "STATUS: $lane DONE run=$RUN_ID" "$prompt" ||
       die "contract v2 lane '$lane' prompt lacks its exact current-run DONE marker"
-    "$SCRIPT_DIR/polylane-promptopt.sh" check "$prompt" "$PROMPT_TOKEN_BUDGET" >/dev/null ||
+    prompt_budget_check "$prompt" "$lane" ||
       die "contract v2 lane '$lane' prompt exceeds its immutable prompt budget"
   done
   if ! grep -qF "POLYLANE-VERDICT:" "$INT_PROMPT" ||
      ! grep -qF "run=$RUN_ID" "$INT_PROMPT"; then
     die "contract v2 integrator prompt lacks a current-run verdict sentinel"
   fi
-  "$SCRIPT_DIR/polylane-promptopt.sh" check "$INT_PROMPT" "$PROMPT_TOKEN_BUDGET" >/dev/null ||
+  prompt_budget_check "$INT_PROMPT" "$INT_NAME" ||
     die "contract v2 integrator prompt exceeds its immutable prompt budget"
 
   for sid in $(jq -r '.target_subgoals[]' "$MANIFEST"); do
