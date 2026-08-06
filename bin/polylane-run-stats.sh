@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Durable atomic run telemetry. Every operation requires an explicit --file.
+set -euo pipefail
+command -v jq >/dev/null 2>&1 || { echo "polylane-run-stats: jq required" >&2; exit 1; }
+
+usage() { echo "usage: polylane-run-stats.sh COMMAND --file FILE [options]" >&2; }
+uint() { case "$1" in ''|*[!0-9]*) return 1;; *) return 0;; esac; }
+fresh() { jq -cn --argjson n "$1" '{version:1,started_at:$n,updated_at:$n,wall_s:0,lanes:{},supervisor_restarts:0,terminal_gates:0,tokens:null,token_state:"unknown",usage_offsets:{},cleanup:"pending",events:[]}'; }
+lock() { local n=0; mkdir -p "$(dirname "$1")"; while ! mkdir "$1.lock" 2>/dev/null; do n=$((n+1)); [ "$n" -lt 1000 ] || return 1; sleep .01; done; }
+unlock() { rmdir "$1.lock" 2>/dev/null || true; }
+common() {
+  FILE='' NOW=''
+  while [ "$#" -gt 0 ]; do case "$1" in --file) FILE="$2"; shift 2;; --now) NOW="$2"; shift 2;; *) break;; esac; done
+  [ -n "$FILE" ] || { usage; return 2; }
+  [ -n "$NOW" ] || NOW=$(date -u +%s)
+  uint "$NOW" || { echo "polylane-run-stats: invalid --now" >&2; return 2; }
+  REST="$*"
+}
+# update FILE NOW FILTER [jq args...] while holding a mkdir lock and replacing atomically.
+update() {
+  local f="$1" n="$2" q="$3" s t; shift 3
+  lock "$f" || { echo "polylane-run-stats: lock timeout" >&2; return 1; }
+  if [ -s "$f" ]; then s=$(cat "$f"); else s=$(fresh "$n"); fi
+  t="$f.tmp.$$"
+  if ! printf '%s\n' "$s" | jq --argjson n "$n" "$@" 'def tick: (($n-.updated_at)|if .<0 then 0 else . end) as $d | .wall_s += $d | .updated_at=$n; tick | '"$q" > "$t"; then rm -f "$t"; unlock "$f"; return 1; fi
+  mv "$t" "$f"; unlock "$f"
+}
+init() { common "$@"; [ -z "$REST" ] || return 2; update "$FILE" "$NOW" '.events += [{type:"initialized",at:$n}]'; }
+lane() {
+  local key="$1"; shift; common "$@"; set -- $REST
+  [ "$1" = --lane ] && [ -n "$2" ] && [ "$#" = 2 ] || { usage; return 2; }
+  update "$FILE" "$NOW" '.lanes[$lane] = (.lanes[$lane] // {launches:0,restarts:0}) | .lanes[$lane].'"$key"' += 1 | .events += [{type:$event,lane:$lane,at:$n}]' --arg lane "$2" --arg event "$key"
+}
+supervisor() { common "$@"; [ -z "$REST" ] || return 2; update "$FILE" "$NOW" '.supervisor_restarts += 1 | .events += [{type:"supervisor_restart",at:$n}]'; }
+gate() { common "$@"; [ -z "$REST" ] || return 2; update "$FILE" "$NOW" '.terminal_gates += 1 | .events += [{type:"terminal_gate",at:$n}]'; }
+clean() {
+  common "$@"; set -- $REST; [ "$1" = --state ] && [ "$#" = 2 ] || { usage; return 2; }
+  case "$2" in complete|warning);; *) return 2;; esac
+  update "$FILE" "$NOW" '.cleanup=$state | .events += [{type:"cleanup",state:$state,at:$n}]' --arg state "$2"
+}
+capture() {
+  common "$@"; set -- $REST; local lane='' log='' off=''
+  while [ "$#" -gt 0 ]; do case "$1" in --lane) lane="$2";shift 2;;--log)log="$2";shift 2;;--offset)off="$2";shift 2;;*)return 2;;esac; done
+  [ -n "$lane" ] && [ -n "$log" ] && uint "$off" || { usage; return 2; }
+  lock "$FILE" || return 1
+  local s seen start bytes add t
+  if [ -s "$FILE" ]; then s=$(cat "$FILE"); else s=$(fresh "$NOW"); fi
+  seen=$(printf '%s' "$s"|jq -r --arg l "$lane" '.usage_offsets[$l] // 0'); uint "$seen" || seen=0
+  start="$off"; [ "$seen" -gt "$start" ] && start="$seen"
+  if [ -f "$log" ]; then
+    bytes=$(wc -c < "$log"|tr -d ' '); [ "$start" -le "$bytes" ] || start=0
+    add=$(tail -c "+$((start+1))" "$log" 2>/dev/null|jq -s '[.[]|select(.type=="turn.completed")|.usage?|if (.total_tokens?|type)=="number" then .total_tokens elif ((.input_tokens?|type)=="number" and (.output_tokens?|type)=="number") then (.input_tokens+.output_tokens) else empty end]|add//null' 2>/dev/null||true)
+  else bytes="$start"; add=; fi
+  [ "$add" = null ] && add=
+  [ -n "$add" ] || add=null
+  t="$FILE.tmp.$$"
+  if ! printf '%s\n' "$s"|jq --argjson n "$NOW" --arg l "$lane" --argjson o "$bytes" --argjson a "$add" 'def tick: (($n-.updated_at)|if .<0 then 0 else . end) as $d | .wall_s += $d | .updated_at=$n; tick | .usage_offsets[$l]=$o | if $a==null then . else .tokens=((.tokens//0)+$a)|.token_state="known" end | .events += [{type:"usage_capture",lane:$l,at:$n,added:$a}]' > "$t"; then rm -f "$t";unlock "$FILE";return 1;fi
+  mv "$t" "$FILE"; unlock "$FILE"
+}
+snapshot() {
+  common "$@"; [ -z "$REST" ] || return 2
+  if [ -s "$FILE" ]; then jq --argjson n "$NOW" '(.wall_s+(($n-.updated_at)|if .<0 then 0 else . end)) as $w|{started_at,wall_s:$w,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}' "$FILE"; else fresh "$NOW"|jq '{started_at,wall_s,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}';fi
+}
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  cmd="$1"; shift || true
+  case "$cmd" in init)init "$@";;lane-launch)lane launches "$@";;lane-restart)lane restarts "$@";;supervisor-restart)supervisor "$@";;terminal-gate)gate "$@";;capture-usage)capture "$@";;cleanup)clean "$@";;snapshot)snapshot "$@";;*)usage;exit 2;;esac
+fi
