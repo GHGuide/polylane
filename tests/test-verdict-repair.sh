@@ -61,7 +61,8 @@ assert_eq "unrepairable-spawns-zero-repairs" "0" "$(wc -l < "$LOG" | tr -d ' ')"
 
 # READY-FOR-HOST-GATE is a nonce-bound candidate, not a self-authorized GO.
 # The outer merge gate runs the frozen coordinator checks once, then converts
-# only a passing result to GO; failure remains on the existing repair route.
+# only a passing result to GO. A failed terminal gate is immutable for this run:
+# retrying it would exceed the one-gate efficiency contract.
 . "$RUNNER"
 make_tmpdir
 INT_WORKTREE="$TEST_TMPDIR/int"; mkdir -p "$INT_WORKTREE/docs"
@@ -83,7 +84,20 @@ merge_gate >/dev/null 2>&1; host_fail_rc=$?
 assert_eq "ready-host-gate-failure-is-not-go" "1" "$host_fail_rc"
 assert_eq "ready-host-gate-failure-runs-once" "1" "$HOST_GATES"
 assert_eq "ready-host-gate-failure-proves-once" "1" "$EFFICIENCY_PROOFS"
-assert_eq "ready-host-gate-failure-repairs" "NO-GO" "$VERDICT_RESULT"
+assert_eq "ready-host-gate-failure-stops-repair" "NO" "$VERDICT_REPAIRABLE"
+
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
+HOST_GATES=0
+EFFICIENCY_PROOFS=0
+REPAIRS=0
+POLYLANE_INTEGRATOR_REPAIRS=3
+repair_integrator_verdict() { REPAIRS=$((REPAIRS + 1)); }
+graph_authority_require() { return 0; }
+graph_authority_record_ready_node() { return 0; }
+gate_with_repairs >/dev/null 2>&1; loop_rc=$?
+assert_eq "ready-host-gate-failure-stops-loop" "1" "$loop_rc"
+assert_eq "ready-host-gate-failure-loop-runs-once" "1" "$HOST_GATES"
+assert_eq "ready-host-gate-failure-loop-spawns-no-repair" "0" "$REPAIRS"
 
 HOST_GATES=0
 write_efficiency_proof() { return 1; }
@@ -91,7 +105,8 @@ contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
 merge_gate >/dev/null 2>&1; proof_fail_rc=$?
 assert_eq "ready-efficiency-proof-failure-is-not-go" "1" "$proof_fail_rc"
 assert_eq "ready-efficiency-proof-failure-skips-acceptance" "0" "$HOST_GATES"
-assert_eq "ready-efficiency-proof-failure-repairs" "NO-GO" "$VERDICT_RESULT"
+assert_eq "ready-efficiency-proof-failure-is-no-go" "NO-GO" "$VERDICT_RESULT"
+assert_eq "ready-efficiency-proof-failure-stops-repair" "NO" "$VERDICT_REPAIRABLE"
 unset RUN_ID
 
 finish

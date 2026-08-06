@@ -20,6 +20,11 @@ PROJECT_ROOT="$TEST_TMPDIR"
 LANE_WORKTREES=("$TEST_TMPDIR/wt-alpha" "$TEST_TMPDIR/wt-beta")
 INT_WORKTREE="$TEST_TMPDIR/wt-integrator"
 FAILED_LANES=""
+mkdir -p "$TEST_TMPDIR/docs"
+cat > "$TEST_TMPDIR/docs/verify-alpha.md" <<'EOF'
+## Deferred
+- Confirm promoted evidence survives cleanup
+EOF
 run_stats init
 run_stats lane-launch --lane alpha
 run_stats lane-restart --lane alpha
@@ -36,7 +41,7 @@ assert_contains "go-lane-row-alpha" "| alpha | claude-sonnet-5 | lane/alpha | Go
 assert_contains "go-lane-row-beta"  "| beta | claude-haiku-4-5 | lane/beta | completed |" "$go"
 assert_contains "go-merged-text"    "all lanes merged"       "$go"
 assert_contains "go-push-step"      "git push"               "$go"
-assert_contains "go-no-open-items"  "No open items"          "$go"
+assert_contains "go-current-root-open-item" "Confirm promoted evidence survives cleanup" "$go"
 assert_contains "go-telemetry" "Run telemetry:" "$go"
 assert_contains "go-telemetry-tokens-unknown" "tokens=unknown" "$go"
 assert_eq "go-ledger-cycle" "7" "$(jq -r '.cycle' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"

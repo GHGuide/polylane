@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "started_at": 1786046077,
+  "updated_at": 1786046878,
+  "wall_s": 801,
+  "lanes": {
+    "host-canary": {"launches": 1, "restarts": 0},
+    "report-truth": {"launches": 1, "restarts": 0},
+    "integrator": {"launches": 1, "restarts": 1}
+  },
+  "supervisor_restarts": 0,
+  "terminal_gates": 2,
+  "tokens": null,
+  "token_state": "unknown",
+  "cleanup": "pending",
+  "events": [
+    {"type": "initialized", "at": 1786046077},
+    {"type": "launches", "lane": "host-canary", "at": 1786046078},
+    {"type": "launches", "lane": "report-truth", "at": 1786046078},
+    {"type": "launches", "lane": "integrator", "at": 1786046310},
+    {"type": "terminal_gate", "at": 1786046489},
+    {"type": "restarts", "lane": "integrator", "at": 1786046617},
+    {"type": "terminal_gate", "at": 1786046878}
+  ]
+}

@@ -5,7 +5,7 @@ command -v jq >/dev/null 2>&1 || { echo "polylane-run-stats: jq required" >&2; e
 
 usage() { echo "usage: polylane-run-stats.sh COMMAND --file FILE [options]" >&2; }
 uint() { case "$1" in ''|*[!0-9]*) return 1;; *) return 0;; esac; }
-fresh() { jq -cn --argjson n "$1" '{version:1,started_at:$n,updated_at:$n,wall_s:0,lanes:{},supervisor_restarts:0,terminal_gates:0,tokens:null,token_state:"unknown",usage_offsets:{},cleanup:"pending",events:[]}'; }
+fresh() { jq -cn --argjson n "$1" --arg run "${2:-}" '{version:1,run_id:(if $run=="" then null else $run end),started_at:$n,updated_at:$n,wall_s:0,lanes:{},supervisor_restarts:0,terminal_gates:0,tokens:null,token_state:"unknown",usage_offsets:{},cleanup:"pending",events:[]}'; }
 lock() { local n=0; mkdir -p "$(dirname "$1")"; while ! mkdir "$1.lock" 2>/dev/null; do n=$((n+1)); [ "$n" -lt 1000 ] || return 1; sleep .01; done; }
 unlock() { rmdir "$1.lock" 2>/dev/null || true; }
 common() {
@@ -25,7 +25,31 @@ update() {
   if ! printf '%s\n' "$s" | jq --argjson n "$n" "$@" 'def tick: (($n-.updated_at)|if .<0 then 0 else . end) as $d | .wall_s += $d | .updated_at=$n; tick | '"$q" > "$t"; then rm -f "$t"; unlock "$f"; return 1; fi
   mv "$t" "$f"; unlock "$f"
 }
-init() { common "$@"; [ -z "$REST" ] || return 2; update "$FILE" "$NOW" '.events += [{type:"initialized",at:$n}]'; }
+init() {
+  common "$@"; set -- $REST
+  local run_id="" s t current=""
+  if [ "$#" -gt 0 ]; then
+    [ "$#" = 2 ] && [ "$1" = --run-id ] && [ -n "$2" ] || { usage; return 2; }
+    run_id="$2"
+  fi
+  lock "$FILE" || { echo "polylane-run-stats: lock timeout" >&2; return 1; }
+  [ ! -s "$FILE" ] || current=$(jq -r '.run_id // ""' "$FILE" 2>/dev/null || true)
+  if [ ! -s "$FILE" ] || { [ -n "$run_id" ] && [ "$current" != "$run_id" ]; }; then
+    s=$(fresh "$NOW" "$run_id")
+  else
+    s=$(cat "$FILE")
+  fi
+  t="$FILE.tmp.$$"
+  if ! printf '%s\n' "$s" | jq --argjson n "$NOW" --arg run "$run_id" '
+      def tick: (($n-.updated_at)|if .<0 then 0 else . end) as $d
+        | .wall_s += $d | .updated_at=$n;
+      tick
+      | if $run=="" then . else .run_id=$run end
+      | .events += [{type:"initialized",at:$n}]' > "$t"; then
+    rm -f "$t"; unlock "$FILE"; return 1
+  fi
+  mv "$t" "$FILE"; unlock "$FILE"
+}
 lane() {
   local key="$1"; shift; common "$@"; set -- $REST
   [ "$1" = --lane ] && [ -n "$2" ] && [ "$#" = 2 ] || { usage; return 2; }
@@ -59,7 +83,7 @@ capture() {
 }
 snapshot() {
   common "$@"; [ -z "$REST" ] || return 2
-  if [ -s "$FILE" ]; then jq --argjson n "$NOW" '(.wall_s+(($n-.updated_at)|if .<0 then 0 else . end)) as $w|{started_at,wall_s:$w,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}' "$FILE"; else fresh "$NOW"|jq '{started_at,wall_s,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}';fi
+  if [ -s "$FILE" ]; then jq --argjson n "$NOW" '(.wall_s+(($n-.updated_at)|if .<0 then 0 else . end)) as $w|{run_id,started_at,wall_s:$w,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}' "$FILE"; else fresh "$NOW"|jq '{run_id,started_at,wall_s,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}';fi
 }
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   cmd="$1"; shift || true

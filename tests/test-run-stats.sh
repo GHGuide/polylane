@@ -58,6 +58,21 @@ assert_jq "$TMP/snapshot.json" '.started_at' '100'
 assert_jq "$TMP/snapshot.json" '.wall_s' '200'
 assert_jq "$TMP/snapshot.json" '.cleanup' '"warning"'
 
+# A new run ID starts a fresh accounting window; the same run ID resumes it.
+fresh_run="$TMP/fresh-run.json"
+"$STATS" init --file "$fresh_run" --now 10 --run-id run-a
+"$STATS" lane-launch --file "$fresh_run" --now 20 --lane alpha
+"$STATS" init --file "$fresh_run" --now 30 --run-id run-a
+assert_jq "$fresh_run" '.run_id' '"run-a"'
+assert_jq "$fresh_run" '.started_at' '10'
+assert_jq "$fresh_run" '.lanes.alpha.launches' '1'
+"$STATS" init --file "$fresh_run" --now 40 --run-id run-b
+assert_jq "$fresh_run" '.run_id' '"run-b"'
+assert_jq "$fresh_run" '.started_at' '40'
+assert_jq "$fresh_run" '.wall_s' '0'
+assert_jq "$fresh_run" '.lanes | length' '0'
+assert_jq "$fresh_run" '.terminal_gates' '0'
+
 # Concurrent lock contenders must preserve every event.
 concurrent="$TMP/concurrent.json"
 "$STATS" init --file "$concurrent" --now 1

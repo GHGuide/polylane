@@ -10,7 +10,7 @@ usage() {
 
 capture() {
   local manifest="" stats="" proof="" phase="" expected actual max_restarts restarts
-  local max_wall wall gates cleanup tokens token_state status="PASS" reasons="" tmp
+  local max_wall wall gates cleanup tokens token_state manifest_run stats_run status="PASS" reasons="" tmp
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --manifest) manifest="${2:-}"; shift 2 ;;
@@ -39,7 +39,12 @@ capture() {
   cleanup=$(jq -r '.cleanup // "unknown"' "$stats")
   tokens=$(jq -r 'if .tokens == null then "unknown" else (.tokens|tostring) end' "$stats")
   token_state=$(jq -r '.token_state // "unknown"' "$stats")
+  manifest_run=$(jq -r '.run_id // ""' "$manifest")
+  stats_run=$(jq -r '.run_id // ""' "$stats")
 
+  if [ -z "$manifest_run" ] || [ "$stats_run" != "$manifest_run" ]; then
+    status="FAIL"; reasons="$reasons run_id=$stats_run/$manifest_run"
+  fi
   if [ "$actual" -ne "$expected" ] 2>/dev/null; then
     status="FAIL"; reasons="$reasons launches=$actual/$expected"
   fi

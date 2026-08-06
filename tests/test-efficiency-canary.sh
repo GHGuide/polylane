@@ -19,7 +19,7 @@ JSON
 
 write_stats() {
   cat > "$ST" <<JSON
-{"wall_s":$1,"lanes":{"a":{"launches":1,"restarts":0},"b":{"launches":1,"restarts":0},"integrator":{"launches":1,"restarts":0}},"supervisor_restarts":$2,"terminal_gates":$3,"tokens":$4,"token_state":"$5","cleanup":"$6"}
+{"run_id":"eff-1","wall_s":$1,"lanes":{"a":{"launches":1,"restarts":0},"b":{"launches":1,"restarts":0},"integrator":{"launches":1,"restarts":0}},"supervisor_restarts":$2,"terminal_gates":$3,"tokens":$4,"token_state":"$5","cleanup":"$6"}
 JSON
 }
 
@@ -39,6 +39,9 @@ assert_ok "efficiency-final-capture" "$EFF" capture --manifest "$MF" --stats "$S
 assert_ok "efficiency-final-verify" "$EFF" verify --proof "$PF" --phase final
 assert_contains "efficiency-unknown-not-zero" "Tokens: unknown" "$(cat "$PF")"
 assert_contains "efficiency-clean" "Cleanup: complete" "$(cat "$PF")"
+
+jq '.run_id="stale-run"' "$ST" > "$ST.tmp" && mv "$ST.tmp" "$ST"
+assert_fail "efficiency-stale-run-rejected" "$EFF" capture --manifest "$MF" --stats "$ST" --proof "$PF" --phase final
 
 # During the real terminal gate, the runner writes this canonical candidate.
 # The frozen acceptance command separately requires the file to exist.

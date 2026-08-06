@@ -288,7 +288,7 @@
     },
     {
       "sid": "m4.1",
-      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && tests/run.sh 2>/dev/null | grep -q \"0 failed\" && shellcheck -S warning bin/*.sh",
+      "cmd": "cd \"${REPO:-/Users/leonardo/Downloads/polylane}\" && bin/polylane-check.sh \"$PWD/.polylane/check-cache/terminal-m4\" -- tests/run.sh && shellcheck -S warning bin/*.sh",
       "tier": "terminal",
       "status": "pass",
       "deps": [],

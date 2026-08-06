@@ -2,7 +2,7 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 5
+## Cycle 7
 
 subgoals: 12/13 done · criteria: 6/10 done · 78%
 

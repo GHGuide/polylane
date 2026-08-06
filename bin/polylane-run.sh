@@ -107,8 +107,13 @@ run_stats() {
   [ "${DRY_RUN:-0}" = "1" ] && return 0
   [ -n "${PROJECT_ROOT:-}" ] || return 0
   [ -x "$SCRIPT_DIR/polylane-run-stats.sh" ] || return 0
-  "$SCRIPT_DIR/polylane-run-stats.sh" "$op" \
-    --file "$PROJECT_ROOT/docs/polylane/run-stats.json" "$@"
+  if [ "$op" = init ] && [ -n "${RUN_ID:-}" ]; then
+    "$SCRIPT_DIR/polylane-run-stats.sh" "$op" \
+      --file "$PROJECT_ROOT/docs/polylane/run-stats.json" "$@" --run-id "$RUN_ID"
+  else
+    "$SCRIPT_DIR/polylane-run-stats.sh" "$op" \
+      --file "$PROJECT_ROOT/docs/polylane/run-stats.json" "$@"
+  fi
 }
 
 # write_efficiency_proof PHASE : manifests may opt into a mechanically graded
@@ -2395,9 +2400,16 @@ merge_gate() {
     # This is deliberately not GO: only the outer runner runs the frozen host
     # checks and converts this candidate after that single coordinator gate.
     run_stats terminal-gate
-    if write_efficiency_proof gate && contract_acceptance_gate GO; then v="GO"; else
-      printf '\nACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.\n' >> "$f"
-      v="NO-GO"; VERDICT_REPAIRABLE="YES"
+    if ! write_efficiency_proof gate; then
+      printf '\nACCEPTANCE-GATE: efficiency proof failed; terminal gate is exhausted for this run.\n' >> "$f"
+      v="NO-GO"; VERDICT_REPAIRABLE="NO"
+    elif contract_acceptance_gate GO; then
+      v="GO"
+    else
+      # The coordinator owns one terminal attempt. A model repair cannot make
+      # that same attempt unused; it would only add a restart and a second gate.
+      printf '\nACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.\n' >> "$f"
+      v="NO-GO"; VERDICT_REPAIRABLE="NO"
     fi
   elif [ "$v" = "GO" ] || [ "$v" = "EXTERNAL-EVIDENCE-OPEN" ]; then
     if ! contract_acceptance_gate "$v"; then
@@ -2831,13 +2843,21 @@ est_cost() { LC_ALL=C awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000
 # write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
 report_open_items() {
-  local i evidence
+  local verdict="${1:-UNKNOWN}" i evidence
   local evidence_paths=()
   for i in "${!LANE_NAMES[@]}"; do
-    evidence="${LANE_WORKTREES[$i]:-}/docs/verify-${LANE_NAMES[$i]}.md"
+    if [ "$verdict" = GO ] || [ "$verdict" = EXTERNAL-EVIDENCE-OPEN ]; then
+      evidence="$REPO_ROOT/docs/verify-${LANE_NAMES[$i]}.md"
+    else
+      evidence="${LANE_WORKTREES[$i]:-}/docs/verify-${LANE_NAMES[$i]}.md"
+    fi
     [ -f "$evidence" ] && evidence_paths+=("$evidence")
   done
-  evidence="${INT_WORKTREE:-}/docs/verify-integration.md"
+  if [ "$verdict" = GO ] || [ "$verdict" = EXTERNAL-EVIDENCE-OPEN ]; then
+    evidence="$REPO_ROOT/docs/verify-integration.md"
+  else
+    evidence="${INT_WORKTREE:-}/docs/verify-integration.md"
+  fi
   [ -f "$evidence" ] && evidence_paths+=("$evidence")
   [ "${#evidence_paths[@]}" -gt 0 ] || return 0
   "$SCRIPT_DIR/polylane-report-items.sh" "${evidence_paths[@]}"
@@ -2858,7 +2878,7 @@ write_report() {
   fi
 
   # Only current-run lane/integration evidence may nominate an open item.
-  steps=$(report_open_items | sort -u | head -8 || true)
+  steps=$(report_open_items "$verdict" | sort -u | head -8 || true)
   telemetry=$(run_stats snapshot 2>/dev/null || true)
   if [ -n "$telemetry" ] && printf '%s\n' "$telemetry" | jq -e '.tokens != null' >/dev/null 2>&1; then
     telemetry_tokens=$(printf '%s\n' "$telemetry" | jq -r '.tokens')
