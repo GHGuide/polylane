@@ -32,7 +32,7 @@ Branch: `lane/c9-integrator`
 
 ## Terminal gate
 
-The required single cached invocation of `tests/run.sh` started and passed through graph-authority (50 pass) but was host-interrupted while entering `test-graph-benchmark.sh`. Its log remains incomplete at `.polylane/check-cache/integrator/1557743017-64.output.32659`; it was not rerun under the usage guard. Therefore terminal-suite evidence is incomplete.
+The required single cached invocation of `tests/run.sh` was run after the final graph-authority fixture repair. The environment terminated it while it was progressing: `.polylane/check-cache/integrator/1557743017-64.output.74094` reaches `test-graph-events.sh` (43 pass) and `test-graph-quality-loop.sh` (4 pass), then stops in `test-graph-shadow.sh` without a `.result` record. It was not rerun unchanged. Therefore terminal-suite evidence is incomplete and cannot support GO.
 
 ## Final narrow repair
 
@@ -41,11 +41,23 @@ The required single cached invocation of `tests/run.sh` started and passed throu
 - `shellcheck -S warning bin/polylane-run.sh`: exit 0, no findings, through the worktree check cache.
 - The mandated canonical cache path was attempted but this sandbox denied its directory creation (`Operation not permitted`); the established worktree-local cache was used for these two fresh focused checks. No canonical cycle manifest exists, so `polylane-scope.sh check-static` has no static target.
 
+## Final integration evidence
+
+- Current builder tips are contained: product foundation `5d54f64`, worker efficiency `5d71629`, quality runtime `8d08d9b`, and control docs `1ee85b1` are ancestors of this branch.
+- Cross-lane repair: `tests/test-graph-authority.sh` now provides a valid contract-v2 prompt fixture before asserting graph admission. This preserves the strict prompt-budget trust boundary and exposes the required `GRAPH-AUTHORITY` failure rather than failing first on an invalid test prompt.
+- `bash tests/test-graph-authority.sh`: 50 pass, 0 fail; `bash tests/test-promptopt.sh`: 6 pass, 0 fail.
+- Earlier integrated focused acceptance evidence remains: product benchmark 19 pass, discovery 22, Codex profile 8, advanced runtime 11, graph quality loop 4, judges 9, scout outcomes 18, dashboard 35, and control room 10.
+- Judge evidence: the 9-pass judge suite proves exactly three isolated evidence files, bounded timeouts, failure aggregation, and no premature evidence publication.
+- `bin/polylane-seams.sh scan "$PWD"`: exit 0 with no production seam finding. `polylane-scope.sh check-static` has no canonical runnable cycle manifest; the tracked research JSON has no `lanes` field and correctly fails scope admission.
+- `shellcheck -S warning bin/*.sh`: exit 0, no findings.
+- Mock benchmark: `benchmarks/schema-v1` ran all 5 cases through a mock adapter; `adapter_failures=0`, `mean_completion=1`, `mean_product_quality=0.9`, `mean_tokens=100`, and `mean_interventions=0`.
+- Dashboard demonstrations: `--once --json` and `--once` are exercised by `test-dashboard.sh` (35 pass); current-nonce and no-final-newline marker semantics are exercised by `test-control-room.sh` (10 pass).
+
 ## Changed files
 
 - `.polylane/SCHEMA.md`
 - `bin/polylane-advanced.sh`, `bin/polylane-dashboard.sh`, `bin/polylane-discovery.sh`, `bin/polylane-judges.sh`, `bin/polylane-product-benchmark.sh`, `bin/polylane-run.sh`, `bin/polylane-seams.sh`
-- Cycle-9 focused tests under `tests/`, including `tests/test-orchestration-contract.sh`, and this verification/status evidence.
+- Cycle-9 focused tests under `tests/`, including `tests/test-orchestration-contract.sh` and `tests/test-graph-authority.sh`, and this verification/status evidence.
 
 ## DEFERRED
 

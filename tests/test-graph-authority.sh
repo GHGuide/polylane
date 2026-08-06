@@ -36,7 +36,21 @@ LANE_PROMPTS=("$TEST_TMPDIR/prompt")
 LANE_RESUMED=(0)
 LANE_ADOPTED=(0)
 LANE_PANE_IDX=(-1)
-printf 'work\n' > "$TEST_TMPDIR/prompt"
+cat > "$TEST_TMPDIR/prompt" <<'EOF'
+ULTIMATE-GOAL: Prove authoritative graph admission.
+CURRENT-SUBGOAL: Exercise one bounded lane launch.
+GOAL: launch only graph-ready work.
+OWN: tests/test-graph-authority.sh.
+FORBIDDEN: bypassing the immutable graph.
+PREDEFINED-SKILLS: engineering:testing-strategy
+LANE-SPECIFIC-SKILLS: engineering:architecture
+Read only the named kit once.
+TEST-CADENCE: focused first; terminal suite in integration.
+DELEGATION: forbidden.
+CHECK-CACHE: use the integration cache.
+EXTERNAL-EVIDENCE: none.
+VERIFY: record STATUS: blocked DONE run=authority-run.
+EOF
 mkdir -p "$TEST_TMPDIR/wt"
 TMUX_CALLS="$TEST_TMPDIR/tmux.calls"
 tmux() { [ "$1" = has-session ] && return 1; printf '%s\n' "$*" >> "$TMUX_CALLS"; return 0; }
