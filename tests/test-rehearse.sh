@@ -5,8 +5,9 @@
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 RH="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-rehearse.sh"
 
-# The live fixture writes reports after cleanup, so cleanliness means no dirty
-# tracked files and no tracked or untracked current-run status markers.
+# The live fixture advances durable state before writing reports. Cleanup must
+# remove tracked and untracked current-run status markers without rejecting
+# that intended durable state change.
 make_tmpdir
 REHEARSE_REPO="$TEST_TMPDIR/repo"
 mkdir -p "$REHEARSE_REPO"

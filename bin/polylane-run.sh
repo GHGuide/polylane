@@ -2459,18 +2459,24 @@ cleanup_delete_branch() {
 }
 
 cleanup_remove_worktree() {
-  local wt="$1"
+  local wt="$1" resolved="$1"
   if [ "${DRY_RUN:-0}" = "1" ]; then
     run git -C "$REPO_ROOT" worktree remove --force "$wt"
     return 0
   fi
+  # Git reports physical paths (`/private/var/...` on macOS), while manifests
+  # may carry an equivalent symlink path (`/var/...`). Compare and remove the
+  # canonical directory so cleanup cannot skip a live worktree by spelling.
+  if [ -d "$wt" ]; then
+    resolved=$(cd "$wt" 2>/dev/null && pwd -P) || resolved="$wt"
+  fi
   # Resume after a post-promotion crash may find that an earlier cleanup pass
   # already removed some worktrees. Absence is the desired end state.
   if ! git -C "$REPO_ROOT" worktree list --porcelain 2>/dev/null |
-       grep -Fqx "worktree $wt"; then
+       grep -Fqx "worktree $resolved"; then
     return 0
   fi
-  run git -C "$REPO_ROOT" worktree remove --force "$wt"
+  run git -C "$REPO_ROOT" worktree remove --force "$resolved"
 }
 
 # cleanup_status_markers : remove only this run's marker paths. Tracked markers

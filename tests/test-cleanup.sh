@@ -49,11 +49,13 @@ if [ "$setup_rc" -ne 0 ]; then
 fi
 
 REPO_ROOT="$G"; DRY_RUN=0; YES=1; TMUX_SESSION="polylane-cleanup-fixture-$$"
+PATH_ALIAS="$TEST_ROOT/path-alias"
+ln -s "$TEST_ROOT" "$PATH_ALIAS"
 LANE_NAMES=(builder)
-LANE_WORKTREES=("$BUILDER_WT")
+LANE_WORKTREES=("$PATH_ALIAS/builder-wt")
 LANE_BRANCHES=(lane/builder)
 INT_NAME=integrator
-INT_WORKTREE="$INTEGRATOR_WT"
+INT_WORKTREE="$PATH_ALIAS/integrator-wt"
 INT_BRANCH=lane/integrator
 
 cleanup_out=""

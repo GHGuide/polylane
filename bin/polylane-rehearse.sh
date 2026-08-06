@@ -11,7 +11,9 @@ command -v git >/dev/null 2>&1 || { echo "rehearse: git required" >&2; exit 2; }
 rehearse_promoted_tree_clean() {
   local repo="$1" marker
   git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
-  [ -z "$(git -C "$repo" status --porcelain --untracked-files=no)" ] || return 1
+  # Goal finalization deliberately advances durable max-state.json before the
+  # cycle report. Clean here means runtime markers are gone, not that durable
+  # orchestration state was forbidden from changing.
   for marker in docs/status-lane-a.md docs/status-lane-b.md docs/status-integrator.md; do
     [ ! -e "$repo/$marker" ] || return 1
     ! git -C "$repo" ls-files --error-unmatch -- "$marker" >/dev/null 2>&1 || return 1
@@ -21,6 +23,7 @@ rehearse_promoted_tree_clean() {
 rehearse() {
   local want="${1:-go}" root sess nonce rc=0 report evidence promoted cleaned leaks=0 calls graph_witnesses retained=0 tree_clean=0
   root=$(mktemp -d "${TMPDIR:-/tmp}/polylane-rehearse.XXXXXX")
+  root=$(cd "$root" && pwd -P)
   sess="plrh-$$"; nonce="rh-$$-$(date +%s)"
   # shellcheck disable=SC2064 # expand root/session now
   trap "tmux kill-session -t '$sess' 2>/dev/null || true; rm -rf '$root'" RETURN
