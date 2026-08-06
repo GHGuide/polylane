@@ -10,14 +10,14 @@ subgoals: 13/21 done · criteria: 10/18 done · 58%
 
 ## Open autonomous work
 
-- `m8.1` [open, w18] — Ship a realistic vague-brief product benchmark corpus and reproducible scorecard runner
-- `m8.2` [open, w17] — Ship a durable adaptive discovery question graph and strategy synthesis surface
-- `m8.3` [open, w16] — Ship measured lean Codex worker profiles plus prompt-budget optimization gates
-- `m8.4` [open, w15] — Wire advanced risk, seam, outcome, selection, and salvage helpers into the Codex runtime contract
-- `m8.5` [open, w14] — Extend the immutable graph with typed bounded quality routing while preserving deterministic replay budgets
-- `m8.6` [open, w13] — Gate promotion through three independent product judges with actionable bounded repair evidence
-- `m8.7` [open, w12] — Make skill scouting activity-specific, path-resolved, and self-improving from outcome evidence
-- `m8.8` [open, w11] — Upgrade the dashboard into a canonical one-shot control room and certify the complete expansion
+- `m8.1` [doing, w18] — Ship a realistic vague-brief product benchmark corpus and reproducible scorecard runner
+- `m8.2` [doing, w17] — Ship a durable adaptive discovery question graph and strategy synthesis surface
+- `m8.3` [doing, w16] — Ship measured lean Codex worker profiles plus prompt-budget optimization gates
+- `m8.4` [doing, w15] — Wire advanced risk, seam, outcome, selection, and salvage helpers into the Codex runtime contract
+- `m8.5` [doing, w14] — Extend the immutable graph with typed bounded quality routing while preserving deterministic replay budgets
+- `m8.6` [doing, w13] — Gate promotion through three independent product judges with actionable bounded repair evidence
+- `m8.7` [doing, w12] — Make skill scouting activity-specific, path-resolved, and self-improving from outcome evidence
+- `m8.8` [doing, w11] — Upgrade the dashboard into a canonical one-shot control room and certify the complete expansion
 
 ## External/user evidence
 

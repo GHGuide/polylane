@@ -283,65 +283,65 @@
           "id": "m8.1",
           "text": "Ship a realistic vague-brief product benchmark corpus and reproducible scorecard runner",
           "weight": 18,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         },
         {
           "id": "m8.2",
           "text": "Ship a durable adaptive discovery question graph and strategy synthesis surface",
           "weight": 17,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         },
         {
           "id": "m8.3",
           "text": "Ship measured lean Codex worker profiles plus prompt-budget optimization gates",
           "weight": 16,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         },
         {
           "id": "m8.4",
           "text": "Wire advanced risk, seam, outcome, selection, and salvage helpers into the Codex runtime contract",
           "weight": 15,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         },
         {
           "id": "m8.5",
           "text": "Extend the immutable graph with typed bounded quality routing while preserving deterministic replay budgets",
           "weight": 14,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         },
         {
           "id": "m8.6",
           "text": "Gate promotion through three independent product judges with actionable bounded repair evidence",
           "weight": 13,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         },
         {
           "id": "m8.7",
           "text": "Make skill scouting activity-specific, path-resolved, and self-improving from outcome evidence",
           "weight": 12,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         },
         {
           "id": "m8.8",
           "text": "Upgrade the dashboard into a canonical one-shot control room and certify the complete expansion",
           "weight": 11,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 9,
+          "evidence": "routed in cycle 9"
         }
       ]
     }
