@@ -126,6 +126,7 @@ canonical_snapshot() {
        lanes:($state.lanes // [] | map(. as $lane | $lane + {model: ([ $declared[] | select(.name == $lane.name) | .model ][0] // null)})),
        spend:$spend, verdict:($state.verdict // "UNKNOWN"),
        heartbeat:(if ($state.heartbeat_age // "-") == "-" then null else $state.heartbeat_age end),
+       session:($state.session // null), watch:($state.watch // "-"),
        cleanup:$cleanup,
        next_action:(if ($state.verdict // "UNKNOWN") == "GO" then "review durable report and cleanup" elif ($state.runner // "dead") == "alive" then "observe current lanes" else "inspect canonical state before resuming" end),
        report:($state.report // "absent"), runner:($state.runner // "dead"), max_state:$max}'
@@ -149,7 +150,7 @@ render_snapshot() { # SNAPSHOT JSON
   printf 'graph: %s · ready: %s\n' "$(jq -r '.graph.id // "unknown"' <<<"$snapshot")" "$(jq -r 'if .graph.ready == null then "unknown" else (.graph.ready | join(",") | if . == "" then "none" else . end) end' <<<"$snapshot")"
   printf 'spend: entries=%s total=%s\n' "$(jq -r '.spend.entries // "unknown"' <<<"$snapshot")" "$(jq -r '.spend.total // "unknown"' <<<"$snapshot")"
   printf 'next: %s\n' "$(jq -r '.next_action' <<<"$snapshot")"
-  printf 'hint: tmux attach -t %s\n' "${POLYLANE_SESSION:-polylane}"
+  printf 'hint: %s\n' "$(jq -r '.watch // "-"' <<<"$snapshot")"
 }
 
 live_loop() {

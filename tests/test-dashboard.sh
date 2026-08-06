@@ -24,7 +24,7 @@ run_frame() {
   # loop still exits the INSTANT the frame lands, so the common case stays fast;
   # only a genuinely stuck render pays the longer bound.
   while [ "$n" -lt 300 ]; do
-    if grep -q 'POLYLANE DASHBOARD' "$out" 2>/dev/null && grep -q 'hint: tmux attach -t' "$out" 2>/dev/null; then break; fi
+    if grep -q 'POLYLANE DASHBOARD' "$out" 2>/dev/null && grep -q 'hint:' "$out" 2>/dev/null; then break; fi
     sleep 0.1; n=$((n + 1))
   done
   kill "$pid" 2>/dev/null
@@ -46,11 +46,17 @@ if command -v jq >/dev/null 2>&1; then
   SNAP_ROOT="$TEST_TMPDIR/snapshot"
   SNAP_WT="$SNAP_ROOT/.polylane/wt/api"
   mkdir -p "$SNAP_WT/docs" "$SNAP_ROOT/docs/polylane"
+  (
+    cd "$SNAP_WT"
+    git init -q -b main; git config user.email t@t; git config user.name t
+    printf 'base\n' > base; git add base; git commit -qm base
+  )
   SNAP_MAN="$SNAP_ROOT/.polylane/run.json"
   cat > "$SNAP_MAN" <<'JSON'
 {
   "orchestration_contract": 2,
   "run_id": "current-nonce",
+  "session": "snapshot-owned",
   "cycle": 9,
   "state_file": "docs/polylane/max-state.json",
   "target_subgoals": ["m8.8"],
@@ -65,13 +71,16 @@ JSON
   printf '%s\n' '{"cleanup":"complete"}' > "$SNAP_ROOT/docs/polylane/run-stats.json"
   printf '%s\n' '{"cleanup":"warning"}' > "$SNAP_ROOT/.polylane/run-stats.json"
   printf '%s\n' 'STATUS: api DONE run=current-nonce' > "$SNAP_WT/docs/status-api.md"
+  git -C "$SNAP_WT" add docs/status-api.md && git -C "$SNAP_WT" commit -qm done
   "$(dirname "$DASH")/polylane-graph.sh" compile "$SNAP_MAN" "$SNAP_ROOT/.polylane/graph.json"
-  snapshot=$("$DASH" "$SNAP_MAN" --once --json)
+  snapshot=$(POLYLANE_SESSION=stale-observer "$DASH" "$SNAP_MAN" --once --json)
   assert_ok "once-json-is-valid" jq -e . >/dev/null <<<"$snapshot"
-  for key in schema goal cycle run_id route graph lanes spend verdict heartbeat cleanup next_action; do
+  for key in schema goal cycle run_id route graph lanes spend verdict heartbeat cleanup next_action session watch; do
     assert_ok "once-json-schema:$key" jq -e --arg key "$key" 'has($key)' >/dev/null <<<"$snapshot"
   done
   assert_eq "once-json-current-run" "current-nonce" "$(jq -r '.run_id' <<<"$snapshot")"
+  assert_eq "once-json-session-from-state" "snapshot-owned" "$(jq -r '.session' <<<"$snapshot")"
+  assert_eq "once-json-watch-from-state" "-" "$(jq -r '.watch' <<<"$snapshot")"
   assert_eq "once-json-lane-from-state" "done" "$(jq -r '.lanes[0].status' <<<"$snapshot")"
   assert_eq "once-json-canonical-spend" "12" "$(jq -r '.spend.total' <<<"$snapshot")"
   assert_eq "once-json-durable-cleanup" "complete" "$(jq -r '.cleanup' <<<"$snapshot")"
@@ -84,7 +93,7 @@ JSON
   replayed_snapshot=$("$DASH" "$SNAP_MAN" --once --json)
   assert_eq "once-json-replayed-event-count" "3" "$(jq -r '.graph.events' <<<"$replayed_snapshot")"
   assert_eq "once-json-replayed-graph-ready" "lane:api" "$(jq -r '.graph.ready[0]' <<<"$replayed_snapshot")"
-  text_snapshot=$("$DASH" "$SNAP_MAN" --once)
+  text_snapshot=$(POLYLANE_SESSION=stale-observer "$DASH" "$SNAP_MAN" --once)
   assert_contains "once-text-goal" "goal: durable goal" "$text_snapshot"
   assert_contains "once-text-graph" "graph:" "$text_snapshot"
   assert_contains "once-text-spend" "spend:" "$text_snapshot"
@@ -92,6 +101,7 @@ JSON
   snapshot_text=$("$DASH" "$SNAP_MAN" --once)
   assert_contains "once-text-renders-header" "POLYLANE DASHBOARD" "$snapshot_text"
   assert_contains "once-text-renders-current-run" "current-nonce" "$snapshot_text"
+  assert_contains "once-text-renders-snapshot-watch" "hint: -" "$text_snapshot"
 else
   pass "once-json-skipped-no-jq"
 fi

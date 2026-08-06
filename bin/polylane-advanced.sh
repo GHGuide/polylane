@@ -10,9 +10,22 @@ usage() {
 
 manifest_ok() { [ -f "$1" ] && jq -e 'type == "object" and (.lanes | type == "array")' "$1" >/dev/null 2>&1; }
 
+derive_outcome_paths() { # MANIFEST -> canonical outcome/hub paths
+  local manifest="$1" manifest_dir project
+  manifest_dir=$(cd "$(dirname "$manifest")" && pwd -P)
+  project=$(cd "$manifest_dir/.." && pwd -P)
+  OUTCOME_PATH="${POLYLANE_OUTCOMES:-$project/docs/polylane/outcomes.jsonl}"
+  HUB_PATH="${POLYLANE_HUBS:-$project/docs/polylane/hubs.txt}"
+}
+
+outcomes() { # OP ... — explicit paths make calls independent of observer cwd
+  POLYLANE_OUTCOMES="$OUTCOME_PATH" POLYLANE_HUBS="$HUB_PATH" \
+    "$SCRIPT_DIR/polylane-outcomes.sh" "$@"
+}
+
 preflight() {
   local manifest="$1" risk_rc=0
-  "$SCRIPT_DIR/polylane-outcomes.sh" predict "$manifest" || risk_rc=$?
+  outcomes predict "$manifest" || risk_rc=$?
   case "$risk_rc" in 0) printf 'ADVANCED: risk=admitted\n' ;; 5) printf 'ADVANCED: risk=flagged-admitted\n' ;; *) return "$risk_rc" ;; esac
   if jq -e '.champion_candidates | type == "array" and length > 0' "$manifest" >/dev/null 2>&1; then
     printf 'ADVANCED: selection=requested\n'
@@ -71,9 +84,9 @@ record() {
     [ -n "$lane" ] || continue
     set -f
     # shellcheck disable=SC2086 # own_globs are patterns, not filesystem globs.
-    sig=$("$SCRIPT_DIR/polylane-outcomes.sh" signature $globs)
+    sig=$(outcomes signature $globs)
     set +f
-    "$SCRIPT_DIR/polylane-outcomes.sh" record "$lane" "$sig" "$model" "$verdict"
+    outcomes record "$lane" "$sig" "$model" "$verdict"
   done < <(jq -r '.lanes[] | [.name, .model, (.own_globs | join(" "))] | @tsv' "$manifest")
   printf 'ADVANCED: outcomes=recorded verdict=%s\n' "$verdict"
 }
@@ -82,6 +95,7 @@ main() {
   [ $# -ge 2 ] || { usage; return 2; }
   local cmd="$1" manifest="$2"
   manifest_ok "$manifest" || { echo "ADVANCED: invalid manifest" >&2; return 2; }
+  derive_outcome_paths "$manifest"
   case "$cmd" in
     preflight) [ $# -eq 2 ] || { usage; return 2; }; preflight "$manifest" ;;
     select) [ $# -eq 2 ] || { usage; return 2; }; select_champion "$manifest" ;;

@@ -22,14 +22,16 @@ mkdir -p "$G"
   git worktree add .polylane/wt/a  -b lane/a  >/dev/null 2>&1
   git worktree add .polylane/wt/b  -b lane/b  >/dev/null 2>&1
   git worktree add .polylane/wt/int -b lane/int >/dev/null 2>&1
-  # lane a: DONE file; lane b: commit but NO signal; integrator: GO sentinel
+  # lane a: committed current-run DONE marker; lane b: commit but NO signal;
+  # integrator: GO sentinel.
   mkdir -p .polylane/wt/a/docs .polylane/wt/int/docs
-  printf 'STATUS: a DONE\n' > .polylane/wt/a/docs/status-a.md
+  printf 'STATUS: a DONE run=current-nonce\n' > .polylane/wt/a/docs/status-a.md
+  ( cd .polylane/wt/a && git add docs/status-a.md && git commit -qm done )
   ( cd .polylane/wt/b && echo w > w.txt && git add w.txt && git commit -qm work )
-  printf 'ev\nPOLYLANE-VERDICT: GO\n' > .polylane/wt/int/docs/verify-integration.md
+  printf 'ev\nPOLYLANE-VERDICT: GO run=current-nonce\n' > .polylane/wt/int/docs/verify-integration.md
 ) >/dev/null 2>&1
 cat > "$G/.polylane/run.json" <<EOF
-{"base":"main","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$G/.polylane/wt/int","prompt_file":"p"},
+{"base":"main","orchestration_contract":2,"run_id":"current-nonce","session":"manifest-owned","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$G/.polylane/wt/int","prompt_file":"p"},
 "lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"$G/.polylane/wt/a","prompt_file":"p","own_globs":["x"]},
 {"name":"b","model":"m","effort":"h","branch":"lane/b","worktree":"$G/.polylane/wt/b","prompt_file":"p","own_globs":["y"]}]}
 EOF
@@ -50,7 +52,15 @@ assert_ok "state-json-valid" sh -c "printf '%s' '$(printf '%s' "$J" | tr -d "'")
 assert_eq "state-json-verdict" "GO" "$(printf '%s' "$J" | jq -r .verdict)"
 assert_eq "state-json-lane-a"  "done" "$(printf '%s' "$J" | jq -r '.lanes[] | select(.name=="a") | .status')"
 assert_eq "state-json-watch-inactive" "-" "$(printf '%s' "$J" | jq -r .watch)"
-assert_eq "state-json-session-explicit" "state-test-nosuch" "$(printf '%s' "$J" | jq -r .session)"
+assert_eq "state-json-session-manifest-owned" "manifest-owned" "$(printf '%s' "$J" | jq -r .session)"
+
+# Contract-v2 status is only DONE when the current-nonce marker and the entire
+# worktree are committed. State and the runner helper must agree on dirty work.
+printf 'uncommitted\n' > "$G/.polylane/wt/a/uncommitted.txt"
+DIRTY=$(cd "$G" && POLYLANE_SESSION=state-test-nosuch "$STATE" .polylane/run.json --json)
+assert_eq "state-dirty-current-marker-not-done" "likely-done(verify me)" "$(printf '%s' "$DIRTY" | jq -r '.lanes[] | select(.name=="a") | .status')"
+REPO_ROOT="$G" RUN_ID=current-nonce ORCHESTRATION_CONTRACT=2 assert_fail "runner-dirty-current-marker-not-done" lane_done "$G/.polylane/wt/a" a
+rm -f "$G/.polylane/wt/a/uncommitted.txt"
 
 # A preserved tmux session with only idle shells is not a live supervised
 # runtime and must not advertise an attach command.
@@ -74,7 +84,7 @@ assert_eq "state-idle-session-hides-watch" "-" "$(printf '%s' "$J_IDLE" | jq -r 
 printf '%s runner=alive restarts=0\n' "$(date '+%F %T')" > "$G/.polylane/supervisor-heartbeat"
 OUT_HB=$(cd "$G" && POLYLANE_SESSION=idle-state "$STATE" .polylane/run.json)
 assert_contains "state-heartbeat-alive" "runner: alive" "$OUT_HB"
-assert_contains "state-live-session-shows-watch" "watch: tmux attach -t idle-state" "$OUT_HB"
+assert_contains "state-live-session-shows-manifest-watch" "watch: tmux attach -t manifest-owned" "$OUT_HB"
 PATH="$old_path"; export PATH
 
 # report present flips the field

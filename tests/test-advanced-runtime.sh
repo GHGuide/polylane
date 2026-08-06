@@ -18,6 +18,19 @@ assert_contains "advanced-preflight-salvage-not-requested" "salvage=not-requeste
 POLYLANE_OUTCOMES="$OUT" assert_ok "advanced-records-every-lane" "$ADVANCED" record "$M" GO
 assert_eq "advanced-record-count" "3" "$(jq -s 'length' "$OUT")"
 
+# The runner boundary must retain the manifest-derived outcome location even
+# when a supervising observer happens to be in another directory.
+CANONICAL="$TEST_TMPDIR/runner-canonical"
+RUNTIME_MANIFEST="$CANONICAL/.polylane/run.json"
+OBSERVER="$TEST_TMPDIR/runner-observer"
+mkdir -p "$CANONICAL/.polylane" "$OBSERVER"
+cat > "$RUNTIME_MANIFEST" <<'JSON'
+{"base":"main","lanes":[{"name":"runner-alpha","model":"gpt","own_globs":["src/**"]}]}
+JSON
+( cd "$OBSERVER" && MANIFEST="$RUNTIME_MANIFEST" SCRIPT_DIR="$(dirname "$ADVANCED")" advanced_runtime record GO )
+assert_ok "runner-runtime-records-at-canonical-project" test -s "$CANONICAL/docs/polylane/outcomes.jsonl"
+assert_eq "runner-runtime-does-not-pollute-observer" "no" "$( [ -e "$OBSERVER/docs/polylane/outcomes.jsonl" ] && printf yes || printf no )"
+
 jq '.champion_candidates=["a|/no-score|1"]' "$M" > "$TEST_TMPDIR/select.json"
 select_out=$("$ADVANCED" select "$TEST_TMPDIR/select.json")
 assert_contains "advanced-select-explicit-config" "selection=" "$select_out"
