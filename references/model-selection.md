@@ -15,6 +15,15 @@ Recommend per lane; user overrides at the plan gate. This cached table is CANONI
 
 Capability high → low. **Price mirrors capability** ($10/$50 > $5/$25 > $3/$15 > $1/$5), so one order serves both.
 
+## Agent boundary
+
+This table is the Claude planning table. Do not reuse its IDs for Codex. Resolve
+the chosen agent through `bin/polylane-models.sh [claude|codex]`; Codex mode uses
+its local cache when available, returns only `gpt-*` IDs, and has a current
+fallback. Codex manifests use `codex_profile: lean` by default, which keeps the
+explicit ephemeral and ignore-user-config launch profile. See
+[cycle-9-control-room.md](cycle-9-control-room.md) for the frozen interface.
+
 | Rank | Model | ID | In/Out | Notes |
 |---|---|---|---|---|
 | 1 (most capable / most expensive) | Claude Fable 5 | `claude-fable-5` | $10/$50 | Runs cyber/bio refusal classifiers — excluded from security lanes and from `performance`. |

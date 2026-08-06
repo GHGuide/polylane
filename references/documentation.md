@@ -51,6 +51,16 @@ folders and duplication; if a fact is needed twice, link it, never restate it.
   older one-lined) so long runs stay context-bounded.
 Each has ONE job. Never restate the same fact in two of them — cross-reference instead.
 
+## Run handoff: canonical control snapshot
+
+When documenting a live or completed run, cite the one-shot control room rather
+than copying pane observations: `bin/polylane-dashboard.sh .polylane/run.json
+--once --json`. It joins authoritative state with durable max-state, graph events,
+report, spend ledger, heartbeat, and cleanup. Preserve `null`/`unknown`; a missing
+fact is not zero, GO, or clean cleanup. The schema and adjacent product/discovery,
+models, prompt-budget, advanced-runtime, and judge interfaces are frozen in
+[cycle-9-control-room.md](cycle-9-control-room.md).
+
 ## Living, not archival
 Update the spec (STRATEGY + tree) and `AGENTS.md` as part of closing each cycle (Phase 5),
 BEFORE the next build. A doc that lies is worse than no doc — if a run invalidates a

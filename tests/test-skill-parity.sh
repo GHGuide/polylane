@@ -32,5 +32,11 @@ both perfection        'perfection'
 both regressions-gate  'regressions'
 both tmux-watch        'tmux attach'
 both frozen-acceptance 'add-accept'
+both cycle9-control-room 'cycle-9-control-room'
+both cycle9-product-benchmark 'polylane-product-benchmark\.sh'
+both cycle9-discovery 'polylane-discovery\.sh'
+both cycle9-codex-profile 'codex_profile.*lean|lean.*codex_profile'
+both cycle9-prompt-budget 'polylane-promptopt\.sh'
+both cycle9-judges 'polylane-judges\.sh'
 
 finish

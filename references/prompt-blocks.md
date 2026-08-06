@@ -4,6 +4,12 @@ Fill `<...>` slots from recon + derivation. Keep blocks verbatim otherwise — t
 
 ## 0. Selected-skill preamble — every builder prompt
 Use the platform-native form. Do not add a generic stack or skill-discovery commands:
+
+Before a lane is launched, run `bin/polylane-promptopt.sh check <prompt> [budget]`.
+It must retain every strict block below while enforcing the configured byte/token
+budget. Resolve selected skills to trusted local `SKILL.md` paths and use the
+smallest outcome-learned kit; never pad a prompt with filler skills. Frozen details:
+[cycle-9-control-room.md](cycle-9-control-room.md).
 ```
 Claude builder: read only the named kit once, in listed order.
 Codex builder: read only the named kit once, in listed order; follow these native prompt instructions directly.

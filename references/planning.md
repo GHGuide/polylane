@@ -147,6 +147,18 @@ literally into prompts.
 Contract v2 fails before any side effect when state, plan, index, skills, scope,
 acceptance, prompts, markers, or prior-cycle artifacts are missing.
 
+## Cycle-9 launch additions (frozen)
+
+Keep the manifest and prompts aligned with
+[cycle-9-control-room.md](cycle-9-control-room.md). Product benchmark and durable
+discovery are pre-build evidence, not parallel speculative lanes. Use the agent's
+model helper; Codex manifests set `codex_profile` to `lean` unless the user
+explicitly requests `user`. Prompt optimization is a pre-launch gate: mandatory
+blocks remain intact and the configured budget is hard. The runtime may request
+advanced selection/salvage and exactly three independent quality judges, but
+absence must read `not-requested`, not executed. Observe the run through the
+canonical dashboard snapshot, never a hand-built pane/marker view.
+
 ## 7. Launch and observe
 
 Use the supervisor:

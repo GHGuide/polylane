@@ -40,6 +40,40 @@ assert_rc "no-args-exit-2"          2 "$DASH"
 assert_rc "missing-manifest-exit-2" 2 "$DASH" /no/such/manifest.json
 assert_rc "bad-interval-exit-2"     2 "$DASH" --demo --interval abc
 
+# --- canonical one-shot snapshot: JSON is produced before any render loop ---
+if command -v jq >/dev/null 2>&1; then
+  make_tmpdir
+  SNAP_ROOT="$TEST_TMPDIR/snapshot"
+  SNAP_WT="$SNAP_ROOT/.polylane/wt/api"
+  mkdir -p "$SNAP_WT/docs" "$SNAP_ROOT/docs/polylane"
+  SNAP_MAN="$SNAP_ROOT/.polylane/run.json"
+  cat > "$SNAP_MAN" <<'JSON'
+{
+  "orchestration_contract": 2,
+  "run_id": "current-nonce",
+  "cycle": 9,
+  "goal": "ship canonical control room",
+  "state_file": "docs/polylane/max-state.json",
+  "lanes": [{"name":"api","model":"gpt-5.6-terra","branch":"pl/api","worktree":"__WT__"}],
+  "integrator": {"name":"integrate","model":"gpt-5.6-terra","branch":"pl/int","worktree":"__INT_WT__"}
+}
+JSON
+  sed -i.bak "s|__WT__|$SNAP_WT|; s|__INT_WT__|$SNAP_ROOT/.polylane/wt/integrate|" "$SNAP_MAN"
+  rm -f "$SNAP_MAN.bak"
+  printf '%s\n' '{"version":1,"goal":"durable goal","milestones":[]}' > "$SNAP_ROOT/docs/polylane/max-state.json"
+  printf '%s\n' '{"run_id":"current-nonce","spent":12}' > "$SNAP_ROOT/docs/polylane/spend-ledger.jsonl"
+  printf '%s\n' 'STATUS: api DONE run=current-nonce' > "$SNAP_WT/docs/status-api.md"
+  snapshot=$("$DASH" "$SNAP_MAN" --once --json)
+  assert_ok "once-json-is-valid" jq -e . >/dev/null <<<"$snapshot"
+  for key in schema goal cycle run_id route graph lanes spend verdict heartbeat cleanup next_action; do
+    assert_ok "once-json-schema:$key" jq -e --arg key "$key" 'has($key)' >/dev/null <<<"$snapshot"
+  done
+  assert_eq "once-json-current-run" "current-nonce" "$(jq -r '.run_id' <<<"$snapshot")"
+  assert_eq "once-json-lane-from-state" "done" "$(jq -r '.lanes[0].status' <<<"$snapshot")"
+else
+  pass "once-json-skipped-no-jq"
+fi
+
 # --- --demo renders a frame (no manifest, no jq needed) -------------------
 make_tmpdir
 run_frame "$TEST_TMPDIR/demo.out" "$DASH" --demo --interval 1
@@ -53,10 +87,11 @@ if command -v jq >/dev/null 2>&1; then
   ROOT="$TEST_TMPDIR/proj"
   WT="$ROOT/.polylane/wt/api"
   mkdir -p "$WT/docs"
-  printf 'STATUS: api DONE\n' > "$WT/docs/status-api.md"
+  printf 'STATUS: api DONE run=live-nonce\n' > "$WT/docs/status-api.md"
   MAN="$ROOT/.polylane/run.json"
   cat > "$MAN" <<'JSON'
 {
+  "run_id": "live-nonce",
   "lanes": [
     { "name": "api", "model": "claude-sonnet-5", "worktree": ".polylane/wt/api" }
   ],
@@ -67,7 +102,7 @@ JSON
   live=$(cat "$TEST_TMPDIR/live.out")
   assert_contains "manifest-renders-lane"          "api"             "$live"
   assert_contains "manifest-renders-model"         "claude-sonnet-5" "$live"
-  assert_contains "manifest-done-from-status-file" "DONE"            "$live"
+  assert_contains "manifest-done-from-status-file" "done"            "$live"
 else
   pass "manifest-render-skipped-no-jq"
 fi

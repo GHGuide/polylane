@@ -12,11 +12,15 @@ make_tmpdir
 REPO="$TEST_TMPDIR/repo"
 mkdir -p "$REPO"
 cp -R "$SOURCE_REPO/." "$REPO/"
+mkdir -p "$REPO/benchmarks"
+printf 'cycle-9 benchmark fixture\n' > "$REPO/benchmarks/install-sentinel.txt"
 
 (cd "$REPO" && ./codex/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-codex-skill" test -f "$REPO/.codex/skills/polylane/SKILL.md"
 assert_ok "install-codex-runner" test -x "$REPO/.codex/skills/polylane/scripts/polylane-run.sh"
 assert_ok "install-codex-cycle-guard" test -x "$REPO/.codex/skills/polylane/scripts/polylane-cycle.sh"
+assert_ok "install-codex-control-reference" test -f "$REPO/.codex/skills/polylane/references/cycle-9-control-room.md"
+assert_ok "install-codex-benchmark-artifact" test -f "$REPO/.codex/skills/polylane/benchmarks/install-sentinel.txt"
 assert_contains "install-codex-agent" '"agent": "codex"' "$(grep -m1 '"agent": "codex"' "$REPO/.codex/skills/polylane/SKILL.md" || true)"
 assert_eq "install-codex-standalone-source" \
   "$(cksum "$REPO/codex/SKILL.md" | awk '{print $1 ":" $2}')" \
