@@ -47,4 +47,11 @@ if [ -f "$CANONICAL" ]; then
   assert_ok "efficiency-canonical-proof" "$EFF" verify --proof "$CANONICAL"
 fi
 
+. "$RUNNER"
+DRY_RUN=1
+MANIFEST="$MF"
+PROJECT_ROOT="$TEST_TMPDIR/no-runtime-stats"
+INT_WORKTREE="$TEST_TMPDIR/no-integration-worktree"
+assert_ok "efficiency-dry-run-noop" write_efficiency_proof final
+
 finish

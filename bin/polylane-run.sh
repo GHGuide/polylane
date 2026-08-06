@@ -117,6 +117,7 @@ run_stats() {
 # written into the promoted base. Runs without an efficiency_canary are unchanged.
 write_efficiency_proof() {
   local phase="$1" proof helper="${SCRIPT_DIR:-.}/polylane-efficiency.sh"
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
   [ -n "${MANIFEST:-}" ] && [ -f "$MANIFEST" ] || return 0
   jq -e '.efficiency_canary | type == "object"' "$MANIFEST" >/dev/null 2>&1 || return 0
   [ -x "$helper" ] || {
