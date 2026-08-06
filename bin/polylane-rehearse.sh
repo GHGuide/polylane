@@ -89,7 +89,12 @@ JSON
   if [ "${POLYLANE_REHEARSE_DEBUG:-0}" = "1" ]; then
     sed -n '1,240p' "$root/rehearse.log" >&2
   fi
-  report="$root/docs/polylane-report.md"; evidence="$root/docs/verify-integration.md"
+  report="$root/docs/polylane-report.md"
+  if [ "$want" = go ]; then
+    evidence="$root/docs/verify-integration.md"
+  else
+    evidence="$root/wt-int/docs/verify-integration.md"
+  fi
   calls=$([ -f "$root/mock-invocations" ] && wc -l < "$root/mock-invocations" | tr -d ' ' || echo 0)
   graph_witnesses=$([ -f "$root/graph-witness" ] && wc -l < "$root/graph-witness" | tr -d ' ' || echo 0)
   if tmux has-session -t "$sess" 2>/dev/null || git -C "$root" worktree list --porcelain | grep -q "worktree $root/wt"; then leaks=1; fi
