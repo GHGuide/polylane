@@ -177,3 +177,5 @@ exit 0
 No external evidence is required.
 
 POLYLANE-VERDICT: GO run=graph-c2-1786031267
+
+ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.
