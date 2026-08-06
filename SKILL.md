@@ -679,5 +679,14 @@ human. The whole engine ships in `bin/` and the knowledge in `references/`.
 git clone https://github.com/GHGuide/polylane ~/.claude/skills/polylane
 brew install tmux jq            # runner deps (Debian/Ubuntu: apt-get install tmux jq)
 ```
+
+## Cross-lane relay
+
+For live requests, decisions, and shared-resource mutexes, use the runner-exported
+`POLYLANE_COORDINATION_FILE` with
+`"$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"`. Use `request`, `decision`,
+`claim`, `release`, `pending`, and `snapshot`; never edit the JSONL.
+`docs/parallel-status.md` is a durable post-cycle summary only, never the live
+cross-worktree channel.
 Then just describe what you want: `/polylane <your idea or ultimate goal>` — or
 "build my app idea", "keep building toward <goal>". One command does the rest.

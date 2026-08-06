@@ -38,5 +38,6 @@ both cycle9-discovery 'polylane-discovery\.sh'
 both cycle9-codex-profile 'codex_profile.*lean|lean.*codex_profile'
 both cycle9-prompt-budget 'polylane-promptopt\.sh'
 both cycle9-judges 'polylane-judges\.sh'
+both coordination-relay 'POLYLANE_COORDINATION_FILE|polylane-coordinate\.sh'
 
 finish

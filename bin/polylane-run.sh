@@ -153,6 +153,12 @@ notify_event() {
 # risk, or outcome logic.
 advanced_runtime() {
   local action="$1"; shift
+  # A preview is never allowed to create durable outcomes or salvage evidence.
+  # Keep its output useful while preventing the adapter from touching ledgers.
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would run advanced runtime action: $action"
+    return 0
+  fi
   local helper="$SCRIPT_DIR/polylane-advanced.sh"
   [ -x "$helper" ] || { echo "polylane-run: advanced runtime helper missing: $helper" >&2; return 1; }
   "$helper" "$action" "$MANIFEST" "$@"
@@ -170,6 +176,11 @@ seam_gate() {
 }
 
 quality_judge_gate() {
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would skip quality judges (no integrator worktree/evidence is created)"
+    QUALITY_JUDGE_ATTEMPT=0
+    return 0
+  fi
   local out_dir="$INT_WORKTREE/docs/polylane/judges" attempt=0
   QUALITY_JUDGE_ATTEMPT=0
   "$SCRIPT_DIR/polylane-judges.sh" run "$MANIFEST" "$INT_WORKTREE" "$out_dir" && return 0
@@ -433,6 +444,10 @@ load_manifest() {
 
   MANIFEST_RUNTIME_FINGERPRINT=$(runtime_settings_fingerprint)
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+  # A relay belongs to the manifest's project, never a builder worktree.  The
+  # pane command exports both values mechanically; prompts only reference them.
+  COORDINATION_PROJECT_ROOT="$PROJECT_ROOT"
+  COORDINATION_FILE="$COORDINATION_PROJECT_ROOT/.polylane/coordination.jsonl"
   # shellcheck disable=SC2034  # kept for sourcers (tests source this file's functions)
   BASE_WT="$REPO_ROOT"
 
@@ -1278,8 +1293,14 @@ agent_procs() {
 
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" resume="${5:-}" pfx=""
-  local qwt qmodel qpf qeffort tmpl add_dir
+  local qwt qmodel qpf qeffort qproject qcoord project_root coord_file tmpl add_dir
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf"); qeffort=$(printf '%q' "${effort:-medium}")
+  # Every pane remains in its isolated worktree, while its live relay always
+  # resolves under the canonical run project. These are shell-escaped env values,
+  # never prompt text, so an untrusted prompt path cannot inject into the command.
+  project_root="${POLYLANE_PROJECT_ROOT:-${COORDINATION_PROJECT_ROOT:-${REPO_ROOT:-$(pwd)}}}"
+  coord_file="${POLYLANE_COORDINATION_FILE:-${COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
+  qproject=$(printf '%q' "$project_root"); qcoord=$(printf '%q' "$coord_file")
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
   # NEVER launch an agent with no prompt: that starts an amnesiac session with no
   # locked goal (the "pane sits at an empty input" bug). If the seeded agent exits
@@ -1301,8 +1322,8 @@ pane_cmd() {
   tmpl=${tmpl//'{effort}'/$qeffort}
   tmpl=${tmpl//'{add_dir}'/$add_dir}
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
-  printf 'cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
-    "$qwt" "$pfx" "$tmpl"
+  printf 'export POLYLANE_PROJECT_ROOT=%s POLYLANE_COORDINATION_FILE=%s; cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
+    "$qproject" "$qcoord" "$qwt" "$pfx" "$tmpl"
 }
 
 # assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
