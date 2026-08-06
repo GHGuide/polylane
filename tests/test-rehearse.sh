@@ -37,9 +37,10 @@ fi
 out=$("$RH" go 2>&1); rc=$?
 if [ "$rc" = 77 ]; then pass "rehearse-skipped-no-tmux"; finish; exit 0; fi
 assert_eq "rehearse-go-reaches-promote" "0" "$rc"
-assert_contains "rehearse-go-contract-v2" "REHEARSE-GO contract-v2=1 promoted=1 cleaned=1 leaks=0" "$out"
+assert_contains "rehearse-go-host-gate-candidate" \
+  "REHEARSE-GO contract-v3=1 ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0" "$out"
 
 out=$("$RH" nogo 2>&1); rc=$?
 assert_eq "rehearse-nogo-gate-holds" "0" "$rc"
-assert_contains "rehearse-nogo-contract-v2" "REHEARSE-NOGO contract-v2=1 promoted=0 evidence=1 retained=1 bounded=1 cleaned=1" "$out"
+assert_contains "rehearse-nogo-contract-v3" "REHEARSE-NOGO contract-v3=1 promoted=0 evidence=1 retained=1 bounded=1 cleaned=1" "$out"
 finish
