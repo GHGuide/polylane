@@ -26,9 +26,11 @@
 #   attempted <text>                exit 0 iff this approach is already in the log as an attempt
 #   progress                        "subgoals: X/Y done · criteria: A/B done · N% "
 #   met                             exit 0 iff every sub-goal AND criterion done AND every acceptance check passing
-#   add-accept   <sid> <cmd> [--tier focused|terminal] [dep-glob...]
+#   add-accept   <sid> <cmd> [--tier focused|terminal] [--key safe-id] [dep-glob...]
 #                                    register a FROZEN acceptance command for <sid>
 #                                    (refused once done; dep-globs enable content-hash memoization)
+#   tag-accept   <sid> --key <safe-id>
+#                                    tag existing frozen checks without changing commands
 #   check-accept [--cycle N] [--targets a,b --focused | --only-terminal]
 #                                    run selected registered commands;
 #                                    stamp pass|fail; --cycle records the cycle a pass->fail broke
@@ -99,6 +101,16 @@ _fingerprint() {
     for f in $files; do [ -f "$f" ] && out="$out$(cksum < "$f" 2>/dev/null)"; done
   fi
   printf '%s' "$out" | cksum | awk '{print $1}'
+}
+
+# _accept_key_valid KEY : accept IDs that are safe to use in the invocation-local
+# keyed-result map. A key is metadata, never a command, glob, or persisted cache key.
+_accept_key_valid() {
+  case "$1" in
+    [A-Za-z0-9]*) case "$1" in *[!A-Za-z0-9._-]*) return 1 ;; esac ;;
+    *) return 1 ;;
+  esac
+  return 0
 }
 
 case "$CMD" in
@@ -209,17 +221,26 @@ case "$CMD" in
 
   add-accept)
     _need
-    jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id)' "$F" >/dev/null \
-      || { echo "polylane-memory: no sub-goal with id '$1'" >&2; exit 1; }
+    _sid="${1:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [--key safe-id] [dep-glob...]}"
+    _cmd="${2:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [--key safe-id] [dep-glob...]}"
+    shift 2
+    _tier="focused"; _key=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --tier) _tier="${2:?--tier needs focused or terminal}"; shift 2 ;;
+        --key) _key="${2:?--key needs a safe id}"; shift 2 ;;
+        --) shift; break ;;
+        *) break ;;
+      esac
+    done
+    [ -z "$_key" ] || _accept_key_valid "$_key" \
+      || { echo "polylane-memory: acceptance key must be a safe id" >&2; exit 2; }
+    jq -e --arg id "$_sid" 'any(.milestones[].subgoals[]; .id==$id)' "$F" >/dev/null \
+      || { echo "polylane-memory: no sub-goal with id '$_sid'" >&2; exit 1; }
     # FROZEN-BEFORE-BUILD: the grader must be registered while the sub-goal is still
     # open, so the builder cannot author its own weaker success bar after the fact.
-    jq -e --arg id "$1" 'any(.milestones[].subgoals[]; .id==$id and .status=="done")' "$F" >/dev/null \
-      && { echo "polylane-memory: sub-goal '$1' already done — acceptance must be registered BEFORE the build" >&2; exit 1; }
-    _sid="$1"; _cmd="${2:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [dep-glob...]}"; shift 2
-    _tier="focused"
-    if [ "${1:-}" = "--tier" ]; then
-      _tier="${2:?--tier needs focused or terminal}"; shift 2
-    fi
+    jq -e --arg id "$_sid" 'any(.milestones[].subgoals[]; .id==$id and .status=="done")' "$F" >/dev/null \
+      && { echo "polylane-memory: sub-goal '$_sid' already done — acceptance must be registered BEFORE the build" >&2; exit 1; }
     case "$_tier" in focused|terminal) : ;; *)
       echo "polylane-memory: acceptance tier must be focused or terminal" >&2; exit 2 ;;
     esac
@@ -227,8 +248,22 @@ case "$CMD" in
     # remaining args are dependency globs the check GRADES; content-hash of these
     # gates memoization. No deps -> always re-run (backward-compatible).
     _deps="[]"; if [ "$#" -gt 0 ]; then _deps=$(printf '%s\n' "$@" | jq -R . | jq -cs .); fi
-    _save --arg sid "$_sid" --arg cmd "$_cmd" --arg tier "$_tier" --argjson deps "$_deps" \
-      '.accept = ((.accept // []) + [{sid:$sid, cmd:$cmd, tier:$tier, status:"unchecked", deps:$deps, fp:"", regressed_cycle:null}])'
+    _save --arg sid "$_sid" --arg cmd "$_cmd" --arg tier "$_tier" --arg key "$_key" --argjson deps "$_deps" \
+      '.accept = ((.accept // []) + [{sid:$sid, cmd:$cmd, tier:$tier, key:$key, status:"unchecked", deps:$deps, fp:"", regressed_cycle:null}])'
+    ;;
+
+  tag-accept)
+    _need
+    _sid="${1:?usage: tag-accept <sid> --key <safe-id>}"
+    [ "${2:-}" = "--key" ] || { echo "polylane-memory: usage: tag-accept <sid> --key <safe-id>" >&2; exit 2; }
+    _key="${3:?--key needs a safe id}"
+    [ "$#" = "3" ] || { echo "polylane-memory: usage: tag-accept <sid> --key <safe-id>" >&2; exit 2; }
+    _accept_key_valid "$_key" \
+      || { echo "polylane-memory: acceptance key must be a safe id" >&2; exit 2; }
+    jq -e --arg id "$_sid" 'any(.accept[]?; .sid==$id)' "$F" >/dev/null \
+      || { echo "polylane-memory: no acceptance check for sub-goal '$_sid'" >&2; exit 1; }
+    _save --arg sid "$_sid" --arg key "$_key" \
+      '.accept |= map(if .sid==$sid then .key=$key else . end)'
     ;;
 
   check-accept)
@@ -248,11 +283,12 @@ case "$CMD" in
     done
     _n=$(jq '.accept // [] | length' "$F")
     [ "$_n" = "0" ] && { echo "check-accept: no acceptance checks registered"; exit 0; }
-    _rows="["; _i=0; _failed=0
+    _rows="["; _i=0; _failed=0; _key_results="|"
     while [ "$_i" -lt "$_n" ]; do
       _cmd=$(jq -r ".accept[$_i].cmd" "$F")
       _sid=$(jq -r ".accept[$_i].sid" "$F")
       _tier=$(jq -r ".accept[$_i].tier // \"focused\"" "$F")
+      _key=$(jq -r ".accept[$_i].key // \"\"" "$F")
       _prev=$(jq -r ".accept[$_i].status // \"unchecked\"" "$F")
       _rc=$(jq -r ".accept[$_i].regressed_cycle // \"null\"" "$F")
       # --- #4 memoization: skip a passing check whose graded files are byte-identical
@@ -274,7 +310,16 @@ case "$CMD" in
       # deps, so a byte-identical dep-set can falsely cache a pass over now-broken work
       # (invisible to `met`). Correctness first; opt in with POLYLANE_ACCEPT_MEMO=1 only
       # when a check provably reads ONLY its deps and re-running is measurably costly.
-        if [ "${POLYLANE_ACCEPT_MEMO:-0}" = "1" ] && [ "$_prev" = "pass" ] && [ -n "$_deps" ] && [ -n "$_newfp" ] && [ "$_newfp" = "$_oldfp" ]; then
+        if [ -n "$_key" ]; then
+          case "$_key_results" in
+            *"|$_key:pass|"*) _st="pass" ;;
+            *"|$_key:fail|"*) _st="fail" ;;
+            *)
+              if _accept_run "$_cmd"; then _st="pass"; else _st="fail"; fi
+              _key_results="$_key_results$_key:$_st|"
+              ;;
+          esac
+        elif [ "${POLYLANE_ACCEPT_MEMO:-0}" = "1" ] && [ "$_prev" = "pass" ] && [ -n "$_deps" ] && [ -n "$_newfp" ] && [ "$_newfp" = "$_oldfp" ]; then
           _st="pass"                                   # cached: command never runs
           printf 'check-accept[%s]: pass (cached)\n' "$_i" >&2
         else
@@ -376,7 +421,7 @@ case "$CMD" in
 
   *)
     echo "polylane-memory: unknown command '$CMD'" >&2
-    echo "  commands: init add-criterion add-milestone add-subgoal set-status set-weight log next attempted progress met add-accept check-accept unmet-accept regressions brief resume dump" >&2
+    echo "  commands: init add-criterion add-milestone add-subgoal set-status set-weight log next attempted progress met add-accept tag-accept check-accept unmet-accept regressions brief resume dump" >&2
     exit 2
     ;;
 esac
