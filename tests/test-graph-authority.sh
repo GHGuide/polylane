@@ -116,6 +116,25 @@ assert_eq "authority-retry-attempt-recorded" "1" "$(authority_attempt verifier)"
 assert_ok "authority-retry-no-go-halts" graph_authority_no_go
 assert_eq "authority-retry-no-go-terminal-state" "succeeded" "$(authority_state halt)"
 
+# A runner can die after the repair agent commits a fresh GO verdict but before
+# recording the repair boundary. Resume must append the declared repair event
+# before asking the graph to admit verifier attempt 1; otherwise verifier stays
+# terminal-failed forever and every supervisor restart repeats the refusal.
+new_authority_case resume-repair; authority_case_rc=$?
+assert_eq "authority-resume-repair-case-init" "0" "$authority_case_rc"
+assert_ok "authority-resume-repair-reaches-verifier" authority_reach_verifier
+assert_ok "authority-resume-repair-first-verifier-fails" \
+  graph_authority_record_ready_node verifier failed 0 NO-GO
+INT_WORKTREE="$TEST_TMPDIR/resume-repair/wt"
+mkdir -p "$INT_WORKTREE/docs"
+printf 'POLYLANE-VERDICT: GO run=%s\n' "$RUN_ID" > "$INT_WORKTREE/docs/verify-integration.md"
+RESUME=1
+assert_ok "authority-resume-repair-reconciles" graph_authority_reconcile_verifier_repair
+assert_eq "authority-resume-repair-node-succeeded" "succeeded" "$(authority_state repair)"
+assert_ok "authority-resume-repair-verifier-ready" graph_authority_require verifier "resume verifier"
+assert_eq "authority-resume-repair-verifier-attempt" "0" "$(authority_attempt verifier)"
+RESUME=0
+
 # Break caught: a HALTED lane bypasses its failed outcome route.
 new_authority_case halted; authority_case_rc=$?
 assert_eq "authority-halted-case-init" "0" "$authority_case_rc"
