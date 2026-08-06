@@ -20,11 +20,17 @@ GRAPH_ID="$(jq -r '.graph_id' "$FIXTURE/graph.json")"
 assert_ok "benchmark-fixture-graph-valid" "$GRAPH" validate "$FIXTURE/graph.json"
 assert_eq "benchmark-fixture-has-64-lanes" "64" "$(jq '[.nodes[] | select(.id | startswith("lane:"))] | length' "$FIXTURE/graph.json")"
 assert_ok "benchmark-fixture-ledger-valid" "$EVENTS" verify "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID"
+assert_eq "benchmark-fixture-ledger-nodes-declared" "0" "$(
+  jq -s --slurpfile graph "$FIXTURE/graph.json" '
+    reduce $graph[0].nodes[].id as $id ({}; .[$id] = true) as $declared
+    | [.[] | select($declared[.node] != true)] | length
+  ' "$FIXTURE/events.jsonl"
+)"
 
 # Break caught: the frozen packet must drive the public production CLIs over
 # the valid fixture, including a warm ready query and append.
 assert_ok "benchmark-ready-query" "$GRAPH" ready "$FIXTURE/graph.json" "$FIXTURE/state.json"
-assert_ok "benchmark-warm-append" "$EVENTS" append "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID" fixture-extra pending ready 0 fixture-extra-ready synthetic
+assert_ok "benchmark-warm-append" "$EVENTS" append "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID" start pending ready 0 fixture-start-ready synthetic
 assert_ok "benchmark-replay" "$EVENTS" replay "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID"
 
 # Break caught: a successful append records only a disposable, exact-ledger
@@ -61,14 +67,14 @@ assert_under_ms() {
 # is deliberately a warm measurement; setup and strict first replay are not
 # hidden inside the timing assertion.
 assert_under_ms "benchmark-warm-ready-under-250ms" 250 "$GRAPH" ready "$FIXTURE/graph.json" "$FIXTURE/state.json"
-assert_under_ms "benchmark-warm-append-under-250ms" 250 "$EVENTS" append "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID" fixture-warm pending ready 0 fixture-warm-ready synthetic
+assert_under_ms "benchmark-warm-append-under-250ms" 250 "$EVENTS" append "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID" builders-joined pending ready 0 fixture-join-ready synthetic
 
 # Cache-corruption safety: malformed derived data must be discarded and rebuilt
 # from JSONL, while replacing or truncating JSONL must never inherit a stale
 # successful checkpoint.
 printf '{malformed checkpoint\n' > "$FIXTURE/events.jsonl.checkpoint"
 assert_ok "benchmark-malformed-checkpoint-strict-replay" "$EVENTS" replay "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID"
-assert_ok "benchmark-checkpoint-rebuilt" "$EVENTS" append "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID" fixture-rebuild pending ready 0 fixture-rebuild-ready synthetic
+assert_ok "benchmark-checkpoint-rebuilt" "$EVENTS" append "$FIXTURE/events.jsonl" fixture-run "$GRAPH_ID" integrator pending ready 0 fixture-integrator-ready synthetic
 cp "$FIXTURE/events.jsonl" "$TEST_TMPDIR/replaced-events.jsonl"
 printf '{truncated' >> "$TEST_TMPDIR/replaced-events.jsonl"
 mv "$TEST_TMPDIR/replaced-events.jsonl" "$FIXTURE/events.jsonl"
@@ -81,7 +87,7 @@ packet() {
   "$GRAPH" validate "$dir/graph.json" || return $?
   "$EVENTS" verify "$dir/events.jsonl" fixture-run "$packet_graph_id" || return $?
   "$GRAPH" ready "$dir/graph.json" "$dir/state.json" >/dev/null || return $?
-  "$EVENTS" append "$dir/events.jsonl" fixture-run "$packet_graph_id" fixture-packet pending ready 0 fixture-packet-ready synthetic || return $?
+  "$EVENTS" append "$dir/events.jsonl" fixture-run "$packet_graph_id" start pending ready 0 fixture-packet-ready synthetic || return $?
   "$EVENTS" verify "$dir/events.jsonl" fixture-run "$packet_graph_id" || return $?
   "$EVENTS" replay "$dir/events.jsonl" fixture-run "$packet_graph_id" >/dev/null
 }

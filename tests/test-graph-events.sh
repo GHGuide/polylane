@@ -22,6 +22,26 @@ assert_eq "events-replay-canonical" \
   '{"graph_id":"graph-a","last_seq":3,"nodes":{"alpha":{"attempt":1,"state":"succeeded"}},"run_id":"run-a"}' \
   "$("$EVENTS" replay "$LEGAL" run-a graph-a)"
 
+# Disposable checkpoint corruption must never change replayed state.  A valid
+# but stale checkpoint is also rejected when the ledger inode changes, and a
+# complete-row ledger truncation strictly replays the shorter JSONL history.
+cp "$LEGAL.checkpoint" "$TEST_TMPDIR/legal-valid.checkpoint"
+printf '{malformed checkpoint\n' > "$LEGAL.checkpoint"
+assert_eq "events-malformed-checkpoint-exact-replay" \
+  '{"graph_id":"graph-a","last_seq":3,"nodes":{"alpha":{"attempt":1,"state":"succeeded"}},"run_id":"run-a"}' \
+  "$("$EVENTS" replay "$LEGAL" run-a graph-a)"
+cp "$TEST_TMPDIR/legal-valid.checkpoint" "$LEGAL.checkpoint"
+cp "$LEGAL" "$TEST_TMPDIR/legal-replaced.jsonl"
+mv "$TEST_TMPDIR/legal-replaced.jsonl" "$LEGAL"
+assert_eq "events-replaced-ledger-strict-replay" \
+  '{"graph_id":"graph-a","last_seq":3,"nodes":{"alpha":{"attempt":1,"state":"succeeded"}},"run_id":"run-a"}' \
+  "$("$EVENTS" replay "$LEGAL" run-a graph-a)"
+sed '$d' "$LEGAL" > "$TEST_TMPDIR/legal-truncated.jsonl"
+mv "$TEST_TMPDIR/legal-truncated.jsonl" "$LEGAL"
+assert_eq "events-complete-row-truncation-strict-replay" \
+  '{"graph_id":"graph-a","last_seq":2,"nodes":{"alpha":{"attempt":1,"state":"running"}},"run_id":"run-a"}' \
+  "$("$EVENTS" replay "$LEGAL" run-a graph-a)"
+
 # Each rejection names the mutable behavior it protects.
 ILLEGAL="$TEST_TMPDIR/illegal.jsonl"
 assert_fail "events-illegal-transition" event "$ILLEGAL" alpha pending running 0 illegal-1

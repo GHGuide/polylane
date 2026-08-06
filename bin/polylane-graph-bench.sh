@@ -50,7 +50,7 @@ fixture() {
        end) as $transition
     | {event_schema: 1, seq: $seq, timestamp: (1700000000 + $seq),
        run_id: "fixture-run", graph_id: $graph_id,
-       node: ("node-" + ($node_number | tostring)),
+       node: ("lane:lane-" + ($node_number | tostring)),
        from: $transition.from, to: $transition.to, attempt: $turn,
        idempotency_key: ("fixture-" + ($seq | tostring)), reason: "synthetic",
        artifact_hash: ""}
