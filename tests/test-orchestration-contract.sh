@@ -88,6 +88,15 @@ MANIFEST="$MANIFEST"
 load_manifest
 assert_ok "contract-valid-before-launch" preflight_contract
 
+jq '.available_models=["claude-opus"]' "$MANIFEST" > "$P/.polylane/bad-available-model.json"
+assert_rc "codex-rejects-non-gpt-available-model" 2 \
+  bash -c '. "$1"; MANIFEST="$2"; load_manifest; preflight_contract' \
+  _ "$RUNNER" "$P/.polylane/bad-available-model.json"
+
+assert_rc "codex-rejects-non-gpt-model-override" 2 \
+  bash -c '. "$1"; MANIFEST="$2"; load_manifest; MODEL_OVERRIDES=("builder=claude-opus"); apply_overrides' \
+  _ "$RUNNER" "$P/.polylane/run.json"
+
 BAD="$P/.polylane/legacy.json"
 jq 'del(.orchestration_contract)' "$MANIFEST" > "$BAD"
 MANIFEST="$BAD"; load_manifest

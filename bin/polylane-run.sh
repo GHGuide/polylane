@@ -992,6 +992,14 @@ validate_manifest() {
     esac
     seen="$seen $nm"
   done
+  case "$(agent_selected)" in
+    codex|gpt|openai)
+      for f in "${AVAILABLE_MODELS[@]:-}"; do
+        [ -n "$f" ] || continue
+        case "$f" in gpt-*) : ;; *) die "Codex available_models contains non-gpt id '$f'" ;; esac
+      done
+      ;;
+  esac
 }
 
 # ---------------------------------------------------------------------------
@@ -1093,6 +1101,14 @@ apply_overrides() {
     fi
     echo "== model override: $name -> $id =="
   done
+  case "$(agent_selected)" in
+    codex|gpt|openai)
+      case "$INT_MODEL" in gpt-*) : ;; *) die "Codex integrator model '$INT_MODEL' must be a gpt-* id" ;; esac
+      for i in "${!LANE_MODELS[@]}"; do
+        case "${LANE_MODELS[$i]}" in gpt-*) : ;; *) die "Codex lane '${LANE_NAMES[$i]}' model '${LANE_MODELS[$i]}' must be a gpt-* id" ;; esac
+      done
+      ;;
+  esac
 }
 
 # ---------------------------------------------------------------------------
@@ -1304,6 +1320,9 @@ assert_prompt() {
     echo "polylane-run: prompt file MISSING/EMPTY for lane '$name': $pf" >&2
     echo "  the planner (/polylane) must emit it before launch — nothing to seed." >&2
     exit 1
+  fi
+  if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
+    prompt_budget_check "$pf" "$name" || exit 1
   fi
 }
 
@@ -1893,6 +1912,7 @@ next_fallback_model() {
 # (possibly downgraded) model. Used by both dead-pane recovery and stall fallback.
 respawn_lane() {
   local idx="$1" name="$2" wt="$3" cmd
+  assert_prompt "$(lane_prompt_get "$name")" "$name"
   checkpoint_lane "$wt" "$name"
   refresh_manifest_runtime_settings
   # fresh wedge window: a respawned pane gets full POLYLANE_WEDGE_CHECKS before it
@@ -2586,6 +2606,7 @@ repair_integrator_verdict() {
   checkpoint_lane "$INT_WORKTREE" "$INT_NAME"
   rm -f "$INT_WORKTREE/docs/status-$INT_NAME.md" "$evidence"
   INT_PROMPT="$prompt"
+  assert_prompt "$INT_PROMPT" "$INT_NAME"
   retry_set "$INT_NAME" 0
   wedge_hash_set "$INT_NAME" ""; wedge_cnt_set "$INT_NAME" 0
   refresh_manifest_runtime_settings

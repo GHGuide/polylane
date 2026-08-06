@@ -34,11 +34,18 @@ Branch: `lane/c9-integrator`
 
 The required single cached invocation of `tests/run.sh` started and passed through graph-authority (50 pass) but was host-interrupted while entering `test-graph-benchmark.sh`. Its log remains incomplete at `.polylane/check-cache/integrator/1557743017-64.output.32659`; it was not rerun under the usage guard. Therefore terminal-suite evidence is incomplete.
 
+## Final narrow repair
+
+- Codex now rejects a non-`gpt-*` entry in `available_models` before launch and rejects a non-`gpt-*` runtime `--model` override after override application. This closes the remaining path for a Claude id to enter a Codex launch manifest.
+- `bash tests/test-orchestration-contract.sh`: 7 pass, 0 fail, through the worktree check cache. It includes `codex-rejects-non-gpt-available-model` and `codex-rejects-non-gpt-model-override`.
+- `shellcheck -S warning bin/polylane-run.sh`: exit 0, no findings, through the worktree check cache.
+- The mandated canonical cache path was attempted but this sandbox denied its directory creation (`Operation not permitted`); the established worktree-local cache was used for these two fresh focused checks. No canonical cycle manifest exists, so `polylane-scope.sh check-static` has no static target.
+
 ## Changed files
 
 - `.polylane/SCHEMA.md`
 - `bin/polylane-advanced.sh`, `bin/polylane-dashboard.sh`, `bin/polylane-discovery.sh`, `bin/polylane-judges.sh`, `bin/polylane-product-benchmark.sh`, `bin/polylane-run.sh`, `bin/polylane-seams.sh`
-- Cycle-9 focused tests under `tests/` and this verification/status evidence.
+- Cycle-9 focused tests under `tests/`, including `tests/test-orchestration-contract.sh`, and this verification/status evidence.
 
 ## DEFERRED
 

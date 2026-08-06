@@ -21,7 +21,10 @@ lanes L2/L3/L4 depend on them.
   "session": "polylane-c7",
   "intensity": "balanced",
   "agent": "codex",
+  "codex_profile": "lean",
   "codex_sandbox": "workspace-write",
+  "prompt_token_budget": 8000,
+  "prompt_byte_budget": 32768,
   "available_models": ["gpt-5.6-sol", "gpt-5.6-terra"],
   "integrator": {
     "name": "integrator",
@@ -54,13 +57,16 @@ lanes L2/L3/L4 depend on them.
 | `run_id` | string | Fresh per-run nonce baked into every DONE marker and verdict sentinel. |
 | `cycle` | integer | Current durable cycle number, starting at 1. |
 | `state_file` | string | Durable goal/acceptance state. Must live outside `.polylane/`, normally `docs/polylane/max-state.json`. |
-| `lane_skills_file` | string | Structured skill kits. Every builder needs at least two predefined and two lane-specific installed skills. GitHub suggestions remain informational metadata. |
+| `lane_skills_file` | string | Structured skill kits. Every builder needs one or two predefined plus one or two lane-specific installed skills, with at most four unique. GitHub suggestions remain informational metadata. |
 | `cycle_plan_file` | string | Non-empty current executable cycle plan. |
 | `target_subgoals` | string[] | Open/doing frozen-acceptance subgoals executed by this run. The highest-priority `memory next` id must be included. |
 | `base` | string | Branch each lane/integrator worktree is created from (e.g. `main`). |
 | `session` | string | *(optional, recommended)* Durable tmux session name. When absent, `POLYLANE_SESSION` wins; observers can discover upgraded active runs from tmux ownership tags, then fall back to `polylane`. Use only `A-Za-z0-9._-`. |
 | `agent` | string | *(optional, default `claude`)* Which agent CLI each pane launches: `claude` \| `codex`/`gpt` \| `aider`. Env `POLYLANE_AGENT` overrides this; `POLYLANE_AGENT_CMD` (a template with `{model}` and `{prompt}`) overrides both for any other CLI. The pipeline is agent-agnostic (file-based done-signal + verdict); only the launch command differs. For a non-claude agent, the manifest `model` ids and the prompt style must match that agent (see SKILL.md). |
 | `codex_sandbox` | string | *(optional, default `workspace-write`)* Sandbox passed mechanically to every Codex lane: `read-only` \| `workspace-write` \| `danger-full-access`. Invalid values abort before tmux opens. `POLYLANE_CODEX_SANDBOX` overrides the manifest for explicit host-level recovery. |
+| `codex_profile` | string | *(optional, default `lean`)* `lean` adds `--ephemeral --ignore-user-config`; `user` preserves normal Codex user configuration. |
+| `prompt_token_budget` | integer | *(optional, default `8000`)* Maximum whitespace-token estimate admitted by the strict prompt gate before launch. |
+| `prompt_byte_budget` | integer | *(optional)* Maximum prompt bytes admitted by the same gate. Absent means no separate byte ceiling. |
 | `intensity` | string | *(optional)* Preset the generator tuned this manifest for: `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** — records provenance; the per-lane `model`/`effort` are already baked to match it. The engine does **not** re-resolve from this at runtime; use the `--intensity` flag to remap live. `custom` = hand-tuned, no preset. |
 | `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh` or the Codex model probe used by the generator). Required only if you pass `--intensity`; empty/absent then → error. Rank strongest first for Codex manifests; when no Claude ladder id matches, presets fall back to this first available id and vary effort. |
 | `integrator` | object | The lane that runs **last**: merges lane branches, writes the verdict. |
