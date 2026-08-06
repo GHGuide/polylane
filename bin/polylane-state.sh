@@ -34,6 +34,14 @@ JSON=0; [ "${2:-}" = "--json" ] && JSON=1
 command -v jq >/dev/null 2>&1 || { echo "polylane-state: jq required" >&2; exit 1; }
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+MDIR=$(cd "$(dirname "$MANIFEST")" && pwd -P)
+# Load contract/root before sourcing runner helpers so lane_done uses the
+# runner's strict nonce and dirty-tree semantics for this manifest.
+PROJECT_ROOT=$(cd "$MDIR/.." && pwd -P)
+# shellcheck disable=SC2034  # consumed by the sourced runner's lane_done
+ORCHESTRATION_CONTRACT=$(jq -r '.orchestration_contract // 0' "$MANIFEST")
+# shellcheck disable=SC2034  # consumed by the sourced runner's lane_done
+REPO_ROOT=$(git -C "$PROJECT_ROOT" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PROJECT_ROOT")
 # Source the runner for its battle-tested detectors (parse_verdict, pane_*,
 # agent_procs). It only runs main when executed directly, so sourcing is inert.
 # shellcheck source=polylane-run.sh
@@ -46,8 +54,6 @@ BASE=$(jq -r '.base // "main"' "$MANIFEST")
 RUN_ID=$(jq -r '.run_id // ""' "$MANIFEST")
 # shellcheck disable=SC2034  # consumed by the sourced runner's agent_procs/pane_dead
 AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
-MDIR=$(cd "$(dirname "$MANIFEST")" && pwd -P)
-PROJECT_ROOT=$(cd "$MDIR/.." && pwd -P)
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
 
 # discover_session : recover the exact session without relying on chat memory or
@@ -55,8 +61,6 @@ REPORT="$PROJECT_ROOT/docs/polylane-report.md"
 # runs are discovered from the ownership tags written by polylane-run.sh.
 discover_session() {
   local explicit manifest_session session tagged_run tagged_project
-  explicit="${POLYLANE_SESSION:-}"
-  [ -n "$explicit" ] && { printf '%s' "$explicit"; return; }
   manifest_session=$(jq -r '.session // ""' "$MANIFEST")
   [ -n "$manifest_session" ] && { printf '%s' "$manifest_session"; return; }
   while IFS='|' read -r session tagged_run tagged_project; do
@@ -66,6 +70,8 @@ discover_session() {
       return
     fi
   done < <(tmux list-sessions -F '#{session_name}|#{@polylane_run_id}|#{@polylane_project}' 2>/dev/null || true)
+  explicit="${POLYLANE_SESSION:-}"
+  [ -n "$explicit" ] && { printf '%s' "$explicit"; return; }
   printf 'polylane'
 }
 
