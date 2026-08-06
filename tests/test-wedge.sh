@@ -90,20 +90,24 @@ assert_eq "wedge-after-reset-2"  "1" "$rcC"
 assert_eq "wedge-after-reset-3"  "1" "$rcD"
 assert_eq "wedge-after-reset-4"  "0" "$rcE"
 
-# A live Codex turn may be waiting on inference or a quiet build/test process.
-# It gets a longer bounded window instead of losing its expensive context after
-# the shell-only 60-second threshold.
+# A genuinely active command remains untouched even when its PID is alive.
 LANE_WHASH=(); LANE_WCNT=()
 FAKE_AGENT_LIVE=1
-POLYLANE_LIVE_WEDGE_CHECKS=20
+lane_active_command() { return 0; }
 FAKE_PANE_TXT='quiet live codex turn'
 pane_wedged a 0; :
+wedge_cnt_set a 4
+pane_wedged a 0; rcLiveCommand=$?
+assert_eq "live-command-untouched" "1" "$rcLiveCommand"
+lane_active_command() { return 1; }
+lane_terminal_turn() { return 0; }
+pane_wedged a 0; :  # switch the tracker from pane paint to durable activity
 wedge_cnt_set a 3
 pane_wedged a 0; rcLiveShort=$?
-wedge_cnt_set a 19
+wedge_cnt_set a 4
 pane_wedged a 0; rcLiveLong=$?
-assert_eq "live-agent-not-killed-at-shell-window" "1" "$rcLiveShort"
-assert_eq "live-agent-eventually-recovers"        "0" "$rcLiveLong"
+assert_eq "live-terminal-turn-recovers-at-60s" "0" "$rcLiveShort"
+assert_eq "live-terminal-turn-remains-recoverable" "0" "$rcLiveLong"
 FAKE_AGENT_LIVE=0
 
 # --- 3. respawn resets the wedge window --------------------------------------

@@ -59,4 +59,26 @@ assert_eq "unrepairable-host-gate-stops" "1" "$unrepairable_rc"
 assert_eq "unrepairable-gate-read-once" "1" "$MERGES"
 assert_eq "unrepairable-spawns-zero-repairs" "0" "$(wc -l < "$LOG" | tr -d ' ')"
 
+# READY-FOR-HOST-GATE is a nonce-bound candidate, not a self-authorized GO.
+# The outer merge gate runs the frozen coordinator checks once, then converts
+# only a passing result to GO; failure remains on the existing repair route.
+. "$RUNNER"
+make_tmpdir
+INT_WORKTREE="$TEST_TMPDIR/int"; mkdir -p "$INT_WORKTREE/docs"
+RUN_ID=host-gate-run
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
+HOST_GATES=0
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
+merge_gate; host_rc=$?
+assert_eq "ready-host-gate-passes" "0" "$host_rc"
+assert_eq "ready-host-gate-runs-once" "1" "$HOST_GATES"
+assert_eq "ready-host-gate-converts-to-go" "GO" "$VERDICT_RESULT"
+HOST_GATES=0
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 1; }
+merge_gate >/dev/null 2>&1; host_fail_rc=$?
+assert_eq "ready-host-gate-failure-is-not-go" "1" "$host_fail_rc"
+assert_eq "ready-host-gate-failure-runs-once" "1" "$HOST_GATES"
+assert_eq "ready-host-gate-failure-repairs" "NO-GO" "$VERDICT_RESULT"
+unset RUN_ID
+
 finish
