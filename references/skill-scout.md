@@ -29,6 +29,9 @@ SCOUT=bin/polylane-scout.sh
 "$SCOUT" domain <own_globs...>
 "$SCOUT" suggest <domain>
 "$SCOUT" installed <skill>
+"$SCOUT" resolve <skill>
+"$SCOUT" recommend <domain> <activity>
+"$SCOUT" record-outcome docs/polylane/skills-ledger.jsonl <lane> <domain> <skill> <helped|unused|hurt> [why]
 "$SCOUT" arm-role .polylane/lane-skills.json <lane> predefined <skill> <skill>
 "$SCOUT" arm-role .polylane/lane-skills.json <lane> specific <skill> <skill>
 "$SCOUT" github .polylane/lane-skills.json <lane> <repo-or-skill> "<why>"
@@ -128,3 +131,9 @@ At cycle close, inspect that lane’s transcript and verification evidence:
 
 The scout reads the ledger before proposing the next kit so it does not repeat a
 known bad or repeatedly unused choice.
+
+`resolve` prints the exact trusted installed `SKILL.md`. `recommend` is
+installed-only and ranks by the append-only outcome ledger. Do not fill a kit to
+reach a count: each role needs at least one relevant skill and the lane may use at
+most four unique skills. The complete cycle-9 contract is in
+[cycle-9-control-room.md](cycle-9-control-room.md).

@@ -74,6 +74,26 @@ different approaches before exposing a genuine user blocker.
 The loop may run for hours or days. State and evidence on disk—not the chat
 transcript—must be sufficient to resume it.
 
+## Cycle-9 measured autonomy surfaces
+
+Use the frozen interfaces in `references/cycle-9-control-room.md`; this Codex
+overlay keeps the shared contract while retaining Codex-native launch syntax.
+Validate vague briefs with `scripts/polylane-product-benchmark.sh`, keep durable
+discovery with `scripts/polylane-discovery.sh`, and use agent-aware
+`scripts/polylane-models.sh codex` so Claude IDs never reach Codex. Manifest
+`codex_profile` defaults to `lean`; keep its explicit ephemeral, ignore-user-config,
+model, effort, sandbox, and approval contract.
+
+Before launch run `scripts/polylane-promptopt.sh check`, choose the smallest
+outcome-learned kit, and use `scripts/polylane-advanced.sh` for outcomes, champion
+selection, and salvage. Require exactly three `quality_judges` through
+`scripts/polylane-judges.sh`; the typed graph permits one bounded repair route.
+The canonical control room is
+`scripts/polylane-dashboard.sh .polylane/run.json --once --json`: it projects
+state, max-state, graph/events, report, ledger, heartbeat, and cleanup without a
+competing state engine. Unknown values remain unknown; only the literal current
+nonce can qualify a DONE marker.
+
 ## Entry and goal lock
 
 Set:

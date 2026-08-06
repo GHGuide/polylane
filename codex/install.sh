@@ -24,9 +24,12 @@ cp "$REPO/codex/SKILL.md" "$DEST/SKILL.md"
 cp "$REPO"/bin/*.sh        "$DEST/scripts/" && chmod +x "$DEST/scripts/"*.sh
 # rm first: `cp -R dir existing-dir` NESTS (references/references) and leaves the
 # top level STALE — every reinstall after the first shipped old references (real bug).
-rm -rf "$DEST/references" "$DEST/assets"
+rm -rf "$DEST/references" "$DEST/assets" "$DEST/benchmarks"
 cp -R "$REPO/references"   "$DEST/references"
 cp -R "$REPO/assets"       "$DEST/assets"
+# Product benchmark corpora are shipped when present. Keep this conditional so
+# older checkouts install cleanly while a fresh cycle-9 checkout never omits it.
+if [ -d "$REPO/benchmarks" ]; then cp -R "$REPO/benchmarks" "$DEST/benchmarks"; fi
 mkdir -p "$DEST/agents"
 cp "$REPO/codex/openai.yaml" "$DEST/agents/openai.yaml"   # interface metadata (how the working .system skills declare themselves)
 

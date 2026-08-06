@@ -61,6 +61,14 @@ Most multi-agent tools (swarm frameworks, `/batch`, fire-and-forget agent runtim
 
 It's not "more agents." It's **the right agents, isolated, verified, and cheap.**
 
+### Measured product autonomy
+
+Cycle 9 adds a versioned vague-brief product benchmark, durable discovery,
+agent-aware model selection, lean Codex launch profiles, prompt-budget checks,
+outcome-learned minimal skill kits, advanced runtime hooks, three independent
+quality judges, and the canonical control room. Their frozen commands and
+honesty rules live in [the runtime contract](references/cycle-9-control-room.md).
+
 ## Why polylane (vs just brainstorming)
 
 The `superpowers:brainstorming` skill is excellent — for exploring **one** task's design. polylane is the layer above it:
@@ -177,9 +185,17 @@ Persist the same name as `"session": "run2"` in the manifest so observers and
 resumed supervisors recover the exact attach command without chat memory.
 (`POLYLANE_POLL_INTERVAL` tunes the DONE-file poll, default 2s.)
 
-### Live dashboard
+### Control room
 
-A read-only, single-screen view of the run: lane · model · state (waiting/working/DONE/FAILED/STALL) · elapsed · last-seen tokens, refreshed every 5 seconds (`--interval N` to change). It writes nothing — watch it in a second terminal while the runner works.
+The read-only control room projects the runner's canonical state rather than
+reconstructing panes or markers. For automation or a support handoff, take one
+truthful snapshot; unknown spend, cleanup, or graph facts stay unknown.
+
+```
+bin/polylane-dashboard.sh .polylane/run.json --once --json
+```
+
+Without `--once`, it renders that same snapshot repeatedly in a second terminal.
 
 ```
 bin/polylane-dashboard.sh .polylane/run.json

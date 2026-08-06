@@ -346,6 +346,24 @@ report/heartbeat. `likely-done` = commits exist but no done-signal → verify + 
 immediately instead of waiting. `awaiting-approval(CRITICAL)` → relay to the user with
 your recommendation, send the chosen keystroke to that pane, continue.
 
+### Cycle-9 measured autonomy surfaces
+
+Use the frozen runtime interfaces in
+`references/cycle-9-control-room.md`; it is the shared Claude/Codex contract.
+Validate vague briefs with `bin/polylane-product-benchmark.sh`, keep discovery
+durable with `bin/polylane-discovery.sh`, and use agent-aware
+`bin/polylane-models.sh` rather than crossing model families. For Codex manifests,
+`codex_profile` defaults to `lean`; preserve the explicit lean launch contract.
+Run `bin/polylane-promptopt.sh check` before launch, choose a minimal
+outcome-learned scout kit, and route outcomes/selection/salvage only through
+`bin/polylane-advanced.sh`. Quality uses exactly three `quality_judges` through
+`bin/polylane-judges.sh` and its one bounded graph repair route.
+
+For observation, `bin/polylane-dashboard.sh .polylane/run.json --once --json`
+is the canonical control room. It projects state, durable max-state, graph/events,
+report, ledger, heartbeat, and cleanup; unknown values remain unknown. Never parse
+bare DONE markers: the literal current run nonce is authoritative.
+
 ## Phase 2 — build the on-disk digest (the record, not the chat report)
 As soon as the cycle merges, gather the raw inventory and turn it into the durable RECORD —
 but post NOTHING to chat yet. The visible one-paragraph report + `Next:` line is emitted at
