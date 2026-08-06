@@ -59,6 +59,10 @@ assert_eq "graph-agents-have-contract" "0" \
   "$(jq '[.nodes[] | select(.kind=="agent") | select((.model|type)!="string" or (.effort|type)!="string" or (.target_subgoals|type)!="array" or (.write_globs|type)!="array" or (.timeout_s|type)!="number" or (.retry_budget|type)!="number" or (.evidence|type)!="object")] | length' "$GRAPH_OUT")"
 assert_eq "graph-bounded-repair-loop" "1" "$(jq '.loops | length' "$GRAPH_OUT")"
 assert_ok "graph-compile-valid" "$GRAPH" validate "$GRAPH_OUT"
+if [ -x /usr/bin/jq ]; then
+  assert_rc "graph-valid-with-system-jq" 0 env PATH=/usr/bin:/bin \
+    "$GRAPH" validate "$GRAPH_OUT"
+fi
 
 cp "$GRAPH_OUT" "$TEST_TMPDIR/first.json"
 assert_rc "graph-compile-repeat-rc0" 0 "$GRAPH" compile "$MANIFEST" "$GRAPH_OUT"

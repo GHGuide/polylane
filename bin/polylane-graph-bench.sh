@@ -27,7 +27,7 @@ fixture() {
   }
   mkdir -p "$dir" || return 1
   graph_tool="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-graph.sh"
-  jq -cnc --argjson nodes "$nodes" '
+  jq -cn --argjson nodes "$nodes" '
     {orchestration_contract: 2, run_id: "fixture-run", cycle: 3,
      target_subgoals: ["benchmark"],
      integrator: {name: "integrator", model: "fixture-model", effort: "high"},
@@ -38,8 +38,8 @@ fixture() {
   ' > "$dir/manifest.json"
   "$graph_tool" compile "$dir/manifest.json" "$dir/graph.json" || return $?
   graph_id=$(jq -r '.graph_id' "$dir/graph.json") || return 1
-  jq -cnc '{nodes: {start: "succeeded"}}' > "$dir/state.json"
-  jq -cnc --argjson nodes "$nodes" --argjson events "$events" --arg graph_id "$graph_id" '
+  jq -cn '{nodes: {start: "succeeded"}}' > "$dir/state.json"
+  jq -cn --argjson nodes "$nodes" --argjson events "$events" --arg graph_id "$graph_id" '
     range(1; $events + 1) as $seq
     | (($seq - 1) % $nodes + 1) as $node_number
     | ((($seq - 1) / $nodes) | floor) as $turn

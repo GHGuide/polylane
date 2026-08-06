@@ -56,10 +56,11 @@ rehearse() {
 set -eu
 prompt="\$*"; file="\${prompt##* }"; text="\$(cat "\$file")"
 case "\$text" in *"CONTRACT-V2 nonce=$nonce"*"Supervisor owns lifecycle."*) ;; *) exit 20;; esac
-for required in docs/polylane/GOAL.md docs/polylane/ACCEPTANCE.md docs/polylane/INDEX.md docs/polylane/cycle-plan.md docs/polylane/max-state.json .polylane/lane-skills.json .polylane/graph.json .polylane/events.jsonl; do [ -f "\$required" ] || exit 21; done
-graph_id="\$(jq -r '.graph_id // empty' .polylane/graph.json)"
-jq -e --arg run "$nonce" '.immutable == true and .run_id == \$run' .polylane/graph.json >/dev/null || exit 23
-"$BIN/polylane-events.sh" verify .polylane/events.jsonl "$nonce" "\$graph_id" >/dev/null || exit 24
+for required in docs/polylane/GOAL.md docs/polylane/ACCEPTANCE.md docs/polylane/INDEX.md docs/polylane/cycle-plan.md docs/polylane/max-state.json .polylane/lane-skills.json; do [ -f "\$required" ] || exit 21; done
+for required in "$root/.polylane/graph.json" "$root/.polylane/events.jsonl"; do [ -f "\$required" ] || exit 21; done
+graph_id="\$(jq -r '.graph_id // empty' "$root/.polylane/graph.json")"
+jq -e --arg run "$nonce" '.immutable == true and .run_id == \$run' "$root/.polylane/graph.json" >/dev/null || exit 23
+"$BIN/polylane-events.sh" verify "$root/.polylane/events.jsonl" "$nonce" "\$graph_id" >/dev/null || exit 24
 printf '%s\n' "\$PWD" >> "$root/mock-invocations"
 printf '%s\n' "\$graph_id" >> "$root/graph-witness"
 mkdir -p docs

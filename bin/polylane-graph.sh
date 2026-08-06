@@ -70,9 +70,9 @@ validate_graph() {
   ' "$graph" >/dev/null 2>&1 || invalid "agent node contract is malformed" || return 1
 
   jq -e '
-    reduce .nodes[] as $node ({};
+    (reduce .nodes[] as $node ({};
       .[$node.id] = (reduce $node.outcomes[] as $outcome ({}; .[$outcome] = true))
-    ) as $outcomes_by_node |
+    )) as $outcomes_by_node |
     all(.edges[];
       (.from | type == "string") and (.to | type == "string")
       and (.outcome | type == "string")
@@ -83,9 +83,9 @@ validate_graph() {
   ' "$graph" >/dev/null 2>&1 || invalid "edge endpoint or outcome is undeclared" || return 1
 
   jq -e '
-    reduce .nodes[] as $node ({};
+    (reduce .nodes[] as $node ({};
       .[$node.id] = (reduce $node.outcomes[] as $outcome ({}; .[$outcome] = true))
-    ) as $outcomes_by_node |
+    )) as $outcomes_by_node |
     all(.loops[];
       (.from | type == "string") and (.to | type == "string")
       and (.outcome | type == "string")
@@ -97,7 +97,7 @@ validate_graph() {
   ' "$graph" >/dev/null 2>&1 || invalid "loop endpoint, outcome, or max_iterations is invalid" || return 1
 
   jq -e '
-    reduce (.edges[], .loops[]) as $route ({}; .[$route.from] = true) as $has_outgoing |
+    (reduce (.edges[], .loops[]) as $route ({}; .[$route.from] = true)) as $has_outgoing |
     all(.nodes[]; . as $node |
       if $node.kind == "terminal" then
         ($has_outgoing[$node.id] // false) == false
@@ -109,51 +109,42 @@ validate_graph() {
 
   jq -e '
     . as $graph |
-    reduce $graph.nodes[] as $node (
+    def visit($adjacency; $queue; $head; $tail; $indegree; $visited):
+      if $head >= $tail then $visited
+      else $queue[($head | tostring)] as $node
+      | (reduce (($adjacency[$node] | keys_unsorted)[]) as $next (
+          {queue: $queue, tail: $tail, indegree: $indegree};
+          .indegree[$next] -= $adjacency[$node][$next]
+          | if .indegree[$next] == 0 then
+              .queue[(.tail | tostring)] = $next | .tail += 1
+            else . end
+        )) as $step
+      | visit($adjacency; $step.queue; $head + 1; $step.tail; $step.indegree; $visited + 1)
+      end;
+    (reduce $graph.nodes[] as $node (
       {indegree: {}, adjacency: {}};
       .indegree[$node.id] = 0 | .adjacency[$node.id] = {}
     ) |
     reduce $graph.edges[] as $edge (.;
       .indegree[$edge.to] += 1
       | .adjacency[$edge.from][$edge.to] = ((.adjacency[$edge.from][$edge.to] // 0) + 1)
-    ) as $topology |
-    def visit($adjacency; $queue; $head; $tail; $indegree; $visited):
-      if $head >= $tail then $visited
-      else $queue[($head | tostring)] as $node
-      | reduce (($adjacency[$node] | keys_unsorted)[]) as $next (
-          {queue: $queue, tail: $tail, indegree: $indegree};
-          .indegree[$next] -= $adjacency[$node][$next]
-          | if .indegree[$next] == 0 then
-              .queue[(.tail | tostring)] = $next | .tail += 1
-            else . end
-        ) as $step
-      | visit($adjacency; $step.queue; $head + 1; $step.tail; $step.indegree; $visited + 1)
-      end;
-    reduce ($topology.indegree | keys_unsorted)[] as $node (
+    )) as $topology |
+    (reduce ($topology.indegree | keys_unsorted)[] as $node (
       {queue: {}, tail: 0};
       if $topology.indegree[$node] == 0 then
         .queue[(.tail | tostring)] = $node | .tail += 1
       else . end
-    ) as $initial |
+    )) as $initial |
     visit($topology.adjacency; $initial.queue; 0; $initial.tail; $topology.indegree; 0)
       == ($graph.nodes | length)
   ' "$graph" >/dev/null 2>&1 || invalid "ordinary edges must be acyclic" || return 1
 
   jq -e '
     . as $graph |
-    reduce $graph.nodes[] as $node ({reverse: {}}; .reverse[$node.id] = {}) |
-    reduce ($graph.edges[], $graph.loops[]) as $route (.;
-      .reverse[$route.to][$route.from] = true
-    ) as $topology |
-    reduce ($graph.nodes[] | select(.kind == "terminal") | .id) as $terminal (
-      {queue: {}, tail: 0, seen: {}};
-      .queue[(.tail | tostring)] = $terminal
-      | .tail += 1 | .seen[$terminal] = true
-    ) as $initial |
     def visit($reverse; $queue; $head; $tail; $seen):
       if $head >= $tail then $seen
       else $queue[($head | tostring)] as $node
-      | reduce (($reverse[$node] | keys_unsorted)[]) as $previous (
+      | (reduce (($reverse[$node] | keys_unsorted)[]) as $previous (
           {queue: $queue, tail: $tail, seen: $seen};
           if .seen[$previous] == true then .
           else
@@ -161,9 +152,18 @@ validate_graph() {
             | .queue[(.tail | tostring)] = $previous
             | .tail += 1
           end
-        ) as $step
+        )) as $step
       | visit($reverse; $step.queue; $head + 1; $step.tail; $step.seen)
       end;
+    (reduce $graph.nodes[] as $node ({reverse: {}}; .reverse[$node.id] = {}) |
+    reduce ($graph.edges[], $graph.loops[]) as $route (.;
+      .reverse[$route.to][$route.from] = true
+    )) as $topology |
+    (reduce ($graph.nodes[] | select(.kind == "terminal") | .id) as $terminal (
+      {queue: {}, tail: 0, seen: {}};
+      .queue[(.tail | tostring)] = $terminal
+      | .tail += 1 | .seen[$terminal] = true
+    )) as $initial |
     visit($topology.reverse; $initial.queue; 0; $initial.tail; $initial.seen)
       | length == ($graph.nodes | length)
   ' "$graph" >/dev/null 2>&1 || invalid "a node has no path to a terminal" || return 1

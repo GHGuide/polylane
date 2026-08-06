@@ -21,6 +21,11 @@ assert_eq "events-legal-row-count" "3" "$(wc -l < "$LEGAL" | tr -d ' ')"
 assert_eq "events-replay-canonical" \
   '{"graph_id":"graph-a","last_seq":3,"nodes":{"alpha":{"attempt":1,"state":"succeeded"}},"run_id":"run-a"}' \
   "$("$EVENTS" replay "$LEGAL" run-a graph-a)"
+if [ -x /usr/bin/jq ]; then
+  SYSTEM_JQ_LEDGER="$TEST_TMPDIR/system-jq.jsonl"
+  assert_rc "events-append-with-system-jq" 0 env PATH=/usr/bin:/bin \
+    "$EVENTS" append "$SYSTEM_JQ_LEDGER" run-a graph-a alpha pending ready 0 system-jq-1
+fi
 
 # Disposable checkpoint corruption must never change replayed state.  A valid
 # but stale checkpoint is also rejected when the ledger inode changes, and a

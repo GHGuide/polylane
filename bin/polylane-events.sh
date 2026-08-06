@@ -343,7 +343,7 @@ EOF
     next_seq=$(( $(wc -l < "$ledger" | tr -d ' ') + 1 ))
   fi
   timestamp=$(date +%s)
-  row=$(jq -cnc --argjson seq "$next_seq" --argjson timestamp "$timestamp" \
+  row=$(jq -cn --argjson seq "$next_seq" --argjson timestamp "$timestamp" \
     --arg run_id "$run_id" --arg graph_id "$graph_id" --arg node "$node" \
     --arg from "$from" --arg to "$to" --argjson attempt "$attempt" \
     --arg idempotency_key "$idempotency_key" --arg reason "$reason" '
@@ -362,7 +362,7 @@ replay_ledger() {
   local ledger="$1" run_id="$2" graph_id="$3"
   validate_ledger "$ledger" "$run_id" "$graph_id" || return $?
   if [ ! -e "$ledger" ]; then
-    jq -cncS --arg run_id "$run_id" --arg graph_id "$graph_id" \
+    jq -cnS --arg run_id "$run_id" --arg graph_id "$graph_id" \
       '{run_id: $run_id, graph_id: $graph_id, last_seq: 0, nodes: {}}'
     return 0
   fi
