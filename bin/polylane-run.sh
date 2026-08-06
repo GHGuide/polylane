@@ -2831,25 +2831,16 @@ est_cost() { LC_ALL=C awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000
 # write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
 report_open_items() {
-  local name evidence
-  for name in "${LANE_NAMES[@]}" integration; do
-    evidence="$REPO_ROOT/docs/verify-$name.md"
-    [ -f "$evidence" ] || continue
-    awk '
-      /^[[:space:]]*#[#]*[[:space:]]+/ {
-        heading=$0
-        sub(/^[[:space:]]*#[#]*[[:space:]]+/, "", heading)
-        heading=tolower(heading)
-        open=(heading ~ /^(deferred|external|open items?)[[:space:]]*$/)
-        next
-      }
-      open {
-        line=$0
-        sub(/^[[:space:]]*[-*][[:space:]]*/, "", line)
-        if (line != "") print line
-      }
-    ' "$evidence"
+  local i evidence
+  local evidence_paths=()
+  for i in "${!LANE_NAMES[@]}"; do
+    evidence="${LANE_WORKTREES[$i]:-}/docs/verify-${LANE_NAMES[$i]}.md"
+    [ -f "$evidence" ] && evidence_paths+=("$evidence")
   done
+  evidence="${INT_WORKTREE:-}/docs/verify-integration.md"
+  [ -f "$evidence" ] && evidence_paths+=("$evidence")
+  [ "${#evidence_paths[@]}" -gt 0 ] || return 0
+  "$SCRIPT_DIR/polylane-report-items.sh" "${evidence_paths[@]}"
 }
 
 write_report() {

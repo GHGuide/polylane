@@ -17,6 +17,8 @@ LANE_STATS=("Goal achieved (42k tokens)" "completed")
 make_tmpdir
 REPO_ROOT="$TEST_TMPDIR"
 PROJECT_ROOT="$TEST_TMPDIR"
+LANE_WORKTREES=("$TEST_TMPDIR/wt-alpha" "$TEST_TMPDIR/wt-beta")
+INT_WORKTREE="$TEST_TMPDIR/wt-integrator"
 FAILED_LANES=""
 run_stats init
 run_stats lane-launch --lane alpha
@@ -43,19 +45,21 @@ assert_eq "go-ledger-tokens" "42000" "$(jq -r '.tokens' "$TEST_TMPDIR/docs/polyl
 # --- NO-GO report ------------------------------------------------------------
 make_tmpdir
 REPO_ROOT="$TEST_TMPDIR"
-mkdir -p "$TEST_TMPDIR/docs"
-cat > "$TEST_TMPDIR/docs/verify-alpha.md" <<'EOF'
-## DEFERRED
+LANE_WORKTREES=("$TEST_TMPDIR/wt-alpha" "$TEST_TMPDIR/wt-beta")
+INT_WORKTREE="$TEST_TMPDIR/wt-integrator"
+mkdir -p "$TEST_TMPDIR/wt-alpha/docs" "$TEST_TMPDIR/wt-beta/docs" "$TEST_TMPDIR/wt-integrator/docs" "$TEST_TMPDIR/docs"
+cat > "$TEST_TMPDIR/wt-alpha/docs/verify-alpha.md" <<'EOF'
+## Deferred
 - NEEDS DECISION: who owns schema v2?
 
 ## Notes
 - TODO: arbitrary lane prose must not leak
 EOF
-cat > "$TEST_TMPDIR/docs/verify-beta.md" <<'EOF'
-## EXTERNAL
+cat > "$TEST_TMPDIR/wt-beta/docs/verify-beta.md" <<'EOF'
+## External
 - Physical proof still needed
 EOF
-cat > "$TEST_TMPDIR/docs/verify-integration.md" <<'EOF'
+cat > "$TEST_TMPDIR/wt-integrator/docs/verify-integration.md" <<'EOF'
 ## Open items
 - Re-run after credentials arrive
 EOF

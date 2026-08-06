@@ -1,59 +1,55 @@
-# Cycle 5 integration verification
+# Walk C6 integration verification
 
-Run: `walk-c5-20260806-222212`
-Integrator branch: `codex/walk-c5-integrator`
+Run: `walk-c6-20260806-225228`
+Integrator branch: `codex/walk-c6-integrator`
 
 ## Merged lane tips
 
-- `codex/walk-c5-recovery` — `a10922a7eeb994af537b7669fdc510e057454e7b`
-- `codex/walk-c5-prompts` — `9f6f37c777953abafbff6327a0235d0515c08c3c`
-- `codex/walk-c5-telemetry` — `78c89bc10beb64d7bfd168f72c2755b77b16d5f7`
+- `codex/walk-c6-host-canary` — `2064b3c`
+- `codex/walk-c6-report-truth` — `6efd4ce`
 
-## Seam scan
+## Report-item wiring
 
-`bin/polylane-seams.sh scan <integrator-worktree>` passed with no
-`SEAM-DANGLING:` output.
+`report_open_items` now passes only explicit current-run paths to
+`bin/polylane-report-items.sh`: each lane worktree's
+`docs/verify-<lane>.md`, plus the integrator worktree's
+`docs/verify-integration.md`. It no longer scans repository-root historical
+evidence. The report fixture proves lane, external, and integration items are
+included from those paths while a historical root file is excluded.
 
-## Focused results
+## Graph path query
 
-All commands used `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`.
+The single Graphify query for the report/gate path identified
+`report_open_items()` and `merge_gate()` in `bin/polylane-run.sh`. The gate
+recognizes the run-tagged `READY-FOR-HOST-GATE` candidate and records
+`terminal_gates` before frozen host acceptance; no graph rebuild was run.
 
-- m7.1 frozen acceptance passed: `test-runtime-recovery.sh`,
-  `test-verdict-repair.sh`, and `test-wedge.sh`.
-- m7.2 frozen acceptance passed: `test-prompt-economy.sh`,
-  `test-promptlint.sh`, and `test-skill-parity.sh`.
-- m7.3 frozen acceptance passed: `test-run-stats.sh`, `test-cleanup.sh`, and
-  `test-write-report.sh`.
-- The affected report check passed independently: 25 pass, 0 fail.
-- Affected ShellCheck passed for runner, supervisor, telemetry helper, and
-  markers. `bin/polylane-markers.sh check-docs references/` passed.
-- `tests/test-scope.sh` passed: 15 pass, 0 fail. The direct runtime-manifest
-  scope command was not run because this integration worktree has no generated
-  `.polylane/run.json`; that is a run artifact, not a source failure.
+## Rehearsal candidate contract
 
-## Telemetry wiring proof
+The merged rehearsal success path writes exactly
+`POLYLANE-VERDICT: READY-FOR-HOST-GATE run=<nonce>` and its GO assertion
+requires durable `docs/polylane/run-stats.json` telemetry to report
+`terminal_gates=1`, alongside promotion and clean teardown. The live tmux
+terminal acceptance is host-only evidence for the outer coordinator.
 
-`polylane-run.sh` initializes `docs/polylane/run-stats.json` and delegates
-lane launches/restarts, JSONL usage capture, host-gate count, cleanup state,
-and report snapshots to `polylane-run-stats.sh`. The supervisor records each
-relaunch in that same file. The report renders the helper snapshot, including
-an explicit `tokens=unknown` until usable usage exists; it never invents zero.
-The report regression fixture proves this rendered unknown state.
+## Focused verification
+
+All test commands were cache-routed through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/" --`.
+
+- `bash tests/test-rehearse.sh` — 5 pass, 0 fail (live rehearsal correctly
+  remains gated to the outer host acceptance).
+- `bash tests/test-report-items.sh` — 1 pass, 0 fail.
+- `bash tests/test-efficiency-canary.sh` — 12 pass, 0 fail.
+- `bash tests/test-write-report.sh` — 25 pass, 0 fail.
+- `shellcheck -S warning bin/polylane-run.sh bin/polylane-report-items.sh` —
+  clean.
 
 ## Review
 
-Correctness review found no unresolved integration defects: the exact
-nonce-bound `READY-FOR-HOST-GATE` sentinel is accepted by the runner, named in
-both integrator prompt contracts, and remains a candidate until the outer
-coordinator runs its frozen gate once. Lean review found no removable wrapper
-or duplicated telemetry parser; runner and supervisor only call the standalone
-helper.
+The integration diff has one runner seam: it preserves the existing report
+deduplication and limit while delegating extraction to the exact-path helper.
+No untrusted path expansion or repository-wide evidence discovery remains in
+that call path. No frozen acceptance or efficiency budget changed.
 
-## DEFERRED
-
-- Live host-tmux recovery and the new host-gate path remain outer-coordinator
-  evidence. This bootstrap coordinator was loaded before the protocol existed,
-  so cycle 6 must prove that path live. These host-only checks are not failures
-  in this sandbox.
-
-POLYLANE-VERDICT: GO run=walk-c5-20260806-222212
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=walk-c6-20260806-225228
