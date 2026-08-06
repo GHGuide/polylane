@@ -218,4 +218,26 @@ event_out=$(graph_shadow_record_resume lane:builder 2>&1); event_rc=$?
 assert_fail "shadow-corrupt-events-fails-closed" test "$event_rc" -eq 0
 assert_contains "shadow-corrupt-events-actionable" "GRAPH-SHADOW:" "$event_out"
 
+# Break caught: a frozen graph acceptance check fails but the runner discards
+# the failed subgoal and command, leaving an unactionable generic repair loop.
+new_shadow_case acceptance-failure
+STATE_FILE="$TEST_TMPDIR/acceptance-state.json"
+cat > "$STATE_FILE" <<'JSON'
+{
+  "criteria": [],
+  "milestones": [{"id":"m","subgoals":[
+    {"id":"g1","status":"doing"},
+    {"id":"later","status":"open"}
+  ]}],
+  "accept": [{
+    "sid":"g1", "cmd":"false", "tier":"focused", "status":"unchecked",
+    "deps":[], "fp":"", "regressed_cycle":null
+  }]
+}
+JSON
+INT_WORKTREE="$(cd "$BIN/.." && pwd)"
+accept_out=$(contract_acceptance_gate GO 2>&1); accept_rc=$?
+assert_fail "shadow-acceptance-failure-stays-closed" test "$accept_rc" -eq 0
+assert_contains "shadow-acceptance-failure-actionable" "g1: false [fail]" "$accept_out"
+
 finish

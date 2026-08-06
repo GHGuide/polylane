@@ -2008,6 +2008,12 @@ parse_repairability() {
 # contract_acceptance_gate : run only this cycle's focused graders in the
 # integrator worktree. If these are the last autonomous subgoals, also run the
 # terminal suite once before promotion.
+report_acceptance_failures() {
+  printf 'ACCEPTANCE-GATE: failed frozen checks:\n' >&2
+  jq -r '(.accept // [])[] | select(.status=="fail") | "\(.sid): \(.cmd) [fail]"' \
+    "$STATE_FILE" >&2 || true
+}
+
 contract_acceptance_gate() {
   local verdict="${1:-GO}" targets outside terminal_targets
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
@@ -2017,7 +2023,7 @@ contract_acceptance_gate() {
     export REPO="$PWD" REPO_ROOT="$PWD"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
       --cycle "$CYCLE" --targets "$targets" --focused
-  ) || return 1
+  ) || { report_acceptance_failures; return 1; }
   outside=$(jq -r --arg targets ",$targets," '
     [.milestones[].subgoals[]
       | select(.status=="open" or .status=="doing")
@@ -2047,7 +2053,7 @@ contract_acceptance_gate() {
           export REPO="$PWD" REPO_ROOT="$PWD"
           "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
             --cycle "$CYCLE" --targets "$terminal_targets" --only-terminal
-        ) || return 1
+        ) || { report_acceptance_failures; return 1; }
       fi
       jq -e '
         ([.milestones[].subgoals[] | select(.status=="external") | .id]) as $external
@@ -2061,7 +2067,7 @@ contract_acceptance_gate() {
         export REPO="$PWD" REPO_ROOT="$PWD"
         "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
           --cycle "$CYCLE" --only-terminal
-      ) || return 1
+      ) || { report_acceptance_failures; return 1; }
       jq -e 'all((.accept // [])[]; .status=="pass")' "$STATE_FILE" >/dev/null || return 1
     fi
   fi
