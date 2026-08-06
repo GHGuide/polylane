@@ -22,7 +22,7 @@ marker_done() {
   else printf 'STATUS: %s DONE' "$name"; fi
 }
 
-# marker_verdict GO|NO-GO [RUN_ID]
+# marker_verdict GO|READY-FOR-HOST-GATE|NO-GO [RUN_ID]
 marker_verdict() {
   local v="$1" run="${2:-}"
   if [ -n "$run" ]; then printf 'POLYLANE-VERDICT: %s run=%s' "$v" "$run"

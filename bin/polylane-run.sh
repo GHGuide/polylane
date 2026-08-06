@@ -1383,6 +1383,27 @@ pane_index_for() {
   printf '%s' "-1"
 }
 
+# pane_index_set NAME IDX : update the explicit name-to-pane mapping after a
+# recovery creates a replacement pane.  Positional lane order is not pane order
+# on resume, so never infer this from the array index at a call site.
+pane_index_set() {
+  local name="$1" idx="$2" i
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "${LANE_NAMES[$i]}" = "$name" ] && { LANE_PANE_IDX[i]="$idx"; return 0; }
+  done
+  [ "$name" = "${INT_NAME:-}" ] && { INT_PANE_IDX="$idx"; return 0; }
+  return 1
+}
+
+# pane_exists IDX : a mapped pane can vanish while its owned session survives.
+# Capture/send failures alone are not evidence that respawn succeeded.
+pane_exists() {
+  local idx="$1"
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}' 2>/dev/null |
+    grep -qx "$idx"
+}
+
 # pane_cmd_for NAME : the seeded launch command for a lane / the integrator.
 pane_cmd_for() {
   local name="$1" resume="${2:-}" i
@@ -1736,12 +1757,32 @@ respawn_lane() {
   local resume=""
   [ "$(retry_get "$name")" = "1" ] && resume=resume
   cmd=$(pane_cmd_for "$name" "$resume")
+  pane_exists "$idx" || return 1
   if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
   fi
   repipe_pane_log "$idx" "$name"
+}
+
+# recreate_lane_pane NAME WT : replace a vanished mapped pane in this owned
+# session.  tmux assigns the index, so read it from split-window rather than
+# guessing NEXT_PANE_IDX; only report success after the pane was seeded and its
+# transcript logger attached.
+recreate_lane_pane() {
+  local name="$1" wt="$2" idx cmd
+  checkpoint_lane "$wt" "$name"
+  refresh_manifest_runtime_settings
+  cmd=$(pane_cmd_for "$name") || return 1
+  idx=$(run tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}' 2>/dev/null) || return 1
+  case "$idx" in ''|*[!0-9]*) return 1 ;; esac
+  pane_exists "$idx" || return 1
+  pane_index_set "$name" "$idx" || return 1
+  wedge_hash_set "$name" ""; wedge_cnt_set "$name" 0
+  progress_hash_set "$name" ""; progress_count_set "$name" 0
+  seed_pane "$idx" "$cmd" || return 1
+  pipe_pane_log "$idx" "$name"
 }
 
 # --- Reflexion: reflect-then-repair before giving up on a lane ----------------
@@ -1864,19 +1905,58 @@ checkpoint_lane() {
 # pane_wedged NAME IDX : 0 iff the pane's content has not changed across a
 # bounded health window while the lane is unfinished. Empty/dead-start panes use
 # POLYLANE_WEDGE_CHECKS (default 4 = about 60s). A confirmed live agent uses the
-# longer POLYLANE_LIVE_WEDGE_CHECKS (default 20 = about 5m), because Codex can
-# legitimately emit no pane bytes while inference or a quiet verifier is active.
-# This still recovers a genuinely hung live turn, without destroying an expensive
-# context every time a valid command is quiet for one minute.
+# longer grace unless a completed/error turn is visible in the durable lane log.
+# A live command is always left alone; a terminal turn with no durable source or
+# evidence progress gets the normal 60-second recovery window.
+lane_active_command() {
+  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log" last
+  [ -f "$log" ] || return 1
+  last=$(tail -n 100 "$log" 2>/dev/null | grep 'command_execution' | tail -n 1 || true)
+  printf '%s' "$last" | grep -q 'in_progress'
+}
+
+lane_terminal_turn() {
+  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log"
+  [ -f "$log" ] || return 1
+  tail -n 100 "$log" 2>/dev/null | grep -qE '"type":"item.completed".*"type":"agent_message"|"type":"error"|"status":"(failed|completed)"'
+}
+
+# lane_durable_activity_hash NAME : source/evidence activity, deliberately not
+# pane paint/PID activity.  A spinner or stale structured error must not extend
+# recovery forever after the agent has completed its turn.
+lane_durable_activity_hash() {
+  local name="$1" wt="" i log="${REPO_ROOT:-.}/docs/lane-logs/$1.log"
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "${LANE_NAMES[$i]}" = "$name" ] && { wt="${LANE_WORKTREES[$i]}"; break; }
+  done
+  [ "$name" = "${INT_NAME:-}" ] && wt="${INT_WORKTREE:-}"
+  {
+    [ -n "$wt" ] && worktree_fingerprint "$wt"
+    lane_material_event_count "$name"
+    [ -n "$wt" ] && [ -f "$wt/docs/status-$name.md" ] && head -n 1 "$wt/docs/status-$name.md"
+  } | cksum | cut -d' ' -f1
+}
+
 pane_wedged() {
   local name="$1" idx="$2" h prev cnt limit
-  h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
+  if pane_agent_live "$idx"; then
+    lane_active_command "$name" && return 1
+    if lane_terminal_turn "$name"; then
+      h=$(lane_durable_activity_hash "$name")
+    else
+      h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
+    fi
+  else
+    h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
+  fi
   [ -n "$h" ] || return 1
   prev=$(wedge_hash_get "$name"); cnt=$(wedge_cnt_get "$name")
   if [ "$h" = "$prev" ]; then cnt=$((cnt + 1)); else cnt=0; fi
   wedge_hash_set "$name" "$h"; wedge_cnt_set "$name" "$cnt"
   limit="${POLYLANE_WEDGE_CHECKS:-4}"
-  pane_agent_live "$idx" && limit="${POLYLANE_LIVE_WEDGE_CHECKS:-20}"
+  if pane_agent_live "$idx"; then
+    lane_terminal_turn "$name" || limit="${POLYLANE_LIVE_WEDGE_CHECKS:-20}"
+  fi
   [ "$cnt" -ge "$limit" ]
 }
 wedge_hash_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_WHASH[$i]:-}" || printf ''; }
@@ -1994,7 +2074,17 @@ health_check() {
     idx=$(pane_index_for "$name")
     # respawn a lane that is showing a transient error, has died back to a shell
     # (claude exited without DONE — amnesia), or is WEDGED (alive but frozen).
-    if material_progress_stalled "$name" "$wt"; then
+    if ! pane_exists "$idx"; then
+      why="a missing mapped pane"
+      n=$(retry_get "$name"); n=$((n + 1))
+      if [ "$n" -le "$max" ] && recreate_lane_pane "$name" "$wt"; then
+        retry_set "$name" "$n"
+        echo "health: lane '$name' — $why — retry $n/$max, recreated pane $(pane_index_for "$name")"
+      elif [ "$n" -gt "$max" ]; then
+        FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+      fi
+      continue
+    elif material_progress_stalled "$name" "$wt"; then
       replan_churning_lane "$name" "$wt" "$idx" || true
       continue
     elif pane_retryable_error "$idx"; then why="a transient error after agent exit"
@@ -2002,10 +2092,10 @@ health_check() {
     elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-4} * ${POLYLANE_HEALTH_INTERVAL:-15} ))s)"
     else continue
     fi
-    n=$(retry_get "$name"); n=$((n + 1)); retry_set "$name" "$n"
+    n=$(retry_get "$name"); n=$((n + 1))
     if [ "$n" -le "$max" ]; then
       echo "health: lane '$name' — $why — retry $n/$max, respawning pane $idx"
-      respawn_lane "$idx" "$name" "$wt"
+      respawn_lane "$idx" "$name" "$wt" && retry_set "$name" "$n"
     else
       # transient retries exhausted — a plain respawn keeps failing the same way.
       # Try ONE Reflexion repair (reflect on the transcript, take a new approach)
@@ -2132,7 +2222,7 @@ adopt_integrator() {
 # merge gate
 # ---------------------------------------------------------------------------
 
-# parse_verdict FILE : GO | EXTERNAL-EVIDENCE-OPEN | NO-GO | UNKNOWN.
+# parse_verdict FILE : GO | READY-FOR-HOST-GATE | EXTERNAL-EVIDENCE-OPEN | NO-GO | UNKNOWN.
 parse_verdict() {
   local f="$1" line
   [ -f "$f" ] || { echo "UNKNOWN"; return; }
@@ -2148,15 +2238,17 @@ parse_verdict() {
   # nonce mode: only a sentinel tagged run=THIS-RUN counts (a committed stale GO from
   # an earlier run reads as UNKNOWN). Absent RUN_ID -> legacy exact-match (backward-compat).
   if [ -n "${RUN_ID:-}" ]; then
-    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|EXTERNAL-EVIDENCE-OPEN|NO-GO)[[:space:]]+run='"$RUN_ID"'[[:space:]]*$'
+    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|READY-FOR-HOST-GATE|EXTERNAL-EVIDENCE-OPEN|NO-GO)[[:space:]]+run='"$RUN_ID"'[[:space:]]*$'
   else
-    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|EXTERNAL-EVIDENCE-OPEN|NO-GO)[[:space:]]*$'
+    pat='^[[:space:]]*POLYLANE-VERDICT:[[:space:]]*(GO|READY-FOR-HOST-GATE|EXTERNAL-EVIDENCE-OPEN|NO-GO)[[:space:]]*$'
   fi
   sentinels=$(grep -E "$pat" "$f")
   if [ -n "$sentinels" ]; then
     printf '%s' "$sentinels" | grep -q 'NO-GO' && { echo "NO-GO"; return; }
     printf '%s' "$sentinels" | grep -q 'EXTERNAL-EVIDENCE-OPEN' &&
       { echo "EXTERNAL-EVIDENCE-OPEN"; return; }
+    printf '%s' "$sentinels" | grep -q 'READY-FOR-HOST-GATE' &&
+      { echo "READY-FOR-HOST-GATE"; return; }
     echo "GO"; return
   fi
   # NO sentinel = the integrator did not complete its contract (crash, stall, wrong
@@ -2260,7 +2352,14 @@ merge_gate() {
   fi
   v=$(parse_verdict "$f")
   VERDICT_REPAIRABLE=$(parse_repairability "$f")
-  if [ "$v" = "GO" ] || [ "$v" = "EXTERNAL-EVIDENCE-OPEN" ]; then
+  if [ "$v" = "READY-FOR-HOST-GATE" ]; then
+    # This is deliberately not GO: only the outer runner runs the frozen host
+    # checks and converts this candidate after that single coordinator gate.
+    if contract_acceptance_gate GO; then v="GO"; else
+      printf '\nACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.\n' >> "$f"
+      v="NO-GO"; VERDICT_REPAIRABLE="YES"
+    fi
+  elif [ "$v" = "GO" ] || [ "$v" = "EXTERNAL-EVIDENCE-OPEN" ]; then
     if ! contract_acceptance_gate "$v"; then
       printf '\nACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.\n' >> "$f"
       v="NO-GO"

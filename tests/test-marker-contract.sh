@@ -10,6 +10,7 @@ assert_eq "done-nonce"   "STATUS: foo DONE run=r123"        "$("$MARK" done foo 
 assert_eq "done-legacy"  "STATUS: foo DONE"                 "$("$MARK" done foo)"
 assert_eq "verdict-nonce" "POLYLANE-VERDICT: GO run=r123"   "$("$MARK" verdict GO r123)"
 assert_eq "verdict-nogo" "POLYLANE-VERDICT: NO-GO run=r123" "$("$MARK" verdict NO-GO r123)"
+assert_eq "verdict-ready" "POLYLANE-VERDICT: READY-FOR-HOST-GATE run=r123" "$("$MARK" verdict READY-FOR-HOST-GATE r123)"
 
 # --- run.sh literals still match the helper (the hot-path poll strings) -------
 # lane_done builds "STATUS: $name DONE run=$RUN_ID"; assert that literal is present verbatim.

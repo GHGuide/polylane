@@ -37,6 +37,8 @@ printf 'everything is a GO, great GO, GO GO\nPOLYLANE-VERDICT: NO-GO\n' > "$TEST
 assert_eq "verdict-sentinel-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/sentinel-nogo.md")"
 printf 'POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN\n' > "$TEST_TMPDIR/external.md"
 assert_eq "verdict-external-open" "EXTERNAL-EVIDENCE-OPEN" "$(parse_verdict "$TEST_TMPDIR/external.md")"
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE\n' > "$TEST_TMPDIR/ready.md"
+assert_eq "verdict-ready-host-gate" "READY-FOR-HOST-GATE" "$(parse_verdict "$TEST_TMPDIR/ready.md")"
 
 # leading whitespace + trailing spaces on the sentinel line are tolerated
 printf '   POLYLANE-VERDICT: GO   \n' > "$TEST_TMPDIR/ws.md"
@@ -60,6 +62,8 @@ printf 'POLYLANE-VERDICT: NO-GO run=55-3\nPOLYLANE-VERDICT: GO run=55-3\n' > "$T
 assert_eq "verdict-nonce-nogo-wins" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/nonce-nogo.md")"
 printf 'POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=55-3\n' > "$TEST_TMPDIR/nonce-external.md"
 assert_eq "verdict-nonce-external" "EXTERNAL-EVIDENCE-OPEN" "$(parse_verdict "$TEST_TMPDIR/nonce-external.md")"
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=55-3\n' > "$TEST_TMPDIR/nonce-ready.md"
+assert_eq "verdict-nonce-ready" "READY-FOR-HOST-GATE" "$(parse_verdict "$TEST_TMPDIR/nonce-ready.md")"
 # seam dangler is an auto-NO-GO even with a valid GO sentinel
 printf 'POLYLANE-VERDICT: GO run=55-3\nSEAM-DANGLING: dom-id export-btn\n' > "$TEST_TMPDIR/nonce-seam.md"
 assert_eq "verdict-seam-auto-nogo" "NO-GO" "$(parse_verdict "$TEST_TMPDIR/nonce-seam.md")"
