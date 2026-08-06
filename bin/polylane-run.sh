@@ -2439,8 +2439,42 @@ promote_to_main() {
 # cleanup — one confirm, then remove worktrees + merged branches + scratch
 # ---------------------------------------------------------------------------
 
+cleanup_delete_branch() {
+  local branch="$1"
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    run git -C "$REPO_ROOT" branch -d "$branch"
+    return 0
+  fi
+  git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$branch" || return 0
+  if ! git -C "$REPO_ROOT" merge-base --is-ancestor "$branch" HEAD 2>/dev/null; then
+    echo "cleanup: preserving unmerged branch $branch (late/unverified commits remain)"
+    CLEANUP_PRESERVED_BRANCHES="${CLEANUP_PRESERVED_BRANCHES:+$CLEANUP_PRESERVED_BRANCHES }$branch"
+    return 0
+  fi
+  if ! run git -C "$REPO_ROOT" branch -d "$branch"; then
+    echo "cleanup: could not delete merged branch $branch; preserving it" >&2
+    return 1
+  fi
+}
+
+cleanup_remove_worktree() {
+  local wt="$1"
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    run git -C "$REPO_ROOT" worktree remove --force "$wt"
+    return 0
+  fi
+  # Resume after a post-promotion crash may find that an earlier cleanup pass
+  # already removed some worktrees. Absence is the desired end state.
+  if ! git -C "$REPO_ROOT" worktree list --porcelain 2>/dev/null |
+       grep -Fqx "worktree $wt"; then
+    return 0
+  fi
+  run git -C "$REPO_ROOT" worktree remove --force "$wt"
+}
+
 cleanup() {
-  local n i
+  local n i cleanup_rc=0
+  CLEANUP_PRESERVED_BRANCHES=""
   n=$(( ${#LANE_NAMES[@]} + 1 ))  # lanes + integrator
   if [ "${YES:-0}" != "1" ] && [ "${DRY_RUN:-0}" != "1" ]; then
     printf 'Delete %d worktrees + branches + .polylane scratch? [y/N] ' "$n"
@@ -2475,27 +2509,40 @@ cleanup() {
 
   # remove worktrees (never a raw rm on a worktree dir)
   for i in "${!LANE_NAMES[@]}"; do
-    run git worktree remove --force "${LANE_WORKTREES[$i]}"
+    if ! cleanup_remove_worktree "${LANE_WORKTREES[$i]}"; then
+      echo "cleanup: could not remove worktree ${LANE_WORKTREES[$i]}" >&2
+      cleanup_rc=1
+    fi
   done
-  run git worktree remove --force "$INT_WORKTREE"
+  if ! cleanup_remove_worktree "$INT_WORKTREE"; then
+    echo "cleanup: could not remove worktree $INT_WORKTREE" >&2
+    cleanup_rc=1
+  fi
 
-  # delete only merged branches — `git branch -d` refuses unmerged (never -D)
+  # Delete only merged branches. A builder can produce a late commit after the
+  # integrator captured its verified tip; that recovery branch is intentionally
+  # preserved and must not turn a successful product run into a runner crash.
   for i in "${!LANE_NAMES[@]}"; do
-    run git branch -d "${LANE_BRANCHES[$i]}"
+    cleanup_delete_branch "${LANE_BRANCHES[$i]}" || cleanup_rc=1
   done
-  run git branch -d "$INT_BRANCH"
+  cleanup_delete_branch "$INT_BRANCH" || cleanup_rc=1
 
   # remove scratch — .polylane and the DONE status files only
-  safe_rm "$REPO_ROOT/.polylane"
+  safe_rm "$REPO_ROOT/.polylane" || cleanup_rc=1
   # .polylane/ is scratch EXCEPT git-tracked files (e.g. SCHEMA.md); restore those
   # from HEAD so cleanup never deletes committed content.
   run git -C "$REPO_ROOT" checkout -q -- .polylane || true
   for i in "${!LANE_NAMES[@]}"; do
-    run rm -f "$REPO_ROOT/docs/status-${LANE_NAMES[$i]}.md"
+    run rm -f "$REPO_ROOT/docs/status-${LANE_NAMES[$i]}.md" || cleanup_rc=1
   done
-  run rm -f "$REPO_ROOT/docs/status-$INT_NAME.md"
+  run rm -f "$REPO_ROOT/docs/status-$INT_NAME.md" || cleanup_rc=1
 
-  echo "Cleanup complete. Kept: docs/verify-*.md, docs/parallel-status.md, docs/polylane-report.md"
+  if [ "$cleanup_rc" -eq 0 ]; then
+    echo "Cleanup complete. Kept: docs/verify-*.md, docs/parallel-status.md, docs/polylane-report.md"
+  else
+    echo "cleanup: incomplete; verified merge is intact and the report will record this maintenance warning" >&2
+  fi
+  return "$cleanup_rc"
 }
 
 # ---------------------------------------------------------------------------
@@ -2624,10 +2671,18 @@ write_report() {
     echo "## Integrator verdict"
     echo
     if [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
-      if [ "$verdict" = "GO" ]; then
-        echo "**GO** — all lanes merged into \`${BASE}\`; worktrees, branches, and scratch removed. Kept the \`docs/verify-*.md\` evidence."
+      if [ -n "${CLEANUP_WARNING:-}" ]; then
+        echo "**${verdict}** — verified work merged into \`${BASE}\`. Post-merge cleanup was incomplete: ${CLEANUP_WARNING}. The result is durable; retained runtime artifacts can be cleaned later."
+      elif [ "$verdict" = "GO" ]; then
+        echo "**GO** — all lanes merged into \`${BASE}\`; worktrees, merged branches, and scratch removed. Kept the \`docs/verify-*.md\` evidence."
+        if [ -n "${CLEANUP_PRESERVED_BRANCHES:-}" ]; then
+          echo "Preserved unmerged recovery branch(es): \`${CLEANUP_PRESERVED_BRANCHES}\` — they contain late/unverified commits and were not force-deleted."
+        fi
       else
-        echo "**EXTERNAL-EVIDENCE-OPEN** — verified engineering work merged into \`${BASE}\`; worktrees, branches, and scratch removed."
+        echo "**EXTERNAL-EVIDENCE-OPEN** — verified engineering work merged into \`${BASE}\`; worktrees, merged branches, and scratch removed."
+        if [ -n "${CLEANUP_PRESERVED_BRANCHES:-}" ]; then
+          echo "Preserved unmerged recovery branch(es): \`${CLEANUP_PRESERVED_BRANCHES}\`."
+        fi
         echo "Only physical/manual evidence remains open; continue routing any other autonomous subgoals."
       fi
     else
@@ -2671,11 +2726,74 @@ write_report() {
 # main
 # ---------------------------------------------------------------------------
 
+# post_promote_resume_ready : recognize the narrow crash window after verified
+# promotion + durable goal finalization but before cleanup/report. Re-running the
+# completed subgoal is invalid; the immutable graph ledger is the recovery WAL.
+post_promote_resume_ready() {
+  local dir graph events gid replay sid verdict
+  [ "${RESUME:-0}" = "1" ] || return 1
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+
+  for sid in $(jq -r '.target_subgoals[]' "$MANIFEST" 2>/dev/null); do
+    jq -e --arg sid "$sid" \
+      'any(.milestones[].subgoals[]; .id==$sid and .status=="done")' \
+      "$STATE_FILE" >/dev/null 2>&1 || return 1
+  done
+
+  dir=$(dirname "$MANIFEST")
+  graph="$dir/graph.json"; events="$dir/events.jsonl"
+  [ -s "$graph" ] && [ -f "$events" ] ||
+    die "resume found completed target(s) but no durable graph ledger for run '$RUN_ID'"
+  "$SCRIPT_DIR/polylane-graph.sh" validate "$graph" >/dev/null 2>&1 ||
+    die "resume found completed target(s) but the durable graph is invalid"
+  gid=$(jq -r '.graph_id // ""' "$graph" 2>/dev/null)
+  [ -n "$gid" ] || die "resume recovery graph has no graph_id"
+  "$SCRIPT_DIR/polylane-events.sh" verify "$events" "$RUN_ID" "$gid" >/dev/null 2>&1 ||
+    die "resume found completed target(s) but the event ledger is invalid"
+  replay=$("$SCRIPT_DIR/polylane-events.sh" replay "$events" "$RUN_ID" "$gid" 2>/dev/null) ||
+    die "resume could not replay the completed run ledger"
+  printf '%s\n' "$replay" | jq -e \
+    '.nodes.promote.state=="succeeded" and .nodes.complete.state=="succeeded"' \
+    >/dev/null 2>&1 ||
+    die "resume target is done without graph-backed promote+complete evidence"
+
+  verdict=$(parse_verdict "$REPO_ROOT/docs/verify-integration.md")
+  case "$verdict" in GO|EXTERNAL-EVIDENCE-OPEN) : ;;
+    *) die "resume graph is complete but base-branch integration evidence is not current-run GO" ;;
+  esac
+  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$INT_BRANCH"; then
+    git -C "$REPO_ROOT" merge-base --is-ancestor "$INT_BRANCH" HEAD 2>/dev/null ||
+      die "resume graph says promoted but $INT_BRANCH is not contained in base HEAD"
+  fi
+  POST_PROMOTE_VERDICT="$verdict"
+  return 0
+}
+
+recover_post_promote_run() {
+  VERDICT_RESULT="${POST_PROMOTE_VERDICT:?post-promote verdict missing}"
+  echo "== recover: verified run already promoted; completing cleanup + report =="
+  capture_stats
+  if ! cleanup; then
+    CLEANUP_WARNING="some worktrees, branches, or scratch could not be removed"
+    echo "Cleanup warning: $CLEANUP_WARNING. Continuing to the durable run report." >&2
+  fi
+  if [ "${PUSH:-0}" = "1" ]; then
+    echo "== push: current branch =="
+    run git -C "$REPO_ROOT" push
+  fi
+  write_report "$VERDICT_RESULT" || true
+  echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+}
+
 main() {
   set -euo pipefail
   parse_args "$@"
   preflight_basic
   load_manifest
+  if post_promote_resume_ready; then
+    recover_post_promote_run
+    return 0
+  fi
   preflight_agent
   apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
   preflight_contract
@@ -2767,7 +2885,10 @@ main() {
     graph_authority_require complete "complete verified run" || exit 1
     graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     echo "== cleanup =="
-    cleanup
+    if ! cleanup; then
+      CLEANUP_WARNING="some worktrees, branches, or scratch could not be removed"
+      echo "Cleanup warning: $CLEANUP_WARNING. Continuing to the durable run report." >&2
+    fi
     if [ "${PUSH:-0}" = "1" ]; then
       echo "== push: current branch =="
       run git -C "$REPO_ROOT" push

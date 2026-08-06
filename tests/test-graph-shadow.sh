@@ -62,7 +62,11 @@ run_main_fixture() (
   write_manifest "$root/.polylane"
   . "$RUNNER"
 
-  parse_args() { DRY_RUN=0; YES=1; RESUME=0; PUSH=0; MANIFEST="$manifest"; }
+  parse_args() {
+    DRY_RUN=0; YES=1; RESUME=0; PUSH=0; MANIFEST="$manifest"
+    [ "$mode" = post-promote ] && RESUME=1
+    return 0
+  }
   preflight_basic() { printf '%s\n' preflight-basic >> "$order"; }
   load_manifest() {
     ORCHESTRATION_CONTRACT=2; RUN_ID=shadow-run; CYCLE=2
@@ -73,11 +77,13 @@ run_main_fixture() (
     LANE_POLLSPEC=("builder:$root/builder")
   }
   preflight_agent() { :; }
+  post_promote_resume_ready() { [ "$mode" = post-promote ]; }
+  recover_post_promote_run() { printf '%s\n' recover-post-promote >> "$order"; }
   apply_overrides() { :; }
   preflight_contract() { printf '%s\n' contract-v2 >> "$order"; }
   mark_resumed() { :; }
   split_worktrees() {
-    if [ "$mode" = enabled ]; then
+    if [ "$mode" != disabled ]; then
       [ -f "$root/.polylane/graph.json" ] && [ -f "$root/.polylane/events.jsonl" ] || {
         echo 'side effect reached before graph shadow initialization' >&2
         return 91
@@ -100,8 +106,12 @@ run_main_fixture() (
   assert_no_conflict() { :; }
   promote_to_main() { printf '%s\n' promote >> "$order"; }
   finalize_cycle_state() { :; }
-  cleanup() { :; }
-  write_report() { :; }
+  cleanup() {
+    printf '%s\n' cleanup >> "$order"
+    [ "$mode" = cleanup-fail ] && return 9
+    return 0
+  }
+  write_report() { printf '%s\n' report >> "$order"; }
 
   unset POLYLANE_GRAPH_MODE MANIFEST_GRAPH_MODE
   if [ "$mode" = disabled ]; then
@@ -115,7 +125,7 @@ run_main_fixture() (
 # graph and empty run-scoped ledger exist beside the manifest.
 main_out=$(run_main_fixture enabled 2>&1); main_rc=$?
 assert_eq "shadow-main-preflight-before-side-effects" "0" "$main_rc"
-assert_eq "shadow-main-order" $'preflight-basic\ncontract-v2\nside-effect\npromote' \
+assert_eq "shadow-main-order" $'preflight-basic\ncontract-v2\nside-effect\npromote\ncleanup\nreport' \
   "$(cat "$TEST_TMPDIR/main-enabled.order" 2>/dev/null)"
 assert_eq "shadow-main-builder-recorded" "succeeded" \
   "$(jq -r '.nodes["lane:builder"].state' < <("$EVENTS" replay \
@@ -191,8 +201,24 @@ assert_eq "shadow-resume-failed-next-attempt" "1" \
 # graph artifacts despite the explicit opt-out.
 disabled_out=$(run_main_fixture disabled 2>&1); disabled_rc=$?
 assert_eq "shadow-disabled-old-main-path" "0" "$disabled_rc"
-assert_eq "shadow-disabled-still-promotes" $'preflight-basic\ncontract-v2\nside-effect\npromote' \
+assert_eq "shadow-disabled-still-promotes" $'preflight-basic\ncontract-v2\nside-effect\npromote\ncleanup\nreport' \
   "$(cat "$TEST_TMPDIR/main-disabled.order" 2>/dev/null)"
+
+# Break caught: verified promotion succeeds, then disposable cleanup fails. A
+# missing report makes the supervisor replay an already-completed subgoal until
+# its restart cap is exhausted. Cleanup failure must be reported, not fatal.
+cleanup_fail_out=$(run_main_fixture cleanup-fail 2>&1); cleanup_fail_rc=$?
+assert_eq "shadow-cleanup-failure-nonfatal" "0" "$cleanup_fail_rc"
+assert_eq "shadow-cleanup-failure-still-reports" $'preflight-basic\ncontract-v2\nside-effect\npromote\ncleanup\nreport' \
+  "$(cat "$TEST_TMPDIR/main-cleanup-fail.order" 2>/dev/null)"
+
+# Break caught: a process dies after graph-backed promotion/finalization but
+# before the report. Resume must finish the durable tail instead of re-running
+# a subgoal that is already marked done.
+post_promote_out=$(run_main_fixture post-promote 2>&1); post_promote_rc=$?
+assert_eq "shadow-post-promote-resume-rc" "0" "$post_promote_rc"
+assert_eq "shadow-post-promote-resume-short-circuits" $'preflight-basic\nrecover-post-promote' \
+  "$(cat "$TEST_TMPDIR/main-post-promote.order" 2>/dev/null)"
 
 # Break caught: --dry-run silently becomes a second, undocumented shadow opt-out.
 new_shadow_case dry-run
