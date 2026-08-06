@@ -59,6 +59,11 @@ A="$TEST_TMPDIR/accept.json"
 "$MEM" "$A" add-subgoal m1 s1 "A" >/dev/null
 "$MEM" "$A" add-subgoal m1 s2 "B" >/dev/null
 assert_ok   "accept-add"            "$MEM" "$A" add-accept s2 "exit 1"
+# Key metadata is optional: old registrations remain unkeyed, while a safe key is
+# stored as metadata rather than becoming a dependency glob.
+assert_eq   "accept-old-syntax-has-empty-key" "" "$(jq -r '.accept[0].key // ""' "$A")"
+assert_ok   "accept-add-key"         "$MEM" "$A" add-accept s2 "true" --key shared-check
+assert_eq   "accept-add-key-stored"  "shared-check" "$(jq -r '.accept[1].key' "$A")"
 # a done sub-goal cannot receive a NEW (weaker) grader after the fact
 "$MEM" "$A" set-status s1 done >/dev/null
 assert_fail "accept-refused-when-done" "$MEM" "$A" add-accept s1 "true"

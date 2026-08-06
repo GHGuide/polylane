@@ -61,6 +61,17 @@ fact is not zero, GO, or clean cleanup. The schema and adjacent product/discover
 models, prompt-budget, advanced-runtime, and judge interfaces are frozen in
 [cycle-9-control-room.md](cycle-9-control-room.md).
 
+## Frozen acceptance keys
+
+`polylane-memory.sh <state> add-accept <subgoal> <command> --key <safe-id>`
+marks checks that grade the same source. In one `check-accept` invocation, the
+first selected member executes and its pass/fail result is stamped onto every
+later selected member with that key. The result is invocation-local: it is never
+reused by a later call or a different key. Checks without a key keep their
+independent behavior. Use `tag-accept <subgoal> --key <safe-id>` to add metadata
+to already frozen commands without changing them. Safe IDs start with an
+alphanumeric character and otherwise contain only alphanumerics, `.`, `_`, or `-`.
+
 ## Living, not archival
 Update the spec (STRATEGY + tree) and `AGENTS.md` as part of closing each cycle (Phase 5),
 BEFORE the next build. A doc that lies is worse than no doc — if a run invalidates a
