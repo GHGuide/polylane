@@ -57,6 +57,28 @@ assert_contains "panecmd-no-multi-agent" "--disable multi_agent" "$CMD"
 assert_contains "panecmd-no-multi-agent-v2" "--disable multi_agent_v2" "$CMD"
 assert_contains "panecmd-no-fanout" "--disable enable_fanout" "$CMD"
 
+# Break caught: a linked-worktree Codex workspace-write command cannot commit
+# because its shared Git metadata is not writable. Read-only and explicit danger
+# modes must not receive this narrow write exception.
+make_tmpdir
+GIT_REPO="$TEST_TMPDIR/git repo"; GIT_WT="$TEST_TMPDIR/lane wt"
+git init -q -b main "$GIT_REPO"
+git -C "$GIT_REPO" config user.email test@example.com
+git -C "$GIT_REPO" config user.name test
+printf 'base\n' > "$GIT_REPO/base.txt"
+git -C "$GIT_REPO" add base.txt && git -C "$GIT_REPO" commit -qm base
+git -C "$GIT_REPO" worktree add -q -b lane "$GIT_WT"
+AGENT=codex CODEX_SANDBOX=workspace-write REPO_ROOT="$GIT_REPO"
+CMD=$(pane_cmd "$GIT_WT" gpt-5-codex /tmp/p.txt high)
+assert_contains "codex-workspace-write-adds-common-git-dir" "--add-dir" "$CMD"
+GIT_COMMON=$(cd "$GIT_REPO/.git" && pwd -P)
+assert_contains "codex-workspace-write-add-dir-is-canonical" "$(printf '%q' "$GIT_COMMON")" "$CMD"
+CODEX_SANDBOX=read-only
+if printf '%s' "$(pane_cmd "$GIT_WT" gpt-5-codex /tmp/p.txt high)" | grep -q -- '--add-dir'; then fail "codex-read-only-no-add-dir" "read-only command widened access"; else pass "codex-read-only-no-add-dir"; fi
+CODEX_SANDBOX=danger-full-access
+if printf '%s' "$(pane_cmd "$GIT_WT" gpt-5-codex /tmp/p.txt high)" | grep -q -- '--add-dir'; then fail "codex-danger-no-add-dir" "danger mode added unnecessary access"; else pass "codex-danger-no-add-dir"; fi
+unset CODEX_SANDBOX
+
 # A Codex manifest may deliberately widen or narrow the lane sandbox. The
 # selected policy must reach the real CLI mechanically; recording it only in
 # run.json creates a misleading "unsandboxed" run that is still workspace-write.

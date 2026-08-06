@@ -66,4 +66,14 @@ assert_fail "done-v2-rejects-dirty-checkpoint" lane_done "$G" alpha
 (cd "$G" && git add docs/verify-alpha.md && git commit -qm evidence)
 assert_ok "done-v2-accepts-final-clean-checkpoint" lane_done "$G" alpha
 
+# The runner-created graph link is an untracked helper, not unfinished lane work.
+# Any other untracked path remains a real dirty checkpoint and must still block DONE.
+mkdir -p "$TEST_TMPDIR/runner-graph"
+ln -s "$TEST_TMPDIR/runner-graph" "$G/graphify-out"
+REPO_ROOT="$G" ORCHESTRATION_CONTRACT=2 RUN_ID=run-2
+assert_ok "done-v2-ignores-owned-graphify-symlink" lane_done "$G" alpha
+printf 'untracked\n' > "$G/real-untracked.txt"
+assert_fail "done-v2-other-untracked-still-blocks" lane_done "$G" alpha
+rm -f "$G/real-untracked.txt" "$G/graphify-out"
+
 finish

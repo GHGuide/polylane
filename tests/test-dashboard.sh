@@ -3,10 +3,9 @@
 # one rendered frame in --demo and manifest modes.
 #
 # The dashboard renders forever (`while :; sleep`), so the render tests launch
-# it in the background, wait for its first flushed frame, then kill it. bash
-# flushes stdout before running its external `sleep`, so once the capture file
-# is non-empty it already holds a complete frame (a frame is well under one
-# buffer, so it flushes all-at-once — never a partial row). This never hangs
+# it in the background, wait for a COMPLETE first frame, then kill it. A
+# non-empty capture can be observed between rows under load, so the sentinel
+# must include both the header and final hint line. This never hangs
 # tests/run.sh. bash-3.2 safe; the manifest render is guarded on jq.
 
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
@@ -19,12 +18,15 @@ run_frame() {
   : > "$out"
   "$@" >"$out" 2>&1 &
   local pid=$! n=0
-  # Wait up to ~30s (was 5s). The frame appears in milliseconds when the box is idle,
+  # Wait up to ~30s. The frame appears in milliseconds when the box is idle,
   # but under full-suite load the old 5s ceiling could expire with the file still
   # empty — every assertion then failed for a reason the test does not test. This
   # loop still exits the INSTANT the frame lands, so the common case stays fast;
   # only a genuinely stuck render pays the longer bound.
-  while [ ! -s "$out" ] && [ "$n" -lt 300 ]; do sleep 0.1; n=$((n + 1)); done
+  while [ "$n" -lt 300 ]; do
+    if grep -q 'POLYLANE DASHBOARD' "$out" 2>/dev/null && grep -q 'hint: tmux attach -t' "$out" 2>/dev/null; then break; fi
+    sleep 0.1; n=$((n + 1))
+  done
   kill "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
 }
