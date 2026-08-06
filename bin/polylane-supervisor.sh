@@ -212,7 +212,11 @@ supervisor_main() {
       heartbeat halted "$restarts"
       return 1
     fi
-    sup_log "runner DIED without a report (rc=$rc) — reviving with --resume (${restarts}/${SUP_MAX_RESTARTS})"
+    if [ "$rc" = 75 ]; then
+      sup_log "runner lost its owned tmux session (recoverable rc=75) — resuming without duplicate panes (${restarts}/${SUP_MAX_RESTARTS})"
+    else
+      sup_log "runner DIED without a report (rc=$rc) — reviving with --resume (${restarts}/${SUP_MAX_RESTARTS})"
+    fi
     notify_event stall "supervisor revived the runner (crash ${restarts}/${SUP_MAX_RESTARTS})"
     case " $args_line " in *" --resume "*) : ;; *) args_line="$args_line --resume" ;; esac
   done

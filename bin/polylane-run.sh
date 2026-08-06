@@ -298,6 +298,7 @@ load_manifest() {
     TMUX_SESSION="$MANIFEST_SESSION"
   fi
   ORCHESTRATION_CONTRACT=$(jq -r '.orchestration_contract // 0' "$MANIFEST")
+  MANIFEST_GRAPH_MODE=$(jq -r '.graph_mode // ""' "$MANIFEST")
   CYCLE=$(jq -r '.cycle // 0' "$MANIFEST")
   STATE_FILE=$(jq -r '.state_file // ""' "$MANIFEST")
   LANE_SKILLS_FILE=$(jq -r '.lane_skills_file // ""' "$MANIFEST")
@@ -368,6 +369,10 @@ preflight_contract() {
     fi
     die "Codex manifest needs orchestration_contract: 2 (set POLYLANE_ALLOW_LEGACY=1 only for migration)"
   fi
+  case "$(graph_mode_selected 2>/dev/null || true)" in
+    authoritative|shadow|off) : ;;
+    *) die "graph_mode must be authoritative, shadow, or off" ;;
+  esac
   [ "$strict" = "1" ] || return 0
 
   [ "${CYCLE:-0}" -ge 1 ] 2>/dev/null || die "contract v2 needs integer cycle >= 1"
@@ -429,17 +434,139 @@ preflight_contract() {
 }
 
 # ---------------------------------------------------------------------------
-# contract-v2 execution graph shadow (observer only; never schedules work)
+# contract-v2 execution graph runtime. Contract-v2 defaults to authoritative:
+# scheduling decisions are admitted by the immutable graph, while `shadow` keeps
+# the prior observational mode available for migration and `off` preserves the
+# legacy runner path.
 # ---------------------------------------------------------------------------
 
+graph_mode_selected() {
+  local mode="${POLYLANE_GRAPH_MODE:-${MANIFEST_GRAPH_MODE:-}}"
+  if [ -z "$mode" ] && [ "${POLYLANE_GRAPH_SHADOW:-1}" = "0" ]; then
+    mode=off
+  fi
+  if [ -z "$mode" ]; then
+    if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then mode=authoritative; else mode=off; fi
+  fi
+  case "$mode" in authoritative|shadow|off) printf '%s' "$mode" ;; *) return 2 ;; esac
+}
+
+graph_runtime_enabled() {
+  local mode
+  mode=$(graph_mode_selected) || return 1
+  [ "$mode" != off ]
+}
+
+graph_authority_enabled() {
+  [ "$(graph_mode_selected 2>/dev/null || true)" = authoritative ]
+}
+
 graph_shadow_enabled() {
-  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
-  [ "${POLYLANE_GRAPH_SHADOW:-1}" != "0" ]
+  graph_runtime_enabled
 }
 
 graph_shadow_error() {
   printf 'GRAPH-SHADOW: %s\n' "$*" >&2
   return 1
+}
+
+graph_authority_error() {
+  printf 'GRAPH-AUTHORITY: %s\n' "$*" >&2
+  return 1
+}
+
+# graph_authority_require NODE ACTION fails closed unless NODE is currently
+# emitted by the production ready CLI from the verified ledger replay. The
+# replay format carries state objects while `ready` consumes state strings, so
+# the disposable conversion is deliberately outside both immutable artifacts.
+graph_authority_require() {
+  local node="$1" action="$2" replay state ready tmp out
+  graph_authority_enabled || return 0
+  graph_shadow_validate || { graph_authority_error "cannot $action: graph or ledger validation failed"; return 1; }
+  if ! replay=$("$SCRIPT_DIR/polylane-events.sh" replay "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>&1); then
+    graph_authority_error "cannot $action: ledger replay failed: ${replay:-unknown error}"
+    return 1
+  fi
+  tmp=$(mktemp "$(dirname "$EVENTS_FILE")/.polylane-ready.XXXXXX") || {
+    graph_authority_error "cannot $action: cannot create disposable readiness checkpoint"
+    return 1
+  }
+  if ! printf '%s\n' "$replay" | jq -c '{nodes: (.nodes | with_entries(.value = .value.state))}' > "$tmp"; then
+    rm -f "$tmp"
+    graph_authority_error "cannot $action: ledger replay has an unreadable state"
+    return 1
+  fi
+  if ! ready=$("$SCRIPT_DIR/polylane-graph.sh" ready "$GRAPH_FILE" "$tmp" 2>&1); then
+    rm -f "$tmp"
+    graph_authority_error "cannot $action: ready-node query failed: ${ready:-unknown error}"
+    return 1
+  fi
+  rm -f "$tmp"
+  if ! printf '%s\n' "$ready" | grep -Fx -- "$node" >/dev/null; then
+    state=$(printf '%s\n' "$replay" | jq -r --arg node "$node" '.nodes[$node].state // "pending"' 2>/dev/null || echo unknown)
+    graph_authority_error "refused $action for $node: node is $state, not currently graph-ready"
+    return 1
+  fi
+}
+
+graph_authority_start() {
+  graph_authority_enabled || return 0
+  graph_authority_require start initialize || return 1
+  graph_shadow_record_node start succeeded 0 graph-start
+}
+
+graph_authority_record_ready_node() {
+  local node="$1" target="$2" attempt="${3:-0}" reason="${4:-runner-boundary}"
+  graph_authority_enabled || { graph_shadow_record_node "$node" "$target" "$attempt" "$reason"; return; }
+  # A supervisor may resume after the runner recorded the same completed
+  # boundary but before its next instruction. Idempotent replay is safe; never
+  # demand readiness again from an already-final node.
+  local replay state
+  replay=$("$SCRIPT_DIR/polylane-events.sh" replay "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>/dev/null) || {
+    graph_authority_error "cannot advance $node: ledger replay failed"
+    return 1
+  }
+  state=$(printf '%s\n' "$replay" | jq -r --arg node "$node" '.nodes[$node].state // "pending"' 2>/dev/null || echo unknown)
+  [ "$state" = "$target" ] && return 0
+  graph_authority_require "$node" "advance" || return 1
+  graph_shadow_record_node "$node" "$target" "$attempt" "$reason"
+}
+
+graph_authority_record_builders() {
+  local outcome="$1" i node target first_failed=""
+  graph_authority_enabled || { graph_shadow_record_builders "$outcome"; return; }
+  for i in "${!LANE_NAMES[@]}"; do
+    node="lane:${LANE_NAMES[$i]}"
+    if [ "$outcome" = succeeded ] || lane_done "${LANE_WORKTREES[$i]}" "${LANE_NAMES[$i]}"; then
+      target=succeeded
+    else
+      target=failed
+      [ -n "$first_failed" ] || first_failed="$node"
+    fi
+    graph_authority_record_ready_node "$node" "$target" 0 builder-done || return 1
+  done
+  if [ "$outcome" = succeeded ]; then
+    graph_authority_record_ready_node builders-joined succeeded 0 builders-joined
+  else
+    graph_authority_require halt "halt after builder failure" || return 1
+    graph_authority_record_ready_node halt succeeded 0 builder-halted
+  fi
+}
+
+graph_authority_halt_node() {
+  local node="$1"
+  graph_authority_enabled || { graph_shadow_record_decision HALTED "$node"; return; }
+  graph_authority_record_ready_node "$node" failed 0 halted || return 1
+  graph_authority_require halt "halt after $node failure" || return 1
+  graph_authority_record_ready_node halt succeeded 0 halted
+}
+
+graph_authority_no_go() {
+  graph_authority_enabled || { graph_shadow_record_decision NO-GO; return; }
+  graph_authority_record_ready_node verifier failed 0 NO-GO || return 1
+  graph_authority_record_ready_node repair failed 0 NO-GO || return 1
+  graph_authority_require halt "halt failed verifier route" || return 1
+  graph_authority_record_ready_node halt succeeded 0 NO-GO
 }
 
 # graph_shadow_validate checks both immutable inputs before a caller relies on
@@ -955,10 +1082,29 @@ agent_template() {
     # effort was pure prompt-discretion ("run at HIGH effort, confirm with /model"),
     # while codex lanes already got it mechanically via model_reasoning_effort.
     claude)            printf 'claude --permission-mode %s --effort {effort} --model {model} "$(cat {prompt})"' "$(printf '%q' "$pmode")" ;;
-    codex|gpt|openai)  printf 'codex exec --json --disable multi_agent --disable multi_agent_v2 --disable enable_fanout --sandbox %s -c approval_policy=never -c model_reasoning_effort={effort} --model {model} - < {prompt}' "$(printf '%q' "$codex_sandbox")" ;;
+    codex|gpt|openai)  printf 'codex exec --json --disable multi_agent --disable multi_agent_v2 --disable enable_fanout --sandbox %s{add_dir} -c approval_policy=never -c model_reasoning_effort={effort} --model {model} - < {prompt}' "$(printf '%q' "$codex_sandbox")" ;;
     aider)             printf 'aider --model {model} --message-file {prompt} --yes-always --no-auto-commits' ;;
     *) echo "polylane-run: unknown agent '$(agent_selected)' — set POLYLANE_AGENT_CMD to a template containing {model} and {prompt}" >&2; return 2 ;;
   esac
+}
+
+# codex_workspace_git_add_dir WT : `workspace-write` permits the linked
+# worktree but not its shared repository metadata, so commits fail. Grant only
+# the canonical common Git directory; read-only and explicitly dangerous modes
+# intentionally receive no additional access flag.
+codex_workspace_git_add_dir() {
+  local wt="$1" common
+  case "$(agent_selected):$(codex_sandbox_selected)" in
+    codex:workspace-write|gpt:workspace-write|openai:workspace-write) : ;;
+    *) return 0 ;;
+  esac
+  common=$(git -C "$wt" rev-parse --git-common-dir 2>/dev/null) || return 0
+  case "$common" in
+    /*) : ;;
+    *) common=$(cd "$wt/$common" 2>/dev/null && pwd -P) || return 0 ;;
+  esac
+  [ -d "$common" ] || return 0
+  printf ' --add-dir %s' "$(printf '%q' "$common")"
 }
 
 # agent_procs : process names that mean "the agent is still working" (for pane_dead).
@@ -973,7 +1119,7 @@ agent_procs() {
 
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" resume="${5:-}" pfx=""
-  local qwt qmodel qpf qeffort tmpl
+  local qwt qmodel qpf qeffort tmpl add_dir
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf"); qeffort=$(printf '%q' "${effort:-medium}")
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
   # NEVER launch an agent with no prompt: that starts an amnesiac session with no
@@ -981,6 +1127,7 @@ pane_cmd() {
   # for ANY reason (crash, limit, /exit) the pane drops to a shell and prints a
   # marker; the health-check owns recovery — it re-seeds THIS same command.
   tmpl=$(agent_template) || tmpl='claude --model {model} "$(cat {prompt})"'
+  add_dir=$(codex_workspace_git_add_dir "$wt")
   # RESPAWN with context: a re-seeded Claude lane otherwise starts a BRAND-NEW session
   # from the original prompt — its files survive (checkpoint_lane commits them) but
   # everything it worked out in-context is lost, so it re-derives from zero. `--continue`
@@ -993,6 +1140,7 @@ pane_cmd() {
   tmpl=${tmpl//'{model}'/$qmodel}
   tmpl=${tmpl//'{prompt}'/$qpf}
   tmpl=${tmpl//'{effort}'/$qeffort}
+  tmpl=${tmpl//'{add_dir}'/$add_dir}
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
   printf 'cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
     "$qwt" "$pfx" "$tmpl"
@@ -1151,6 +1299,7 @@ launch_panes() {
     lane_adopted "$i" && continue
     echo "lane ${LANE_NAMES[$i]}: model=${LANE_MODELS[$i]} effort=${LANE_EFFORTS[$i]:-(default)}"
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
+    graph_authority_require "lane:${LANE_NAMES[$i]}" "launch lane '${LANE_NAMES[$i]}'" || return 1
     new_pane "${LANE_NAMES[$i]}"
     LANE_PANE_IDX[i]="$NEW_PANE_IDX"
     seed_pane "$NEW_PANE_IDX" "$pc"
@@ -1168,7 +1317,7 @@ launch_panes() {
 # closes the marker-before-commit race where the runner could merge an older tip
 # while the live agent was still staging its evidence.
 lane_done() {
-  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" rel="docs/status-$2.md"
+  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" rel="docs/status-$2.md" dirty
   [ -f "$f" ] || return 1
   # `|| true`: read returns non-zero at EOF-before-newline but STILL populates $first,
   # so a marker written without a trailing newline (markers.sh done emits none) is read
@@ -1181,7 +1330,19 @@ lane_done() {
   fi
   if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
     git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
-    [ -z "$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null)" ] || return 1
+    dirty=$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null) || return 1
+    # `share_graph` creates exactly this untracked symlink in a lane. Accept it
+    # only when it resolves to this runner's canonical graph directory; every
+    # other dirty/untracked path remains a completion blocker.
+    if [ -L "$wt/graphify-out" ] && [ -d "${REPO_ROOT:-}/graphify-out" ]; then
+      local graph_link graph_owner
+      graph_link=$(cd "$wt/graphify-out" 2>/dev/null && pwd -P) || graph_link=""
+      graph_owner=$(cd "${REPO_ROOT:-}/graphify-out" 2>/dev/null && pwd -P) || graph_owner=""
+      if [ -n "$graph_link" ] && [ "$graph_link" = "$graph_owner" ]; then
+        dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
+      fi
+    fi
+    [ -z "$dirty" ] || return 1
     git -C "$wt" cat-file -e "HEAD:$rel" 2>/dev/null || return 1
     IFS= read -r head_first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
     if [ -n "${RUN_ID:-}" ]; then
@@ -1910,6 +2071,10 @@ poll_done() {
     echo "poll: $done/$total DONE${FAILED_LANES:+ (failed: $FAILED_LANES)}"
     [ "$done" -eq "$total" ] && return 0
     [ "$settled" -eq "$total" ] && return 3
+    if [ "${SESSION_STARTED:-0}" = "1" ] && ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+      echo "SESSION-LOST: owned tmux session '$TMUX_SESSION' vanished with unfinished work; supervisor must resume with --resume." >&2
+      return 75
+    fi
     sleep "$interval"; since=$((since + interval))
     if [ "$since" -ge "$hinterval" ]; then health_check "${specs[@]}"; since=0; fi
   done
@@ -1920,6 +2085,7 @@ poll_done() {
 # ---------------------------------------------------------------------------
 
 run_integrator() {
+  graph_authority_require integrator "launch integrator '$INT_NAME'" || return 1
   assert_prompt "$INT_PROMPT" "$INT_NAME"
   add_worktree "$INT_WORKTREE" "$INT_BRANCH"
   # a fresh integrator worktree must NOT inherit a prior run's committed DONE/verdict
@@ -2166,7 +2332,11 @@ repair_integrator_verdict() {
 gate_with_repairs() {
   local attempt=0 max="${POLYLANE_INTEGRATOR_REPAIRS:-3}"
   while :; do
-    merge_gate && return 0
+    if merge_gate; then
+      graph_authority_require verifier "pass verifier gate" || return 1
+      return 0
+    fi
+    graph_authority_record_ready_node verifier failed "$attempt" verifier-failed || return 1
     if [ "${VERDICT_REPAIRABLE:-YES}" = "NO" ]; then
       echo "Integrator proved this gate is not autonomously repairable on the current host; skipping model repair waves." >&2
       return 1
@@ -2176,11 +2346,13 @@ gate_with_repairs() {
       return 1
     }
     attempt=$((attempt + 1))
+    graph_authority_require repair "route verifier repair $attempt" || return 1
     repair_integrator_verdict "$attempt" || return 1
     if ! poll_done "$INT_NAME:$INT_WORKTREE"; then
       echo "Integrator repair $attempt failed before producing a verdict." >&2
       return 1
     fi
+    graph_authority_record_ready_node repair succeeded "$attempt" verifier-repair || return 1
     capture_stats
   done
 }
@@ -2501,6 +2673,7 @@ main() {
   graph_shadow_init || exit 1
   mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
   graph_shadow_record_resumes || exit 1
+  graph_authority_start || exit 1
 
   echo "== split: ${#LANE_NAMES[@]} lane worktrees =="
   split_worktrees
@@ -2524,11 +2697,13 @@ main() {
 
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
-    graph_shadow_record_builders succeeded || exit 1
+    graph_authority_record_builders succeeded || exit 1
     echo "All builders DONE."
     notify_event "done" "all ${#LANE_NAMES[@]} lane(s) DONE — starting integrator"
   else
-    graph_shadow_record_builders failed || exit 1
+    poll_rc=$?
+    [ "$poll_rc" = 75 ] && exit 75
+    graph_authority_record_builders failed || exit 1
     echo "Halt: lane(s) failed after retries: ${FAILED_LANES:-?}. Not integrating." >&2
     notify_event halt "lane(s) failed after retries: ${FAILED_LANES:-?}"
     capture_stats
@@ -2546,8 +2721,12 @@ main() {
   else
     run_integrator
   fi
-  if ! poll_done "$INT_NAME:$INT_WORKTREE"; then
-    graph_shadow_record_decision HALTED integrator || exit 1
+  if poll_done "$INT_NAME:$INT_WORKTREE"; then
+    :
+  else
+    poll_rc=$?
+    [ "$poll_rc" = 75 ] && exit 75
+    graph_authority_halt_node integrator || exit 1
     echo "Halt: integrator failed after retries. Nothing merged." >&2
     notify_event halt "integrator failed after retries — nothing merged"
     capture_stats
@@ -2555,20 +2734,29 @@ main() {
     echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
-  graph_shadow_record_node integrator succeeded 0 integrator-done || exit 1
+  graph_authority_record_ready_node integrator succeeded 0 integrator-done || exit 1
 
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time
+  graph_authority_require verifier "run verifier gate" || exit 1
   if gate_with_repairs; then
     assert_no_conflict "$INT_WORKTREE"
-    graph_shadow_record_decision "${VERDICT_RESULT:-GO}" || exit 1
+    if graph_authority_enabled; then
+      graph_authority_record_ready_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
+    else
+      graph_shadow_record_decision "${VERDICT_RESULT:-GO}" || exit 1
+    fi
+    graph_authority_require promote "promote verified integration" || exit 1
     echo "== promote: base -> integrator branch (verified outcome) =="
     if ! promote_to_main; then
       write_report "${VERDICT_RESULT:-GO}" || true
       echo "Promote failed — base intact, worktrees kept. See report." >&2
       exit 1
     fi
+    graph_authority_record_ready_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     finalize_cycle_state
+    graph_authority_require complete "complete verified run" || exit 1
+    graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     echo "== cleanup =="
     cleanup
     if [ "${PUSH:-0}" = "1" ]; then
@@ -2576,7 +2764,7 @@ main() {
       run git -C "$REPO_ROOT" push
     fi
   else
-    graph_shadow_record_decision NO-GO || exit 1
+    graph_authority_no_go || exit 1
   fi
 
   echo "== report =="
