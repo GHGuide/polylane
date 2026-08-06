@@ -38,6 +38,8 @@ setup_rc=0
   echo scratch > .polylane/transient
   echo done > docs/status-builder.md
   echo done > docs/status-integrator.md
+  git add docs/status-builder.md docs/status-integrator.md
+  git commit -qm "runtime status markers"
 ) >"$setup_log" 2>&1 || setup_rc=$?
 
 if [ "$setup_rc" -ne 0 ]; then
@@ -65,5 +67,13 @@ assert_fail "cleanup-builder-worktree-removed" test -e "$BUILDER_WT"
 assert_fail "cleanup-integrator-worktree-removed" test -e "$INTEGRATOR_WT"
 assert_fail "cleanup-scratch-removed" test -e "$G/.polylane/transient"
 assert_contains "cleanup-preservation-explained" "preserving unmerged branch lane/builder" "$cleanup_out"
+assert_eq "cleanup-removes-tracked-status-markers" "" "$(git -C "$G" status --porcelain)"
+assert_fail "cleanup-builder-status-marker-removed" test -e "$G/docs/status-builder.md"
+assert_fail "cleanup-integrator-status-marker-removed" test -e "$G/docs/status-integrator.md"
+
+cleanup_again_rc=0
+( set -e; cd "$G"; cleanup ) >/dev/null 2>&1 || cleanup_again_rc=$?
+assert_eq "cleanup-post-promotion-recovery-idempotent" "0" "$cleanup_again_rc"
+assert_eq "cleanup-recovery-keeps-base-clean" "" "$(git -C "$G" status --porcelain)"
 
 finish

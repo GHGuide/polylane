@@ -36,7 +36,26 @@ assert_eq "go-ledger-tokens" "42000" "$(jq -r '.tokens' "$TEST_TMPDIR/docs/polyl
 make_tmpdir
 REPO_ROOT="$TEST_TMPDIR"
 mkdir -p "$TEST_TMPDIR/docs"
-printf -- '- NEEDS DECISION: who owns schema v2?\n' > "$TEST_TMPDIR/docs/verify-alpha.md"
+cat > "$TEST_TMPDIR/docs/verify-alpha.md" <<'EOF'
+## DEFERRED
+- NEEDS DECISION: who owns schema v2?
+
+## Notes
+- TODO: arbitrary lane prose must not leak
+EOF
+cat > "$TEST_TMPDIR/docs/verify-beta.md" <<'EOF'
+## EXTERNAL
+- Physical proof still needed
+EOF
+cat > "$TEST_TMPDIR/docs/verify-integration.md" <<'EOF'
+## Open items
+- Re-run after credentials arrive
+EOF
+cat > "$TEST_TMPDIR/docs/verify-historical.md" <<'EOF'
+## DEFERRED
+- Historical deferred item must not leak
+EOF
+printf -- 'TODO: shell output must not leak\n' > "$TEST_TMPDIR/docs/parallel-status.md"
 write_report NO-GO
 R="$TEST_TMPDIR/docs/polylane-report.md"
 
@@ -46,6 +65,11 @@ assert_contains "nogo-verdict-line"   "**Outcome:** NO-GO"  "$nogo"
 assert_contains "nogo-withheld-text"  "withheld GO"         "$nogo"
 assert_contains "nogo-nothing-merged" "Nothing merged"      "$nogo"
 assert_contains "nogo-open-item"      "NEEDS DECISION: who owns schema v2?" "$nogo"
+assert_contains "nogo-external-item" "Physical proof still needed" "$nogo"
+assert_contains "nogo-integration-open-item" "Re-run after credentials arrive" "$nogo"
+if printf '%s' "$nogo" | grep -qF -- "arbitrary lane prose"; then fail "nogo-arbitrary-prose-excluded" "arbitrary prose leaked"; else pass "nogo-arbitrary-prose-excluded"; fi
+if printf '%s' "$nogo" | grep -qF -- "Historical deferred item"; then fail "nogo-historical-evidence-excluded" "historical evidence leaked"; else pass "nogo-historical-evidence-excluded"; fi
+if printf '%s' "$nogo" | grep -qF -- "shell output must not leak"; then fail "nogo-shell-output-excluded" "shell output leaked"; else pass "nogo-shell-output-excluded"; fi
 
 # --- HALTED report with a failed lane -----------------------------------------
 make_tmpdir

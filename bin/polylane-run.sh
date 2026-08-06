@@ -1422,12 +1422,13 @@ lane_failed() { case " ${FAILED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 
 # just re-hit the paywall, and auto-answering would spend money without a
 # human. Detect it, notify once, surface it in the poll + report, and wait.
 
-# pane_stalled IDX : 0 iff the pane shows a usage-limit / paywall prompt.
+# pane_stalled IDX : 0 iff the pane shows an actionable paywall decision.
 pane_stalled() {
   local idx="$1" txt
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
   txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
-  printf '%s' "$txt" | grep -qiE 'usage limit|Switch to usage credits|Upgrade your plan'
+  printf '%s' "$txt" | grep -qiE 'Switch to usage credits|Upgrade your plan' &&
+    printf '%s' "$txt" | grep -qE '\[[[:space:]]*1[[:space:]]*\]|(^|[[:space:]])1\.'
 }
 
 lane_stalled() { case " ${STALLED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
@@ -2472,6 +2473,35 @@ cleanup_remove_worktree() {
   run git -C "$REPO_ROOT" worktree remove --force "$wt"
 }
 
+# cleanup_status_markers : remove only this run's marker paths. Tracked markers
+# need a narrow commit, otherwise a verified promotion leaves base dirty.
+cleanup_status_markers() {
+  local marker tracked=0 cleanup_rc=0 i
+  local markers=()
+  for i in "${!LANE_NAMES[@]}"; do
+    marker="docs/status-${LANE_NAMES[$i]}.md"
+    markers+=("$marker")
+    if git -C "$REPO_ROOT" ls-files --error-unmatch -- "$marker" >/dev/null 2>&1; then
+      run git -C "$REPO_ROOT" rm -f -- "$marker" || cleanup_rc=1
+      tracked=1
+    else
+      run rm -f "$REPO_ROOT/$marker" || cleanup_rc=1
+    fi
+  done
+  marker="docs/status-$INT_NAME.md"
+  markers+=("$marker")
+  if git -C "$REPO_ROOT" ls-files --error-unmatch -- "$marker" >/dev/null 2>&1; then
+    run git -C "$REPO_ROOT" rm -f -- "$marker" || cleanup_rc=1
+    tracked=1
+  else
+    run rm -f "$REPO_ROOT/$marker" || cleanup_rc=1
+  fi
+  if [ "$tracked" -eq 1 ] && [ "$cleanup_rc" -eq 0 ]; then
+    run git -C "$REPO_ROOT" commit -m "polylane: clean runtime status markers" -- "${markers[@]}" || cleanup_rc=1
+  fi
+  return "$cleanup_rc"
+}
+
 cleanup() {
   local n i cleanup_rc=0
   CLEANUP_PRESERVED_BRANCHES=""
@@ -2532,10 +2562,7 @@ cleanup() {
   # .polylane/ is scratch EXCEPT git-tracked files (e.g. SCHEMA.md); restore those
   # from HEAD so cleanup never deletes committed content.
   run git -C "$REPO_ROOT" checkout -q -- .polylane || true
-  for i in "${!LANE_NAMES[@]}"; do
-    run rm -f "$REPO_ROOT/docs/status-${LANE_NAMES[$i]}.md" || cleanup_rc=1
-  done
-  run rm -f "$REPO_ROOT/docs/status-$INT_NAME.md" || cleanup_rc=1
+  cleanup_status_markers || cleanup_rc=1
 
   if [ "$cleanup_rc" -eq 0 ]; then
     echo "Cleanup complete. Kept: docs/verify-*.md, docs/parallel-status.md, docs/polylane-report.md"
@@ -2613,6 +2640,28 @@ est_cost() { LC_ALL=C awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000
 
 # write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
+report_open_items() {
+  local name evidence
+  for name in "${LANE_NAMES[@]}" integration; do
+    evidence="$REPO_ROOT/docs/verify-$name.md"
+    [ -f "$evidence" ] || continue
+    awk '
+      /^[[:space:]]*#[#]*[[:space:]]+/ {
+        heading=$0
+        sub(/^[[:space:]]*#[#]*[[:space:]]+/, "", heading)
+        heading=tolower(heading)
+        open=(heading ~ /^(deferred|external|open items?)[[:space:]]*$/)
+        next
+      }
+      open {
+        line=$0
+        sub(/^[[:space:]]*[-*][[:space:]]*/, "", line)
+        if (line != "") print line
+      }
+    ' "$evidence"
+  done
+}
+
 write_report() {
   local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0
   # dry-run must never touch the tree — print the intent, write nothing.
@@ -2627,10 +2676,8 @@ write_report() {
     subtotal=$(jq '[.milestones[].subgoals[]] | length' "$STATE_FILE" 2>/dev/null || echo 0)
   fi
 
-  # next steps: surface anything the lanes flagged as open (kept files only).
-  steps=$(grep -hiE 'NEEDS DECISION|unverified|half-satisf|follow-up|not (yet|tested)|TODO|manual (verif|test)|out of scope|NO-GO' \
-            "$REPO_ROOT"/docs/verify-*.md "$REPO_ROOT/docs/parallel-status.md" 2>/dev/null \
-          | sed 's/^[[:space:]]*//; s/^[-*#> ]*//' | grep -v '^$' | sort -u | head -8 || true)
+  # Only current-run lane/integration evidence may nominate an open item.
+  steps=$(report_open_items | sort -u | head -8 || true)
 
   {
     echo "# polylane run report"
