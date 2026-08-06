@@ -31,12 +31,15 @@ The goal is at least 4x lower ledger scheduling overhead without skipping valida
 ### `graph-performance`
 
 Owns `bin/polylane-graph.sh`, `bin/polylane-events.sh`,
-`bin/polylane-graph-bench.sh`, `tests/test-graph-benchmark.sh`, and
+`bin/polylane-graph-bench.sh`, `tests/test-graph-contract.sh`,
+`tests/test-graph-benchmark.sh`, and
 `docs/verify-graph-performance.md`. First pin the invalid fixture and measured budget as
 failing tests. Then add a disposable replay checkpoint keyed by ledger identity, size,
 last sequence, and content hash. Any mismatch, malformed checkpoint, replaced ledger, or
 truncated row must force strict full replay. Keep Bash 3.2 + jq and the existing CLI
-contract.
+contract. Correct ready-node evaluation is part of this lane: join nodes require every
+declared predecessor, while ordinary routed nodes require one matching predecessor
+outcome (`passed`/`repaired` normalize to successful execution).
 
 ### `graph-authority`
 
@@ -63,4 +66,3 @@ write access unnecessarily, or passes only by raising the local 10-second ceilin
 - Do not mutate a graph after execution starts; replanning compiles a new graph id.
 - If three measured optimization attempts cannot meet the frozen budget, preserve the
   fastest correct version and emit the exact remaining profile evidence for cycle 4.
-
