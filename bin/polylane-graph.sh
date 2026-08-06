@@ -228,7 +228,7 @@ ready_nodes() {
     . as $graph | ($state[0].nodes // $state[0]) as $states |
     def execution_state:
       if . == "passed" or . == "repaired" then "succeeded" else . end;
-    def incoming($id): [$graph.edges[] | select(.to == $id)];
+    def incoming($id): [($graph.edges[]), ($graph.loops[]) | select(.to == $id)];
     def route_matches:
       (($states[.from] // "pending") | execution_state) == (.outcome | execution_state);
     [ $graph.nodes[]

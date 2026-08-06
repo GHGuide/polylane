@@ -82,6 +82,14 @@ JSON
 assert_eq "ready-join-after-builders" "builders-joined" \
   "$("$GRAPH" ready "$GRAPH_OUT" "$TEST_TMPDIR/builders-succeeded.json")"
 
+# Break caught: a fan-in join ignores a declared loop predecessor and can run
+# before that route has reached its declared successful outcome.
+jq '.loops += [{from:"repair", to:"builders-joined", outcome:"repaired", max_iterations:1}]' \
+  "$GRAPH_OUT" > "$TEST_TMPDIR/join-loop-graph.json"
+assert_ok "graph-join-loop-fixture-valid" "$GRAPH" validate "$TEST_TMPDIR/join-loop-graph.json"
+assert_eq "ready-join-blocked-by-unmatched-loop-predecessor" "" \
+  "$("$GRAPH" ready "$TEST_TMPDIR/join-loop-graph.json" "$TEST_TMPDIR/builders-succeeded.json")"
+
 # Break caught: a join requires every declared predecessor to take its declared
 # route, while an ordinary node is admitted by one matching route.  The graph
 # outcomes `passed` and `repaired` are terminal successful execution states.
