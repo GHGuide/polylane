@@ -407,6 +407,10 @@ load_manifest() {
   CYCLE_PLAN_FILE=$(jq -r '.cycle_plan_file // ""' "$MANIFEST")
   PROMPT_TOKEN_BUDGET=$(jq -r '.prompt_token_budget // 8000' "$MANIFEST")
   PROMPT_BYTE_BUDGET=$(jq -r '.prompt_byte_budget // ""' "$MANIFEST")
+  # Prime hybrid is explicit opt-in. Legacy manifests retain their exact
+  # launch/cleanup behavior while long-running contract-v2 cycles can retain
+  # bounded learning and worker continuity in canonical project state.
+  PRIME_HYBRID=$(jq -r 'if .prime_hybrid == true then "1" else "0" end' "$MANIFEST")
   [ -z "$STATE_FILE" ] || STATE_FILE=$(abs_project_path "$STATE_FILE")
   [ -z "$LANE_SKILLS_FILE" ] || LANE_SKILLS_FILE=$(abs_project_path "$LANE_SKILLS_FILE")
   [ -z "$CYCLE_PLAN_FILE" ] || CYCLE_PLAN_FILE=$(abs_project_path "$CYCLE_PLAN_FILE")
@@ -490,6 +494,11 @@ preflight_contract() {
     authoritative|shadow|off) : ;;
     *) die "graph_mode must be authoritative, shadow, or off" ;;
   esac
+  jq -e '(.prime_hybrid // false | type == "boolean")' "$MANIFEST" >/dev/null 2>&1 ||
+    die "prime_hybrid must be a boolean"
+  if prime_hybrid_enabled; then
+    [ "$strict" = "1" ] || die "prime_hybrid requires orchestration_contract: 2"
+  fi
   [ "$strict" = "1" ] || return 0
 
   case "${PROMPT_TOKEN_BUDGET:-}" in ''|*[!0-9]*) die "contract v2 prompt_token_budget must be a positive integer" ;; esac
@@ -539,6 +548,20 @@ preflight_contract() {
   fi
   prompt_budget_check "$INT_PROMPT" "$INT_NAME" ||
     die "contract v2 integrator prompt exceeds its immutable prompt budget"
+
+  if prime_hybrid_enabled; then
+    for lane in "${LANE_NAMES[@]}" "$INT_NAME"; do
+      if [ "$lane" = "$INT_NAME" ]; then prompt="$INT_PROMPT"; else
+        prompt=$(lane_prompt_get "$lane")
+      fi
+      grep -qF 'POLYLANE_CONTEXT_PACKET' "$prompt" ||
+        die "prime_hybrid lane '$lane' prompt must name POLYLANE_CONTEXT_PACKET"
+      grep -qiE 'read[^.]*context packet[^.]*once|context packet[^.]*once' "$prompt" ||
+        die "prime_hybrid lane '$lane' prompt must require one bounded packet read"
+      grep -qiE 'durable inbox|POLYLANE_WORKERS_DIR' "$prompt" ||
+        die "prime_hybrid lane '$lane' prompt must route follow-ups through the durable inbox"
+    done
+  fi
 
   for sid in $(jq -r '.target_subgoals[]' "$MANIFEST"); do
     jq -e --arg sid "$sid" '
@@ -1188,6 +1211,181 @@ split_worktrees() {
 }
 
 # ---------------------------------------------------------------------------
+# prime hybrid — optional canonical learning + retained-worker runtime
+# ---------------------------------------------------------------------------
+#
+# The generated state belongs to the canonical project, never an isolated
+# worktree.  These helpers deliberately call the four cycle-11 APIs rather than
+# reimplement their formats: harness/refine own mutation + rollback semantics,
+# workers owns CAS capsules and relay import, and context owns its allowlist and
+# byte bound.  A legacy manifest leaves this entire section inert.
+
+prime_hybrid_enabled() { [ "${PRIME_HYBRID:-0}" = "1" ]; }
+prime_hybrid_harness_dir() { printf '%s/docs/polylane/harness' "$PROJECT_ROOT"; }
+prime_hybrid_workers_dir() { printf '%s/docs/polylane/workers' "$PROJECT_ROOT"; }
+prime_hybrid_context_dir() { printf '%s/.polylane/context' "$PROJECT_ROOT"; }
+prime_hybrid_context_packet() { printf '%s/%s.md' "$(prime_hybrid_context_dir)" "$1"; }
+
+prime_hybrid_pane_exports() {
+  local worktree="$1" worker harness workers packet
+  prime_hybrid_enabled || return 0
+  worker=$(prime_hybrid_worker_for_worktree "$worktree") || {
+    echo "prime-hybrid: no stable worker identity for worktree $worktree" >&2
+    return 1
+  }
+  harness=$(prime_hybrid_harness_dir); workers=$(prime_hybrid_workers_dir)
+  packet=$(prime_hybrid_context_packet "$worker")
+  printf 'POLYLANE_HARNESS_DIR=%q POLYLANE_WORKERS_DIR=%q POLYLANE_WORKER_ID=%q POLYLANE_CONTEXT_PACKET=%q' \
+    "$harness" "$workers" "$worker" "$packet"
+}
+
+prime_hybrid_worker_for_worktree() {
+  local worktree="$1" i
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "${LANE_WORKTREES[$i]}" = "$worktree" ] && { printf '%s' "${LANE_NAMES[$i]}"; return 0; }
+  done
+  [ "$worktree" = "${INT_WORKTREE:-}" ] && { printf '%s' "${INT_NAME:-integrator}"; return 0; }
+  return 1
+}
+
+prime_hybrid_goal() {
+  local goal="$PROJECT_ROOT/docs/polylane/ULTIMATE_GOAL.md"
+  [ -s "$goal" ] && sed -n '1,24p' "$goal" || printf '%s' 'durable goal unavailable'
+}
+
+prime_hybrid_subgoal() {
+  local targets
+  if [ -n "${MANIFEST:-}" ] && [ -f "$MANIFEST" ]; then
+    targets=$(jq -r '.target_subgoals // [] | join(", ")' "$MANIFEST" 2>/dev/null || true)
+    [ -n "$targets" ] && { printf '%s' "$targets"; return; }
+  fi
+  printf '%s' "cycle ${CYCLE:-0}"
+}
+
+prime_hybrid_register_worker() {
+  local worker="$1" role="$2" existing version last_cycle current_role rc=0
+  prime_hybrid_enabled || return 0
+  existing=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT_ROOT" "$worker" 2>/dev/null) || rc=$?
+  if [ "$rc" = 0 ]; then
+    version=$(printf '%s' "$existing" | jq -r '.version')
+    last_cycle=$(printf '%s' "$existing" | jq -r '.last_cycle')
+    current_role=$(printf '%s' "$existing" | jq -r '.role')
+    [ "$last_cycle" -lt "${CYCLE:-0}" ] 2>/dev/null || return 0
+    "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" "$version" \
+      "$current_role" "$CYCLE" active "registered for run ${RUN_ID:-legacy}" \
+      "read the canonical bounded context packet once" "prelaunch retained identity" >/dev/null
+    return 0
+  fi
+  # Exit 4 is the public API's explicit missing-identity result. Anything else
+  # is a corrupt/unreadable canonical store and must fail the launch closed.
+  [ "$rc" = 4 ] || return "$rc"
+  "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" 0 "$role" "$CYCLE" active \
+    "registered for run ${RUN_ID:-legacy}" "read the canonical bounded context packet once" \
+    "prelaunch retained identity" >/dev/null
+}
+
+prime_hybrid_import_relay() {
+  prime_hybrid_enabled || return 0
+  mkdir -p "$(dirname "$COORDINATION_FILE")"
+  [ -e "$COORDINATION_FILE" ] || : > "$COORDINATION_FILE"
+  "$SCRIPT_DIR/polylane-workers.sh" import-relay "$PROJECT_ROOT" "$COORDINATION_FILE" "$CYCLE" >/dev/null
+}
+
+prime_hybrid_validate_pending() {
+  local store proposal rc=0
+  prime_hybrid_enabled || return 0
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  store=$(prime_hybrid_harness_dir)
+  [ -f "$store/refinements.json" ] || return 0
+  while IFS= read -r proposal; do
+    [ -n "$proposal" ] || continue
+    rc=0
+    "$SCRIPT_DIR/polylane-refine.sh" validate "$store" "$CYCLE" "$proposal" >/dev/null || rc=$?
+    # A failing declared check returns 7 only after the API has atomically
+    # restored the recorded snapshot. It is an expected safe outcome, not a
+    # permission to continue with the unvalidated local change.
+    case "$rc" in 0|7) : ;; *) return "$rc" ;; esac
+  done < <(jq -r --argjson cycle "$CYCLE" '
+    .proposals | to_entries[]? |
+    select(.value.status == "pending" and .value.created_cycle < $cycle) | .key
+  ' "$store/refinements.json")
+}
+
+prime_hybrid_observe() {
+  local kind="$1" subject="$2" evidence="$3"
+  prime_hybrid_enabled || return 0
+  [ "${DRY_RUN:-0}" = "1" ] && { echo "+ (dry-run) would observe $kind for $subject in the refinement ledger"; return 0; }
+  "$SCRIPT_DIR/polylane-refine.sh" observe "$(prime_hybrid_harness_dir)" "$CYCLE" "$kind" "$subject" "$evidence" >/dev/null
+}
+
+prime_hybrid_build_packet() {
+  local worker="$1" role="$2" packet_dir packet out tmp goal subgoal budget
+  prime_hybrid_enabled || return 0
+  packet_dir="$PROJECT_ROOT/.polylane/context-packets/$worker"
+  out=$(prime_hybrid_context_packet "$worker")
+  mkdir -p "$(dirname "$out")"
+  goal=$(prime_hybrid_goal); subgoal=$(prime_hybrid_subgoal)
+  budget="${POLYLANE_CONTEXT_PACKET_BYTES:-12000}"
+  "$SCRIPT_DIR/polylane-context.sh" packet "$PROJECT_ROOT" "$packet_dir" "$budget" \
+    "${RUN_ID:-legacy} $worker $role $subgoal" --goal "$goal" --subgoal "$subgoal" --worker "$worker" >/dev/null
+  packet="$packet_dir/context.md"
+  [ -s "$packet" ] || { echo "prime-hybrid: context API did not produce packet for $worker" >&2; return 1; }
+  tmp="$(dirname "$out")/.${worker}.md.tmp.$$"
+  cp "$packet" "$tmp" && mv "$tmp" "$out"
+}
+
+prime_hybrid_prepare() {
+  local store i
+  prime_hybrid_enabled || return 0
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would initialize canonical harness/workers and build bounded lane packets"
+    return 0
+  fi
+  store=$(prime_hybrid_harness_dir)
+  "$SCRIPT_DIR/polylane-harness.sh" init "$store" >/dev/null || return 1
+  prime_hybrid_validate_pending || return 1
+  for i in "${!LANE_NAMES[@]}"; do
+    prime_hybrid_register_worker "${LANE_NAMES[$i]}" builder || return 1
+  done
+  prime_hybrid_register_worker "$INT_NAME" integrator || return 1
+  prime_hybrid_import_relay || return 1
+  for i in "${!LANE_NAMES[@]}"; do
+    prime_hybrid_build_packet "${LANE_NAMES[$i]}" builder || return 1
+  done
+  prime_hybrid_build_packet "$INT_NAME" integrator || return 1
+  # A cycle's bounded compression is observable evidence only. Two repeated
+  # observations are still required before a local refinement can be proposed.
+  prime_hybrid_observe compaction context "bounded packets built for run ${RUN_ID:-legacy}"
+}
+
+prime_hybrid_record_completion() {
+  local worker="$1" verify existing version last_cycle status current_role
+  prime_hybrid_enabled || return 0
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  if [ "$worker" = "${INT_NAME:-}" ]; then verify='docs/verify-integration.md'; else verify="docs/verify-$worker.md"; fi
+  existing=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT_ROOT" "$worker") || return $?
+  version=$(printf '%s' "$existing" | jq -r '.version')
+  last_cycle=$(printf '%s' "$existing" | jq -r '.last_cycle')
+  status=$(printf '%s' "$existing" | jq -r '.status')
+  current_role=$(printf '%s' "$existing" | jq -r '.role')
+  if [ "$last_cycle" = "$CYCLE" ] && [ "$status" = complete ]; then
+    prime_hybrid_import_relay
+    return 0
+  fi
+  "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" "$version" "$current_role" "$CYCLE" complete \
+    "completed run ${RUN_ID:-legacy}" "completion capsule from $verify" "$verify" >/dev/null
+  prime_hybrid_import_relay
+}
+
+prime_hybrid_record_builder_completions() {
+  local i
+  prime_hybrid_enabled || return 0
+  for i in "${!LANE_NAMES[@]}"; do
+    prime_hybrid_record_completion "${LANE_NAMES[$i]}" || return 1
+  done
+}
+
+# ---------------------------------------------------------------------------
 # resume — skip lanes whose DONE file is already valid
 # ---------------------------------------------------------------------------
 
@@ -1293,14 +1491,15 @@ agent_procs() {
 
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" resume="${5:-}" pfx=""
-  local qwt qmodel qpf qeffort qproject qcoord project_root coord_file tmpl add_dir
+  local qwt qmodel qpf qeffort qproject qcoord qhybrid project_root coord_file tmpl add_dir
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf"); qeffort=$(printf '%q' "${effort:-medium}")
   # Every pane remains in its isolated worktree, while its live relay always
   # resolves under the canonical run project. These are shell-escaped env values,
   # never prompt text, so an untrusted prompt path cannot inject into the command.
-  project_root="${COORDINATION_PROJECT_ROOT:-${POLYLANE_PROJECT_ROOT:-${REPO_ROOT:-$(pwd)}}}"
+  project_root="${COORDINATION_PROJECT_ROOT:-${REPO_ROOT:-${POLYLANE_PROJECT_ROOT:-$(pwd)}}}"
   coord_file="${COORDINATION_FILE:-${POLYLANE_COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
   qproject=$(printf '%q' "$project_root"); qcoord=$(printf '%q' "$coord_file")
+  qhybrid=$(prime_hybrid_pane_exports "$wt") || return 1
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
   # NEVER launch an agent with no prompt: that starts an amnesiac session with no
   # locked goal (the "pane sits at an empty input" bug). If the seeded agent exits
@@ -1322,8 +1521,8 @@ pane_cmd() {
   tmpl=${tmpl//'{effort}'/$qeffort}
   tmpl=${tmpl//'{add_dir}'/$add_dir}
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
-  printf 'export POLYLANE_PROJECT_ROOT=%s POLYLANE_COORDINATION_FILE=%s; cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
-    "$qproject" "$qcoord" "$qwt" "$pfx" "$tmpl"
+  printf 'export POLYLANE_PROJECT_ROOT=%s POLYLANE_COORDINATION_FILE=%s %s; cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
+    "$qproject" "$qcoord" "$qhybrid" "$qwt" "$pfx" "$tmpl"
 }
 
 # assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
@@ -1666,6 +1865,7 @@ stall_check() {
     idx=$(pane_index_for "$name")
     pane_stalled "$idx" || continue
     STALLED_LANES="${STALLED_LANES:+$STALLED_LANES }$name"
+    prime_hybrid_observe stall "$name" "usage-limit stall in run ${RUN_ID:-legacy}" || return 1
     echo "stall: lane '$name' hit a usage limit — waiting for a human decision (no auto-retry)"
     notify_event stall "lane '$name' hit a usage limit — human decision needed"
   done
@@ -2593,6 +2793,7 @@ merge_gate() {
       return 0
       ;;
     *)
+      prime_hybrid_observe no-go "$INT_NAME" "integrator verdict $v in run ${RUN_ID:-legacy}" || return 1
       echo "Integrator verdict: $v — engineering gate did not pass. Nothing deleted." >&2
       [ -f "$f" ] && { echo "--- $f ---" >&2; cat "$f" >&2; }
       notify_event no-go "integrator verdict $v — nothing merged, worktrees intact"
@@ -3227,6 +3428,8 @@ post_promote_resume_ready() {
 recover_post_promote_run() {
   VERDICT_RESULT="${POST_PROMOTE_VERDICT:?post-promote verdict missing}"
   echo "== recover: verified run already promoted; completing cleanup + report =="
+  prime_hybrid_record_builder_completions
+  prime_hybrid_record_completion "$INT_NAME"
   capture_stats
   if ! cleanup; then
     CLEANUP_WARNING="some worktrees, branches, or scratch could not be removed"
@@ -3253,6 +3456,7 @@ main() {
   preflight_agent
   apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
   preflight_contract
+  prime_hybrid_prepare || exit 1
   advanced_runtime preflight || exit 1
   graph_shadow_init || exit 1
   mark_resumed      # --resume: flag already-DONE lanes BEFORE split/launch
@@ -3282,12 +3486,16 @@ main() {
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
     graph_authority_record_builders succeeded || exit 1
+    prime_hybrid_record_builder_completions || exit 1
     echo "All builders DONE."
     notify_event "done" "all ${#LANE_NAMES[@]} lane(s) DONE — starting integrator"
     advanced_runtime select || exit 1
   else
     poll_rc=$?
     [ "$poll_rc" = 75 ] && exit 75
+    for lane in ${FAILED_LANES:-}; do
+      prime_hybrid_observe failure "$lane" "lane failed after retries in run ${RUN_ID:-legacy}" || exit 1
+    done
     graph_authority_record_builders failed || exit 1
     echo "Halt: lane(s) failed after retries: ${FAILED_LANES:-?}. Not integrating." >&2
     notify_event halt "lane(s) failed after retries: ${FAILED_LANES:-?}"
@@ -3322,6 +3530,7 @@ main() {
     exit 1
   fi
   graph_authority_record_ready_node integrator succeeded 0 integrator-done || exit 1
+  prime_hybrid_record_completion "$INT_NAME" || exit 1
 
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time

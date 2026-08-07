@@ -67,6 +67,22 @@ is compare-and-swap protected; `canary` rolls back a failing promoted generation
 and `recover` resolves an interrupted activation journal. See
 `skill-evolution.md`; never rewrite an active skill from a reflection hook.
 
+## Prime hybrid continuity boundary
+
+`"prime_hybrid": true` is the opt-in runtime for long product work. Before a
+lane launches, `polylane-run.sh` initializes canonical harness and worker state,
+validates prior-cycle refinement checks, imports the append-only relay, retains
+stable identities, and generates `.polylane/context/<lane>.md` within a hard
+byte budget. Every pane receives `POLYLANE_HARNESS_DIR`, `POLYLANE_WORKERS_DIR`,
+`POLYLANE_WORKER_ID`, and `POLYLANE_CONTEXT_PACKET`; the packet is read once and
+follow-ups use the durable inbox. Completion capsules and observations of failure,
+stall, NO-GO, and compaction remain under `docs/polylane/`, not a worktree.
+
+Repeated evidence may produce a local proposal only with an executable expected
+check; the next cycle validates or rolls back its immutable snapshot. Global
+prompt/skill proposals are inactive handoffs to `bin/polylane-skill-evolve.sh`.
+They cannot directly overwrite either `SKILL.md` or an installed skill.
+
 Lane status comes solely from `polylane-state` and runner helpers. A DONE marker
 must be the exact current-run first line `STATUS: <lane> DONE run=<run_id>` with
 the literal nonce. A final newline is optional: `polylane-markers.sh done` emits

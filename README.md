@@ -141,6 +141,16 @@ live coordination and resource mutexes outside isolated worktrees; stale locks a
 recovered safely. `docs/parallel-status.md` is a post-cycle summary, not the live
 coordination channel.
 
+### Retained workers and bounded context
+
+Set `"prime_hybrid": true` in a long-running manifest to retain worker identities
+and evidence safely across cycles. Before launch, Polylane validates pending local
+refinements, imports the canonical relay, and writes one bounded
+`.polylane/context/<lane>.md` packet per lane. The runner exports its canonical
+harness, workers directory, stable worker id, and packet path to each pane; global
+prompt or skill ideas remain proposal-only handoffs to `polylane-skill-evolve.sh`.
+Legacy manifests are unchanged.
+
 ### End-of-run report
 
 The run happens in tmux, so the runner writes `docs/polylane-report.md` with the

@@ -104,6 +104,25 @@ competing state engine. Unknown values remain unknown; only the literal current
 nonce can qualify a DONE marker, with or without a final newline after that exact
 first line.
 
+### Prime hybrid continuity (opt-in for long product work)
+
+For a long-running cycle, emit `"prime_hybrid": true` in the contract-v2 manifest
+and add prompt-block D.1 from `references/prompt-blocks.md` to every builder and
+integrator prompt. Before any pane opens, the shared runner initializes canonical
+`docs/polylane/harness` and `docs/polylane/workers`, validates pending prior-cycle
+refinements, imports the live relay, retains worker identities, and creates one
+bounded `.polylane/context/<lane>.md`. Every prime-hybrid pane receives
+`POLYLANE_HARNESS_DIR`, `POLYLANE_WORKERS_DIR`, `POLYLANE_WORKER_ID`, and
+`POLYLANE_CONTEXT_PACKET`: read the context packet exactly once and use the
+durable inbox for follow-ups.
+
+Repeated failure, stall, NO-GO, and context-compaction observations are evidence,
+not permission to self-modify. A local refinement must declare its bounded expected
+check before it activates, then validates or rolls back next cycle. A global prompt
+or skill proposal remains an inactive handoff to `scripts/polylane-skill-evolve.sh`;
+never edit `SKILL.md` or an installed skill directly. Omit `prime_hybrid` for a
+legacy manifest: it remains fully backward-compatible and dry-runs remain pure.
+
 ## Entry and goal lock
 
 Set:
@@ -216,6 +235,13 @@ Each prompt is self-contained and must include:
   reuse unchanged pass/fail results and change source before retrying a failure;
 - `EXTERNAL-EVIDENCE:` physical/manual proof stays external while all autonomous
   work continues;
+- when the manifest has `"prime_hybrid": true`, read the runner-exported
+  `POLYLANE_CONTEXT_PACKET` once and use the `polylane-workers.sh` durable inbox
+  for follow-ups. The runner owns canonical harness/worker state and uses
+  `polylane-refine.sh` to validate pending local refinement expected checks in
+  the next cycle (or rolls back).
+  Global prompt/skill ideas are proposal-only handoffs to
+  `polylane-skill-evolve.sh`; never directly edit SKILL.md or an installed skill;
 - evidence file `docs/verify-<lane>.md`;
 - exact first-line marker `STATUS: <lane> DONE run=<run_id>`;
 - terse execution, scoped git staging, no re-scoping, and no idle waiting.

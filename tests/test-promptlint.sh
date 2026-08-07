@@ -68,6 +68,19 @@ JSON
   out=$("$LINT" lint-run "$TEST_TMPDIR/.polylane/run.json" 2>&1); rc=$?
   assert_eq "lint-run-no-integrator-rc0" "0" "$rc"
   if printf '%s' "$out" | grep -qiE 'Is a directory|null'; then fail "lint-run-clean-stderr" "$out"; else pass "lint-run-clean-stderr"; fi
+
+  cp "$GOOD" "$TEST_TMPDIR/.polylane/lanes/prime.txt"
+  cat >> "$TEST_TMPDIR/.polylane/lanes/prime.txt" <<'P'
+Read POLYLANE_CONTEXT_PACKET exactly once. Use the durable inbox through
+polylane-workers.sh for follow-ups.
+P
+  cat > "$TEST_TMPDIR/.polylane/prime.json" <<'JSON'
+{"base":"main","prime_hybrid":true,"lanes":[{"name":"prime","prompt_file":".polylane/lanes/prime.txt"}]}
+JSON
+  assert_ok "lint-prime-hybrid-continuity" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime.json"
+  grep -v 'durable inbox' "$TEST_TMPDIR/.polylane/lanes/prime.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-missing.txt"
+  sed 's#prime.txt#prime-missing.txt#' "$TEST_TMPDIR/.polylane/prime.json" > "$TEST_TMPDIR/.polylane/prime-missing.json"
+  assert_fail "lint-prime-hybrid-requires-inbox" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-missing.json"
 else pass "lint-run-skipped-no-jq"; fi
 
 finish

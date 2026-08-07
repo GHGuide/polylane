@@ -23,6 +23,10 @@ if [ -d "$REPO/benchmarks" ]; then cp -R "$REPO/benchmarks" "$DEST/benchmarks"; 
 
 grep -q '^name: polylane' "$DEST/SKILL.md" || { echo "install: bad SKILL.md" >&2; exit 1; }
 test -x "$DEST/bin/polylane-run.sh" || { echo "install: helpers missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-harness.sh" || { echo "install: prime harness helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-workers.sh" || { echo "install: retained worker helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-context.sh" || { echo "install: bounded context helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-refine.sh" || { echo "install: refinement helper missing" >&2; exit 1; }
 
 echo "installed Claude Code skill -> $DEST"
 echo "deps: tmux + jq + claude on PATH. Invoke in Claude Code with: /polylane"

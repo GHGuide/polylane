@@ -33,7 +33,10 @@ now_utc() { date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || printf '?'; }
 
 kill_descendants() {
   local parent="$1" child children
-  children=$(ps -axo pid=,ppid= 2>/dev/null | awk -v parent="$parent" '$2==parent {print $1}')
+  # Some constrained hosts deny process-table inspection. Descendant cleanup is
+  # best-effort; its unavailability must not turn a bounded timeout into a
+  # command-execution failure before the parent receives TERM.
+  children=$( (ps -axo pid=,ppid= 2>/dev/null | awk -v parent="$parent" '$2==parent {print $1}') || true )
   for child in $children; do kill_descendants "$child"; kill -TERM "$child" 2>/dev/null || true; done
 }
 

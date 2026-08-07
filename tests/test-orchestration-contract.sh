@@ -88,6 +88,18 @@ MANIFEST="$MANIFEST"
 load_manifest
 assert_ok "contract-valid-before-launch" preflight_contract
 
+jq '.prime_hybrid=true' "$MANIFEST" > "$P/.polylane/prime-hybrid.json"
+MANIFEST="$P/.polylane/prime-hybrid.json"; load_manifest
+assert_fail "contract-prime-hybrid-requires-prompt-continuity" preflight_contract
+cat >> "$PROMPT" <<'PROMPT'
+Read the POLYLANE_CONTEXT_PACKET context packet once; use polylane-workers.sh durable inbox follow-ups.
+PROMPT
+cat >> "$P/.polylane/lanes/integrator.txt" <<'PROMPT'
+Read the POLYLANE_CONTEXT_PACKET context packet once; use polylane-workers.sh durable inbox follow-ups.
+PROMPT
+load_manifest
+assert_ok "contract-prime-hybrid-valid-v2" preflight_contract
+
 jq '.available_models=["claude-opus"]' "$MANIFEST" > "$P/.polylane/bad-available-model.json"
 assert_rc "codex-rejects-non-gpt-available-model" 2 \
   bash -c '. "$1"; MANIFEST="$2"; load_manifest; preflight_contract' \
@@ -98,9 +110,12 @@ assert_rc "codex-rejects-non-gpt-model-override" 2 \
   _ "$RUNNER" "$P/.polylane/run.json"
 
 BAD="$P/.polylane/legacy.json"
-jq 'del(.orchestration_contract)' "$MANIFEST" > "$BAD"
+jq 'del(.orchestration_contract) | .prime_hybrid=true' "$P/.polylane/run.json" > "$BAD"
 MANIFEST="$BAD"; load_manifest
 assert_rc "codex-legacy-rejected" 2 preflight_contract
+AGENT=claude
+assert_rc "prime-hybrid-legacy-rejected" 2 preflight_contract
+AGENT=codex
 
 mkdir -p "$P/.polylane/wt/builder"
 RESUME=1

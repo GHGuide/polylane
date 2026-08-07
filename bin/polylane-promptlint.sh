@@ -13,7 +13,7 @@ set -euo pipefail
 
 # required token -> human label. A prompt must contain each (case-insensitive).
 lint_one() {
-  local f="$1" lane="${2:-$(basename "$1" .txt)}" miss=""
+  local f="$1" lane="${2:-$(basename "$1" .txt)}" prime_hybrid="${3:-false}" miss=""
   [ -s "$f" ] || { echo "PROMPT-LINT: $lane empty-or-missing $f"; return 6; }
   grep -qiE 'GOAL|/goal' "$f"        || miss="$miss objective(GOAL)"
   grep -q   'ULTIMATE-GOAL:' "$f"    || miss="$miss ultimate-goal"
@@ -34,20 +34,26 @@ lint_one() {
     grep -qiE '^[[:space:]]*(browse|list|find) .*skill' "$f" && miss="$miss skill-inventory-dump"
     grep -qi 'EXTERNAL-EVIDENCE:' "$f"    || miss="$miss external-evidence-routing"
   fi
+  if [ "$prime_hybrid" = true ]; then
+    grep -q 'POLYLANE_CONTEXT_PACKET' "$f" || miss="$miss prime-hybrid-context-packet"
+    grep -qi 'durable inbox' "$f" || miss="$miss prime-hybrid-durable-inbox"
+    grep -qi 'polylane-workers.sh' "$f" || miss="$miss prime-hybrid-worker-api"
+  fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi
   return 0
 }
 
 lint_run() {
-  local mf="$1" rc=0 lane pf dir
+  local mf="$1" rc=0 lane pf dir prime_hybrid
   command -v jq >/dev/null 2>&1 || { echo "polylane-promptlint: jq required for lint-run" >&2; return 2; }
   dir=$(cd "$(dirname "$mf")/.." && pwd)   # .polylane/ -> project root
+  prime_hybrid=$(jq -r 'if .prime_hybrid == true then "true" else "false" end' "$mf")
   # `// empty`: a manifest with no integrator yields no phantom "null" lane
   for lane in $(jq -r '.lanes[].name, (.integrator.name // empty)' "$mf"); do
     pf=$(jq -r --arg n "$lane" '(.lanes[],.integrator) | select(.name==$n) | .prompt_file' "$mf" | head -1)
     [ -n "$pf" ] && [ "$pf" != "null" ] || { echo "PROMPT-LINT: $lane no prompt_file"; rc=6; continue; }
     case "$pf" in /*) : ;; *) pf="$dir/$pf" ;; esac
-    lint_one "$pf" "$lane" || rc=6
+    lint_one "$pf" "$lane" "$prime_hybrid" || rc=6
   done
   return $rc
 }

@@ -51,6 +51,22 @@ Read only the named kit once. Your goal is LOCKED (below); go straight to execut
    skills. Only concrete installed skills count. Codex uses Codex skill names; Claude uses
    Claude skill names. GitHub suggestions are reviewed informational recommendations and never appear here until installed. The executable kit is one to two `predefined` plus one to two `specific`, at most four unique skills.
 
+## D.1 Prime hybrid continuity — only when manifest `prime_hybrid: true`
+```
+The runner exported POLYLANE_HARNESS_DIR, POLYLANE_WORKERS_DIR,
+POLYLANE_WORKER_ID, and POLYLANE_CONTEXT_PACKET from canonical project state.
+Before work, read "$POLYLANE_CONTEXT_PACKET" exactly once. For follow-ups, use the
+durable inbox through "$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox
+"$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"; do not invent a worktree-local
+memory file or edit the relay.
+
+Local refinements require repeated observed evidence and a declared bounded expected
+check through polylane-refine.sh; next-cycle validation either validates or rolls
+back the immutable harness snapshot. A global prompt or skill idea is proposal-only:
+stage it for bin/polylane-skill-evolve.sh. Never directly overwrite SKILL.md or an
+installed skill.
+```
+
 ## E. Graphify-first (navigation) — MANDATORY, blocking Step 1 when graphify-out/ exists
 ```
 STEP 1 (before ANY Read/Grep): build a map of your subsystem by QUERYING the graph with the helper — do NOT grep to discover where things are. The graph in graphify-out/ is a READ-ONLY symlink to the parent repo's, refreshed by the orchestrator this cycle — do NOT run /graphify-auto or rebuild it (you'd race the other lanes through the shared link):
@@ -104,7 +120,7 @@ Also write a `## DEFERRED` section at the END of docs/verify-<lane>.md: every fo
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
 - **Merge into YOUR OWN integrator branch — NEVER the base branch.** You run in your own worktree on your own branch. Merge each lane branch's CURRENT tip INTO THIS branch and verify the combined tree HERE. Do NOT check out or merge into `main`/base — the runner fast-forwards the base to your branch itself, and ONLY on a GO, so a NO-GO can never touch the base. Never trust a prior GO: if commits followed one, re-verify from scratch.
-- Read all verify-*.md plus the canonical relay snapshot, build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in the relay; write `docs/parallel-status.md` once as the durable post-cycle summary. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite in this sandbox.
+- Read all verify-*.md plus the canonical relay snapshot, and, for a prime-hybrid run, the bounded integrator packet and eligible refinement evidence. Build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in the relay; write `docs/parallel-status.md` once as the durable post-cycle summary. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite in this sandbox.
 - **If ponytail is installed, run `/ponytail-review` on the merged diff** — flag any over-engineering a lane introduced (dead abstraction, speculative generality, needless deps). Note findings in verify-integration.md; a lane that grossly over-built against its goal is a quality regression worth a NO-GO. Keeps the token-efficiency mission enforced at the gate, not just per-lane.
 - **Independent evidence, never a vibes-only GO.** Use independent verifier lanes
   when the plan includes them; otherwise combine mechanical acceptance, seam checks,

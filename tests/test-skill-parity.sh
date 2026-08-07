@@ -42,5 +42,10 @@ both coordination-relay 'POLYLANE_COORDINATION_FILE|polylane-coordinate\.sh'
 both skill-evolution-runtime 'polylane-skill-evolve\.sh'
 both skill-challenger-gate 'champion.*challenger|challenger.*champion'
 both skill-canary-rollback 'canary.*(rollback|rolls? back)|(rollback|rolls? back).*canary'
+both prime-hybrid 'prime_hybrid'
+both retained-worker-context 'POLYLANE_CONTEXT_PACKET'
+both worker-inbox 'polylane-workers\.sh'
+both refinement-runtime 'polylane-refine\.sh'
+both refinement-rollback 'roll.?back'
 
 finish

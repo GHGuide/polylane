@@ -11,6 +11,7 @@ lanes L2/L3/L4 depend on them.
 ```json
 {
   "orchestration_contract": 2,
+  "prime_hybrid": true,
   "run_id": "cycle-7-unique-nonce",
   "cycle": 7,
   "state_file": "docs/polylane/max-state.json",
@@ -54,6 +55,7 @@ lanes L2/L3/L4 depend on them.
 | Key | Type | Meaning |
 |---|---|---|
 | `orchestration_contract` | integer | Set to `2` for reliable Codex runs. Enables pre-launch gates for state, plans, prompts, skills, scope, acceptance, and prior-cycle artifacts. Fresh Codex runs reject legacy manifests unless `POLYLANE_ALLOW_LEGACY=1` is explicitly set for migration. A `--resume` may grandfather a legacy manifest only when it has a non-empty `run_id` and at least one already-materialized lane worktree, preventing an upgrade from stranding real in-flight work without weakening new launches. |
+| `prime_hybrid` | boolean | *(optional, default `false`)* Retained-worker and evidence-gated refinement runtime for long product work. Requires contract v2. Before panes open, it initializes canonical `docs/polylane/harness` and `docs/polylane/workers`, validates pending prior-cycle refinements, imports the live relay, and creates one bounded `.polylane/context/<lane>.md` per builder and integrator. Legacy manifests are unchanged. |
 | `run_id` | string | Fresh per-run nonce baked into every DONE marker and verdict sentinel. |
 | `cycle` | integer | Current durable cycle number, starting at 1. |
 | `state_file` | string | Durable goal/acceptance state. Must live outside `.polylane/`, normally `docs/polylane/max-state.json`. |
@@ -127,6 +129,9 @@ model/effort-downgraded replans before a durable `needs-user` stop (default `2`)
 
 Codex panes launch with nested multi-agent and fan-out features disabled. Strict
 contract-v2 prompts must include `DELEGATION:` and `CHECK-CACHE:` blocks.
+With `prime_hybrid: true`, they must additionally require one read of
+`POLYLANE_CONTEXT_PACKET` and durable-inbox follow-ups; the runner rejects a
+prompt that omits either contract.
 
 ---
 
@@ -255,6 +260,11 @@ The `POLYLANE_EFFORT=<effort>` prefix appears only when the lane has an
 `agent: "claude"` or `agent: "aider"`, and any other CLI can be supplied through
 `POLYLANE_AGENT_CMD` with `{model}` and `{prompt}` placeholders.
 
+For a prime-hybrid run, the same command additionally exports canonical
+`POLYLANE_HARNESS_DIR`, `POLYLANE_WORKERS_DIR`, `POLYLANE_WORKER_ID`, and
+`POLYLANE_CONTEXT_PACKET`. The final two are lane-specific; no worker or relay
+state is written into the lane worktree.
+
 ---
 
 ## Dependencies
@@ -284,5 +294,9 @@ to probe the live model list; without it the helper prints its fallback list.
 - Contract v2 runs cannot launch if they have no autonomous route, missing frozen
   acceptance, stale prior-cycle artifacts, empty skill kits, weak prompts, or
   overlapping ownership.
+- Prime-hybrid local refinements require repeated observed evidence plus a declared
+  bounded expected check, then validate or roll back only in a later cycle. Global
+  prompt/skill records remain inactive handoffs to `bin/polylane-skill-evolve.sh`;
+  they never modify a live or installed skill directly.
 - Every live supervised tmux run is observable with the exact line returned by
   `bin/polylane-cycle.sh runtime .polylane/run.json`.

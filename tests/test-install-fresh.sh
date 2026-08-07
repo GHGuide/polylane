@@ -34,6 +34,10 @@ assert_ok "claude-mem-executable"  test -x "$CLA/bin/polylane-memory.sh"
 assert_ok "claude-references-dir"  test -d "$CLA/references"
 assert_ok "claude-assets-dir"      test -d "$CLA/assets"
 assert_ok "claude-skill-evals"     test -f "$CLA/benchmarks/skill-evolution/polylane/evals.json"
+assert_ok "claude-prime-harness"   test -x "$CLA/bin/polylane-harness.sh"
+assert_ok "claude-retained-workers" test -x "$CLA/bin/polylane-workers.sh"
+assert_ok "claude-bounded-context" test -x "$CLA/bin/polylane-context.sh"
+assert_ok "claude-refinement"      test -x "$CLA/bin/polylane-refine.sh"
 assert_ok "claude-skill-evals-run" "$CLA/bin/polylane-skill-evolve.sh" validate \
   "$CLA/benchmarks/skill-evolution/polylane/evals.json"
 
@@ -49,6 +53,10 @@ assert_ok       "codex-20-scripts"      test "$(count_exec_scripts "$DEST/script
 assert_ok       "codex-prompt-blocks"   test -f "$DEST/references/prompt-blocks.md"
 assert_ok       "codex-assets-dir"      test -d "$DEST/assets"
 assert_ok       "codex-skill-evolve"    test -x "$DEST/scripts/polylane-skill-evolve.sh"
+assert_ok       "codex-prime-harness"   test -x "$DEST/scripts/polylane-harness.sh"
+assert_ok       "codex-retained-workers" test -x "$DEST/scripts/polylane-workers.sh"
+assert_ok       "codex-bounded-context" test -x "$DEST/scripts/polylane-context.sh"
+assert_ok       "codex-refinement"      test -x "$DEST/scripts/polylane-refine.sh"
 assert_ok       "codex-skill-evals"     test -f "$DEST/benchmarks/skill-evolution/polylane/evals.json"
 assert_ok       "codex-skill-evals-run" "$DEST/scripts/polylane-skill-evolve.sh" validate \
   "$DEST/benchmarks/skill-evolution/polylane/evals.json"

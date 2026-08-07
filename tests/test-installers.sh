@@ -23,6 +23,10 @@ assert_ok "install-codex-cycle-guard" test -x "$REPO/.codex/skills/polylane/scri
 assert_ok "install-codex-control-reference" test -f "$REPO/.codex/skills/polylane/references/cycle-9-control-room.md"
 assert_ok "install-codex-benchmark-artifact" test -f "$REPO/.codex/skills/polylane/benchmarks/install-sentinel.txt"
 assert_ok "install-codex-skill-evolution" test -x "$REPO/.codex/skills/polylane/scripts/polylane-skill-evolve.sh"
+assert_ok "install-codex-prime-harness" test -x "$REPO/.codex/skills/polylane/scripts/polylane-harness.sh"
+assert_ok "install-codex-retained-workers" test -x "$REPO/.codex/skills/polylane/scripts/polylane-workers.sh"
+assert_ok "install-codex-bounded-context" test -x "$REPO/.codex/skills/polylane/scripts/polylane-context.sh"
+assert_ok "install-codex-refinement" test -x "$REPO/.codex/skills/polylane/scripts/polylane-refine.sh"
 assert_ok "install-codex-skill-eval-corpus" test -f "$REPO/.codex/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 assert_ok "install-codex-skill-evals-runnable" \
   "$REPO/.codex/skills/polylane/scripts/polylane-skill-evolve.sh" validate \
@@ -41,6 +45,10 @@ fi
 assert_ok "install-claude-skill" test -f "$REPO/.claude/skills/polylane/SKILL.md"
 assert_ok "install-claude-runner" test -x "$REPO/.claude/skills/polylane/bin/polylane-run.sh"
 assert_ok "install-claude-skill-evolution" test -x "$REPO/.claude/skills/polylane/bin/polylane-skill-evolve.sh"
+assert_ok "install-claude-prime-harness" test -x "$REPO/.claude/skills/polylane/bin/polylane-harness.sh"
+assert_ok "install-claude-retained-workers" test -x "$REPO/.claude/skills/polylane/bin/polylane-workers.sh"
+assert_ok "install-claude-bounded-context" test -x "$REPO/.claude/skills/polylane/bin/polylane-context.sh"
+assert_ok "install-claude-refinement" test -x "$REPO/.claude/skills/polylane/bin/polylane-refine.sh"
 assert_ok "install-claude-skill-eval-corpus" test -f "$REPO/.claude/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 assert_ok "install-claude-skill-evals-runnable" \
   "$REPO/.claude/skills/polylane/bin/polylane-skill-evolve.sh" validate \

@@ -89,6 +89,9 @@ must match the selected CLI, but these agent-neutral blocks are mandatory:
   recorded pass/fail until source or build environment changes;
 - `EXTERNAL-EVIDENCE:` manual/physical evidence stays external while autonomous
   work continues;
+- when `prime_hybrid: true`, the runner-provided context-packet/inbox instruction
+  from `prompt-blocks.md` (read the bounded packet once; use the durable inbox for
+  follow-ups; global prompt/skill ideas remain skill-evolution proposals);
 - `docs/verify-<lane>.md` evidence contract;
 - scoped staging/commits and no `git add -A`;
 - exact `STATUS: <lane> DONE run=<run_id>` first-line marker.
@@ -116,6 +119,7 @@ bin/polylane-scout.sh lint .polylane/lane-skills.json <lane> .polylane/lanes/<la
   "orchestration_contract": 2,
   "run_id": "fresh-safe-nonce",
   "cycle": 3,
+  "prime_hybrid": true,
   "state_file": "docs/polylane/max-state.json",
   "lane_skills_file": ".polylane/lane-skills.json",
   "cycle_plan_file": "docs/polylane/cycle-3-plan.md",
@@ -151,6 +155,15 @@ literally into prompts.
 
 Contract v2 fails before any side effect when state, plan, index, skills, scope,
 acceptance, prompts, markers, or prior-cycle artifacts are missing.
+
+`prime_hybrid` is an explicit, backward-compatible opt-in for long product work.
+Before panes launch, the runner initializes `docs/polylane/harness` and
+`docs/polylane/workers`, validates pending prior-cycle refinements, retains stable
+worker identities, imports the canonical relay, and writes one bounded
+`.polylane/context/<lane>.md` packet per builder and integrator. It exports the
+canonical harness/workers directories, worker id, and packet path to every pane.
+Completion capsules, repeated failure/stall/NO-GO observations, and cycle
+compaction stay in durable project state; they never contaminate lane worktrees.
 
 ## Cycle-9 launch additions (frozen)
 

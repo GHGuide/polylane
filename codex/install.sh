@@ -42,6 +42,10 @@ install_one() {
   grep -q '^name: polylane' "$dest/SKILL.md" || { echo "install: bad SKILL.md" >&2; exit 1; }
   test -x "$dest/scripts/polylane-run.sh" || { echo "install: helpers missing" >&2; exit 1; }
   test -x "$dest/scripts/polylane-coordinate.sh" || { echo "install: coordination helper missing" >&2; exit 1; }
+  test -x "$dest/scripts/polylane-harness.sh" || { echo "install: prime harness helper missing" >&2; exit 1; }
+  test -x "$dest/scripts/polylane-workers.sh" || { echo "install: retained worker helper missing" >&2; exit 1; }
+  test -x "$dest/scripts/polylane-context.sh" || { echo "install: bounded context helper missing" >&2; exit 1; }
+  test -x "$dest/scripts/polylane-refine.sh" || { echo "install: refinement helper missing" >&2; exit 1; }
   echo "installed Codex skill -> $dest"
 }
 

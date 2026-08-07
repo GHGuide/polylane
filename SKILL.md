@@ -254,6 +254,18 @@ strict pre-launch gates it unlocks are agent-neutral — state, plan, prompts, s
 acceptance and prior-cycle artifacts are all verified BEFORE a pane spawns. A Claude run
 that omits it silently skips every one of those checks, so omit it only when knowingly
 migrating a legacy manifest:
+
+**Prime hybrid continuity is opt-in:** add `"prime_hybrid": true` for long product
+work. Before launch the runner creates canonical harness/worker state, validates
+pending prior-cycle refinements, imports the live relay, and exports
+`POLYLANE_HARNESS_DIR`, `POLYLANE_WORKERS_DIR`, `POLYLANE_WORKER_ID`, and
+`POLYLANE_CONTEXT_PACKET` to every lane. Read the bounded packet once; use
+`polylane-workers.sh` durable inbox for follow-ups. Local `polylane-refine.sh`
+refinements must carry
+an executable expected check and validate or roll back next cycle. Global prompt
+or skill changes are proposal-only handoffs to `polylane-skill-evolve.sh`, never
+direct edits to SKILL.md or an installed skill.
+
 - **Cycle 1:** derive the first concrete spec from the ultimate goal (a short
   deep-research pass to scope it), present it at the plan gate, then build.
 - **Cycle N>1:** the spec is already synthesized from the prior cycle (Phase 5) —
