@@ -48,4 +48,4 @@ compare-and-swap rollback to the captured snapshot (or delete a created entry).
 Every validation decision is append-only. Refinement only calls the harness API:
 it cannot mark product goals complete or self-promote global prompt/skill changes.
 
-Commit hash: pending
+Implementation commit hash: `291cc854afee73d4dd5198315eb832a90b18d7fa`
