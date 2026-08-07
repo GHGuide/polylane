@@ -7,16 +7,16 @@ Integrator branch: `lane/c11-integrator`
 
 The integrated merge is `cf4f507` (`lane/c11-harness-refine`,
 `lane/c11-worker-continuity`, and `lane/c11-context-query`), incorporating
-`291cc85`, `3b64f89`, and `89eab02`. The prime-hybrid integration test began
-red (4/30, followed by a runner-contract 6/23 failure) before shared runtime
-wiring. It is green at 34/0 after wiring the real harness, worker, context,
+`291cc85`, `3b64f89`, and `89eab02`. The shared runtime wiring is `f44885e`.
+The prime-hybrid integration test against its pre-wiring parent began red at
+7/27; it is green at 43/0 after wiring the real harness, worker, context,
 and refinement APIs into launch, completion, recovery, and failure/NO-GO
 observation. Full detail is in
 [`verify-prime-hybrid-integration.md`](verify-prime-hybrid-integration.md).
 
 ## Final certification
 
-- `tests/run.sh`: **1,507 passed, 0 failed, 86 test files**.
+- `tests/run.sh`: **1,516 passed, 0 failed, 86 test files**.
 - `shellcheck -S warning bin/*.sh`: clean.
 - `bash tests/test-skill-parity.sh`: **27 passed, 0 failed**.
 - `bash tests/test-installers.sh`: **26 passed, 0 failed**.
@@ -25,7 +25,7 @@ observation. Full detail is in
   verification; dependency and repository checks passed.
 
 The focused builder tests were harness 23/0, refine 28/0, workers 45/0, and
-context 26/0. The prime-hybrid integration test is 34/0; fresh installation is
+context 26/0. The prime-hybrid integration test is 43/0; fresh installation is
 37/0. The final full suite also exercised the repaired sandbox-safe bounded
 evaluator path (`test-skill-evolve.sh`: 45/0).
 

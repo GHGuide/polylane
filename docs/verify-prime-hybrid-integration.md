@@ -13,23 +13,25 @@ Branch: `lane/c11-integrator`
 
 ## TDD evidence
 
-Before shared runner wiring, the integration intent test was red: 4 passes and
-30 failures while the required prime-hybrid runtime API was absent. The
-runner-level contract then produced 6 passes and 23 failures before the
-prelaunch, export, completion, recovery, and refinement seams were wired.
+The integration intent test was run unchanged against pre-wiring merge
+`cf4f507`: **7 passes, 27 failures**. The first failure was
+`prime-hybrid-prelaunch` with exit 127 because the prime-hybrid API was absent;
+the remaining failures cover the missing state, packets, exports, completion,
+validation, observation, and dry-run seams. The runtime wiring is the
+subsequent `f44885e` integration commit.
 
 The green integration test is `bash tests/test-prime-hybrid-integration.sh`:
-34 passes, 0 failures. It deterministically proves, with fake agents and local
+**43 passes, 0 failures**. It deterministically proves, with fake agents and local
 fixtures:
 
 - canonical harness and worker state, one bounded packet per lane, and all four
-  pane exports;
+  pane exports for both builders and the integrator;
 - stable retained identities, canonical-only completion capsules, idempotent
   relay import, and no worktree contamination;
 - compaction and repeated NO-GO observation, next-cycle validation, and
   rollback to the recorded baseline on a failing declared check;
-- refusal to activate a global proposal or overwrite a skill, plus the routed
-  handoff; and
+- refusal to activate a global proposal or overwrite either a source or an
+  installed skill, plus the routed handoff; and
 - idempotent prelaunch and dry-run purity.
 
 The builder contracts remain independently green: harness 23/0, refinement

@@ -64,10 +64,20 @@ assert_eq "prime-hybrid-relay-imported" "1" "$(jq -s '[.[] | select(.event == "r
 assert_eq "prime-hybrid-compaction-observed" "1" "$(jq -s '[.[] | select(.kind == "compaction" and .subject == "context")] | length' "$HARNESS/refinement-observations.jsonl")"
 
 CMD=$(pane_cmd "$TEST_TMPDIR/alpha" gpt-test "$TEST_TMPDIR/alpha-prompt" high)
-assert_contains "prime-hybrid-export-harness" "POLYLANE_HARNESS_DIR=$PROJECT/docs/polylane/harness" "$CMD"
-assert_contains "prime-hybrid-export-workers" "POLYLANE_WORKERS_DIR=$PROJECT/docs/polylane/workers" "$CMD"
-assert_contains "prime-hybrid-export-worker-id" "POLYLANE_WORKER_ID=alpha" "$CMD"
-assert_contains "prime-hybrid-export-context-packet" "POLYLANE_CONTEXT_PACKET=$PROJECT/.polylane/context/alpha.md" "$CMD"
+assert_contains "prime-hybrid-export-alpha-harness" "POLYLANE_HARNESS_DIR=$PROJECT/docs/polylane/harness" "$CMD"
+assert_contains "prime-hybrid-export-alpha-workers" "POLYLANE_WORKERS_DIR=$PROJECT/docs/polylane/workers" "$CMD"
+assert_contains "prime-hybrid-export-alpha-worker-id" "POLYLANE_WORKER_ID=alpha" "$CMD"
+assert_contains "prime-hybrid-export-alpha-context-packet" "POLYLANE_CONTEXT_PACKET=$PROJECT/.polylane/context/alpha.md" "$CMD"
+CMD=$(pane_cmd "$TEST_TMPDIR/beta" gpt-test "$TEST_TMPDIR/beta-prompt" high)
+assert_contains "prime-hybrid-export-beta-harness" "POLYLANE_HARNESS_DIR=$PROJECT/docs/polylane/harness" "$CMD"
+assert_contains "prime-hybrid-export-beta-workers" "POLYLANE_WORKERS_DIR=$PROJECT/docs/polylane/workers" "$CMD"
+assert_contains "prime-hybrid-export-beta-worker-id" "POLYLANE_WORKER_ID=beta" "$CMD"
+assert_contains "prime-hybrid-export-beta-context-packet" "POLYLANE_CONTEXT_PACKET=$PROJECT/.polylane/context/beta.md" "$CMD"
+CMD=$(pane_cmd "$TEST_TMPDIR/integrator" gpt-test "$TEST_TMPDIR/integrator-prompt" xhigh)
+assert_contains "prime-hybrid-export-integrator-harness" "POLYLANE_HARNESS_DIR=$PROJECT/docs/polylane/harness" "$CMD"
+assert_contains "prime-hybrid-export-integrator-workers" "POLYLANE_WORKERS_DIR=$PROJECT/docs/polylane/workers" "$CMD"
+assert_contains "prime-hybrid-export-integrator-worker-id" "POLYLANE_WORKER_ID=integrator" "$CMD"
+assert_contains "prime-hybrid-export-integrator-context-packet" "POLYLANE_CONTEXT_PACKET=$PROJECT/.polylane/context/integrator.md" "$CMD"
 
 assert_ok "prime-hybrid-completion-capsule" prime_hybrid_record_completion alpha
 assert_eq "prime-hybrid-completion-is-canonical" "complete" "$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT" alpha | jq -r .status)"
@@ -85,10 +95,14 @@ assert_ok "prime-hybrid-repeated-no-go-eligible" "$SCRIPT_DIR/polylane-refine.sh
 
 # A global prompt/skill is proposal-only. It names the real evolution gate and
 # cannot become an active direct overwrite in the harness state.
+mkdir -p "$PROJECT/.codex/skills/polylane"
+printf 'installed skill baseline\n' > "$PROJECT/.codex/skills/polylane/SKILL.md"
 GLOBAL=$("$SCRIPT_DIR/polylane-harness.sh" create "$HARNESS" global skill prompt-change staged 12)
 assert_eq "prime-hybrid-global-gate-refusal" "false" "$(printf '%s' "$GLOBAL" | jq -r .active)"
 assert_eq "prime-hybrid-global-gate-route" "bin/polylane-skill-evolve.sh" "$(printf '%s' "$GLOBAL" | jq -r .handoff)"
 assert_ok "prime-hybrid-global-skill-not-written" test ! -e "$PROJECT/SKILL.md"
+assert_eq "prime-hybrid-installed-skill-not-overwritten" "installed skill baseline" \
+  "$(tr -d '\n' < "$PROJECT/.codex/skills/polylane/SKILL.md")"
 
 # A repeat invocation is resume-idempotent: the workers retain identities and
 # relay imports are deduplicated instead of mutating any lane worktree.
