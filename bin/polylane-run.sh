@@ -1298,8 +1298,8 @@ pane_cmd() {
   # Every pane remains in its isolated worktree, while its live relay always
   # resolves under the canonical run project. These are shell-escaped env values,
   # never prompt text, so an untrusted prompt path cannot inject into the command.
-  project_root="${POLYLANE_PROJECT_ROOT:-${COORDINATION_PROJECT_ROOT:-${REPO_ROOT:-$(pwd)}}}"
-  coord_file="${POLYLANE_COORDINATION_FILE:-${COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
+  project_root="${COORDINATION_PROJECT_ROOT:-${POLYLANE_PROJECT_ROOT:-${REPO_ROOT:-$(pwd)}}}"
+  coord_file="${COORDINATION_FILE:-${POLYLANE_COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
   qproject=$(printf '%q' "$project_root"); qcoord=$(printf '%q' "$coord_file")
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
   # NEVER launch an agent with no prompt: that starts an amnesiac session with no
