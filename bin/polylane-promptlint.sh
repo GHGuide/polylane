@@ -13,7 +13,7 @@ set -euo pipefail
 
 # required token -> human label. A prompt must contain each (case-insensitive).
 lint_one() {
-  local f="$1" lane="${2:-$(basename "$1" .txt)}" prime_hybrid="${3:-false}" miss=""
+  local f="$1" lane="${2:-$(basename "$1" .txt)}" prime_hybrid="${3:-false}" role="${4:-builder}" miss=""
   [ -s "$f" ] || { echo "PROMPT-LINT: $lane empty-or-missing $f"; return 6; }
   grep -qiE 'GOAL|/goal' "$f"        || miss="$miss objective(GOAL)"
   grep -q   'ULTIMATE-GOAL:' "$f"    || miss="$miss ultimate-goal"
@@ -38,22 +38,27 @@ lint_one() {
     grep -q 'POLYLANE_CONTEXT_PACKET' "$f" || miss="$miss prime-hybrid-context-packet"
     grep -qi 'durable inbox' "$f" || miss="$miss prime-hybrid-durable-inbox"
     grep -qi 'polylane-workers.sh' "$f" || miss="$miss prime-hybrid-worker-api"
+    if [ "$role" = integrator ]; then
+      grep -qiE 'propose[- ]or[- ]decline' "$f" || miss="$miss prime-hybrid-refinement-decision"
+    fi
   fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi
   return 0
 }
 
 lint_run() {
-  local mf="$1" rc=0 lane pf dir prime_hybrid
+  local mf="$1" rc=0 lane pf dir prime_hybrid int_name role
   command -v jq >/dev/null 2>&1 || { echo "polylane-promptlint: jq required for lint-run" >&2; return 2; }
   dir=$(cd "$(dirname "$mf")/.." && pwd)   # .polylane/ -> project root
   prime_hybrid=$(jq -r 'if .prime_hybrid == true then "true" else "false" end' "$mf")
+  int_name=$(jq -r '.integrator.name // empty' "$mf")
   # `// empty`: a manifest with no integrator yields no phantom "null" lane
   for lane in $(jq -r '.lanes[].name, (.integrator.name // empty)' "$mf"); do
     pf=$(jq -r --arg n "$lane" '(.lanes[],.integrator) | select(.name==$n) | .prompt_file' "$mf" | head -1)
     [ -n "$pf" ] && [ "$pf" != "null" ] || { echo "PROMPT-LINT: $lane no prompt_file"; rc=6; continue; }
     case "$pf" in /*) : ;; *) pf="$dir/$pf" ;; esac
-    lint_one "$pf" "$lane" "$prime_hybrid" || rc=6
+    role=builder; [ -n "$int_name" ] && [ "$lane" = "$int_name" ] && role=integrator
+    lint_one "$pf" "$lane" "$prime_hybrid" "$role" || rc=6
   done
   return $rc
 }

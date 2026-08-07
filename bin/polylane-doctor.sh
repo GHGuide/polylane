@@ -315,7 +315,7 @@ doctor_main() {
       [ -x "$rh" ] || { echo "polylane-doctor: rehearse helper not found at $rh" >&2; exit 1; }
       echo "== rehearse: GO =="; "$rh" go || { echo "REHEARSE GO FAILED" >&2; exit 1; }
       echo "== rehearse: NO-GO =="; "$rh" nogo || { echo "REHEARSE NO-GO FAILED" >&2; exit 1; }
-      echo "rehearse: both contract-v2 cases passed — supervised lifecycle is sound"; exit 0 ;;
+      echo "rehearse: both contract-v3 cases passed — supervised lifecycle is sound"; exit 0 ;;
     -*)        echo "polylane-doctor: unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
 

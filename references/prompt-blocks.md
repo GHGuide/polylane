@@ -62,7 +62,11 @@ memory file or edit the relay.
 
 Local refinements require repeated observed evidence and a declared bounded expected
 check through polylane-refine.sh; next-cycle validation either validates or rolls
-back the immutable harness snapshot. A global prompt or skill idea is proposal-only:
+back the immutable harness snapshot. If the packet contains `refinement-queue.json`,
+handle every item before DONE: either use `polylane-refine.sh propose` for the smallest
+local change with a bounded expected check and later-cycle deadline, or use
+`polylane-refine.sh decline` with a concrete reason. Never silently leave an eligible
+item unreviewed. A global prompt or skill idea is proposal-only:
 stage it for bin/polylane-skill-evolve.sh. Never directly overwrite SKILL.md or an
 installed skill.
 ```

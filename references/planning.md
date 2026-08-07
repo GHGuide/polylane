@@ -164,6 +164,10 @@ worker identities, imports the canonical relay, and writes one bounded
 canonical harness/workers directories, worker id, and packet path to every pane.
 Completion capsules, repeated failure/stall/NO-GO observations, and cycle
 compaction stay in durable project state; they never contaminate lane worktrees.
+Repeated evidence not already handled is materialized as `refinement-queue.json`
+before packet generation. The integrator must propose a bounded, check-backed local
+change or explicitly decline each queued item; global changes still route through
+the frozen skill-evolution gate.
 
 ## Cycle-9 launch additions (frozen)
 

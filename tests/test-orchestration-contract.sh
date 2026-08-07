@@ -96,9 +96,17 @@ Read the POLYLANE_CONTEXT_PACKET context packet once; use polylane-workers.sh du
 PROMPT
 cat >> "$P/.polylane/lanes/integrator.txt" <<'PROMPT'
 Read the POLYLANE_CONTEXT_PACKET context packet once; use polylane-workers.sh durable inbox follow-ups.
+For each eligible refinement queue item, propose-or-decline it before DONE.
 PROMPT
 load_manifest
 assert_ok "contract-prime-hybrid-valid-v2" preflight_contract
+
+grep -v 'propose-or-decline' "$P/.polylane/lanes/integrator.txt" > "$P/.polylane/lanes/integrator-no-refinement-decision.txt"
+jq '.integrator.prompt_file=".polylane/lanes/integrator-no-refinement-decision.txt"' \
+  "$MANIFEST" > "$P/.polylane/prime-hybrid-no-refinement-decision.json"
+MANIFEST="$P/.polylane/prime-hybrid-no-refinement-decision.json"; load_manifest
+assert_rc "contract-prime-hybrid-requires-refinement-decision" 2 preflight_contract
+MANIFEST="$P/.polylane/prime-hybrid.json"; load_manifest
 
 jq '.available_models=["claude-opus"]' "$MANIFEST" > "$P/.polylane/bad-available-model.json"
 assert_rc "codex-rejects-non-gpt-available-model" 2 \

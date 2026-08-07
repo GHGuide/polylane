@@ -149,6 +149,9 @@ refinements, imports the canonical relay, and writes one bounded
 `.polylane/context/<lane>.md` packet per lane. The runner exports its canonical
 harness, workers directory, stable worker id, and packet path to each pane; global
 prompt or skill ideas remain proposal-only handoffs to `polylane-skill-evolve.sh`.
+Repeated failures, stalls, NO-GOs, or compaction signals automatically enter a
+deduplicated refinement queue; the integrator must propose a check-backed local
+change or explicitly decline it, and accepted changes validate or roll back next cycle.
 Legacy manifests are unchanged.
 
 ### End-of-run report

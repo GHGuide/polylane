@@ -74,13 +74,21 @@ JSON
 Read POLYLANE_CONTEXT_PACKET exactly once. Use the durable inbox through
 polylane-workers.sh for follow-ups.
 P
+  cp "$TEST_TMPDIR/.polylane/lanes/prime.txt" "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt"
+  cat >> "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt" <<'P'
+For every eligible refinement queue item, propose-or-decline it before DONE.
+P
   cat > "$TEST_TMPDIR/.polylane/prime.json" <<'JSON'
-{"base":"main","prime_hybrid":true,"lanes":[{"name":"prime","prompt_file":".polylane/lanes/prime.txt"}]}
+{"base":"main","prime_hybrid":true,"lanes":[{"name":"prime","prompt_file":".polylane/lanes/prime.txt"}],"integrator":{"name":"prime-integrator","prompt_file":".polylane/lanes/prime-integrator.txt"}}
 JSON
   assert_ok "lint-prime-hybrid-continuity" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime.json"
   grep -v 'durable inbox' "$TEST_TMPDIR/.polylane/lanes/prime.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-missing.txt"
   sed 's#prime.txt#prime-missing.txt#' "$TEST_TMPDIR/.polylane/prime.json" > "$TEST_TMPDIR/.polylane/prime-missing.json"
   assert_fail "lint-prime-hybrid-requires-inbox" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-missing.json"
+  grep -v 'propose-or-decline' "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-integrator-missing.txt"
+  sed 's#prime-integrator.txt#prime-integrator-missing.txt#' "$TEST_TMPDIR/.polylane/prime.json" > "$TEST_TMPDIR/.polylane/prime-integrator-missing.json"
+  assert_fail "lint-prime-hybrid-requires-integrator-refinement-decision" \
+    "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-integrator-missing.json"
 else pass "lint-run-skipped-no-jq"; fi
 
 finish

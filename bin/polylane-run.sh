@@ -560,6 +560,10 @@ preflight_contract() {
         die "prime_hybrid lane '$lane' prompt must require one bounded packet read"
       grep -qiE 'durable inbox|POLYLANE_WORKERS_DIR' "$prompt" ||
         die "prime_hybrid lane '$lane' prompt must route follow-ups through the durable inbox"
+      if [ "$lane" = "$INT_NAME" ]; then
+        grep -qiE 'propose[- ]or[- ]decline' "$prompt" ||
+          die "prime_hybrid integrator prompt must require a propose-or-decline decision for queued refinements"
+      fi
     done
   fi
 
@@ -1318,16 +1322,31 @@ prime_hybrid_observe() {
   "$SCRIPT_DIR/polylane-refine.sh" observe "$(prime_hybrid_harness_dir)" "$CYCLE" "$kind" "$subject" "$evidence" >/dev/null
 }
 
+prime_hybrid_refresh_refinement_queue() {
+  local store tmp
+  prime_hybrid_enabled || return 0
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  store=$(prime_hybrid_harness_dir)
+  tmp="$store/.refinement-queue.json.tmp.$$"
+  if ! "$SCRIPT_DIR/polylane-refine.sh" queue "$store" > "$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  mv "$tmp" "$store/refinement-queue.json"
+}
+
 prime_hybrid_build_packet() {
-  local worker="$1" role="$2" packet_dir packet out tmp goal subgoal budget
+  local worker="$1" role="$2" packet_dir packet out tmp goal subgoal budget query
   prime_hybrid_enabled || return 0
   packet_dir="$PROJECT_ROOT/.polylane/context-packets/$worker"
   out=$(prime_hybrid_context_packet "$worker")
   mkdir -p "$(dirname "$out")"
   goal=$(prime_hybrid_goal); subgoal=$(prime_hybrid_subgoal)
   budget="${POLYLANE_CONTEXT_PACKET_BYTES:-12000}"
+  query="${RUN_ID:-legacy} $worker $role $subgoal"
+  [ "$role" != integrator ] || query="$query eligible refinement propose-or-decline"
   "$SCRIPT_DIR/polylane-context.sh" packet "$PROJECT_ROOT" "$packet_dir" "$budget" \
-    "${RUN_ID:-legacy} $worker $role $subgoal" --goal "$goal" --subgoal "$subgoal" --worker "$worker" >/dev/null
+    "$query" --goal "$goal" --subgoal "$subgoal" --worker "$worker" >/dev/null
   packet="$packet_dir/context.md"
   [ -s "$packet" ] || { echo "prime-hybrid: context API did not produce packet for $worker" >&2; return 1; }
   tmp="$(dirname "$out")/.${worker}.md.tmp.$$"
@@ -1349,6 +1368,7 @@ prime_hybrid_prepare() {
   done
   prime_hybrid_register_worker "$INT_NAME" integrator || return 1
   prime_hybrid_import_relay || return 1
+  prime_hybrid_refresh_refinement_queue || return 1
   for i in "${!LANE_NAMES[@]}"; do
     prime_hybrid_build_packet "${LANE_NAMES[$i]}" builder || return 1
   done
@@ -1783,11 +1803,36 @@ pane_index_for() {
   printf '%s' "-1"
 }
 
+# Move pane-index-keyed health state when tmux renumbers a surviving pane.
+# Bash 3.2 has no associative arrays, so these counters deliberately use the
+# pane index as their key. Losing them on a rebind would reset retry/repair
+# budgets and could turn one renumber into an unbounded recovery loop.
+pane_state_reindex() {
+  local old="$1" new="$2"
+  [ "$old" -ge 0 ] 2>/dev/null || return 0
+  [ "$new" -ge 0 ] 2>/dev/null || return 1
+  [ "$old" != "$new" ] || return 0
+  LANE_RETRIES[new]="${LANE_RETRIES[$old]:-0}"
+  LANE_REPAIRS[new]="${LANE_REPAIRS[$old]:-0}"
+  LANE_STALLWAIT[new]="${LANE_STALLWAIT[$old]:-0}"
+  LANE_WHASH[new]="${LANE_WHASH[$old]:-}"
+  LANE_WCNT[new]="${LANE_WCNT[$old]:-0}"
+  LANE_PHASH[new]="${LANE_PHASH[$old]:-}"
+  LANE_PCNT[new]="${LANE_PCNT[$old]:-0}"
+  LANE_PCOMMANDS[new]="${LANE_PCOMMANDS[$old]:-0}"
+  LANE_PREPLANS[new]="${LANE_PREPLANS[$old]:-0}"
+  unset "LANE_RETRIES[$old]" "LANE_REPAIRS[$old]" "LANE_STALLWAIT[$old]"
+  unset "LANE_WHASH[$old]" "LANE_WCNT[$old]" "LANE_PHASH[$old]"
+  unset "LANE_PCNT[$old]" "LANE_PCOMMANDS[$old]" "LANE_PREPLANS[$old]"
+}
+
 # pane_index_set NAME IDX : update the explicit name-to-pane mapping after a
 # recovery creates a replacement pane.  Positional lane order is not pane order
 # on resume, so never infer this from the array index at a call site.
 pane_index_set() {
-  local name="$1" idx="$2" i
+  local name="$1" idx="$2" i old
+  old=$(pane_index_for "$name")
+  pane_state_reindex "$old" "$idx" || return 1
   for i in "${!LANE_NAMES[@]}"; do
     [ "${LANE_NAMES[$i]}" = "$name" ] && { LANE_PANE_IDX[i]="$idx"; return 0; }
   done
@@ -2467,7 +2512,7 @@ replan_churning_lane() {
 
 # health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
 health_check() {
-  local specs=("$@") s name wt idx max n why
+  local specs=("$@") s name wt idx live_idx max n why
   max="${POLYLANE_MAX_RETRIES:-3}"
   resolve_stalls "${specs[@]}"   # usage-limit paywalls first (fallback/credits/wait)
   for s in "${specs[@]}"; do
@@ -2476,6 +2521,17 @@ health_check() {
     lane_failed "$name" && continue
     lane_stalled "$name" && continue   # still mid-resolution this cycle
     idx=$(pane_index_for "$name")
+    # Pane indices are not identities: tmux may renumber a live pane after a
+    # neighbor exits. Rebind by canonical worktree before treating a stale
+    # numeric mapping as a missing pane. Without this check recovery can launch
+    # two expensive agents into the same worktree and let them race each other.
+    live_idx=$(pane_for_worktree "$wt" 2>/dev/null || true)
+    if [ -n "$live_idx" ] && [ "$live_idx" != "$idx" ]; then
+      pane_index_set "$name" "$live_idx" || return 1
+      pipe_pane_log "$live_idx" "$name"
+      echo "health: lane '$name' tmux pane renumbered $idx -> $live_idx — rebound surviving worker"
+      continue
+    fi
     # respawn a lane that is showing a transient error, has died back to a shell
     # (claude exited without DONE — amnesia), or is WEDGED (alive but frozen).
     if ! pane_exists "$idx"; then
@@ -2689,7 +2745,7 @@ report_acceptance_failures() {
 }
 
 contract_acceptance_gate() {
-  local verdict="${1:-GO}" targets outside terminal_targets
+  local verdict="${1:-GO}" terminal_counted="${2:-0}" targets outside terminal_targets
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
   targets=$(jq -r '.target_subgoals | join(",")' "$MANIFEST")
   (
@@ -2722,6 +2778,10 @@ contract_acceptance_gate() {
         | join(",")
       ' "$STATE_FILE")
       if [ -n "$terminal_targets" ]; then
+        if [ "$terminal_counted" != 1 ]; then
+          run_stats terminal-gate
+          terminal_counted=1
+        fi
         (
           cd "$INT_WORKTREE"
           export REPO="$PWD" REPO_ROOT="$PWD"
@@ -2736,6 +2796,10 @@ contract_acceptance_gate() {
             .status=="pass" or (.sid as $sid | any($external[]; .==$sid)))
       ' "$STATE_FILE" >/dev/null || return 1
     else
+      if [ "$terminal_counted" != 1 ]; then
+        run_stats terminal-gate
+        terminal_counted=1
+      fi
       (
         cd "$INT_WORKTREE"
         export REPO="$PWD" REPO_ROOT="$PWD"
@@ -2761,11 +2825,14 @@ merge_gate() {
   if [ "$v" = "READY-FOR-HOST-GATE" ]; then
     # This is deliberately not GO: only the outer runner runs the frozen host
     # checks and converts this candidate after that single coordinator gate.
+    # Count before the efficiency certificate: that certificate grades the
+    # boundary it is currently entering. Pass the count into acceptance so the
+    # same READY boundary is never counted twice.
     run_stats terminal-gate
     if ! write_efficiency_proof gate; then
       printf '\nACCEPTANCE-GATE: efficiency proof failed; terminal gate is exhausted for this run.\n' >> "$f"
       v="NO-GO"; VERDICT_REPAIRABLE="NO"
-    elif contract_acceptance_gate GO; then
+    elif contract_acceptance_gate GO 1; then
       v="GO"
     else
       # The coordinator owns one terminal attempt. A model repair cannot make

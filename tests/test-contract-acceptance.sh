@@ -28,8 +28,14 @@ JSON
 ORCHESTRATION_CONTRACT=2
 CYCLE=1
 INT_WORKTREE="$P/int"
+TERMINAL_LOG="$TEST_TMPDIR/terminal-gates.log"; : > "$TERMINAL_LOG"
+run_stats() {
+  [ "${1:-}" = terminal-gate ] && printf 'terminal\n' >> "$TERMINAL_LOG"
+  return 0
+}
 
 assert_ok "accept-focused-cycle-pass" contract_acceptance_gate GO
+assert_eq "accept-focused-does-not-count-terminal" "0" "$(wc -l < "$TERMINAL_LOG" | tr -d ' ')"
 assert_eq "accept-focused-stamped" "pass" "$(jq -r '.accept[0].status' "$STATE_FILE")"
 assert_eq "accept-terminal-deferred" "unchecked" "$(jq -r '.accept[1].status' "$STATE_FILE")"
 assert_eq "accept-other-deferred" "unchecked" "$(jq -r '.accept[2].status' "$STATE_FILE")"
@@ -37,9 +43,11 @@ assert_eq "accept-external-terminal-deferred" "unchecked" "$(jq -r '.accept[3].s
 
 "$MEM" "$STATE_FILE" set-status s2 external "physical proof" 1 >/dev/null
 assert_ok "accept-external-allows-declared-gap" contract_acceptance_gate EXTERNAL-EVIDENCE-OPEN
+assert_eq "accept-terminal-gate-counted" "1" "$(wc -l < "$TERMINAL_LOG" | tr -d ' ')"
 assert_eq "accept-terminal-runs-at-boundary" "pass" "$(jq -r '.accept[1].status' "$STATE_FILE")"
 assert_eq "accept-external-terminal-not-executed" "unchecked" "$(jq -r '.accept[3].status' "$STATE_FILE")"
 assert_fail "accept-go-rejects-external-gap" contract_acceptance_gate GO
+assert_eq "accept-failing-terminal-gate-counted" "2" "$(wc -l < "$TERMINAL_LOG" | tr -d ' ')"
 
 VERDICT_RESULT=EXTERNAL-EVIDENCE-OPEN
 out=$(finalize_cycle_state)

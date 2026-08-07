@@ -261,8 +261,9 @@ pending prior-cycle refinements, imports the live relay, and exports
 `POLYLANE_HARNESS_DIR`, `POLYLANE_WORKERS_DIR`, `POLYLANE_WORKER_ID`, and
 `POLYLANE_CONTEXT_PACKET` to every lane. Read the bounded packet once; use
 `polylane-workers.sh` durable inbox for follow-ups. Local `polylane-refine.sh`
-refinements must carry
-an executable expected check and validate or roll back next cycle. Global prompt
+refinements must carry an executable expected check and validate or roll back next
+cycle. Repeated evidence is automatically placed in the bounded refinement queue;
+the integrator must `propose-or-decline` every queued item before DONE. Global prompt
 or skill changes are proposal-only handoffs to `polylane-skill-evolve.sh`, never
 direct edits to SKILL.md or an installed skill.
 

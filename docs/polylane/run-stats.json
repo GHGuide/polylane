@@ -1,135 +1,215 @@
 {
   "version": 1,
-  "run_id": "c10-1786059806-3040",
-  "started_at": 1786060038,
-  "updated_at": 1786061699,
-  "wall_s": 1661,
+  "run_id": "prime-c11-20260807T103930Z",
+  "started_at": 1786099378,
+  "updated_at": 1786101831,
+  "wall_s": 2453,
   "lanes": {
-    "acceptance-economy": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "state-truth": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "coordination-relay": {
+    "harness-refine": {
       "launches": 1,
       "restarts": 0
+    },
+    "worker-continuity": {
+      "launches": 1,
+      "restarts": 1
+    },
+    "context-query": {
+      "launches": 1,
+      "restarts": 1
     },
     "integrator": {
       "launches": 1,
       "restarts": 2
     }
   },
-  "supervisor_restarts": 1,
+  "supervisor_restarts": 6,
   "terminal_gates": 1,
-  "tokens": null,
-  "token_state": "unknown",
+  "tokens": 54577070,
+  "token_state": "known",
   "usage_offsets": {
-    "acceptance-economy": 0,
-    "state-truth": 0,
-    "coordination-relay": 0,
-    "integrator": 34508278
+    "harness-refine": 50541,
+    "worker-continuity": 198323,
+    "context-query": 143075,
+    "integrator": 37306290
   },
   "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
-      "at": 1786060038
+      "at": 1786099378
     },
     {
       "type": "usage_capture",
-      "lane": "acceptance-economy",
-      "at": 1786060040,
+      "lane": "harness-refine",
+      "at": 1786099381,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "acceptance-economy",
-      "at": 1786060041
+      "lane": "harness-refine",
+      "at": 1786099381
     },
     {
       "type": "usage_capture",
-      "lane": "state-truth",
-      "at": 1786060041,
+      "lane": "worker-continuity",
+      "at": 1786099381,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "state-truth",
-      "at": 1786060041
+      "lane": "worker-continuity",
+      "at": 1786099381
     },
     {
       "type": "usage_capture",
-      "lane": "coordination-relay",
-      "at": 1786060041,
+      "lane": "context-query",
+      "at": 1786099381,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "coordination-relay",
-      "at": 1786060041
+      "lane": "context-query",
+      "at": 1786099381
     },
     {
-      "type": "restarts",
-      "lane": "acceptance-economy",
-      "at": 1786060197
+      "type": "usage_capture",
+      "lane": "harness-refine",
+      "at": 1786099448,
+      "added": null
     },
     {
-      "type": "restarts",
-      "lane": "state-truth",
-      "at": 1786060477
+      "type": "usage_capture",
+      "lane": "worker-continuity",
+      "at": 1786099448,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "context-query",
+      "at": 1786099448,
+      "added": null
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786060539,
-      "added": null
+      "at": 1786099448,
+      "added": 52955732
     },
     {
       "type": "supervisor_restart",
-      "at": 1786060541
+      "at": 1786099454
     },
     {
       "type": "initialized",
-      "at": 1786060541
+      "at": 1786099454
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786099459
+    },
+    {
+      "type": "initialized",
+      "at": 1786099459
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786099464
+    },
+    {
+      "type": "initialized",
+      "at": 1786099465
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786099470
+    },
+    {
+      "type": "initialized",
+      "at": 1786099470
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786099475
+    },
+    {
+      "type": "initialized",
+      "at": 1786099475
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786099480
+    },
+    {
+      "type": "initialized",
+      "at": 1786099481
+    },
+    {
+      "type": "initialized",
+      "at": 1786099600
+    },
+    {
+      "type": "restarts",
+      "lane": "context-query",
+      "at": 1786099706
+    },
+    {
+      "type": "restarts",
+      "lane": "worker-continuity",
+      "at": 1786099723
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786060546,
+      "at": 1786099937,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786060546
+      "at": 1786099937
     },
     {
       "type": "restarts",
       "lane": "integrator",
-      "at": 1786060598
+      "at": 1786099954
     },
     {
       "type": "restarts",
       "lane": "integrator",
-      "at": 1786060671
+      "at": 1786101309
+    },
+    {
+      "type": "usage_capture",
+      "lane": "harness-refine",
+      "at": 1786101496,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "worker-continuity",
+      "at": 1786101496,
+      "added": 800615
+    },
+    {
+      "type": "usage_capture",
+      "lane": "context-query",
+      "at": 1786101496,
+      "added": 820723
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786061419,
+      "at": 1786101496,
       "added": null
     },
     {
       "type": "terminal_gate",
-      "at": 1786061419
+      "at": 1786101497
     },
     {
       "type": "cleanup",
       "state": "complete",
-      "at": 1786061699
+      "at": 1786101831
     }
   ]
 }

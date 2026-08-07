@@ -118,7 +118,9 @@ durable inbox for follow-ups.
 
 Repeated failure, stall, NO-GO, and context-compaction observations are evidence,
 not permission to self-modify. A local refinement must declare its bounded expected
-check before it activates, then validates or rolls back next cycle. A global prompt
+check before it activates, then validates or rolls back next cycle. Repeated evidence
+is automatically placed in the bounded refinement queue; the integrator must
+`propose-or-decline` every queued item before DONE. A global prompt
 or skill proposal remains an inactive handoff to `scripts/polylane-skill-evolve.sh`;
 never edit `SKILL.md` or an installed skill directly. Omit `prime_hybrid` for a
 legacy manifest: it remains fully backward-compatible and dry-runs remain pure.
@@ -239,7 +241,8 @@ Each prompt is self-contained and must include:
   `POLYLANE_CONTEXT_PACKET` once and use the `polylane-workers.sh` durable inbox
   for follow-ups. The runner owns canonical harness/worker state and uses
   `polylane-refine.sh` to validate pending local refinement expected checks in
-  the next cycle (or rolls back).
+  the next cycle (or rolls back). If the packet contains a refinement queue, the
+  integrator must `propose-or-decline` each item before DONE.
   Global prompt/skill ideas are proposal-only handoffs to
   `polylane-skill-evolve.sh`; never directly edit SKILL.md or an installed skill;
 - evidence file `docs/verify-<lane>.md`;

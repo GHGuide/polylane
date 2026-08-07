@@ -2,9 +2,9 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 10
+## Cycle 11
 
-subgoals: 25/25 done · criteria: 22/22 done · 100%
+subgoals: 29/29 done · criteria: 27/27 done · 100%
 
 **Route:** `COMPLETE`
 
@@ -44,10 +44,15 @@ subgoals: 25/25 done · criteria: 22/22 done · 100%
 - `c20` [done] — Canonical state and control-room session/DONE truth match the runner even with ambient session variables or dirty committed markers.
 - `c21` [done] — Advanced outcome memory is rooted to the canonical run project and never leaves generated ledgers in worker or integrator worktrees.
 - `c22` [done] — Cross-lane requests, decisions, and resource claims use one atomic shared relay visible from every isolated worktree.
+- `c23` [done] — Versioned local/global continual harness has atomic CRUD, immutable base, conflict protection, and rollback.
+- `c24` [done] — Evidence-triggered refinements declare expected outcomes and next-cycle deadlines; regression or expiry rolls back.
+- `c25` [done] — Stable worker identities preserve bounded context and an acknowledged append-only inbox across cycles.
+- `c26` [done] — Builders consume bounded source-attributed context packets over durable project knowledge.
+- `c27` [done] — Global prompt and skill learning cannot bypass frozen evolution gates and remains install-parity proven.
 
 ## Acceptance checks
 
-- Total: 26
-- Pass: 26
+- Total: 34
+- Pass: 34
 - Fail: 0
 - Unchecked: 0

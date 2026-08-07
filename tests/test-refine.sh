@@ -16,7 +16,20 @@ assert_ok "refine-records-compaction-observation" "$REFINE" observe "$STORE" 11 
 assert_rc "refine-one-off-is-not-eligible" 3 "$REFINE" eligible "$STORE" retry-policy
 assert_ok "refine-records-repeated-failure" "$REFINE" observe "$STORE" 12 failure retry-policy "tests/test-api.sh failed again"
 assert_ok "refine-repeated-signal-is-eligible" "$REFINE" eligible "$STORE" retry-policy
+QUEUE=$("$REFINE" queue "$STORE")
+assert_eq "refine-queue-routes-eligible-subject" "retry-policy" \
+  "$(printf '%s' "$QUEUE" | jq -r '.[0].subject')"
+assert_eq "refine-queue-names-repeated-signal" "failure" \
+  "$(printf '%s' "$QUEUE" | jq -r '.[0].kind')"
+assert_eq "refine-queue-requires-bounded-proposal" "propose-or-decline" \
+  "$(printf '%s' "$QUEUE" | jq -r '.[0].required_action')"
+assert_eq "refine-queue-excludes-one-off-noise" "1" \
+  "$(printf '%s' "$QUEUE" | jq 'length')"
 assert_ok "refine-proposes-versioned-change" "$REFINE" propose "$STORE" retry-2 12 14 local memory retry-policy 1 "retry with backoff" "two failures" -- test -f "$STORE/state.json"
+assert_eq "refine-proposal-captures-observation-boundary" "2" \
+  "$(jq -r '.proposals["retry-2"].observation_count' "$STORE/refinements.json")"
+assert_eq "refine-queue-dedupes-proposed-evidence" "0" \
+  "$("$REFINE" queue "$STORE" | jq 'length')"
 assert_eq "refine-proposal-has-evidence" "two failures" \
   "$(jq -r '.proposals["retry-2"].evidence' "$STORE/refinements.json")"
 assert_eq "refine-proposal-has-executable-outcome" "test" \
@@ -29,7 +42,19 @@ assert_eq "refine-pass-is-validated" "validated" \
   "$(jq -r '.proposals["retry-2"].status' "$STORE/refinements.json")"
 
 assert_ok "refine-records-stall" "$REFINE" observe "$STORE" 13 stall retry-policy "worker stalled"
+assert_eq "refine-one-off-new-kind-does-not-reopen-handled-subject" "0" \
+  "$("$REFINE" queue "$STORE" | jq 'length')"
 assert_ok "refine-records-second-stall" "$REFINE" observe "$STORE" 14 stall retry-policy "worker stalled again"
+assert_eq "refine-queue-reopens-on-new-repeated-evidence" "stall" \
+  "$("$REFINE" queue "$STORE" | jq -r '.[0].kind')"
+assert_ok "refine-can-decline-unsafe-refinement" "$REFINE" decline "$STORE" 14 retry-policy \
+  "the observed stall was an external service pause, not a prompt defect"
+assert_eq "refine-decline-records-signal-kind" "stall" \
+  "$(jq -r '.declines | to_entries[0].value.trigger_kind' "$STORE/refinements.json")"
+assert_eq "refine-decline-records-observation-boundary" "2" \
+  "$(jq -r '.declines | to_entries[0].value.observation_count' "$STORE/refinements.json")"
+assert_eq "refine-decline-dedupes-reviewed-evidence" "0" \
+  "$("$REFINE" queue "$STORE" | jq 'length')"
 assert_ok "refine-proposes-failing-change" "$REFINE" propose "$STORE" retry-fail 14 16 local memory retry-policy 2 "bad retry" "repeated stalls" -- false
 assert_rc "refine-failing-check-rolls-back" 7 "$REFINE" validate "$STORE" 15 retry-fail
 assert_eq "refine-failure-restores-snapshot" "retry with backoff" \
@@ -46,6 +71,6 @@ assert_eq "refine-global-prompt-handoff" "bin/polylane-skill-evolve.sh" \
   "$("$HARNESS" read "$STORE" global prompt-note --json | jq -r '.handoff')"
 assert_rc "refine-expired-proposal-rolls-back" 7 "$REFINE" validate "$STORE" 18 global-prompt
 assert_rc "refine-expired-created-entry-is-removed" 4 "$HARNESS" read "$STORE" global prompt-note --json
-assert_eq "refine-decisions-append-only" "3" "$(wc -l < "$STORE/refinement-decisions.jsonl" | tr -d ' ')"
+assert_eq "refine-decisions-append-only" "4" "$(wc -l < "$STORE/refinement-decisions.jsonl" | tr -d ' ')"
 
 finish

@@ -47,5 +47,6 @@ both retained-worker-context 'POLYLANE_CONTEXT_PACKET'
 both worker-inbox 'polylane-workers\.sh'
 both refinement-runtime 'polylane-refine\.sh'
 both refinement-rollback 'roll.?back'
+both refinement-auto-queue 'propose-or-decline'
 
 finish

@@ -10,6 +10,8 @@ usage() {
   cat >&2 <<'EOF'
 usage: polylane-refine.sh observe <store> <cycle> <failure|stall|no-go|compaction> <subject> <evidence>
        polylane-refine.sh eligible <store> <subject>
+       polylane-refine.sh queue <store>
+       polylane-refine.sh decline <store> <cycle> <subject> <reason>
        polylane-refine.sh propose <store> <proposal-id> <created-cycle> <deadline-cycle> <scope> <kind> <entry-id> <expected-version> <content> <evidence> -- <bounded-check> [arg...]
        polylane-refine.sh validate <store> <current-cycle> <proposal-id>
 EOF
@@ -31,7 +33,7 @@ atomic_write() {
 ensure_store() {
   [ -f "$1/state.json" ] || { echo "refine: harness store is not initialized: $1" >&2; return 2; }
   if [ ! -f "$(refine_file "$1")" ]; then
-    jq -n '{schema:"polylane-refinements/v1",proposals:{}}' | atomic_write "$(refine_file "$1")"
+    jq -n '{schema:"polylane-refinements/v1",proposals:{},declines:{}}' | atomic_write "$(refine_file "$1")"
     : > "$(observations_file "$1")"; : > "$(decisions_file "$1")"
   fi
 }
@@ -78,8 +80,74 @@ cmd_eligible() {
   printf 'refine: eligible %s\n' "$subject"
 }
 
+# List repeated evidence that has not yet been handled by a proposal or an
+# explicit decline. The observation boundary makes the queue idempotent while
+# allowing genuinely new evidence to reopen the same subject later.
+cmd_queue() {
+  local store="$1"
+  ensure_store "$store"
+  jq -s --slurpfile refinement "$(refine_file "$store")" '
+    group_by(.subject)
+    | map(
+        . as $observations
+        | ($observations
+            | group_by(.kind)
+            | map(select(length >= 2))
+            | sort_by(.[-1].cycle)
+            | if length == 0 then null else .[-1] end) as $signal
+        | select($signal != null)
+        | $observations[0].subject as $subject
+        | $signal[-1].kind as $trigger_kind
+        | ($signal | length) as $count
+        | ([($refinement[0].proposals // {}) | to_entries[]?
+              | select(.value.entry_id == $subject)
+              | select((.value.trigger_kind // $trigger_kind) == $trigger_kind)
+              | (.value.observation_count // 0)]
+           + [($refinement[0].declines // {}) | to_entries[]?
+              | select(.value.subject == $subject)
+              | select((.value.trigger_kind // $trigger_kind) == $trigger_kind)
+              | (.value.observation_count // 0)]
+           | max // 0) as $handled
+        | select($count > $handled)
+        | {
+            subject:$subject,
+            kind:$signal[-1].kind,
+            observation_count:$count,
+            latest_cycle:$signal[-1].cycle,
+            latest_evidence:$signal[-1].evidence,
+            required_action:"propose-or-decline"
+          }
+      )
+    | sort_by(.subject)
+  ' "$(observations_file "$store")"
+}
+
+cmd_decline() {
+  local store="$1" cycle="$2" subject="$3" reason="$4" signal trigger_kind count id decision
+  ensure_store "$store"
+  valid_cycle "$cycle" && safe_id "$subject" && [ -n "$reason" ] || usage
+  is_eligible "$store" "$subject" || { echo "refine: one-off noise is not eligible" >&2; return 3; }
+  signal=$(jq -sc --arg subject "$subject" '
+    [.[] | select(.subject == $subject)]
+    | group_by(.kind) | map(select(length >= 2)) | sort_by(.[-1].cycle) | .[-1]
+    | {trigger_kind:.[-1].kind, observation_count:length}
+  ' "$(observations_file "$store")")
+  trigger_kind=$(printf '%s' "$signal" | jq -r .trigger_kind)
+  count=$(printf '%s' "$signal" | jq -r .observation_count)
+  id="decline:$subject:$trigger_kind:$count"
+  jq -e --arg id "$id" '((.declines // {})[$id] // null) == null' "$(refine_file "$store")" >/dev/null || {
+    echo "refine: decline already recorded" >&2; return 5;
+  }
+  decision=$(jq -cn --arg id "$id" --arg subject "$subject" --arg reason "$reason" --arg trigger_kind "$trigger_kind" --argjson cycle "$cycle" --argjson count "$count" \
+    '{id:$id,subject:$subject,cycle:$cycle,reason:$reason,trigger_kind:$trigger_kind,observation_count:$count}')
+  jq --arg id "$id" --argjson decision "$decision" \
+    '.declines = (.declines // {}) | .declines[$id]=$decision' "$(refine_file "$store")" | atomic_write "$(refine_file "$store")"
+  append_decision "$store" "$id" declined "$cycle" "$reason"
+  printf '%s\n' "$decision"
+}
+
 cmd_propose() {
-  local store="$1" proposal_id="$2" created="$3" deadline="$4" scope="$5" kind="$6" entry_id="$7" expected="$8" content="$9" evidence="${10}" before action after check_json proposal rc=0
+  local store="$1" proposal_id="$2" created="$3" deadline="$4" scope="$5" kind="$6" entry_id="$7" expected="$8" content="$9" evidence="${10}" before action after check_json proposal signal trigger_kind observation_count rc=0
   shift 10
   [ "${1:-}" = -- ] || usage; shift
   [ "$#" -gt 0 ] || usage
@@ -88,6 +156,13 @@ cmd_propose() {
   [ "$deadline" -gt "$created" ] || { echo "refine: deadline must be later than creation" >&2; return 2; }
   case "$scope:$kind" in local:prompt|local:memory|local:skill|local:subagent|global:prompt|global:memory|global:skill|global:subagent) ;; *) usage ;; esac
   is_eligible "$store" "$entry_id" || { echo "refine: one-off noise is not eligible" >&2; return 3; }
+  signal=$(jq -sc --arg subject "$entry_id" '
+    [.[] | select(.subject == $subject)]
+    | group_by(.kind) | map(select(length >= 2)) | sort_by(.[-1].cycle) | .[-1]
+    | {trigger_kind:.[-1].kind, observation_count:length}
+  ' "$(observations_file "$store")")
+  trigger_kind=$(printf '%s' "$signal" | jq -r .trigger_kind)
+  observation_count=$(printf '%s' "$signal" | jq -r .observation_count)
   jq -e --arg id "$proposal_id" '.proposals[$id] == null' "$(refine_file "$store")" >/dev/null || { echo "refine: proposal exists" >&2; return 5; }
   if before=$("$HARNESS" read "$store" "$scope" "$entry_id" --json 2>/dev/null); then
     action=update
@@ -101,8 +176,8 @@ cmd_propose() {
   fi
   after=$("$HARNESS" read "$store" "$scope" "$entry_id" --json)
   check_json=$(printf '%s\n' "$@" | jq -R . | jq -cs .)
-  proposal=$(jq -cn --arg id "$proposal_id" --argjson created "$created" --argjson deadline "$deadline" --arg scope "$scope" --arg kind "$kind" --arg entry_id "$entry_id" --arg evidence "$evidence" --arg action "$action" --argjson before "$before" --argjson after "$after" --argjson check "$check_json" \
-    '{id:$id,status:"pending",created_cycle:$created,deadline_cycle:$deadline,scope:$scope,kind:$kind,entry_id:$entry_id,evidence:$evidence,expected_check:$check,action:$action,before:$before,after:$after}')
+  proposal=$(jq -cn --arg id "$proposal_id" --argjson created "$created" --argjson deadline "$deadline" --arg scope "$scope" --arg kind "$kind" --arg entry_id "$entry_id" --arg evidence "$evidence" --arg trigger_kind "$trigger_kind" --arg action "$action" --argjson before "$before" --argjson after "$after" --argjson check "$check_json" --argjson observation_count "$observation_count" \
+    '{id:$id,status:"pending",created_cycle:$created,deadline_cycle:$deadline,scope:$scope,kind:$kind,entry_id:$entry_id,evidence:$evidence,trigger_kind:$trigger_kind,observation_count:$observation_count,expected_check:$check,action:$action,before:$before,after:$after}')
   jq --arg id "$proposal_id" --argjson proposal "$proposal" '.proposals[$id]=$proposal' "$(refine_file "$store")" | atomic_write "$(refine_file "$store")"
   printf '%s\n' "$proposal"
 }
@@ -146,6 +221,8 @@ main() {
   case "$1" in
     observe) [ "$#" = 6 ] || usage; cmd_observe "$2" "$3" "$4" "$5" "$6" ;;
     eligible) [ "$#" = 3 ] || usage; cmd_eligible "$2" "$3" ;;
+    queue) [ "$#" = 2 ] || usage; cmd_queue "$2" ;;
+    decline) [ "$#" = 5 ] || usage; cmd_decline "$2" "$3" "$4" "$5" ;;
     propose) shift; cmd_propose "$@" ;;
     validate) [ "$#" = 4 ] || usage; cmd_validate "$2" "$3" "$4" ;;
     *) usage ;;

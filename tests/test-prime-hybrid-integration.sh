@@ -92,6 +92,14 @@ assert_eq "prime-hybrid-rollback-restores-baseline" "baseline" "$("$SCRIPT_DIR/p
 assert_ok "prime-hybrid-observe-no-go-first" prime_hybrid_observe no-go integrator first-no-go
 assert_ok "prime-hybrid-observe-no-go-second" prime_hybrid_observe no-go integrator second-no-go
 assert_ok "prime-hybrid-repeated-no-go-eligible" "$SCRIPT_DIR/polylane-refine.sh" eligible "$HARNESS" integrator
+CYCLE=13
+assert_ok "prime-hybrid-auto-refinement-refresh" prime_hybrid_prepare
+assert_eq "prime-hybrid-auto-refinement-queued" "integrator" \
+  "$(jq -r '.[0].subject' "$HARNESS/refinement-queue.json")"
+assert_eq "prime-hybrid-auto-refinement-actionable" "propose-or-decline" \
+  "$(jq -r '.[0].required_action' "$HARNESS/refinement-queue.json")"
+assert_contains "prime-hybrid-auto-refinement-in-context" "propose-or-decline" \
+  "$(cat "$PROJECT/.polylane/context/integrator.md")"
 
 # A global prompt/skill is proposal-only. It names the real evolution gate and
 # cannot become an active direct overwrite in the harness state.
@@ -106,7 +114,7 @@ assert_eq "prime-hybrid-installed-skill-not-overwritten" "installed skill baseli
 
 # A repeat invocation is resume-idempotent: the workers retain identities and
 # relay imports are deduplicated instead of mutating any lane worktree.
-CYCLE=11
+CYCLE=13
 ALPHA_VERSION=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT" alpha | jq -r .version)
 assert_ok "prime-hybrid-prelaunch-idempotent" prime_hybrid_prepare
 assert_eq "prime-hybrid-identity-not-recreated" "$ALPHA_VERSION" "$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT" alpha | jq -r .version)"

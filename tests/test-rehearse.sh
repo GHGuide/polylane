@@ -4,6 +4,10 @@
 # to keep the default suite fast/hermetic. Run on demand: POLYLANE_REHEARSE=1 tests/run.sh
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 RH="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-rehearse.sh"
+DOCTOR="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-doctor.sh"
+
+assert_contains "rehearse-doctor-reports-current-contract" "both contract-v3 cases passed" \
+  "$(grep 'both contract-' "$DOCTOR" 2>/dev/null || true)"
 
 # The live fixture advances durable state before writing reports. Cleanup must
 # remove tracked and untracked current-run status markers without rejecting
