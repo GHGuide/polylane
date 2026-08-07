@@ -26,5 +26,7 @@ source functions · every fix ships a regression test · markers/docs must satis
 `bin/polylane-markers.sh check-docs references/` and `tests/test-skill-parity.sh`.
 
 ## Status
-Self-hosting marathon in progress — tree + progress in `docs/polylane/`
+Self-hosting marathon certified COMPLETE in cycle 10: 25/25 subgoals, 22/22
+criteria, full suite, ShellCheck, fresh installs, and live GO/NO-GO rehearsal green.
+Evidence and future informational experiments live in `docs/polylane/`
 (`INDEX.md` is the front page).

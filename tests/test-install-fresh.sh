@@ -51,6 +51,17 @@ assert_ok "codex-reinstall-ok"  env HOME="$CODEX_HOME" bash "$REPO/codex/install
 assert_ok "codex-no-nested-refs"  test '!' -e "$DEST/references/references"
 assert_ok "codex-refs-still-flat" test -f "$DEST/references/prompt-blocks.md"
 
+# When desktop and CLI skill roots both exist, --user must synchronize both so
+# discovery cannot select an older duplicate.
+BOTH_HOME="$TEST_TMPDIR/codex-both-home"
+mkdir -p "$BOTH_HOME/.codex/skills" "$BOTH_HOME/.agents/skills"
+assert_ok "codex-install-both-roots" env HOME="$BOTH_HOME" bash "$REPO/codex/install.sh" --user
+assert_ok "codex-both-codex-root" test -x "$BOTH_HOME/.codex/skills/polylane/scripts/polylane-run.sh"
+assert_ok "codex-both-agents-root" test -x "$BOTH_HOME/.agents/skills/polylane/scripts/polylane-run.sh"
+assert_eq "codex-both-skill-identical" \
+  "$(cksum "$BOTH_HOME/.codex/skills/polylane/SKILL.md" | awk '{print $1 ":" $2}')" \
+  "$(cksum "$BOTH_HOME/.agents/skills/polylane/SKILL.md" | awk '{print $1 ":" $2}')"
+
 # --- 3. Both layouts: polylane-memory.sh standalone from its installed spot ---
 if command -v jq >/dev/null 2>&1; then
   for MEM in "$CLA/bin/polylane-memory.sh" "$DEST/scripts/polylane-memory.sh"; do

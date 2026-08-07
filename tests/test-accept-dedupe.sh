@@ -67,6 +67,15 @@ ORIGINAL_CMD="$(jq -r '.accept[0].cmd' "$K")"
 assert_ok "tag-existing-key" "$MEM" "$K" tag-accept s1 --key retained-key
 assert_eq "tag-preserves-command" "$ORIGINAL_CMD" "$(jq -r '.accept[0].cmd' "$K")"
 assert_eq "tag-records-key" "retained-key" "$(jq -r '.accept[0].key' "$K")"
+
+# A sub-goal can legitimately have focused and terminal graders. Retrofitting a
+# shared terminal key must not also key the dissimilar focused command, or a plain
+# check-accept could let the cheap check suppress the expensive certification.
+"$MEM" "$K" add-accept s2 "true" --tier focused >/dev/null
+"$MEM" "$K" add-accept s2 "true" --tier terminal >/dev/null
+assert_ok "tag-existing-terminal-key" "$MEM" "$K" tag-accept s2 --tier terminal --key terminal-suite
+assert_eq "tag-tier-keeps-focused-unkeyed" "" "$(jq -r '.accept[] | select(.sid=="s2" and .tier=="focused") | .key' "$K")"
+assert_eq "tag-tier-keys-terminal-only" "terminal-suite" "$(jq -r '.accept[] | select(.sid=="s2" and .tier=="terminal") | .key' "$K")"
 BEFORE="$(jq -c '.accept' "$K")"
 assert_fail "add-rejects-unsafe-key" "$MEM" "$K" add-accept s2 true --key 'bad key'
 assert_eq "add-invalid-key-no-mutation" "$BEFORE" "$(jq -c '.accept' "$K")"

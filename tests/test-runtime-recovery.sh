@@ -37,4 +37,12 @@ assert_contains "missing-pane-creates-owned-pane" "split-window -t recovery-test
 assert_contains "missing-pane-attaches-log" "pipe 7 builder" "$(cat "$KEYLOG")"
 assert_eq "missing-pane-never-sends-old-target" "0" "$(grep -c 'recovery-test:0.4' "$KEYLOG" || true)"
 
+# Pane indices are tmux-owned and may be renumbered when completed panes leave.
+# A later integrator launch must trust split-window's returned index, not a stale
+# NEXT_PANE_IDX guess, or the runner seeds a missing pane and a resume duplicates it.
+NEXT_PANE_IDX=9
+new_pane integrator >/dev/null
+assert_eq "new-pane-uses-tmux-returned-index" "7" "$NEW_PANE_IDX"
+assert_eq "new-pane-next-follows-actual-index" "8" "$NEXT_PANE_IDX"
+
 finish

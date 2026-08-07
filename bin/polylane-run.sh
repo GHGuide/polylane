@@ -1454,6 +1454,7 @@ lane_adopted() { [ "${LANE_ADOPTED[$1]:-0}" = "1" ]; }
 # index ($TMUX_SESSION:0.N) everywhere, so health-check/respawn/stats stay
 # correct when --resume skips lanes (positional index != lane order then).
 new_pane() {
+  local idx=""
   if [ "${SESSION_STARTED:-0}" != "1" ]; then
     if [ "${DRY_RUN:-0}" != "1" ] && tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
       die "SESSION-COLLISION: tmux '$TMUX_SESSION' already exists; resume the owned run or choose a distinct POLYLANE_SESSION"
@@ -1461,14 +1462,26 @@ new_pane() {
     # size the detached session generously: the default 80x24 can't tile a 3rd+ pane
     # ("no space for new pane" -> a later seed_pane hits "can't find pane: N"). tmux
     # resizes to the real client on attach, so a big virtual size is free.
-    run tmux new-session -d -s "$TMUX_SESSION" -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}"
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+      run tmux new-session -d -s "$TMUX_SESSION" -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}"
+      idx="${NEXT_PANE_IDX:-0}"
+    else
+      idx=$(tmux new-session -d -P -F '#{pane_index}' -s "$TMUX_SESSION" \
+        -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}") || return 1
+    fi
     SESSION_STARTED=1
     tag_session
   else
-    run tmux split-window -t "$TMUX_SESSION"
-    run tmux select-layout -t "$TMUX_SESSION" tiled
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+      run tmux split-window -t "$TMUX_SESSION:0"
+      idx="${NEXT_PANE_IDX:-0}"
+    else
+      idx=$(tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}') || return 1
+    fi
+    run tmux select-layout -t "$TMUX_SESSION:0" tiled
   fi
-  NEW_PANE_IDX="${NEXT_PANE_IDX:-0}"
+  case "$idx" in ''|*[!0-9]*) echo "polylane-run: tmux returned invalid pane index '$idx'" >&2; return 1 ;; esac
+  NEW_PANE_IDX="$idx"
   NEXT_PANE_IDX=$(( NEW_PANE_IDX + 1 ))
 }
 

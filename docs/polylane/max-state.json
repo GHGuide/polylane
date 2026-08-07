@@ -131,28 +131,28 @@
       "id": "c19",
       "text": "Identical frozen acceptances share one explicit dedupe key per invocation and propagate truthful evidence without cross-source caching.",
       "weight": 1,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c20",
       "text": "Canonical state and control-room session/DONE truth match the runner even with ambient session variables or dirty committed markers.",
       "weight": 1,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c21",
       "text": "Advanced outcome memory is rooted to the canonical run project and never leaves generated ledgers in worker or integrator worktrees.",
       "weight": 1,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c22",
       "text": "Cross-lane requests, decisions, and resource claims use one atomic shared relay visible from every isolated worktree.",
       "weight": 1,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -381,33 +381,33 @@
           "id": "m9.1",
           "text": "Deduplicate explicitly keyed acceptance checks within one gate",
           "weight": 20,
-          "status": "doing",
+          "status": "done",
           "cycle": 10,
-          "evidence": "cycle 10 regression repair routed"
+          "evidence": "integrator GO; promoted cycle 10"
         },
         {
           "id": "m9.2",
           "text": "Unify runner, state, and dashboard DONE/session truth",
           "weight": 19,
-          "status": "doing",
+          "status": "done",
           "cycle": 10,
-          "evidence": "cycle 10 regression repair routed"
+          "evidence": "integrator GO; promoted cycle 10"
         },
         {
           "id": "m9.3",
           "text": "Root outcome learning to the canonical project without worktree pollution",
           "weight": 18,
-          "status": "doing",
+          "status": "done",
           "cycle": 10,
-          "evidence": "cycle 10 regression repair routed"
+          "evidence": "integrator GO; promoted cycle 10"
         },
         {
           "id": "m9.4",
           "text": "Ship an atomic cross-worktree coordination relay and prompt contract",
           "weight": 17,
-          "status": "doing",
+          "status": "done",
           "cycle": 10,
-          "evidence": "cycle 10 regression repair routed"
+          "evidence": "integrator GO; promoted cycle 10"
         }
       ]
     }
@@ -472,6 +472,30 @@
       "kind": "plan",
       "text": "council routed keyed acceptance dedupe, state/session parity, canonical outcomes, and shared coordination",
       "meta": ""
+    },
+    {
+      "cycle": 10,
+      "kind": "learning",
+      "text": "Tmux pane indices can renumber after pane removal; launches must capture the actual tmux-returned pane index instead of guessing NEXT_PANE_IDX.",
+      "meta": "tests/test-runtime-recovery.sh"
+    },
+    {
+      "cycle": 10,
+      "kind": "decision",
+      "text": "Historical full-suite terminal acceptances share key full-suite-shellcheck, scoped to terminal tier only.",
+      "meta": "m4.1,m8.8"
+    },
+    {
+      "cycle": 10,
+      "kind": "verdict",
+      "text": "GO: cycle 10 walk-away hardening promoted; 1257 tests, ShellCheck, fresh install/parity, and live GO/NO-GO rehearsal passed",
+      "meta": "Post-promotion fixes capture real tmux pane IDs and scope acceptance dedupe to terminal gates"
+    },
+    {
+      "cycle": 10,
+      "kind": "verdict",
+      "text": "FINAL COMPLETE: 1261 tests, ShellCheck, synchronized Codex installs, skill parity, and live GO/NO-GO rehearsal passed",
+      "meta": "25/25 subgoals; 22/22 criteria; route COMPLETE"
     }
   ],
   "accept": [
@@ -509,7 +533,8 @@
       "status": "pass",
       "deps": [],
       "fp": "",
-      "regressed_cycle": null
+      "regressed_cycle": null,
+      "key": "full-suite-shellcheck"
     },
     {
       "sid": "m5.1",
@@ -671,13 +696,14 @@
       "status": "pass",
       "deps": [],
       "fp": "",
-      "regressed_cycle": null
+      "regressed_cycle": null,
+      "key": "full-suite-shellcheck"
     },
     {
       "sid": "m9.1",
       "cmd": "bash tests/test-accept-dedupe.sh",
       "tier": "focused",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -686,7 +712,7 @@
       "sid": "m9.2",
       "cmd": "bash tests/test-state.sh && bash tests/test-dashboard.sh",
       "tier": "focused",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -695,7 +721,7 @@
       "sid": "m9.3",
       "cmd": "bash tests/test-outcome-rooting.sh && bash tests/test-advanced-runtime.sh",
       "tier": "focused",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -704,7 +730,7 @@
       "sid": "m9.4",
       "cmd": "bash tests/test-coordination.sh && bash tests/test-agent-adapter.sh && bash tests/test-prompt-economy.sh && bash tests/test-installers.sh && bash tests/test-skill-parity.sh",
       "tier": "focused",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

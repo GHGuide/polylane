@@ -29,8 +29,8 @@
 #   add-accept   <sid> <cmd> [--tier focused|terminal] [--key safe-id] [dep-glob...]
 #                                    register a FROZEN acceptance command for <sid>
 #                                    (refused once done; dep-globs enable content-hash memoization)
-#   tag-accept   <sid> --key <safe-id>
-#                                    tag existing frozen checks without changing commands
+#   tag-accept   <sid> [--tier focused|terminal] --key <safe-id>
+#                                    tag matching frozen checks without changing commands
 #   check-accept [--cycle N] [--targets a,b --focused | --only-terminal]
 #                                    run selected registered commands;
 #                                    stamp pass|fail; --cycle records the cycle a pass->fail broke
@@ -254,16 +254,27 @@ case "$CMD" in
 
   tag-accept)
     _need
-    _sid="${1:?usage: tag-accept <sid> --key <safe-id>}"
-    [ "${2:-}" = "--key" ] || { echo "polylane-memory: usage: tag-accept <sid> --key <safe-id>" >&2; exit 2; }
-    _key="${3:?--key needs a safe id}"
-    [ "$#" = "3" ] || { echo "polylane-memory: usage: tag-accept <sid> --key <safe-id>" >&2; exit 2; }
+    _sid="${1:?usage: tag-accept <sid> [--tier focused|terminal] --key <safe-id>}"
+    shift
+    _key=""; _tier=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --key) _key="${2:?--key needs a safe id}"; shift 2 ;;
+        --tier) _tier="${2:?--tier needs focused or terminal}"; shift 2 ;;
+        *) echo "polylane-memory: usage: tag-accept <sid> [--tier focused|terminal] --key <safe-id>" >&2; exit 2 ;;
+      esac
+    done
+    [ -n "$_key" ] || { echo "polylane-memory: --key is required" >&2; exit 2; }
+    case "$_tier" in ''|focused|terminal) : ;; *)
+      echo "polylane-memory: acceptance tier must be focused or terminal" >&2; exit 2 ;;
+    esac
     _accept_key_valid "$_key" \
       || { echo "polylane-memory: acceptance key must be a safe id" >&2; exit 2; }
-    jq -e --arg id "$_sid" 'any(.accept[]?; .sid==$id)' "$F" >/dev/null \
-      || { echo "polylane-memory: no acceptance check for sub-goal '$_sid'" >&2; exit 1; }
-    _save --arg sid "$_sid" --arg key "$_key" \
-      '.accept |= map(if .sid==$sid then .key=$key else . end)'
+    jq -e --arg id "$_sid" --arg tier "$_tier" \
+      'any(.accept[]?; .sid==$id and ($tier=="" or (.tier // "focused")==$tier))' "$F" >/dev/null \
+      || { echo "polylane-memory: no matching acceptance check for sub-goal '$_sid'" >&2; exit 1; }
+    _save --arg sid "$_sid" --arg key "$_key" --arg tier "$_tier" \
+      '.accept |= map(if .sid==$sid and ($tier=="" or (.tier // "focused")==$tier) then .key=$key else . end)'
     ;;
 
   check-accept)
