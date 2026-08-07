@@ -39,5 +39,8 @@ both cycle9-codex-profile 'codex_profile.*lean|lean.*codex_profile'
 both cycle9-prompt-budget 'polylane-promptopt\.sh'
 both cycle9-judges 'polylane-judges\.sh'
 both coordination-relay 'POLYLANE_COORDINATION_FILE|polylane-coordinate\.sh'
+both skill-evolution-runtime 'polylane-skill-evolve\.sh'
+both skill-challenger-gate 'champion.*challenger|challenger.*champion'
+both skill-canary-rollback 'canary.*(rollback|rolls? back)|(rollback|rolls? back).*canary'
 
 finish

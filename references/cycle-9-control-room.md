@@ -57,6 +57,16 @@ max-state, graph event ledger, report, spend ledger, and cleanup telemetry.
 Missing facts are `null`/`unknown`, never made into a pass or zero. Interactive
 dashboard rendering repeatedly consumes that same snapshot.
 
+## Skill evolution boundary
+
+`bin/polylane-skill-evolve.sh` is the only skill champion/challenger state
+machine. It snapshots evaluators at `init`, records deduplicated cycle evidence,
+hides promotion cases from mutation packets, and admits promotion only after
+development/hidden deltas, cost ceilings, and three blind judges pass. Activation
+is compare-and-swap protected; `canary` rolls back a failing promoted generation
+and `recover` resolves an interrupted activation journal. See
+`skill-evolution.md`; never rewrite an active skill from a reflection hook.
+
 Lane status comes solely from `polylane-state` and runner helpers. A DONE marker
 must be the exact current-run first line `STATUS: <lane> DONE run=<run_id>` with
 the literal nonce. A final newline is optional: `polylane-markers.sh done` emits

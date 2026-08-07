@@ -16,8 +16,10 @@ esac
 mkdir -p "$DEST/bin"
 cp "$REPO/SKILL.md" "$DEST/SKILL.md"
 cp "$REPO"/bin/*.sh "$DEST/bin/" && chmod +x "$DEST/bin/"*.sh
+rm -rf "$DEST/references" "$DEST/assets" "$DEST/benchmarks"
 cp -R "$REPO/references" "$DEST/references"
 cp -R "$REPO/assets" "$DEST/assets"
+if [ -d "$REPO/benchmarks" ]; then cp -R "$REPO/benchmarks" "$DEST/benchmarks"; fi
 
 grep -q '^name: polylane' "$DEST/SKILL.md" || { echo "install: bad SKILL.md" >&2; exit 1; }
 test -x "$DEST/bin/polylane-run.sh" || { echo "install: helpers missing" >&2; exit 1; }

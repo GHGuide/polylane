@@ -132,6 +132,11 @@ At cycle close, inspect that lane’s transcript and verification evidence:
 The scout reads the ledger before proposing the next kit so it does not repeat a
 known bad or repeatedly unused choice.
 
+If a skill has an initialized durable evolution workspace, feed the same verified
+outcome to `polylane-skill-evolve.sh observe` at cycle close. The scout chooses
+skills; the evolution helper alone may replace their contents. `hurt`/`unused`
+rows are learning signals, never authorization to edit an installed `SKILL.md`.
+
 `resolve` prints the exact trusted installed `SKILL.md`. `recommend` is
 installed-only and ranks by the append-only outcome ledger. Do not fill a kit to
 reach a count: each role needs at least one relevant skill and the lane may use at

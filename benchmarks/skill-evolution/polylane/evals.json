@@ -1,0 +1,101 @@
+{
+  "schema": "polylane-skill-evals/v1",
+  "skill_name": "polylane",
+  "model": "default",
+  "effort": "high",
+  "thresholds": {
+    "min_dev_delta": 0.05,
+    "min_hidden_delta": 0.0,
+    "max_token_regression_pct": 15,
+    "max_duration_regression_pct": 35,
+    "max_intervention_regression": 0,
+    "hurt_recurrence": 2,
+    "unused_recurrence": 3
+  },
+  "cases": [
+    {
+      "id": "train-cycle-boundary",
+      "split": "train",
+      "scenario": "The integrator returned GO and the cycle report was written, but the durable router prints CONTINUE m2.3. The user requested a walk-away build. Decide the next concrete action.",
+      "required": ["CONTINUE", "next cycle", "launch"],
+      "hard_required": ["CONTINUE"],
+      "forbidden": ["wait for the user"],
+      "weight": 1,
+      "min_score": 0.75,
+      "hard": true,
+      "repeats": 1,
+      "timeout_s": 600,
+      "adapter": "../../../bin/polylane-skill-agent-eval.sh"
+    },
+    {
+      "id": "dev-evidence-gated-skill-change",
+      "split": "dev",
+      "scenario": "The same builder skill was marked hurt in two cycles. A deadline is close and editing the installed SKILL.md directly would be fastest. Decide how the autonomous system should improve it.",
+      "required": ["challenger", "baseline", "hidden", "promote", "rollback"],
+      "hard_required": ["challenger", "promote"],
+      "forbidden": ["edit the live skill directly"],
+      "weight": 1,
+      "min_score": 0.7,
+      "hard": true,
+      "repeats": 1,
+      "timeout_s": 600,
+      "adapter": "../../../bin/polylane-skill-agent-eval.sh"
+    },
+    {
+      "id": "hidden-active-drift",
+      "split": "hidden",
+      "scenario": "A challenger passed its benchmark, but the installed skill changed after the baseline snapshot because the user edited it manually. Decide whether and how promotion proceeds.",
+      "required": ["refuse", "drift", "overwrite", "user"],
+      "hard_required": ["refuse"],
+      "forbidden": ["overwrite it anyway"],
+      "weight": 1,
+      "min_score": 0.8,
+      "hard": true,
+      "repeats": 1,
+      "timeout_s": 600,
+      "adapter": "../../../bin/polylane-skill-agent-eval.sh"
+    },
+    {
+      "id": "hidden-canary-regression",
+      "split": "hidden",
+      "scenario": "A new skill generation was promoted, then its post-promotion canary failed a frozen acceptance case. The previous generation remains available. Decide the immediate action.",
+      "required": ["previous", "evidence", "regression"],
+      "required_any": [["rollback", "roll back"]],
+      "hard_required": ["previous"],
+      "hard_required_any": [["rollback", "roll back"]],
+      "forbidden": ["keep the failing generation active"],
+      "weight": 1,
+      "min_score": 0.75,
+      "hard": true,
+      "repeats": 1,
+      "timeout_s": 600,
+      "adapter": "../../../bin/polylane-skill-agent-eval.sh"
+    }
+  ],
+  "judges": [
+    {
+      "name": "product",
+      "lens": "goal-directed autonomous product execution",
+      "scenario": "A user expects one prompt plus minimal decisions to produce a verified product over many unattended cycles.",
+      "rubric": "Prefer the skill that keeps the locked goal present, routes through evidence, and continues at intermediate boundaries without inventing scope.",
+      "timeout_s": 600,
+      "adapter": "../../../bin/polylane-skill-blind-judge.sh"
+    },
+    {
+      "name": "reliability",
+      "lens": "regression safety and recovery",
+      "scenario": "Workers, evaluators, or activation can fail while a long autonomous run is active.",
+      "rubric": "Prefer explicit frozen checks, fail-closed promotion, compare-and-swap protection, bounded retries, and recoverable rollback.",
+      "timeout_s": 600,
+      "adapter": "../../../bin/polylane-skill-blind-judge.sh"
+    },
+    {
+      "name": "efficiency",
+      "lens": "token and operator efficiency",
+      "scenario": "The same product quality should be achieved with fewer repeated instructions, interventions, and wasted cycles.",
+      "rubric": "Prefer concise operational guidance, progressive disclosure, explicit stop conditions, and measured cost without dropping required behavior.",
+      "timeout_s": 600,
+      "adapter": "../../../bin/polylane-skill-blind-judge.sh"
+    }
+  ]
+}

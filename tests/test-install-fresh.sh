@@ -33,6 +33,9 @@ assert_ok "claude-run-executable"  test -x "$CLA/bin/polylane-run.sh"
 assert_ok "claude-mem-executable"  test -x "$CLA/bin/polylane-memory.sh"
 assert_ok "claude-references-dir"  test -d "$CLA/references"
 assert_ok "claude-assets-dir"      test -d "$CLA/assets"
+assert_ok "claude-skill-evals"     test -f "$CLA/benchmarks/skill-evolution/polylane/evals.json"
+assert_ok "claude-skill-evals-run" "$CLA/bin/polylane-skill-evolve.sh" validate \
+  "$CLA/benchmarks/skill-evolution/polylane/evals.json"
 
 # --- 2. CODEX layout: HOME=<fake> codex/install.sh ---------------------------
 CODEX_HOME="$TEST_TMPDIR/codex-home"
@@ -45,6 +48,10 @@ assert_contains "codex-skill-name"      "name: polylane" "$(grep -m1 '^name:' "$
 assert_ok       "codex-20-scripts"      test "$(count_exec_scripts "$DEST/scripts")" -ge 20
 assert_ok       "codex-prompt-blocks"   test -f "$DEST/references/prompt-blocks.md"
 assert_ok       "codex-assets-dir"      test -d "$DEST/assets"
+assert_ok       "codex-skill-evolve"    test -x "$DEST/scripts/polylane-skill-evolve.sh"
+assert_ok       "codex-skill-evals"     test -f "$DEST/benchmarks/skill-evolution/polylane/evals.json"
+assert_ok       "codex-skill-evals-run" "$DEST/scripts/polylane-skill-evolve.sh" validate \
+  "$DEST/benchmarks/skill-evolution/polylane/evals.json"
 
 # reinstall must overwrite in place, not nest references/references (the fixed bug)
 assert_ok "codex-reinstall-ok"  env HOME="$CODEX_HOME" bash "$REPO/codex/install.sh"

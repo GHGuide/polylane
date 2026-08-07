@@ -69,6 +69,12 @@ outcome-learned minimal skill kits, advanced runtime hooks, three independent
 quality judges, and the canonical control room. Their frozen commands and
 honesty rules live in [the runtime contract](references/cycle-9-control-room.md).
 
+Polylane can also improve its own skills without letting a reflection model edit
+the live instructions. Verified failures trigger immutable challenger copies;
+frozen train/development/hidden cases, cost ceilings, and three blind judges choose
+a winner. Promotion protects concurrent user edits, and a failed canary restores
+the previous generation. See [evidence-gated skill evolution](references/skill-evolution.md).
+
 ## Why polylane (vs just brainstorming)
 
 The `superpowers:brainstorming` skill is excellent — for exploring **one** task's design. polylane is the layer above it:
@@ -107,6 +113,7 @@ The result: a big feature set built in parallel, with the token profile of a car
 5. **Generate prompts.** One paste-ready prompt per lane — each opens with the graphify/caveman/`/goal`/superpowers preamble, then OWN/FORBIDDEN + contracts, forced-verify, coordination, scoped git, done-checklist. Plus an optional **integrator** lane that runs last. `/polylane` also emits the run manifest `.polylane/run.json`.
 6. **Launch + watch.** Contract v2 rejects missing state, acceptance, artifacts, skills, prompt blocks, and overlapping scope before tmux opens. The supervisor launches real CLIs and prints one valid watch command: `tmux attach -t <session>`.
 7. **Integrate + continue.** GO promotes. NO-GO/UNKNOWN preserves evidence and repairs in-process. `EXTERNAL-EVIDENCE-OPEN` promotes verified engineering and routes around manual proof. Cycle artifacts and the next plan are required before continuing.
+8. **Learn safely.** Repeated skill failures create benchmarked challengers; the active champion changes only after hidden evaluation and remains rollback-safe.
 
 For Codex, each tmux pane is mechanically prevented from spawning nested agents.
 The runner also caches unchanged expensive checks and detects command churn with no

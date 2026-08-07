@@ -630,6 +630,37 @@ INDEX and the next plan with `bin/polylane-cycle.sh artifacts`, run `route`, set
 baseline (`git rev-parse HEAD`), increment N, and immediately GOTO Phase 1 on `CONTINUE`.
 Never emit a final answer merely because Phase 5 ended.
 
+## Evidence-gated skill self-improvement
+
+Read `references/skill-evolution.md` when cycle evidence shows one regression,
+two corrections or `hurt` outcomes, or three `unused` outcomes for the same
+skill. At Phase-5 close, record only observable transcript/verification evidence
+with `bin/polylane-skill-evolve.sh observe`; ordinary success does not trigger
+prompt rewriting.
+
+When it prints `EVOLVE`, use `skill-creator` to generate three focused challenger
+copies and `superpowers:writing-skills` to pressure-test them. Never edit the
+active skill or immutable champion. Stage all challengers, run champion and
+challenger against the same frozen train/development/hidden cases, require
+bounded tokens/time/interventions and a majority of exactly three anonymized
+judges, then select and promote only a current-champion GO:
+
+```bash
+EVOLVE=bin/polylane-skill-evolve.sh
+EW=docs/polylane/skill-evolution/polylane
+"$EVOLVE" packet "$EW" polylane
+"$EVOLVE" stage "$EW" <candidate> </candidate-skill-dir> "<one hypothesis>"
+POLYLANE_SKILL_EVAL_AGENT=claude "$EVOLVE" compare "$EW" <candidate>
+WINNER=$("$EVOLVE" select "$EW" <candidate> [candidate...])
+"$EVOLVE" promote "$EW" "$WINNER" </active-skill-dir>
+"$EVOLVE" canary "$EW" </active-skill-dir>
+```
+
+Promotion is compare-and-swap protected: active drift means refuse the overwrite,
+preserve the user's change, and benchmark a rebased challenger. Failed-canary rollback
+records regression evidence and restores the previous generation. This maintenance route never
+pauses independent work toward the locked goal.
+
 ## North-star docs — write after every BIG decision, keep them in mind
 The blackboard `log` is a terse machine index; north-star docs are the readable
 anchors the loop and every lane re-read so nothing drifts or re-opens a settled call.

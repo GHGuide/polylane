@@ -22,6 +22,11 @@ assert_ok "install-codex-coordination-helper" test -x "$REPO/.codex/skills/polyl
 assert_ok "install-codex-cycle-guard" test -x "$REPO/.codex/skills/polylane/scripts/polylane-cycle.sh"
 assert_ok "install-codex-control-reference" test -f "$REPO/.codex/skills/polylane/references/cycle-9-control-room.md"
 assert_ok "install-codex-benchmark-artifact" test -f "$REPO/.codex/skills/polylane/benchmarks/install-sentinel.txt"
+assert_ok "install-codex-skill-evolution" test -x "$REPO/.codex/skills/polylane/scripts/polylane-skill-evolve.sh"
+assert_ok "install-codex-skill-eval-corpus" test -f "$REPO/.codex/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
+assert_ok "install-codex-skill-evals-runnable" \
+  "$REPO/.codex/skills/polylane/scripts/polylane-skill-evolve.sh" validate \
+  "$REPO/.codex/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 assert_contains "install-codex-agent" '"agent": "codex"' "$(grep -m1 '"agent": "codex"' "$REPO/.codex/skills/polylane/SKILL.md" || true)"
 assert_eq "install-codex-standalone-source" \
   "$(cksum "$REPO/codex/SKILL.md" | awk '{print $1 ":" $2}')" \
@@ -35,6 +40,11 @@ fi
 (cd "$REPO" && ./claude-code/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-claude-skill" test -f "$REPO/.claude/skills/polylane/SKILL.md"
 assert_ok "install-claude-runner" test -x "$REPO/.claude/skills/polylane/bin/polylane-run.sh"
+assert_ok "install-claude-skill-evolution" test -x "$REPO/.claude/skills/polylane/bin/polylane-skill-evolve.sh"
+assert_ok "install-claude-skill-eval-corpus" test -f "$REPO/.claude/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
+assert_ok "install-claude-skill-evals-runnable" \
+  "$REPO/.claude/skills/polylane/bin/polylane-skill-evolve.sh" validate \
+  "$REPO/.claude/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 
 C_CORE=$(cksum "$REPO/.codex/skills/polylane/scripts/polylane-run.sh" | awk '{print $1 ":" $2}')
 CL_CORE=$(cksum "$REPO/.claude/skills/polylane/bin/polylane-run.sh" | awk '{print $1 ":" $2}')

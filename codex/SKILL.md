@@ -335,6 +335,38 @@ It cannot declare completion or stop execution.
 In chat, give a short cycle result, the next focus, any informational skill
 suggestions, and—while active—the exact tmux attach line. Then continue working.
 
+### 7. Improve skills only through evidence
+
+Read `references/skill-evolution.md` when a selected skill causes a verified
+regression, is corrected repeatedly, is marked `hurt` twice, or is unused three
+times. At cycle close, record the observable outcome with
+`scripts/polylane-skill-evolve.sh observe`; a successful cycle is evidence, not
+an excuse to rewrite the skill.
+
+When the helper prints `EVOLVE`, use `anthropic-skills:skill-creator` to create
+three focused challenger copies and `superpowers:writing-skills` to pressure-test
+their instructions. Never edit the active skill or immutable champion. Stage and
+compare every challenger against the same champion with the frozen train,
+development, and hidden corpus. Promotion additionally requires exactly three
+anonymized quality judges, bounded token/time/intervention regressions, and a
+current-champion GO verdict:
+
+```bash
+EVOLVE=scripts/polylane-skill-evolve.sh
+EW=docs/polylane/skill-evolution/polylane
+"$EVOLVE" packet "$EW" polylane
+"$EVOLVE" stage "$EW" <candidate> </candidate-skill-dir> "<one hypothesis>"
+POLYLANE_SKILL_EVAL_AGENT=codex "$EVOLVE" compare "$EW" <candidate>
+WINNER=$("$EVOLVE" select "$EW" <candidate> [candidate...])
+"$EVOLVE" promote "$EW" "$WINNER" </active-skill-dir>
+"$EVOLVE" canary "$EW" </active-skill-dir>
+```
+
+Promotion is compare-and-swap protected. If the active skill drifted, refuse to
+overwrite the user's change and benchmark a rebased challenger. Failed-canary rollback
+records regression evidence and immediately restores the previous generation. Skill maintenance never
+becomes a reason to pause independent work toward `ULTIMATE-GOAL`.
+
 ## Initial-goal suggestions and perfection
 
 When all initially requested subgoals first become verified, do not stop. Generate
