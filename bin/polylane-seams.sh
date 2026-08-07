@@ -10,13 +10,14 @@ set -euo pipefail
 
 scan_dom() {
   local dir="$1" refs prods id found=0
-  # Test fixtures intentionally contain broken interfaces to prove this gate;
-  # they are not integrated product surfaces and must not poison a repository
-  # scan. `find` keeps this portable to the BSD grep shipped with Bash 3.2 Macs.
-  refs=$( { find "$dir" -type f ! -path '*/tests/*' \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "getElementById\(['\"][A-Za-z0-9_-]+['\"]\)" {} + 2>/dev/null || true
-            find "$dir" -type f ! -path '*/tests/*' \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "querySelector\(['\"]#[A-Za-z0-9_-]+['\"]\)" {} + 2>/dev/null || true; } \
+  # Test fixtures, dependencies, and generated exports are not integrated
+  # source surfaces. Prune them before grep so framework internals cannot
+  # introduce false dangling IDs. This form remains portable to BSD find and
+  # the Bash 3.2 environment supported by Polylane.
+  refs=$( { find "$dir" \( -type d \( -name tests -o -name node_modules -o -name .next -o -name '.next-*' -o -name out-ios \) -prune \) -o \( -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "getElementById\(['\"][A-Za-z0-9_-]+['\"]\)" {} + \) 2>/dev/null || true
+            find "$dir" \( -type d \( -name tests -o -name node_modules -o -name .next -o -name '.next-*' -o -name out-ios \) -prune \) -o \( -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "querySelector\(['\"]#[A-Za-z0-9_-]+['\"]\)" {} + \) 2>/dev/null || true; } \
           | grep -oE "[A-Za-z0-9_-]+" | grep -vE '^(getElementById|querySelector)$' | sort -u || true )
-  prods=$( find "$dir" -type f ! -path '*/tests/*' \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "id=['\"][A-Za-z0-9_-]+['\"]" {} + 2>/dev/null \
+  prods=$( find "$dir" \( -type d \( -name tests -o -name node_modules -o -name .next -o -name '.next-*' -o -name out-ios \) -prune \) -o \( -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.html' -o -name '*.htm' \) -exec grep -hoE "id=['\"][A-Za-z0-9_-]+['\"]" {} + \) 2>/dev/null \
            | grep -oE "['\"][A-Za-z0-9_-]+['\"]" | tr -d "\"'" | sort -u || true )
   for id in $refs; do
     printf '%s\n' "$prods" | grep -qx "$id" || { echo "SEAM-DANGLING: dom-id $id"; found=1; }
