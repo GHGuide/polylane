@@ -49,3 +49,19 @@ actually working, proven by executable checks, live canaries, and a real self-ru
   builder or integrator worktree with generated ledgers.
 - c22 Cross-lane requests, decisions, and resource claims use one atomic shared relay visible
   from every isolated worktree.
+
+## Continual-harness and RLM continuity expansion (cycle 11)
+
+- c23 A versioned local/global continual-harness store provides atomic CRUD and rollback for
+  supplemental prompts, memories, skill-routing notes, and reusable worker roles while the
+  base skill remains immutable.
+- c24 Evidence-triggered refinements run after repeated failure, stall, NO-GO, or compaction;
+  every proposal declares an expected measurable outcome and is validated in the next cycle,
+  with automatic rollback on regression or expiry.
+- c25 Named worker identities retain bounded role/context capsules across cycles and receive a
+  durable append-only inbox with explicit acknowledgement, without weakening worktree isolation.
+- c26 Builders receive a bounded, source-attributed context packet produced by a query layer
+  over goals, decisions, evidence, harness state, worker capsules, and recent cycle history.
+- c27 Local learning may never silently promote a global prompt or executable skill: global
+  mutations flow through the existing frozen champion/challenger, hidden-case, three-judge,
+  canary, and rollback gate, with Claude/Codex install parity and end-to-end proof.

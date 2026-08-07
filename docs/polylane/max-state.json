@@ -154,6 +154,41 @@
       "weight": 1,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c23",
+      "text": "Versioned local/global continual harness has atomic CRUD, immutable base, conflict protection, and rollback.",
+      "weight": 25,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c24",
+      "text": "Evidence-triggered refinements declare expected outcomes and next-cycle deadlines; regression or expiry rolls back.",
+      "weight": 24,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c25",
+      "text": "Stable worker identities preserve bounded context and an acknowledged append-only inbox across cycles.",
+      "weight": 23,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c26",
+      "text": "Builders consume bounded source-attributed context packets over durable project knowledge.",
+      "weight": 22,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c27",
+      "text": "Global prompt and skill learning cannot bypass frozen evolution gates and remains install-parity proven.",
+      "weight": 21,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -410,6 +445,44 @@
           "evidence": "integrator GO; promoted cycle 10"
         }
       ]
+    },
+    {
+      "id": "m10",
+      "text": "Continual harness and RLM continuity",
+      "subgoals": [
+        {
+          "id": "m10.1",
+          "text": "Ship versioned continual-harness state and evidence-gated refinement with validation and rollback",
+          "weight": 25,
+          "status": "doing",
+          "cycle": 11,
+          "evidence": "routed in cycle 11"
+        },
+        {
+          "id": "m10.2",
+          "text": "Ship persistent worker identities, bounded capsules, and durable acknowledged inbox",
+          "weight": 24,
+          "status": "doing",
+          "cycle": 11,
+          "evidence": "routed in cycle 11"
+        },
+        {
+          "id": "m10.3",
+          "text": "Ship deterministic bounded context query and prompt packet generation",
+          "weight": 23,
+          "status": "doing",
+          "cycle": 11,
+          "evidence": "routed in cycle 11"
+        },
+        {
+          "id": "m10.4",
+          "text": "Integrate the hybrid into cycle launch/close, prompts, installers, parity, and end-to-end proof",
+          "weight": 22,
+          "status": "doing",
+          "cycle": 11,
+          "evidence": "routed in cycle 11"
+        }
+      ]
     }
   ],
   "log": [
@@ -496,6 +569,12 @@
       "kind": "verdict",
       "text": "FINAL COMPLETE: 1261 tests, ShellCheck, synchronized Codex installs, skill parity, and live GO/NO-GO rehearsal passed",
       "meta": "25/25 subgoals; 22/22 criteria; route COMPLETE"
+    },
+    {
+      "cycle": 11,
+      "kind": "decision",
+      "text": "Adopt Prime-style local continual learning and persistent context while keeping Polylane's frozen global promotion gates authoritative.",
+      "meta": ""
     }
   ],
   "accept": [
@@ -731,6 +810,86 @@
       "cmd": "bash tests/test-coordination.sh && bash tests/test-agent-adapter.sh && bash tests/test-prompt-economy.sh && bash tests/test-installers.sh && bash tests/test-skill-parity.sh",
       "tier": "focused",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.1",
+      "cmd": "bash tests/test-harness.sh && bash tests/test-refine.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.1",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh",
+      "tier": "terminal",
+      "key": "cycle11-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.2",
+      "cmd": "bash tests/test-workers.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.2",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh",
+      "tier": "terminal",
+      "key": "cycle11-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.3",
+      "cmd": "bash tests/test-context.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.3",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh",
+      "tier": "terminal",
+      "key": "cycle11-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.4",
+      "cmd": "bash tests/test-prime-hybrid-integration.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m10.4",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh",
+      "tier": "terminal",
+      "key": "cycle11-terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
