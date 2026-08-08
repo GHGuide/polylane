@@ -1,0 +1,10 @@
+[
+  {
+    "subject": "context",
+    "kind": "compaction",
+    "observation_count": 3,
+    "latest_cycle": 12,
+    "latest_evidence": "bounded packets built for run c12-visual-20260808",
+    "required_action": "propose-or-decline"
+  }
+]

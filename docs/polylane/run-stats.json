@@ -1,215 +1,142 @@
 {
   "version": 1,
-  "run_id": "prime-c11-20260807T103930Z",
-  "started_at": 1786099378,
-  "updated_at": 1786101831,
-  "wall_s": 2453,
+  "run_id": "c12-visual-20260808",
+  "started_at": 1786196248,
+  "updated_at": 1786200747,
+  "wall_s": 4499,
   "lanes": {
-    "harness-refine": {
-      "launches": 1,
-      "restarts": 0
-    },
-    "worker-continuity": {
-      "launches": 1,
+    "visual-mechanisms": {
+      "launches": 2,
       "restarts": 1
     },
-    "context-query": {
+    "shared-contract": {
       "launches": 1,
       "restarts": 1
     },
     "integrator": {
       "launches": 1,
-      "restarts": 2
+      "restarts": 1
     }
   },
-  "supervisor_restarts": 6,
+  "supervisor_restarts": 2,
   "terminal_gates": 1,
-  "tokens": 54577070,
+  "tokens": 7861112,
   "token_state": "known",
   "usage_offsets": {
-    "harness-refine": 50541,
-    "worker-continuity": 198323,
-    "context-query": 143075,
-    "integrator": 37306290
+    "visual-mechanisms": 739205,
+    "shared-contract": 0,
+    "integrator": 40495421
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786099378
+      "at": 1786196248
     },
     {
       "type": "usage_capture",
-      "lane": "harness-refine",
-      "at": 1786099381,
+      "lane": "visual-mechanisms",
+      "at": 1786196293,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "harness-refine",
-      "at": 1786099381
+      "lane": "visual-mechanisms",
+      "at": 1786196293
     },
     {
       "type": "usage_capture",
-      "lane": "worker-continuity",
-      "at": 1786099381,
+      "lane": "shared-contract",
+      "at": 1786196293,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "worker-continuity",
-      "at": 1786099381
+      "lane": "shared-contract",
+      "at": 1786196293
+    },
+    {
+      "type": "restarts",
+      "lane": "shared-contract",
+      "at": 1786196792
+    },
+    {
+      "type": "restarts",
+      "lane": "visual-mechanisms",
+      "at": 1786196939
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786197550
+    },
+    {
+      "type": "initialized",
+      "at": 1786197550
     },
     {
       "type": "usage_capture",
-      "lane": "context-query",
-      "at": 1786099381,
+      "lane": "visual-mechanisms",
+      "at": 1786197583,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "context-query",
-      "at": 1786099381
-    },
-    {
-      "type": "usage_capture",
-      "lane": "harness-refine",
-      "at": 1786099448,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "worker-continuity",
-      "at": 1786099448,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "context-query",
-      "at": 1786099448,
-      "added": null
+      "lane": "visual-mechanisms",
+      "at": 1786197584
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786099448,
-      "added": 52955732
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786099454
-    },
-    {
-      "type": "initialized",
-      "at": 1786099454
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786099459
-    },
-    {
-      "type": "initialized",
-      "at": 1786099459
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786099464
-    },
-    {
-      "type": "initialized",
-      "at": 1786099465
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786099470
-    },
-    {
-      "type": "initialized",
-      "at": 1786099470
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786099475
-    },
-    {
-      "type": "initialized",
-      "at": 1786099475
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786099480
-    },
-    {
-      "type": "initialized",
-      "at": 1786099481
-    },
-    {
-      "type": "initialized",
-      "at": 1786099600
-    },
-    {
-      "type": "restarts",
-      "lane": "context-query",
-      "at": 1786099706
-    },
-    {
-      "type": "restarts",
-      "lane": "worker-continuity",
-      "at": 1786099723
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786099937,
+      "at": 1786197616,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786099937
+      "at": 1786197616
+    },
+    {
+      "type": "usage_capture",
+      "lane": "visual-mechanisms",
+      "at": 1786199431,
+      "added": 1728132
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786199431,
+      "added": 6132980
     },
     {
       "type": "restarts",
       "lane": "integrator",
-      "at": 1786099954
+      "at": 1786199436
     },
     {
-      "type": "restarts",
-      "lane": "integrator",
-      "at": 1786101309
+      "type": "initialized",
+      "at": 1786200565
     },
     {
-      "type": "usage_capture",
-      "lane": "harness-refine",
-      "at": 1786101496,
-      "added": null
+      "type": "supervisor_restart",
+      "at": 1786200605
     },
     {
-      "type": "usage_capture",
-      "lane": "worker-continuity",
-      "at": 1786101496,
-      "added": 800615
+      "type": "initialized",
+      "at": 1786200605
     },
     {
-      "type": "usage_capture",
-      "lane": "context-query",
-      "at": 1786101496,
-      "added": 820723
+      "type": "initialized",
+      "at": 1786200703
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786101496,
+      "at": 1786200741,
       "added": null
     },
     {
       "type": "terminal_gate",
-      "at": 1786101497
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786101831
+      "at": 1786200747
     }
   ]
 }

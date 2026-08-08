@@ -194,14 +194,14 @@
       "id": "c28",
       "text": "UI cycles produce distinctive product-specific visual systems proven by desktop/mobile/state evidence and three independent judges",
       "weight": 10,
-      "status": "open",
+      "status": "external",
       "score": 0
     },
     {
       "id": "c29",
       "text": "Missing lane skills may be auto-acquired only through quarantine, deterministic audit, with-without benchmark, immutable pin, project install, and rollback metadata",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -506,33 +506,33 @@
           "id": "m12.1",
           "text": "Research 3-5 relevant products plus a wildcard and freeze an original multi-source visual contract",
           "weight": 10,
-          "status": "doing",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 12,
+          "evidence": "cycle 12 visual reference contract + executable checks"
         },
         {
           "id": "m12.2",
           "text": "Discover, quarantine, audit, benchmark, pin, and project-install only useful safe skills",
           "weight": 10,
-          "status": "doing",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 12,
+          "evidence": "cycle 12 safe project-local skill acquisition + rollback"
         },
         {
           "id": "m12.3",
           "text": "Block UI promotion on required screenshots/states, three visual lenses, and two bounded repairs",
           "weight": 10,
-          "status": "doing",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 12,
+          "evidence": "cycle 12 deterministic visual evidence gate + bounded repairs"
         },
         {
           "id": "m12.4",
           "text": "Keep Claude and Codex contracts aligned and certify the new loop against the old workflow",
           "weight": 9,
-          "status": "doing",
-          "cycle": null,
-          "evidence": ""
+          "status": "external",
+          "cycle": 12,
+          "evidence": "real 10-product rendered old-vs-new blind corpus remains external"
         }
       ]
     }
@@ -972,50 +972,50 @@
     },
     {
       "sid": "m12.1",
-      "cmd": "tests/test-visual-intelligence.sh",
+      "cmd": "bash tests/test-visual-intelligence.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
     },
     {
       "sid": "m12.2",
-      "cmd": "tests/test-skill-acquire.sh",
+      "cmd": "bash tests/test-skill-acquire.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
     },
     {
       "sid": "m12.3",
-      "cmd": "tests/test-visual-quality.sh",
+      "cmd": "bash tests/test-visual-quality.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
     },
     {
       "sid": "m12.4",
-      "cmd": "tests/test-visual-loop-integration.sh",
+      "cmd": "bash tests/test-visual-loop-integration.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
     },
     {
       "sid": "m12.4",
-      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh && tests/test-skill-parity.sh",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh",
       "tier": "terminal",
       "key": "visual-loop-full",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
