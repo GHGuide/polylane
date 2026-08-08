@@ -57,6 +57,31 @@ The durable state has 51 acceptance records: 50 pass, 0 fail, and 1 unchecked.
 c35–c38 and m14.1–m14.4 are `done`. c39 and m14.5 remain `doing` only because
 the unchecked frozen terminal command includes the physical rehearsal.
 
+## Rehearsal fixture counter repair
+
+The host GO rehearsal on `69ded72` reached the verified engineering verdict and
+the skill-evidence transaction, then promotion correctly refused the fixture's
+top-level untracked `graph-witness` counter. `mock-invocations` is the same
+rehearsal-only counter class. Neither is product work or durable runner state,
+so the promotion and runtime-untracked allowlists remain unchanged.
+
+This repair maps only those two fixture counters to
+`.polylane/rehearse/` beneath the run root and uses the same resolved paths for
+the mock-agent producer and post-run assertions. Fresh non-host evidence:
+
+| Check | Result |
+| --- | --- |
+| `tests/test-rehearse.sh` static fixture checks | 12 pass, 0 fail |
+| `shellcheck -S warning bin/polylane-rehearse.sh` | 0 diagnostics |
+| `tests/test-promote.sh` | 4 pass, 0 fail |
+| `tests/test-promotion-transaction.sh` | 17 pass, 0 fail |
+| `tests/test-cycle-14-contract.sh` | exit 0 |
+
+No post-repair physical rehearsal was attempted in this sandbox: creating a
+fresh tmux socket is denied here. The coordinator must run both host canaries
+after this commit; their results, rather than this static repair, determine the
+terminal GO/NO-GO state.
+
 ## Review, risk, and skill-use audit
 
 SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285

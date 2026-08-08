@@ -17,10 +17,17 @@ assert_contains "rehearse-uses-private-tmux-server-dir" 'TMUX_TMPDIR="$tmux_root
 assert_contains "rehearse-keeps-tmux-socket-parent-short" 'plr-tmux.XXXXXX' \
   "$(sed -n '/^rehearse()/,/^}/p' "$RH")"
 
+# Invocation and graph-witness counters are fixture instrumentation, never
+# promotion input. A regression that writes either one at the repository root
+# must be rejected by the runner's user-dirt boundary, so the fixture must
+# resolve both into its run-scoped runtime scratch.
+make_tmpdir
+fixture_counter_paths_check='source "$1"; root="$2"; for name in mock-invocations graph-witness; do path=$(rehearse_fixture_counter_path "$root" "$name") || exit 1; [ "$path" = "$root/.polylane/rehearse/$name" ] || exit 1; [ "$path" != "$root/$name" ] || exit 1; done'
+assert_ok "rehearse-scopes-fixture-counters-under-runtime-scratch" bash -c "$fixture_counter_paths_check" _ "$RH" "$TEST_TMPDIR/repo"
+
 # The live fixture advances durable state before writing reports. Cleanup must
 # remove tracked and untracked current-run status markers without rejecting
 # that intended durable state change.
-make_tmpdir
 REHEARSE_REPO="$TEST_TMPDIR/repo"
 REHEARSE_SKILLS="$TEST_TMPDIR/skills"
 fixture_skills_check='source "$1"; rehearse_create_fixture_skills "$2"; for skill in fixture-test fixture-debug fixture-review fixture-check; do test -f "$2/$skill/SKILL.md" || exit 1; done'

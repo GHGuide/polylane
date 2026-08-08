@@ -16,6 +16,15 @@ rehearse_create_fixture_skills() {
   done
 }
 
+rehearse_fixture_counter_path() {
+  local root="$1" name="$2"
+  case "$name" in
+    mock-invocations|graph-witness) ;;
+    *) return 2 ;;
+  esac
+  printf '%s/.polylane/rehearse/%s\n' "$root" "$name"
+}
+
 rehearse_promoted_tree_clean() {
   local repo="$1" marker
   git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
@@ -29,13 +38,16 @@ rehearse_promoted_tree_clean() {
 }
 
 rehearse() {
-  local want="${1:-go}" root tmux_root tmux_parent sess nonce rc=0 report evidence stats promoted cleaned leaks=0 calls graph_witnesses retained=0 tree_clean=0 terminal_gates=0 ready=0
+  local want="${1:-go}" root tmux_root tmux_parent sess nonce rc=0 report evidence stats promoted cleaned leaks=0 calls calls_path graph_witnesses graph_witness_path retained=0 tree_clean=0 terminal_gates=0 ready=0
   # A rehearse run owns a fresh tmux server.  An inherited client socket or
   # default server can belong to another host/session (for example a remote
   # Codex parent) and makes even `tmux new-session` fail before the canary.
   unset TMUX
   root=$(mktemp -d "${TMPDIR:-/tmp}/polylane-rehearse.XXXXXX")
   root=$(cd "$root" && pwd -P)
+  calls_path=$(rehearse_fixture_counter_path "$root" mock-invocations)
+  graph_witness_path=$(rehearse_fixture_counter_path "$root" graph-witness)
+  mkdir -p "$(dirname "$calls_path")"
   # tmux appends /tmux-<uid>/default, so keep this socket parent short enough
   # for macOS's UNIX-domain socket length limit even when TMPDIR is long.
   tmux_parent="${TMPDIR:-/tmp}"
@@ -83,8 +95,8 @@ for required in "$root/.polylane/graph.json" "$root/.polylane/events.jsonl"; do 
 graph_id="\$(jq -r '.graph_id // empty' "$root/.polylane/graph.json")"
 jq -e --arg run "$nonce" '.immutable == true and .run_id == \$run' "$root/.polylane/graph.json" >/dev/null || exit 23
 "$BIN/polylane-events.sh" verify "$root/.polylane/events.jsonl" "$nonce" "\$graph_id" >/dev/null || exit 24
-printf '%s\n' "\$PWD" >> "$root/mock-invocations"
-printf '%s\n' "\$graph_id" >> "$root/graph-witness"
+printf '%s\n' "\$PWD" >> "$calls_path"
+printf '%s\n' "\$graph_id" >> "$graph_witness_path"
 mkdir -p docs
 case "\$text" in
   *"lane=lane-a"*) mkdir -p a; printf '%s\n' a > a/x; { "$MARK" done lane-a "$nonce"; echo; } > docs/status-lane-a.md; git add a/x docs/status-lane-a.md; git commit -qm lane-a ;;
@@ -115,8 +127,8 @@ JSON
   else
     evidence="$root/wt-int/docs/verify-integration.md"
   fi
-  calls=$([ -f "$root/mock-invocations" ] && wc -l < "$root/mock-invocations" | tr -d ' ' || echo 0)
-  graph_witnesses=$([ -f "$root/graph-witness" ] && wc -l < "$root/graph-witness" | tr -d ' ' || echo 0)
+  calls=$([ -f "$calls_path" ] && wc -l < "$calls_path" | tr -d ' ' || echo 0)
+  graph_witnesses=$([ -f "$graph_witness_path" ] && wc -l < "$graph_witness_path" | tr -d ' ' || echo 0)
   terminal_gates=$(jq -r '.terminal_gates // 0' "$stats" 2>/dev/null || echo 0)
   if tmux has-session -t "$sess" 2>/dev/null || git -C "$root" worktree list --porcelain | grep -q "worktree $root/wt"; then leaks=1; fi
   [ "$graph_witnesses" = 3 ] || rc=1
