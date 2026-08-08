@@ -1,12 +1,13 @@
 # polylane self-run — index
 
 Vision: [NORTHSTAR](NORTHSTAR.md) · Goal: [ULTIMATE_GOAL](ULTIMATE_GOAL.md) ·
-Strategy: [STRATEGY](STRATEGY.md) · Decisions: [decisions/INDEX.md](decisions/INDEX.md)
+Strategy: [STRATEGY](STRATEGY.md) · [project profile](PROJECT_PROFILE.md) ·
+Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
 Active cycle 15: [plan](cycle-15-plan.md) · [research](cycle-15-research.md) ·
-[skill suggestions](cycle-15-suggestions.md). Target: make project outcomes—not
+[integration](cycle-15-integration.md) · [skill suggestions](cycle-15-suggestions.md). Target: make project outcomes—not
 apps—the core abstraction, with trading/research, operations, content/data,
 software, and custom profiles plus consequential-action gates.
 

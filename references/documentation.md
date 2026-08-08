@@ -41,8 +41,10 @@ council/harvest then FOLLOW links instead of globbing the directory. Links repla
 folders and duplication; if a fact is needed twice, link it, never restate it.
 
 ## The polylane working docs (under `docs/polylane/`) — roles, not duplication
-- `PROJECT_PROFILE.md` — outcome, deliverables, stakeholders, constraints, evidence,
-  risk, external actions, and finish conditions; write it before decomposition.
+- `PROJECT_PROFILE.md` and `PROJECT_PROFILE.json` — the reviewable record plus its
+  machine form: outcome, deliverables, stakeholders, constraints, evidence, risk,
+  external actions, and finish conditions. Run `polylane-project.sh gate` before
+  decomposition; do not treat the Markdown record as optional prose.
 - `STRATEGY.md` — the locked project strategy. **Update it FIRST when scope changes**,
   then execute (profile-first; the tree + AGENTS.md follow from it).
 - `NORTHSTAR.md` — outcome, intended change, and anti-goals. The anchor injected into every lane.

@@ -34,8 +34,11 @@ route in [project-types.md](project-types.md). Do not presume the outcome is an 
    compliance, rights, safety, reversibility, deadlines, budget, dependencies, or
    uncertainty? Who owns a consequential decision or action?
 
-Write the answers to `docs/polylane/PROJECT_PROFILE.md` before goal decomposition.
-Use its required fields exactly; unknowns and external blockers remain explicit.
+Write the answers to `docs/polylane/PROJECT_PROFILE.md` and the matching structured
+form at `docs/polylane/PROJECT_PROFILE.json` before goal decomposition. Run
+`bin/polylane-project.sh gate docs/polylane/PROJECT_PROFILE.md docs/polylane/PROJECT_PROFILE.json`;
+do not create the goal tree or lanes until it passes. Use the record fields exactly;
+unknowns and external blockers remain explicit.
 
 ## Then load only the selected route
 

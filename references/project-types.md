@@ -2,7 +2,7 @@
 
 Polylane supports any project whose work, decisions, and evidence can live in a
 repository. Before decomposition, choose the closest profile below (or a mixed
-profile), write `docs/polylane/PROJECT_PROFILE.md`, and load only that profile's
+profile), write its durable human and machine records, and load only that profile's
 questions and validation. The profile selects deliverables and proof; it never
 authorizes a consequential external action.
 
@@ -23,9 +23,20 @@ External actions: <none, or action + authority owner + required proof>
 Finish conditions: <observable criteria and explicit external boundaries>
 ```
 
-Unknowns stay explicit. An `external` finish condition is not a pass: continue all
-independent work, preserve the blocker and requested authority, and never invent
-the missing proof.
+Create a matching `docs/polylane/PROJECT_PROFILE.json` machine form with `version`,
+`kind`, `outcome`, `deliverables`, `evidence_modes`, `risk_tier`, and
+`external_action_policy`. Before creating the goal tree or lanes, run the real gate:
+
+```bash
+bin/polylane-project.sh gate \
+  docs/polylane/PROJECT_PROFILE.md \
+  docs/polylane/PROJECT_PROFILE.json
+```
+
+The gate rejects a missing human-record field, a mismatched outcome/profile route,
+or an unsafe machine form. Unknowns stay explicit. An `external` finish condition is
+not a pass: continue all independent work, preserve the blocker and requested
+authority, and never invent the missing proof.
 
 ## Routes
 

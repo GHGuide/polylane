@@ -6,9 +6,11 @@ usage() {
   cat >&2 <<'EOF'
 usage: polylane-project.sh validate <profile.json>
        polylane-project.sh brief <profile.json>
+       polylane-project.sh gate <PROJECT_PROFILE.md> <profile.json>
 
-validate checks a versioned project outcome profile. brief prints the validated,
-canonical JSON that planning and lane carving consume.
+validate checks a versioned machine project outcome profile. brief prints the
+validated, canonical JSON that planning and lane carving consume. gate requires
+the durable human record and matching machine form before goal decomposition.
 EOF
   exit 2
 }
@@ -102,16 +104,66 @@ validate_profile() {
   fi
 }
 
-main() {
-  local command profile
-  [ "$#" -eq 2 ] || usage
-  command="$1"
-  profile="$2"
-  require_jq
+record_value() {
+  local record="$1" field="$2"
+  sed -n "s/^${field}:[[:space:]]*//p" "$record" | head -n 1
+}
+
+validate_record() {
+  local record="$1" field
+
+  [ -f "$record" ] || die "PROJECT_PROFILE.md does not exist: $record"
+  for field in Outcome Profile Deliverables Stakeholders Constraints Evidence Risk \
+    "External actions" "Finish conditions"; do
+    if ! grep -Eq "^${field}:[[:space:]]*[^[:space:]]" "$record"; then
+      die "PROJECT_PROFILE.md requires ${field}"
+    fi
+  done
+}
+
+validate_gate() {
+  local record="$1" profile="$2" kind record_profile record_outcome profile_outcome
+
+  validate_record "$record"
   validate_profile "$profile"
+  kind=$(jq -r '.kind' "$profile")
+  record_profile=$(record_value "$record" "Profile")
+  record_outcome=$(record_value "$record" "Outcome")
+  profile_outcome=$(jq -r '.outcome' "$profile")
+
+  case "$record_profile" in
+    *"$kind"*) ;;
+    *) die "PROJECT_PROFILE.md Profile must identify machine profile kind: $kind" ;;
+  esac
+  [ "$record_outcome" = "$profile_outcome" ] ||
+    die "PROJECT_PROFILE.md Outcome must match the machine profile outcome"
+}
+
+main() {
+  local command profile record
+  [ "$#" -ge 1 ] || usage
+  command="$1"
+  require_jq
   case "$command" in
-    validate) printf 'project profile valid: kind=%s\n' "$(jq -r '.kind' "$profile")" ;;
-    brief) jq -S . "$profile" ;;
+    validate)
+      [ "$#" -eq 2 ] || usage
+      profile="$2"
+      validate_profile "$profile"
+      printf 'project profile valid: kind=%s\n' "$(jq -r '.kind' "$profile")"
+      ;;
+    brief)
+      [ "$#" -eq 2 ] || usage
+      profile="$2"
+      validate_profile "$profile"
+      jq -S . "$profile"
+      ;;
+    gate)
+      [ "$#" -eq 3 ] || usage
+      record="$2"
+      profile="$3"
+      validate_gate "$record" "$profile"
+      printf 'project profile gate valid: kind=%s\n' "$(jq -r '.kind' "$profile")"
+      ;;
     *) usage ;;
   esac
 }

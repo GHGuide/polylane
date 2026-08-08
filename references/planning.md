@@ -10,8 +10,10 @@ prompt-generation-only mode; otherwise continue through launch and cycle routing
 
 ## Project profile is the planning input
 
-Before carving work, validate the project profile with
-`bin/polylane-project.sh validate <profile.json>`. Planning consumes its outcome,
+Before carving work, run the pre-goal gate:
+`bin/polylane-project.sh gate docs/polylane/PROJECT_PROFILE.md docs/polylane/PROJECT_PROFILE.json`.
+It validates the durable human record and its machine form; a failed or absent gate
+blocks goal decomposition and lane derivation. Planning consumes its outcome,
 deliverables, evidence modes, risk tier, and external-action policy—not an assumed
 source/build/test/UI workflow. Each deliverable must map to a changed artifact and
 an owner: documents, datasets, notebooks, models, analyses, runbooks, media,

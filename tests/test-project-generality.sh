@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 PROJECT="$ROOT/bin/polylane-project.sh"
 FIXTURES="$ROOT/benchmarks/project-generality/profiles"
+PROFILE_RECORD="$ROOT/benchmarks/project-generality/PROJECT_PROFILE.md"
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/polylane-project-generality.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT
 
@@ -62,6 +63,18 @@ for profile in "$FIXTURES"/*.json; do
     not_ok "compile $name into non-empty file-isolated artifact lanes"
   fi
 done
+
+assert_ok "gate durable PROJECT_PROFILE.md before goal decomposition" \
+  "$PROJECT" gate "$PROFILE_RECORD" "$FIXTURES/app.json"
+
+rg -v '^Evidence:' "$PROFILE_RECORD" >"$TMP/incomplete-project-profile.md"
+assert_fail "reject incomplete PROJECT_PROFILE.md record" "PROJECT_PROFILE.md requires Evidence" \
+  "$PROJECT" gate "$TMP/incomplete-project-profile.md" "$FIXTURES/app.json"
+
+jq '.outcome = "A different outcome"' "$FIXTURES/app.json" >"$TMP/mismatched-profile.json"
+assert_fail "reject mismatched human and machine profile outcomes" \
+  "PROJECT_PROFILE.md Outcome must match the machine profile outcome" \
+  "$PROJECT" gate "$PROFILE_RECORD" "$TMP/mismatched-profile.json"
 
 jq '.kind = "custom" | .domains = ["unlisted-industry"]' "$FIXTURES/mixed-custom.json" >"$TMP/custom.json"
 assert_ok "accept custom industry without an allowlist" "$PROJECT" validate "$TMP/custom.json"

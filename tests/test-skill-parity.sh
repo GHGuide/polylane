@@ -63,5 +63,10 @@ both cycle13-skill-catalog 'catalog-index|metadata-only'
 both cycle13-prompt-compiler 'compiled launch|compiled prompt|cycle-13-integration'
 both cycle13-lifecycle-hooks 'lifecycle hooks|lifecycle.*hook|cycle-13-integration'
 both cycle13-certification 'polylane-certify\.sh'
+both project-profile-record 'PROJECT_PROFILE\.md'
+both project-profile-machine-form 'PROJECT_PROFILE\.json'
+both project-profile-gate 'polylane-project\.sh gate'
+both project-profile-routes 'trading.*research|research.*operations.*content.*data.*custom.*software'
+both trading-safety 'trading.*(backtest|paper)|backtest.*trading'
 
 finish

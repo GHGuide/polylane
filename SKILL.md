@@ -41,8 +41,14 @@ On a valid resume, read the packet and accepted decisions; do not repeat discove
 For a new or vague goal, follow [references/discovery.md](references/discovery.md).
 Ask outcome/profile/evidence/risk first, then read only the chosen router in
 [references/project-types.md](references/project-types.md). Before decomposition,
-write `docs/polylane/PROJECT_PROFILE.md` with outcome, deliverables, stakeholders,
-constraints, evidence, risk, external actions, and finish conditions.
+write `docs/polylane/PROJECT_PROFILE.md` and its matching machine form
+`docs/polylane/PROJECT_PROFILE.json` with outcome, deliverables, stakeholders,
+constraints, evidence, risk, external actions, and finish conditions. Run this
+pre-goal gate before the goal tree or lanes:
+
+```bash
+bin/polylane-project.sh gate docs/polylane/PROJECT_PROFILE.md docs/polylane/PROJECT_PROFILE.json
+```
 
 Lock concise `NORTHSTAR.md`, `STRATEGY.md`, `ULTIMATE_GOAL.md`, `INDEX.md`, and
 decision records. The strategy must link the profile, name the riskiest assumption,
@@ -79,10 +85,16 @@ Apply the selected profile’s gate from `project-types.md`:
   published, purchased, deployed, or changed external state.
 - UI Visual Intelligence is mandatory only when discovery or recon finds a
   user-facing UI. Then follow [references/visual-intelligence.md](references/visual-intelligence.md);
-  carry the literal `ULTIMATE-GOAL`, evidence-backed references, desktop/mobile and
-  empty/loading/error/hover/focus captures, three independent visual lenses, and at most two targeted repairs. Never execute rejected content; use the best installed
-  kit on a safe fallback. Reject emoji-as-product-art and default-font sameness.
-  Promotion needs >=10 varied prompts, >=70% creative/polish wins, no accessibility regression, and a Visual certification record.
+  carry the literal `ULTIMATE-GOAL`, a reference packet with reference evidence,
+  and a design lock covering tokens, layout, motion, and signature. Automatically
+  discover optional candidates only into quarantine; audit and benchmark them, then require a pinned arm before use.
+  If admission fails, never execute rejected content and use the
+  best installed kit. The council chooses the lock automatically. Require
+  product-specific typography, imagery, and humanized UX copy; desktop/mobile and
+  empty/loading/error/hover/focus captures; three independent visual lenses; and at most two targeted repairs.
+  Compare anonymized screenshots blind. Reject
+  emoji-as-product-art and default-font sameness. Promotion needs >=10 varied prompts and >=70% creative/polish wins.
+  Require no accessibility regression and a visual certification record.
 
 ## Plan and launch a cycle
 

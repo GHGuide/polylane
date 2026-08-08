@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "kind": "mixed",
+  "domains": ["software", "operations", "research"],
+  "outcome": "Polylane executes vague repository-backed goals as durable, evidence-bearing outcomes without assuming the project is an app.",
+  "deliverables": [
+    { "artifact": "source", "path": "bin/polylane-project.sh", "description": "Deterministic profile gate" },
+    { "artifact": "document", "path": "SKILL.md", "description": "Claude project workflow" },
+    { "artifact": "document", "path": "codex/SKILL.md", "description": "Codex project workflow" },
+    { "artifact": "document", "path": "references/project-types.md", "description": "Profile-specific routing and safety" },
+    { "artifact": "source", "path": "tests/test-project-generality.sh", "description": "Cross-domain regression corpus" }
+  ],
+  "evidence_modes": ["project-generality-suite", "provider-parity", "installer-smoke", "full-suite", "shellcheck"],
+  "risk_tier": "medium",
+  "external_action_policy": { "mode": "not-needed", "actions": [] }
+}

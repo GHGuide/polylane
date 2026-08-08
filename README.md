@@ -46,9 +46,11 @@ None are hard requirements — polylane degrades gracefully (Explore-agent fallb
 
 ### Project profiles and truthful completion
 
-Polylane begins by selecting a concise profile and writing
-`docs/polylane/PROJECT_PROFILE.md`: outcome, deliverables, stakeholders, constraints,
-evidence, risk, external actions, and finish conditions. It supports software,
+Polylane begins by selecting a concise profile and writing the reviewable
+`docs/polylane/PROJECT_PROFILE.md` plus matching machine form
+`docs/polylane/PROJECT_PROFILE.json`: outcome, deliverables, stakeholders, constraints,
+evidence, risk, external actions, and finish conditions. `polylane-project.sh gate`
+must pass before goal decomposition. It supports software,
 trading/quant research, research/analysis, operations/business, content/creative,
 data/automation, and custom/mixed projects. UI visual intelligence is used only for
 user-facing UI work.
