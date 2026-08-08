@@ -5,6 +5,11 @@ Strategy: [STRATEGY](STRATEGY.md) · Decisions: [decisions/INDEX.md](decisions/I
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Active cycle 15: [plan](cycle-15-plan.md) · [research](cycle-15-research.md) ·
+[skill suggestions](cycle-15-suggestions.md). Target: make project outcomes—not
+apps—the core abstraction, with trading/research, operations, content/data,
+software, and custom profiles plus consequential-action gates.
+
 Closed cycle 14: [plan](cycle-14-plan.md) · [research](cycle-14-research.md) ·
 [30-candidate audit](cycle-14-suggestions.md) · [questions](cycle-14-questions.md) ·
 [council](cycle-14-council.md) · [digest](cycle-14-digest.md) ·

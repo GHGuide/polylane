@@ -273,6 +273,13 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c40",
+      "text": "Polylane discovers, plans, executes, and verifies software, trading/research, operations, and content/data projects without forcing app vocabulary or unsafe real-world claims",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -697,6 +704,20 @@
           "evidence": "terminal gate passed on bdd2b5f: 1,866/0 suite, ShellCheck, parity, installers, GO and NO-GO rehearsal"
         }
       ]
+    },
+    {
+      "id": "m15",
+      "text": "Domain-general project execution",
+      "subgoals": [
+        {
+          "id": "m15.1",
+          "text": "Generalize the Claude and Codex skill contracts, discovery, lane routing, skill selection, documentation, prompts, and verification around project outcomes rather than apps",
+          "weight": 10,
+          "status": "doing",
+          "cycle": 15,
+          "evidence": "User expanded Polylane from app building to any project, including trading."
+        }
+      ]
     }
   ],
   "log": [
@@ -831,6 +852,12 @@
       "kind": "decision",
       "text": "Continue autonomously into cycle 14 self-hosting truth hardening.",
       "meta": "Concrete correctness failures remain despite cycle-13 feature acceptance; all are reproducible and locally fixable."
+    },
+    {
+      "cycle": 15,
+      "kind": "decision",
+      "text": "Generalize Polylane around project outcome profiles; software remains one specialization, and consequential external actions stay gated.",
+      "meta": "User explicitly requested trading and non-app projects."
     }
   ],
   "accept": [
@@ -1316,6 +1343,26 @@
       "tier": "terminal",
       "key": "cycle14-terminal",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m15.1",
+      "cmd": "bash tests/test-project-generality.sh",
+      "tier": "focused",
+      "key": "project-generality",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m15.1",
+      "cmd": "bash tests/run.sh && shellcheck -S warning bin/*.sh",
+      "tier": "terminal",
+      "key": "full-domain-certification",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
