@@ -189,6 +189,20 @@
       "weight": 21,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c28",
+      "text": "UI cycles produce distinctive product-specific visual systems proven by desktop/mobile/state evidence and three independent judges",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c29",
+      "text": "Missing lane skills may be auto-acquired only through quarantine, deterministic audit, with-without benchmark, immutable pin, project install, and rollback metadata",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -483,6 +497,44 @@
           "evidence": "integrator GO; promoted cycle 11"
         }
       ]
+    },
+    {
+      "id": "m12",
+      "text": "Visual intelligence and safe skill acquisition",
+      "subgoals": [
+        {
+          "id": "m12.1",
+          "text": "Research 3-5 relevant products plus a wildcard and freeze an original multi-source visual contract",
+          "weight": 10,
+          "status": "doing",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m12.2",
+          "text": "Discover, quarantine, audit, benchmark, pin, and project-install only useful safe skills",
+          "weight": 10,
+          "status": "doing",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m12.3",
+          "text": "Block UI promotion on required screenshots/states, three visual lenses, and two bounded repairs",
+          "weight": 10,
+          "status": "doing",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m12.4",
+          "text": "Keep Claude and Codex contracts aligned and certify the new loop against the old workflow",
+          "weight": 9,
+          "status": "doing",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -593,6 +645,12 @@
       "kind": "verdict",
       "text": "FINAL CERTIFIED: Prime-hybrid self-improvement is bounded, signal-specific, install-synchronized, and live-rehearsed",
       "meta": "1552 tests; ShellCheck clean; live GO and NO-GO rehearsal green; route COMPLETE"
+    },
+    {
+      "cycle": 12,
+      "kind": "decision",
+      "text": "Adopt a reference-grounded Visual Intelligence Loop with safe project-scoped skill acquisition and three screenshot judges",
+      "meta": "User approved 3-5 relevant sites plus wildcard, automatic council selection, and strict visual gates"
     }
   ],
   "accept": [
@@ -908,6 +966,56 @@
       "tier": "terminal",
       "key": "cycle11-terminal",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m12.1",
+      "cmd": "tests/test-visual-intelligence.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m12.2",
+      "cmd": "tests/test-skill-acquire.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m12.3",
+      "cmd": "tests/test-visual-quality.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m12.4",
+      "cmd": "tests/test-visual-loop-integration.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m12.4",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh && tests/test-skill-parity.sh",
+      "tier": "terminal",
+      "key": "visual-loop-full",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
