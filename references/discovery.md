@@ -22,6 +22,12 @@ and filling the gaps they can't answer with research + sensible defaults.
 - **Research fills the gaps.** Before/between rounds, use `deep-research` to propose a
   feature set, a stack, look-and-feel references, and competitor norms — so the user
   is choosing from informed options, not inventing them.
+- **UI discovery has visual evidence.** When the product has a user-facing surface,
+  detect it explicitly and follow [visual-intelligence.md](visual-intelligence.md):
+  carry the literal `ULTIMATE-GOAL` into a 3–5-reference-plus-wildcard packet,
+  synthesize three directions, and lock the selected system before builders generate
+  UI. A reference is evidence with an observed screen/pattern and product relevance,
+  never a vague style adjective or permission to copy an incumbent.
 - **Batched, not endless.** 2–4 questions per AskUserQuestion round, multiple rounds
   ("numerous"), re-presenting the growing strategy after each so the user sees it form.
 - **Think like a product strategist, not an order-taker.** Push back gently, surface

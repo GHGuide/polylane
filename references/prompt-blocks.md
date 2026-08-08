@@ -51,6 +51,33 @@ Read only the named kit once. Your goal is LOCKED (below); go straight to execut
    skills. Only concrete installed skills count. Codex uses Codex skill names; Claude uses
    Claude skill names. GitHub suggestions are reviewed informational recommendations and never appear here until installed. The executable kit is one to two `predefined` plus one to two `specific`, at most four unique skills.
 
+## D.2 Visual Intelligence Loop — only for UI lanes
+```
+This is a UI lane. Carry the literal ULTIMATE-GOAL and CURRENT-SUBGOAL into the
+locked visual contract in references/visual-intelligence.md. Invoke and use the
+selected installed skills in this platform's native syntax; do not substitute the
+other platform's slash-command syntax. The reference packet is evidence: synthesize
+3–5 relevant references plus one wildcard, then use the council-selected direction
+and locked tokens, layout, motion, and signature. Do not replace it with a generic
+aesthetic.
+
+If a required UI skill is genuinely missing, use only the authorized route:
+discover → quarantine → audit → isolated benchmark → pinned project install → arm.
+Never execute rejected content. On any failure, record why and continue with the
+best installed kit.
+
+Capture desktop and mobile plus empty, loading, error, hover, and focus states and
+one real flow. Supply independent design, accessibility, and originality lenses;
+the council permits at most two targeted repairs. Complete the product-specific
+typography/imagery-or-icons-or-illustration and humanized UX copy pass. Reject
+emoji-as-product-art, generic stock gradients, meaningless hero text, nested-card
+soup, decorative pills, and default-font sameness unless evidence justifies them.
+For a visual-champion replacement, preserve external/unavailable evidence honestly
+and require >=10 varied prompts, anonymized screenshots, blind decisive comparison,
+>=70% creative/polish wins, and no accessibility regression; otherwise retain the
+current champion.
+```
+
 ## D.1 Prime hybrid continuity — only when manifest `prime_hybrid: true`
 ```
 The runner exported POLYLANE_HARNESS_DIR, POLYLANE_WORKERS_DIR,

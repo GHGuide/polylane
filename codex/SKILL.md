@@ -104,6 +104,32 @@ competing state engine. Unknown values remain unknown; only the literal current
 nonce can qualify a DONE marker, with or without a final newline after that exact
 first line.
 
+### Visual Intelligence Loop — mandatory for UI work
+
+When discovery or recon detects a user-facing UI, follow
+`references/visual-intelligence.md` before generating builders. Put the literal
+`ULTIMATE-GOAL` and the evidence-backed reference packet in every UI prompt; it
+must synthesize 3-5 relevant references plus one wildcard, three directions, and
+an automatic council choice before the design lock of tokens, layout, motion, and signature.
+Use Codex-native direct prompt instructions and invoke the selected skills; Claude
+keeps its own invocation syntax in the root `SKILL.md`. Do not substitute a generic
+aesthetic.
+
+An uncovered UI skill uses the authorized route only: automatic discover →
+quarantine → audit → isolated benchmark → pinned project install → arm. Never
+execute rejected content. On failure, record why, use the best installed kit, and
+continue. Evidence requires desktop/mobile; empty/loading/error/hover/focus;
+and one real flow. Three independent visual lenses judge the locked design; the
+council makes its selection automatic unless brand identities are fundamentally
+different, and permits at most two targeted repairs.
+
+Run the product-specific typography, imagery/icons/illustration, and humanized UX
+copy pass. Reject emoji-as-product-art, generic stock gradients, meaningless hero
+text, nested-card soup, decorative pills, and default-font sameness unless product
+evidence justifies them. Promotion over the current champion needs >=10 varied prompts,
+anonymized screenshots, blind decisive comparison, >=70% creative/polish wins, and no accessibility regression. Missing screenshot/live/benchmark evidence
+stays external; failed certification keeps the current champion.
+
 ### Prime hybrid continuity (opt-in for long product work)
 
 For a long-running cycle, emit `"prime_hybrid": true` in the contract-v2 manifest
@@ -219,6 +245,10 @@ The GitHub skills suggester proposes potentially useful skills after each cycle:
 `polylane-scout.sh github-suggest "<activity>" 5`. Record reviewed candidates with
 `polylane-scout.sh github`; they are informational only.
 Do not install, invoke, or count a suggestion until it is actually installed.
+For an actual UI gap, use the UI-only authorized automatic admission in
+`references/visual-intelligence.md`: discover, quarantine, audit, isolated
+benchmark, pinned project install, then arm. Rejected content never executes; a
+failed stage records why and uses the best installed kit.
 
 ### 4. Generate strict Codex prompts
 
