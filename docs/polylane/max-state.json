@@ -271,7 +271,7 @@
       "id": "c39",
       "text": "A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run",
       "weight": 10,
-      "status": "doing",
+      "status": "done",
       "score": 0
     }
   ],
@@ -692,9 +692,9 @@
           "id": "m14.5",
           "text": "Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle",
           "weight": 42,
-          "status": "doing",
+          "status": "done",
           "cycle": 14,
-          "evidence": "all non-host checks pass; post-repair sandbox GO attempt blocked before lane launch by denied tmux socket, so the coordinator-owned rehearsal remains the frozen terminal gate"
+          "evidence": "terminal gate passed on bdd2b5f: 1,866/0 suite, ShellCheck, parity, installers, GO and NO-GO rehearsal"
         }
       ]
     }
@@ -1315,7 +1315,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle14-terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

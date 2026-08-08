@@ -5,5 +5,5 @@ worker-ledger (`6f38155`) tips. Post-`5566152`, the runner transaction now
 promotes its skill-outcomes ledger and only exact current-run lane receipts;
 the user-dirt refusal and bounded credential detector regressions pass. The
 non-host c14 acceptance is complete, and coordinator-owned physical GO and
-NO-GO canaries both pass. The complete frozen terminal command is the single
-remaining durable close operation.
+NO-GO canaries both pass. The complete frozen terminal command also passes;
+cycle-14 is ready for transactional promotion.

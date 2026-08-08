@@ -4,13 +4,13 @@ Generated mechanically from `max-state.json`. Conversation summaries are not aut
 
 ## Cycle 14
 
-subgoals: 41/43 done · criteria: 37/39 done · 95%
+subgoals: 42/43 done · criteria: 38/39 done · 97%
 
-**Route:** `CONTINUE m14.5  Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle`
+**Route:** `EXTERNAL-EVIDENCE-OPEN m12.4  real 10-product rendered old-vs-new blind corpus`
 
 ## Open autonomous work
 
-- `m14.5` [doing, w42] — Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle
+- None.
 
 ## External/user evidence
 
@@ -60,12 +60,11 @@ subgoals: 41/43 done · criteria: 37/39 done · 95%
 - `c36` [done] — Health recovery distinguishes active high-effort turns from genuinely wedged or dead workers
 - `c37` [done] — All worktrees append to one canonical monotonic worker history without merge conflicts
 - `c38` [done] — Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use
-- `c39` [doing] — A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run
+- `c39` [done] — A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run
 
 ## Acceptance checks
 
 - Total: 51
-- Pass: 50
+- Pass: 51
 - Fail: 0
-- Unchecked: 1
-  - `m14.5` [unchecked] — POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
+- Unchecked: 0

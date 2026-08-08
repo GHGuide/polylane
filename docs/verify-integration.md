@@ -53,9 +53,8 @@ relevant source change.
 | post-`5566152` `tests/test-cycle-14-contract.sh` | 13 pass, 0 fail |
 | post-`5566152` ShellCheck | `bin/polylane-run.sh` and `bin/polylane-workers.sh`: 0 diagnostics |
 
-The durable state has 51 acceptance records: 50 pass, 0 fail, and 1 unchecked.
-c35–c38 and m14.1–m14.4 are `done`. c39 and m14.5 remain `doing` only because
-the unchecked frozen terminal command includes the physical rehearsal.
+The durable state has 51 acceptance records: 51 pass, 0 fail, and 0 unchecked.
+c35–c39 and m14.1–m14.5 are `done`.
 
 ## Rehearsal fixture ownership repair
 
@@ -76,9 +75,8 @@ successful runner cleanup cannot erase them before grading.
 | host GO canary | `ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0` |
 | host NO-GO canary | `promoted=0 evidence=1 retained=1 bounded=1 cleaned=1` |
 
-Both physical canaries were run by the coordinator on the exact final working
-tree. The frozen terminal command still receives one final complete execution
-before c39/m14.5 close.
+Both physical canaries and the complete frozen terminal command were run by the
+coordinator on exact commit `bdd2b5f` and passed.
 
 ## Review, risk, and skill-use audit
 
@@ -111,10 +109,8 @@ parity and fresh installation verified.
 
 ## Host gate
 
-The coordinator's physical GO and NO-GO canaries both passed on a tmux-capable
-host. The pre-existing m12.4/c28 visual corpus remains external evidence, not a
-PASS and not a block on this engineering gate. The verdict remains
-`READY-FOR-HOST-GATE` until the complete frozen terminal command marks the
-durable acceptance record.
+The coordinator's physical GO and NO-GO canaries and complete frozen terminal
+command passed on a tmux-capable host. The pre-existing m12.4/c28 visual corpus
+remains external evidence and is the only non-met item.
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c14-self-hosting-truth-20260808
+POLYLANE-VERDICT: GO run=c14-self-hosting-truth-20260808
