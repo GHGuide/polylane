@@ -33,11 +33,22 @@ evidence_shape() {
   ' "$1" >/dev/null 2>&1
 }
 
+screenshot_has_image_signature() {
+  local image="$1" signature
+  [ -s "$image" ] || return 1
+  signature=$(LC_ALL=C od -An -N 12 -t x1 "$image" | tr -d ' \n')
+  case "$signature" in
+    89504e470d0a1a0a*|ffd8ff*|52494646????????57454250*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 screenshots_exist() {
   local evidence="$1" root image
   root=$(jq -r '.root' "$evidence")
   while IFS= read -r image; do
-    [ -f "$root/$image" ] && [ ! -L "$root/$image" ] || return 1
+    [ -f "$root/$image" ] && [ ! -L "$root/$image" ] &&
+      screenshot_has_image_signature "$root/$image" || return 1
   done < <(jq -r '.screenshots[].path' "$evidence")
 }
 

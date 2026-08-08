@@ -67,7 +67,7 @@ benchmark_candidate() {
   local fixture="$1" output="$2" status=failed reason=invalid-benchmark
   jq -e '
     (.fixture_id | type == "string" and length > 0)
-    and (.minimum_improvement | type == "number" and . >= 0)
+    and (.minimum_improvement | type == "number" and . > 0)
     and all([.without_candidate, .with_candidate][];
       type == "object" and (.score | type == "number") and (.accessibility | type == "number"))
   ' "$fixture" >/dev/null 2>&1 || {

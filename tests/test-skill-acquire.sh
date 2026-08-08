@@ -16,6 +16,12 @@ BENCHMARK="$TEST_TMPDIR/benchmark.json"; BENCH_EVIDENCE="$TEST_TMPDIR/benchmark-
 printf '%s\n' '{"fixture_id":"same-fixture","without_candidate":{"score":60,"accessibility":90},"with_candidate":{"score":75,"accessibility":90},"minimum_improvement":10}' > "$BENCHMARK"
 assert_eq "skill-benchmark-requires-measurable-improvement" "passed" "$("$ACQUIRE" benchmark "$BENCHMARK" "$BENCH_EVIDENCE" 2>/dev/null && jq -r .status "$BENCH_EVIDENCE")"
 
+# The UI contract requires a measurable improvement. A caller may not erase
+# that bar by supplying a zero threshold for an otherwise unchanged challenger.
+WEAK_BENCHMARK="$TEST_TMPDIR/weak-benchmark.json"
+printf '%s\n' '{"fixture_id":"unchanged-fixture","without_candidate":{"score":60,"accessibility":90},"with_candidate":{"score":60,"accessibility":90},"minimum_improvement":0}' > "$WEAK_BENCHMARK"
+assert_fail "skill-benchmark-rejects-zero-threshold" "$ACQUIRE" benchmark "$WEAK_BENCHMARK" "$TEST_TMPDIR/weak-benchmark-evidence.json"
+
 PROJECT="$TEST_TMPDIR/project"; mkdir -p "$PROJECT"
 assert_ok "skill-admission-copies-only-passing-content" "$ACQUIRE" admit "$PROJECT" "$CANDIDATE" "$SOURCE" "$BENCHMARK"
 assert_ok "skill-admission-keeps-project-copy" test -f "$PROJECT/.polylane/skills/fixture-skill/SKILL.md"

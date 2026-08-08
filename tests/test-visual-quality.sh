@@ -4,7 +4,7 @@
 QUALITY="$(cd "$(dirname "$0")/.." && pwd)/bin/polylane-visual-quality.sh"
 make_tmpdir
 ROOT="$TEST_TMPDIR/project"; mkdir -p "$ROOT/shots"
-for state in desktop mobile empty loading error hover focus; do printf '%s' image > "$ROOT/shots/$state.png"; done
+for state in desktop mobile empty loading error hover focus; do printf '\211PNG\r\n\032\n' > "$ROOT/shots/$state.png"; done
 EVIDENCE="$TEST_TMPDIR/evidence.json"; CONTRACT="$TEST_TMPDIR/contract.json"; OUT="$TEST_TMPDIR/visual-verdict.json"
 cat > "$EVIDENCE" <<'JSON'
 {"schema":1,"root":"PROJECT_ROOT","screenshots":[
@@ -23,6 +23,9 @@ printf '%s\n' '{"prohibited_text":["Copied launch copy"],"prohibited_assets":["b
 
 assert_eq "visual-quality-all-lenses-must-pass" "passed" "$("$QUALITY" run "$EVIDENCE" "$CONTRACT" "$OUT" 2>/dev/null && jq -r .status "$OUT")"
 assert_ok "visual-quality-writes-promotion-verdict" test -s "$OUT"
+printf '%s' 'not an image' > "$ROOT/shots/error.png"
+assert_fail "visual-quality-rejects-nonimage-evidence" "$QUALITY" run "$EVIDENCE" "$CONTRACT" "$OUT"
+printf '\211PNG\r\n\032\n' > "$ROOT/shots/error.png"
 
 # The visual loop itself is promoted only when a ten-prompt corpus records a
 # decisive new-workflow win on at least 70% of prompts and no accessibility loss.

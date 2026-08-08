@@ -1,50 +1,79 @@
-# Integration verification
+# Cycle 12 integration verification
 
-Run: `prime-c11-20260807T103930Z`
-Integrator branch: `lane/c11-integrator`
+Run: `c12-visual-20260808`
+Integrator branch: `lane/c12-integrator`
 
-## Merge and TDD record
+## Merge and review
 
-The integrated merge is `cf4f507` (`lane/c11-harness-refine`,
-`lane/c11-worker-continuity`, and `lane/c11-context-query`), incorporating
-`291cc85`, `3b64f89`, and `89eab02`. The shared runtime wiring is `f44885e`.
-The prime-hybrid integration test against its pre-wiring parent began red at
-7/27; it is green at 43/0 after wiring the real harness, worker, context,
-and refinement APIs into launch, completion, recovery, and failure/NO-GO
-observation. Full detail is in
-[`verify-prime-hybrid-integration.md`](verify-prime-hybrid-integration.md).
+- Merged `lane/c12-visual-mechanisms` at `91ddd5b` as `bea5f20`.
+- Merged `lane/c12-shared-contract` at `cb3597f` as `220807f`.
+- `git diff --check c9f1bbb..HEAD`: clean; the two lane file lists had no
+  ownership overlap.
+- The direct seam review confirmed: reference directions need at least two
+  source IDs and no source can feed all three directions; only one wildcard is
+  allowed; an admitted skill must pass quarantine/audit/benchmark and have a
+  project lock before it can be armed; desktop, mobile, empty, loading, error,
+  hover, and focus states are required; all three lenses must pass; repairs cap
+  at two; and champion replacement requires ten prompts, >=70% wins, and no
+  accessibility regression.
+
+## Integration repairs
+
+- Added `skill-benchmark-rejects-zero-threshold`: an unchanged challenger with
+  `minimum_improvement: 0` was initially accepted. The admission boundary now
+  requires a strictly positive threshold. `bash tests/test-skill-acquire.sh`:
+  **13 pass, 0 fail**.
+- Added `visual-quality-rejects-nonimage-evidence`: arbitrary nonempty files
+  were initially accepted as screenshots. The deterministic gate now requires
+  PNG, JPEG, or WebP magic bytes. `bash tests/test-visual-quality.sh`:
+  **5 pass, 0 fail**. This verifies file type only, not browser capture
+  provenance.
+- The existing session-loss test was isolated from the host disk floor with
+  `POLYLANE_MIN_DISK_GB=0`; it retains the production disk guard and now proves
+  the intended lost-session path. `bash tests/test-runtime-survival.sh`:
+  **2 pass, 0 fail**.
+
+## Focused and compatibility checks
+
+All commands used `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`.
+
+- `bash tests/test-visual-intelligence.sh`: **9 pass, 0 fail**.
+- `bash tests/test-skill-acquire.sh`: **13 pass, 0 fail**.
+- `bash tests/test-visual-quality.sh`: **5 pass, 0 fail**.
+- `bash tests/test-visual-loop-integration.sh`: **28 pass, 0 fail**.
+- `bash tests/test-scout.sh`: **25 pass, 0 fail**.
+- `bash tests/test-orchestration-contract.sh`: **11 pass, 0 fail**.
+
+The durable integrator inbox was empty. The refinement queue contained the
+duplicated `context`/`compaction` observation (count 2, cycle 12, evidence
+`bounded packets built for run c12-visual-20260808`). **Declined:** it records
+the bounded-packet construction, not a demonstrated context-loss regression;
+there is no scoped, check-backed refinement to promote. This branch records the
+decision without directly mutating the canonical `main` worktree.
 
 ## Final certification
 
-- `tests/run.sh`: **1,516 passed, 0 failed, 86 test files**.
+- `tests/run.sh`: **1,612 passed, 2 failed, 90 test files**. The failures were
+  `benchmark-warm-append-under-250ms` (**332ms**) and
+  `events-fixture-10000-linear-time` (**11s**, ceiling 10s). Thresholds were
+  not weakened and unrelated graph code was not changed.
 - `shellcheck -S warning bin/*.sh`: clean.
-- `bash tests/test-skill-parity.sh`: **27 passed, 0 failed**.
-- `bash tests/test-installers.sh`: **26 passed, 0 failed**.
-- `bin/polylane-doctor.sh`: **9 PASS, 2 WARN, 0 FAIL**. The warnings are the
-  expected uncommitted-worktree and absent-active-manifest notices during
-  verification; dependency and repository checks passed.
+- `bash tests/test-skill-parity.sh`: **38 pass, 0 fail**.
+- Fresh Codex installation/parity via `bash tests/test-installers.sh`: **26
+  pass, 0 fail**; it verifies the installed shared core and visual contract.
+- `bin/polylane-doctor.sh --rehearse`: **failed**. Its single GO rehearsal
+  reported `contract-v3=1 ready=0 promoted=0 terminal_gates=0 cleaned=1
+  leaks=0` and `REHEARSE GO FAILED`.
 
-The focused builder tests were harness 23/0, refine 28/0, workers 45/0, and
-context 26/0. The prime-hybrid integration test is 43/0; fresh installation is
-37/0. The final full suite also exercised the repaired sandbox-safe bounded
-evaluator path (`test-skill-evolve.sh`: 45/0).
+## External evidence boundary
 
-## Acceptance and reward-hacking guard
+No browser session, live reference fetch, or visual-model judgement was
+available in this run. Deterministic fixtures verify mechanisms and image file
+signatures only; they do not claim live screenshots, network research, blind
+model comparison, or product-quality proof. Those evidence categories remain
+open and are not substituted with a pass.
 
-The runtime never promotes local learning from an observation alone: a local
-change requires a declared expected check, then a later-cycle validation that
-either marks it validated or restores its versioned baseline. Repeated
-failure, stall, NO-GO, and compaction signals only become evidence in the
-ledger. Global prompt/skill proposals remain inactive and route through
-`bin/polylane-skill-evolve.sh`; they do not overwrite source or installed
-skills. This keeps immutable acceptance evidence and the host promotion gate
-outside the local reward loop.
+The two deterministic graph benchmark failures and the failed GO rehearsal
+block certification before those external items can determine a promotion.
 
-## Remaining risks
-
-The capability is opt-in for legacy manifest compatibility; long-running work
-must explicitly enable `prime_hybrid` and use its continuity prompt block.
-Global changes still await their separate frozen evaluation gate. This run uses
-only deterministic local fixtures, as required.
-
-POLYLANE-VERDICT: GO run=prime-c11-20260807T103930Z
+POLYLANE-VERDICT: NO-GO run=c12-visual-20260808
