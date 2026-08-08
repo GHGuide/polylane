@@ -149,6 +149,22 @@ assert_ok "authority-resume-repair-verifier-ready" graph_authority_require verif
 assert_eq "authority-resume-repair-verifier-attempt" "0" "$(authority_attempt verifier)"
 RESUME=0
 
+# READY is also evidence of a completed repair: the outer runner, rather than
+# the integrator, still owns the terminal verdict conversion.
+new_authority_case resume-ready; authority_case_rc=$?
+assert_eq "authority-resume-ready-case-init" "0" "$authority_case_rc"
+assert_ok "authority-resume-ready-reaches-verifier" authority_reach_verifier
+assert_ok "authority-resume-ready-first-verifier-fails" \
+  graph_authority_record_ready_node verifier failed 0 NO-GO
+INT_WORKTREE="$TEST_TMPDIR/resume-ready/wt"
+mkdir -p "$INT_WORKTREE/docs"
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=%s\n' "$RUN_ID" > "$INT_WORKTREE/docs/verify-integration.md"
+RESUME=1
+assert_ok "authority-resume-ready-reconciles" graph_authority_reconcile_verifier_repair
+assert_eq "authority-resume-ready-node-succeeded" "succeeded" "$(authority_state repair)"
+assert_ok "authority-resume-ready-verifier-ready" graph_authority_require verifier "resume READY verifier"
+RESUME=0
+
 # Break caught: a HALTED lane bypasses its failed outcome route.
 new_authority_case halted; authority_case_rc=$?
 assert_eq "authority-halted-case-init" "0" "$authority_case_rc"

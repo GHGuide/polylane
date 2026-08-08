@@ -73,6 +73,7 @@ printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKT
 HOST_GATES=0
 EFFICIENCY_PROOFS=0
 TERMINAL_EVENTS=0
+contract_focused_acceptance_gate() { return 0; }
 run_stats() {
   [ "${1:-}" != terminal-gate ] || TERMINAL_EVENTS=$((TERMINAL_EVENTS + 1))
   return 0
@@ -100,6 +101,20 @@ assert_eq "ready-host-gate-failure-is-not-go" "1" "$host_fail_rc"
 assert_eq "ready-host-gate-failure-runs-once" "1" "$HOST_GATES"
 assert_eq "ready-host-gate-failure-proves-once" "1" "$EFFICIENCY_PROOFS"
 assert_eq "ready-host-gate-failure-stops-repair" "NO" "$VERDICT_REPAIRABLE"
+
+HOST_GATES=0
+EFFICIENCY_PROOFS=0
+TERMINAL_EVENTS=0
+contract_focused_acceptance_gate() { return 1; }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
+merge_gate >/dev/null 2>&1; focused_fail_rc=$?
+assert_eq "ready-focused-failure-is-not-go" "1" "$focused_fail_rc"
+assert_eq "ready-focused-failure-consumes-zero-terminal-gates" "0" "$TERMINAL_EVENTS"
+assert_eq "ready-focused-failure-skips-efficiency-proof" "0" "$EFFICIENCY_PROOFS"
+assert_eq "ready-focused-failure-skips-terminal-acceptance" "0" "$HOST_GATES"
+assert_eq "ready-focused-failure-remains-repairable" "YES" "$VERDICT_REPAIRABLE"
+contract_focused_acceptance_gate() { return 0; }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 1; }
 
 printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
 HOST_GATES=0
