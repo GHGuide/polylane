@@ -51,6 +51,7 @@ audit_candidate() {
     and (.repository | type == "string" and test("^https://"))
     and (.revision | type == "string" and test("^[0-9a-fA-F]{40,64}$"))
     and (.license | type == "string" and length > 0)
+    and (.authorized == true)
   ' "$source" >/dev/null 2>&1 || { audit_write "$output" failed unresolved-source "$candidate" "$source"; return 1; }
   [ -f "$candidate/SKILL.md" ] && [ -f "$candidate/LICENSE" ] || {
     audit_write "$output" failed missing-skill-or-license "$candidate" "$source"; return 1;
@@ -121,7 +122,8 @@ admit_candidate() {
       .schema = 1 | .skills = (.skills // [])
       | .skills += [{id:$id,status:"admitted",installed_path:$installed,rollback_path:$rollback,
           revision:$audit[0].source.revision,repository:$audit[0].source.repository,
-          license:$audit[0].source.license,hashes:$hashes,audit:$audit[0],benchmark:$benchmark[0]}]
+          license:$audit[0].source.license,authorization:{authorized:$audit[0].source.authorized},
+          rollback_ready:true,hashes:$hashes,audit:$audit[0],benchmark:$benchmark[0]}]
     ' "$lock" > "$lock.tmp" && mv "$lock.tmp" "$lock"
   trap - RETURN
   rm -rf "$quarantine"

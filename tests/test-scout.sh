@@ -88,10 +88,14 @@ mkdir -p "$PROJECT" "$CANDIDATE"
 printf '%s\n' '# admitted fixture' > "$CANDIDATE/SKILL.md"
 printf '%s\n' MIT > "$CANDIDATE/LICENSE"
 SOURCE="$TEST_TMPDIR/acquire-source.json"; BENCH="$TEST_TMPDIR/acquire-benchmark.json"
-printf '%s\n' '{"id":"admitted-skill","repository":"https://example.test/admitted","revision":"abcdefabcdefabcdefabcdefabcdefabcdefabcd","license":"MIT"}' > "$SOURCE"
+printf '%s\n' '{"id":"admitted-skill","repository":"https://example.test/admitted","revision":"abcdefabcdefabcdefabcdefabcdefabcdefabcd","license":"MIT","authorized":true}' > "$SOURCE"
 printf '%s\n' '{"fixture_id":"same","without_candidate":{"score":1,"accessibility":1},"with_candidate":{"score":2,"accessibility":1},"minimum_improvement":1}' > "$BENCH"
 assert_ok "scout-acquires-through-authorized-gate" "$SCOUT" acquire "$PROJECT" "$CANDIDATE" "$SOURCE" "$BENCH"
 assert_ok "scout-arms-only-admitted-project-skill" "$SCOUT" arm-admitted "$PROJECT" "$TEST_TMPDIR/admitted-kits.json" ui-lane specific admitted-skill
 assert_eq "scout-admitted-skill-is-armed" "admitted-skill" "$(armed_role "$TEST_TMPDIR/admitted-kits.json" ui-lane specific)"
+
+SUGGESTIONS="$TEST_TMPDIR/suggestions.json"
+record_github "$SUGGESTIONS" ui-lane 'owner/skill"quoted' 'because "quoted" metadata must remain JSON'
+assert_ok "github-suggestion-write-remains-valid-json" jq -e '.lanes["ui-lane"].github_suggestions[0].why | contains("quoted")' "$SUGGESTIONS"
 
 finish
