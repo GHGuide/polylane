@@ -3225,7 +3225,8 @@ runner_owned_promotion_path() {
   local path="$1" lane
   case "$path" in
     docs/polylane/max-state.json|docs/polylane/progress.md|\
-    docs/polylane/run-stats.json|docs/polylane/efficiency-proof.md|\
+    docs/polylane/run-stats.json|docs/polylane/spend-ledger.jsonl|\
+    docs/polylane/efficiency-proof.md|\
     docs/polylane/outcomes.jsonl|docs/polylane/hubs.txt|\
     docs/polylane/harness/*.json|docs/polylane/harness/*.jsonl|\
     docs/polylane/workers/history.jsonl|docs/polylane/workers/capsules/*.json)

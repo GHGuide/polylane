@@ -51,11 +51,13 @@ LANE_NAMES=(lane-a)
 mkdir -p "$REPO_ROOT/docs/polylane/skill-use/$RUN_ID"
 printf '%s\n' '{"lane":"lane-a","skill":"fixture-test","outcome":"unused"}' > "$REPO_ROOT/docs/polylane/skill-outcomes.jsonl"
 printf '%s\n' '{"lane":"lane-a","unused":["fixture-test"]}' > "$REPO_ROOT/docs/polylane/skill-use/$RUN_ID/lane-a.json"
+printf '%s\n' '{"cycle":14,"cost":42,"verdict":"GO"}' > "$REPO_ROOT/docs/polylane/spend-ledger.jsonl"
 promote_to_main; skill_evidence_rc=$?
 assert_eq "runner-skill-ledger-promotes" "0" "$skill_evidence_rc"
 assert_ok "runner-skill-ledger-reaches-promoted-base" git -C "$REPO_ROOT" merge-base --is-ancestor "$INT_BRANCH" HEAD
 assert_contains "runner-skill-ledger-is-durable" '"skill":"fixture-test"' "$(git -C "$REPO_ROOT" show HEAD:docs/polylane/skill-outcomes.jsonl)"
 assert_contains "runner-skill-receipt-is-durable" '"lane":"lane-a"' "$(git -C "$REPO_ROOT" show "HEAD:docs/polylane/skill-use/$RUN_ID/lane-a.json")"
+assert_contains "runner-spend-ledger-is-durable" '"cost":42' "$(git -C "$REPO_ROOT" show HEAD:docs/polylane/spend-ledger.jsonl)"
 assert_eq "runner-skill-evidence-clean-after-transaction" "" "$(git -C "$REPO_ROOT" status --porcelain)"
 
 # A user edit is not runner state. It blocks promotion before the base moves,
