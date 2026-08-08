@@ -91,8 +91,20 @@ check-backed refinement to promote.
   cases passed. GO reached READY, promoted through exactly one terminal gate,
   cleaned with zero leaks; NO-GO withheld promotion, retained bounded evidence,
   and cleaned the rehearsal fixture.
-- The resumed runner must rerun the target-scoped frozen terminal check on this
-  exact repair commit before promotion; this document does not self-authorize it.
+- Post-NO-GO repair command
+  `POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh`:
+  **1,638 passed, 0 failed, 91 test files**; ShellCheck clean; parity **38 pass,
+  0 fail**. This exact command supplied the terminal `pass` recorded in durable
+  state.
+- Fresh post-repair `POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse`:
+  GO promoted through one terminal gate and cleaned with zero leaks; NO-GO
+  withheld promotion, retained bounded evidence, and cleaned. Both contract-v3
+  cases passed.
+
+The cycle-12 event ledger remains an honest NO-GO because its first terminal
+attempt exceeded the frozen performance ceiling. The later commits repair that
+measured cause and carry fresh terminal and live-rehearsal evidence; they do not
+rewrite the historical event ledger.
 
 ## External evidence boundary
 
