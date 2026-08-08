@@ -60,6 +60,7 @@ assert_eq "accept-other-deferred" "unchecked" "$(jq -r '.accept[2].status' "$STA
 assert_eq "accept-external-terminal-deferred" "unchecked" "$(jq -r '.accept[3].status' "$STATE_FILE")"
 
 "$MEM" "$STATE_FILE" set-status s2 external "physical proof" 1 >/dev/null
+assert_eq "accept-ready-preserves-external-route" "EXTERNAL-EVIDENCE-OPEN" "$(contract_ready_verdict)"
 assert_ok "accept-external-allows-declared-gap" contract_acceptance_gate EXTERNAL-EVIDENCE-OPEN
 assert_eq "accept-terminal-gate-counted" "1" "$(wc -l < "$TERMINAL_LOG" | tr -d ' ')"
 assert_eq "accept-terminal-runs-at-boundary" "pass" "$(jq -r '.accept[1].status' "$STATE_FILE")"

@@ -3056,10 +3056,38 @@ contract_acceptance_gate() {
   fi
 }
 
+# contract_focused_acceptance_gate : prove the cheap, target-scoped checks before
+# a READY handoff consumes the run's single terminal-gate event. The full gate
+# intentionally repeats this check immediately before terminal execution so a
+# concurrent source change still fails closed.
+contract_focused_acceptance_gate() {
+  local targets
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
+  targets=$(jq -r '.target_subgoals | join(",")' "$MANIFEST")
+  (
+    cd "$INT_WORKTREE"
+    export REPO="$PWD" REPO_ROOT="$PWD"
+    "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+      --cycle "$CYCLE" --targets "$targets" --focused
+  ) || { report_acceptance_failures; return 1; }
+}
+
+# contract_ready_verdict : READY means the current target is implementation-
+# complete, not that unrelated external milestones disappeared. Preserve the
+# honest global routing state while still letting verified current work promote.
+contract_ready_verdict() {
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || { printf 'GO'; return; }
+  if jq -e 'any(.milestones[].subgoals[]; .status=="external")' "$STATE_FILE" >/dev/null; then
+    printf 'EXTERNAL-EVIDENCE-OPEN'
+  else
+    printf 'GO'
+  fi
+}
+
 # merge_gate : returns 0 for verified engineering outcomes. External evidence is a
 # routing state, not a reason to discard verified code or end the autonomous loop.
 merge_gate() {
-  local f="$INT_WORKTREE/docs/verify-integration.md" v
+  local f="$INT_WORKTREE/docs/verify-integration.md" v host_verdict
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would read integrator verdict from $f (proceed only on GO)"
     VERDICT_RESULT="GO"
@@ -3073,17 +3101,27 @@ merge_gate() {
     # Count before the efficiency certificate: that certificate grades the
     # boundary it is currently entering. Pass the count into acceptance so the
     # same READY boundary is never counted twice.
-    run_stats terminal-gate
-    if ! write_efficiency_proof gate; then
-      printf '\nACCEPTANCE-GATE: efficiency proof failed; terminal gate is exhausted for this run.\n' >> "$f"
-      v="NO-GO"; VERDICT_REPAIRABLE="NO"
-    elif contract_acceptance_gate GO 1; then
-      v="GO"
+    if ! contract_focused_acceptance_gate; then
+      printf '\nACCEPTANCE-GATE: focused checks failed before the terminal boundary; repair and hand off again.\n' >> "$f"
+      v="NO-GO"; VERDICT_REPAIRABLE="YES"
     else
-      # The coordinator owns one terminal attempt. A model repair cannot make
-      # that same attempt unused; it would only add a restart and a second gate.
-      printf '\nACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.\n' >> "$f"
-      v="NO-GO"; VERDICT_REPAIRABLE="NO"
+      if ! host_verdict=$(contract_ready_verdict); then
+        printf '\nACCEPTANCE-GATE: could not resolve the honest post-gate routing state.\n' >> "$f"
+        v="NO-GO"; VERDICT_REPAIRABLE="YES"
+      else
+        run_stats terminal-gate
+        if ! write_efficiency_proof gate; then
+          printf '\nACCEPTANCE-GATE: efficiency proof failed; terminal gate is exhausted for this run.\n' >> "$f"
+          v="NO-GO"; VERDICT_REPAIRABLE="NO"
+        elif contract_acceptance_gate "$host_verdict" 1; then
+          v="$host_verdict"
+        else
+          # The coordinator owns one terminal attempt. A model repair cannot make
+          # that same attempt unused; it would only add a restart and a second gate.
+          printf '\nACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.\n' >> "$f"
+          v="NO-GO"; VERDICT_REPAIRABLE="NO"
+        fi
+      fi
     fi
   elif [ "$v" = "GO" ] || [ "$v" = "EXTERNAL-EVIDENCE-OPEN" ]; then
     if ! contract_acceptance_gate "$v"; then
@@ -3228,7 +3266,7 @@ graph_authority_reconcile_verifier_repair() {
   graph_authority_enabled || return 0
   evidence="${INT_WORKTREE:?integrator worktree missing}/docs/verify-integration.md"
   verdict=$(parse_verdict "$evidence")
-  case "$verdict" in GO|EXTERNAL-EVIDENCE-OPEN) : ;; *) return 0 ;; esac
+  case "$verdict" in GO|READY-FOR-HOST-GATE|EXTERNAL-EVIDENCE-OPEN) : ;; *) return 0 ;; esac
   replay=$("$SCRIPT_DIR/polylane-events.sh" replay \
     "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>/dev/null) || {
       graph_authority_error "cannot reconcile repaired verifier: ledger replay failed"
