@@ -95,3 +95,5 @@ from their current pending state. The pre-existing m12.4/c28 visual corpus is
 still external evidence, not a PASS and not a block on this engineering gate.
 
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c14-self-hosting-truth-20260808
+
+ACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.
