@@ -1112,7 +1112,7 @@
       "cmd": "bash tests/test-intensity.sh && bash tests/test-models.sh && bash tests/test-model-policy.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1122,7 +1122,7 @@
       "cmd": "bash tests/test-scout.sh && bash tests/test-scout-outcomes.sh && bash tests/test-scout-catalog.sh && bash tests/test-skill-acquire.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1132,7 +1132,7 @@
       "cmd": "bash tests/test-promptopt.sh && bash tests/test-promptlint.sh && bash tests/test-prompt-economy.sh && bash tests/test-prompt-compiler.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1142,7 +1142,7 @@
       "cmd": "bash tests/test-hooks.sh && bash tests/test-agent-adapter.sh && bash tests/test-installers.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1152,7 +1152,7 @@
       "cmd": "bash tests/test-cycle-13-contract.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1162,7 +1162,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle13-terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

@@ -1,1 +1,1 @@
-{"name":"integrator","role":"integrator","last_cycle":13,"version":3,"status":"active","summary":"registered for run c13-perfection-20260808","context":"read the canonical bounded context packet once","evidence":"prelaunch retained identity"}
+{"name":"integrator","role":"integrator","last_cycle":13,"version":4,"status":"complete","summary":"completed run c13-perfection-20260808","context":"completion capsule from docs/verify-integration.md","evidence":"docs/verify-integration.md"}
