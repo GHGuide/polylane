@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090,SC2034 # sourced runner consumes fixture globals
 # The "initialized but never started" wedge class: workers launch, pane looks
 # healthy, nothing ever happens. Three defenses under test:
 #   1. startup_check  — answers the folder-trust / onboarding dialogs (poll-fast).
@@ -25,11 +26,21 @@ tmux() {
 # minimal lane fixture: one lane 'a', pane 0, no status file (not done)
 TMUX_SESSION=wtest
 LANE_NAMES=(a); LANE_PANE_IDX=(0); LANE_WORKTREES=("$TEST_TMPDIR/wt")
-LANE_WHASH=(); LANE_WCNT=(); LANE_RETRIES=(); LANE_RESUMED=(0)
+LANE_EFFORTS=(high); LANE_WHASH=(); LANE_WCNT=(); LANE_RETRIES=(); LANE_RESUMED=(0)
 FAILED_LANES=""; STALLED_LANES=""; NEEDS_DECISION_LANES=""
 mkdir -p "$TEST_TMPDIR/wt/docs"
 FAKE_AGENT_LIVE=0
 pane_agent_live() { [ "$FAKE_AGENT_LIVE" = "1" ]; }
+
+# A completed shell command is not a completed agent turn. Codex emits both;
+# only a terminal agent message/error may shorten the live-turn grace.
+REPO_ROOT="$TEST_TMPDIR"
+mkdir -p "$REPO_ROOT/docs/lane-logs"
+printf '%s\n' '{"type":"item.completed","item":{"type":"command_execution","status":"completed"}}' > "$REPO_ROOT/docs/lane-logs/a.log"
+assert_fail "completed-command-is-not-terminal-turn" lane_terminal_turn a
+printf '%s\n' '{"type":"item.completed","item":{"type":"agent_message"}}' >> "$REPO_ROOT/docs/lane-logs/a.log"
+assert_ok "completed-agent-message-is-terminal-turn" lane_terminal_turn a
+rm -f "$REPO_ROOT/docs/lane-logs/a.log"
 
 # --- 1. startup_check answers the trust dialog -------------------------------
 FAKE_PANE_TXT='Do you trust the files in this folder?
@@ -108,6 +119,19 @@ wedge_cnt_set a 4
 pane_wedged a 0; rcLiveLong=$?
 assert_eq "live-terminal-turn-recovers-at-60s" "0" "$rcLiveShort"
 assert_eq "live-terminal-turn-remains-recoverable" "0" "$rcLiveLong"
+
+# A quiet high-effort Codex child has no terminal turn yet. Its grace is
+# bounded, but longer than the ordinary medium-effort live window.
+lane_terminal_turn() { return 1; }
+LANE_WHASH=(); LANE_WCNT=()
+POLYLANE_LIVE_WEDGE_CHECKS=20
+pane_wedged a 0; :
+wedge_cnt_set a 20
+pane_wedged a 0; rcHighQuiet=$?
+assert_eq "quiet-high-effort-live-turn-gets-grace" "1" "$rcHighQuiet"
+wedge_cnt_set a 40
+pane_wedged a 0; rcHighBounded=$?
+assert_eq "quiet-high-effort-live-turn-still-recovers" "0" "$rcHighBounded"
 FAKE_AGENT_LIVE=0
 
 # --- 3. respawn resets the wedge window --------------------------------------

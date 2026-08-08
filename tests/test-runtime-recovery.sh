@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090,SC2034 # sourced runner consumes fixture globals
 # Missing mapped panes must be recreated before any launch/retry is counted.
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 . "$RUNNER"
@@ -15,7 +16,15 @@ mkdir -p "$TEST_TMPDIR/wt/docs"; printf 'build\n' > "$TEST_TMPDIR/prompt"
 FAKE_PANES='0 1 7'
 FAKE_WORKTREE_PANES=""
 tmux() {
-  printf '%s\n' "$*" >> "$KEYLOG"
+  case "$1" in
+    display-message)
+      case "$*" in
+        *'#{pane_current_command}'*) printf 'zsh\n' ;;
+        *'#{pane_pid}'*) printf '4242\n' ;;
+      esac
+      ;;
+    *) printf '%s\n' "$*" >> "$KEYLOG" ;;
+  esac
   case "$1" in
     list-panes)
       case "$*" in
@@ -35,6 +44,13 @@ material_progress_stalled() { return 1; }
 pane_retryable_error() { return 1; }
 pane_dead() { return 1; }
 pane_wedged() { return 1; }
+
+# tmux may report its shell while a Codex child is still actively running.
+# Process-tree liveness prevents treating that quiet pane as dead.
+agent_procs() { printf 'codex\n'; }
+process_tree_has_agent() { [ "$1" = 4242 ]; }
+assert_ok "quiet-codex-child-is-live" pane_agent_live 4
+assert_fail "quiet-codex-child-is-not-dead" pane_dead 4
 
 health_check "builder:$TEST_TMPDIR/wt"
 assert_eq "missing-pane-remapped" "7" "${LANE_PANE_IDX[0]}"
