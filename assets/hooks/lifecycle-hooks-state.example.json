@@ -1,0 +1,9 @@
+{
+  "memory_brief": "A compact, task-specific memory brief produced by the project.",
+  "north_star": "The durable product outcome the worker is advancing.",
+  "settled_decisions": [
+    "One concise decision digest entry.",
+    "A second concise decision digest entry."
+  ],
+  "byte_cap": 1024
+}

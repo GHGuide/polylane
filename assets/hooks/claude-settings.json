@@ -1,14 +1,6 @@
 {
-  "_comment": "Merge into <project>/.claude/settings.json (create if absent, or merge each array into the existing one). This compatible replacement retains the non-blocking graph nudge and adds the optional project-scoped lifecycle helper. It restores only bounded context and checks current-run completion evidence; it grants no permissions and never replaces the supervisor. The user reviews this fragment rather than any installer mutating global configuration.",
+  "_comment": "Merge this optional fragment into <project>/.claude/settings.json. It is project-scoped and does not grant permissions, modify global settings, or replace the Polylane supervisor.",
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Grep|Glob",
-        "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/graphify-nudge.sh\"" }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "matcher": "startup|resume|clear|compact",
