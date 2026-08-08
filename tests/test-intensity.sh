@@ -25,9 +25,9 @@ assert_eq "preset-performance" "claude-opus-4-8"  "$(preset_model performance)"
 assert_eq "preset-max"         "claude-opus-4-8"  "$(preset_model max)"
 assert_fail "preset-unknown-rc1" preset_model turbo
 
-# graceful fallback: none of the ladder available -> first available id
+# Unknown IDs are not silently treated as a known model tier.
 AVAILABLE_MODELS=(custom-local-model)
-assert_eq "preset-fallback-first-available" "custom-local-model" "$(preset_model performance)"
+assert_fail "preset-rejects-unknown-tier" preset_model performance
 
 # --- apply_overrides on the fixture manifest ----------------------------------
 
@@ -46,14 +46,14 @@ assert_eq "ov-noop" \
   "claude-sonnet-5 claude-haiku-4-5|medium |claude-opus-4-8|high" \
   "$(ov_state ':')"
 
-# --intensity economy remaps lanes to haiku/medium; integrator effort clamped to xhigh
+# --intensity economy remaps lanes to haiku/medium; integrator is strongest available.
 assert_eq "ov-intensity-all" \
-  "claude-haiku-4-5 claude-haiku-4-5|medium medium|claude-haiku-4-5|xhigh" \
+  "claude-haiku-4-5 claude-haiku-4-5|medium medium|claude-opus-4-8|xhigh" \
   "$(ov_state 'INTENSITY=economy')"
 
 # --model wins over --intensity for the named lane; integrator overridable by name (effort stays xhigh)
 assert_eq "ov-model-beats-intensity" \
-  "claude-haiku-4-5 claude-opus-4-8|medium medium|claude-sonnet-5|xhigh" \
+  "claude-haiku-4-5 claude-opus-4-8|medium medium|claude-opus-4-8|xhigh" \
   "$(ov_state 'INTENSITY=economy; MODEL_OVERRIDES=(beta=claude-opus-4-8 integrator=claude-sonnet-5)')"
 
 # error exits (documented): unknown preset 2, empty available_models 1, unknown lane 2, malformed 2
@@ -61,7 +61,7 @@ ov_rc() {
   ( MANIFEST="$FIXTURES/project/.polylane/run.json"; load_manifest; eval "$1"; apply_overrides )
 }
 assert_rc "ov-unknown-preset-exit2" 2 ov_rc 'INTENSITY=turbo'
-assert_rc "ov-empty-models-exit1"   1 ov_rc 'INTENSITY=economy; AVAILABLE_MODELS=()'
+assert_rc "ov-empty-models-exit2"   2 ov_rc 'INTENSITY=economy; AVAILABLE_MODELS=()'
 assert_rc "ov-unknown-lane-exit2"   2 ov_rc 'MODEL_OVERRIDES=(gamma=claude-opus-4-8)'
 assert_rc "ov-malformed-exit2"      2 ov_rc 'MODEL_OVERRIDES=(no-equals-sign)'
 
