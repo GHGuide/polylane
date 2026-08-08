@@ -1,6 +1,6 @@
 interface:
   display_name: "Polylane"
-  short_description: "Build an app 0→100 from one prompt via parallel Codex lanes"
-  default_prompt: "Use $polylane to build and continuously improve this product with parallel Codex CLI lanes."
+  short_description: "Turn a repository-backed project goal into verified outcomes"
+  default_prompt: "Use $polylane to plan and execute this repository-backed project with parallel Codex CLI lanes and truthful evidence."
 policy:
   allow_implicit_invocation: true
