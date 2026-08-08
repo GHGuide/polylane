@@ -2,9 +2,17 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 3,
+    "observation_count": 6,
+    "latest_cycle": 13,
+    "latest_evidence": "bounded packets built for run c13-perfection-20260808",
+    "required_action": "propose-or-decline"
+  },
+  {
+    "subject": "integrator",
+    "kind": "no-go",
+    "observation_count": 2,
     "latest_cycle": 12,
-    "latest_evidence": "bounded packets built for run c12-visual-20260808",
+    "latest_evidence": "integrator verdict NO-GO in run c12-visual-20260808",
     "required_action": "propose-or-decline"
   }
 ]

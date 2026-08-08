@@ -1,142 +1,154 @@
 {
   "version": 1,
-  "run_id": "c12-visual-20260808",
-  "started_at": 1786196248,
-  "updated_at": 1786200747,
-  "wall_s": 4499,
+  "run_id": "c13-perfection-20260808",
+  "started_at": 1786204498,
+  "updated_at": 1786204634,
+  "wall_s": 136,
   "lanes": {
-    "visual-mechanisms": {
+    "model-policy": {
+      "launches": 3,
+      "restarts": 0
+    },
+    "skill-intelligence": {
       "launches": 2,
-      "restarts": 1
+      "restarts": 0
     },
-    "shared-contract": {
-      "launches": 1,
-      "restarts": 1
+    "prompt-compiler": {
+      "launches": 2,
+      "restarts": 0
     },
-    "integrator": {
+    "lifecycle-hooks": {
       "launches": 1,
-      "restarts": 1
+      "restarts": 0
     }
   },
-  "supervisor_restarts": 2,
-  "terminal_gates": 1,
-  "tokens": 7861112,
-  "token_state": "known",
+  "supervisor_restarts": 3,
+  "terminal_gates": 0,
+  "tokens": null,
+  "token_state": "unknown",
   "usage_offsets": {
-    "visual-mechanisms": 739205,
-    "shared-contract": 0,
-    "integrator": 40495421
+    "model-policy": 5959,
+    "skill-intelligence": 3242,
+    "prompt-compiler": 3135,
+    "lifecycle-hooks": 0
   },
   "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786196248
+      "at": 1786204498
     },
     {
       "type": "usage_capture",
-      "lane": "visual-mechanisms",
-      "at": 1786196293,
+      "lane": "model-policy",
+      "at": 1786204537,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "visual-mechanisms",
-      "at": 1786196293
+      "lane": "model-policy",
+      "at": 1786204537
     },
     {
       "type": "usage_capture",
-      "lane": "shared-contract",
-      "at": 1786196293,
+      "lane": "skill-intelligence",
+      "at": 1786204537,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "shared-contract",
-      "at": 1786196293
+      "lane": "skill-intelligence",
+      "at": 1786204537
     },
     {
-      "type": "restarts",
-      "lane": "shared-contract",
-      "at": 1786196792
+      "type": "usage_capture",
+      "lane": "prompt-compiler",
+      "at": 1786204538,
+      "added": null
     },
     {
-      "type": "restarts",
-      "lane": "visual-mechanisms",
-      "at": 1786196939
+      "type": "launches",
+      "lane": "prompt-compiler",
+      "at": 1786204538
+    },
+    {
+      "type": "usage_capture",
+      "lane": "lifecycle-hooks",
+      "at": 1786204538,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "lifecycle-hooks",
+      "at": 1786204538
     },
     {
       "type": "supervisor_restart",
-      "at": 1786197550
+      "at": 1786204543
     },
     {
       "type": "initialized",
-      "at": 1786197550
+      "at": 1786204543
     },
     {
       "type": "usage_capture",
-      "lane": "visual-mechanisms",
-      "at": 1786197583,
+      "lane": "model-policy",
+      "at": 1786204581,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "visual-mechanisms",
-      "at": 1786197584
+      "lane": "model-policy",
+      "at": 1786204581
     },
     {
       "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786197616,
+      "lane": "prompt-compiler",
+      "at": 1786204582,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "integrator",
-      "at": 1786197616
-    },
-    {
-      "type": "usage_capture",
-      "lane": "visual-mechanisms",
-      "at": 1786199431,
-      "added": 1728132
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786199431,
-      "added": 6132980
-    },
-    {
-      "type": "restarts",
-      "lane": "integrator",
-      "at": 1786199436
-    },
-    {
-      "type": "initialized",
-      "at": 1786200565
+      "lane": "prompt-compiler",
+      "at": 1786204582
     },
     {
       "type": "supervisor_restart",
-      "at": 1786200605
+      "at": 1786204589
     },
     {
       "type": "initialized",
-      "at": 1786200605
-    },
-    {
-      "type": "initialized",
-      "at": 1786200703
+      "at": 1786204589
     },
     {
       "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786200741,
+      "lane": "model-policy",
+      "at": 1786204627,
       "added": null
     },
     {
-      "type": "terminal_gate",
-      "at": 1786200747
+      "type": "launches",
+      "lane": "model-policy",
+      "at": 1786204627
+    },
+    {
+      "type": "usage_capture",
+      "lane": "skill-intelligence",
+      "at": 1786204627,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "skill-intelligence",
+      "at": 1786204627
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786204634
+    },
+    {
+      "type": "initialized",
+      "at": 1786204634
     }
   ]
 }

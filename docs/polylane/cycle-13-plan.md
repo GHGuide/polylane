@@ -28,3 +28,13 @@ Intensity is `balanced`, selected autonomously because this is a correctness-hea
 Bash codebase: builders run high effort on the only locally available Codex model; the
 integrator runs xhigh. The policy lane must make this a real manifest-driven choice rather
 than preserving that limitation.
+
+## Runtime relocation note
+
+The first launch proved that the host's long-lived tmux server is denied macOS privacy access
+to `~/Downloads`: panes could enter worktree paths but every read returned `Operation not
+permitted`, so Codex never received a prompt. The supervisor retained three honest restart
+attempts. Cycle 13 resumes from an isolated local clone under `/private/tmp`, then fast-forwards
+the canonical repository only after the same promotion gates pass. The model-policy lane also
+owns the newly observed duplicate preflight-observation bug: a resume may rebuild context but
+must record compaction evidence only once per run id.

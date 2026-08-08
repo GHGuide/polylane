@@ -4,3 +4,6 @@
 {"cycle":12,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c12-visual-20260808"}
 {"cycle":12,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c12-visual-20260808"}
 {"cycle":12,"kind":"no-go","subject":"integrator","evidence":"integrator verdict NO-GO in run c12-visual-20260808"}
+{"cycle":13,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c13-perfection-20260808"}
+{"cycle":13,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c13-perfection-20260808"}
+{"cycle":13,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c13-perfection-20260808"}

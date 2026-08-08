@@ -8,6 +8,12 @@ frontmatter descriptions that agents actually use for progressive disclosure and
 explain most installed skills. Third, `polylane-promptopt.sh` counts whitespace-separated
 words but labels them tokens and validates rather than optimizing prompt structure.
 
+The first real launch added a fourth finding: the existing tmux server lacks macOS privacy
+access to `~/Downloads`, producing `Operation not permitted` before Codex could read a prompt.
+The safe autonomous fallback is a temporary local clone on an accessible volume, followed by
+the normal verified fast-forward. Supervisor resumes also appended the same preflight
+compaction observation repeatedly, so prelaunch learning needs a run-id idempotence key.
+
 Primary references reinforce the repair direction. OpenAI's current GPT-5.6 guidance defines
 `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol` as efficiency, balanced, and frontier
 tiers and recommends deliberately benchmarking reasoning effort. The Agent Skills
