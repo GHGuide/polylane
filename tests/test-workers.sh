@@ -6,6 +6,9 @@ WORKERS="$ROOT/bin/polylane-workers.sh"
 command -v jq >/dev/null 2>&1 || { pass "workers-skipped-no-jq"; finish; exit 0; }
 make_tmpdir
 
+# This is an ordinary standalone-project fixture, not a runner-launched lane.
+unset POLYLANE_PROJECT_ROOT
+
 PROJECT="$TEST_TMPDIR/project"
 mkdir -p "$PROJECT/.polylane"
 
