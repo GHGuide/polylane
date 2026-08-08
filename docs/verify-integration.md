@@ -57,30 +57,28 @@ The durable state has 51 acceptance records: 50 pass, 0 fail, and 1 unchecked.
 c35–c38 and m14.1–m14.4 are `done`. c39 and m14.5 remain `doing` only because
 the unchecked frozen terminal command includes the physical rehearsal.
 
-## Rehearsal fixture counter repair
+## Rehearsal fixture ownership repair
 
-The host GO rehearsal on `69ded72` reached the verified engineering verdict and
-the skill-evidence transaction, then promotion correctly refused the fixture's
-top-level untracked `graph-witness` counter. `mock-invocations` is the same
-rehearsal-only counter class. Neither is product work or durable runner state,
-so the promotion and runtime-untracked allowlists remain unchanged.
-
-This repair maps only those two fixture counters to
-`.polylane/rehearse/` beneath the run root and uses the same resolved paths for
-the mock-agent producer and post-run assertions. Fresh non-host evidence:
+The transactional promotion guard exposed every rehearsal artifact that the
+old fixture created as unrelated top-level dirt: counters, mock executable,
+run log, and nested worktree directories. The guard was not broadened. Fixture
+worktrees now live under `.polylane/rehearse/worktrees/`; grading counters, mock
+executable, and run log live in the fixture-owned external private tmux root so
+successful runner cleanup cannot erase them before grading.
 
 | Check | Result |
 | --- | --- |
-| `tests/test-rehearse.sh` static fixture checks | 12 pass, 0 fail |
+| `tests/test-rehearse.sh` ownership checks | 12 pass, 0 fail |
 | `shellcheck -S warning bin/polylane-rehearse.sh` | 0 diagnostics |
 | `tests/test-promote.sh` | 4 pass, 0 fail |
 | `tests/test-promotion-transaction.sh` | 17 pass, 0 fail |
 | `tests/test-cycle-14-contract.sh` | exit 0 |
+| host GO canary | `ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0` |
+| host NO-GO canary | `promoted=0 evidence=1 retained=1 bounded=1 cleaned=1` |
 
-No post-repair physical rehearsal was attempted in this sandbox: creating a
-fresh tmux socket is denied here. The coordinator must run both host canaries
-after this commit; their results, rather than this static repair, determine the
-terminal GO/NO-GO state.
+Both physical canaries were run by the coordinator on the exact final working
+tree. The frozen terminal command still receives one final complete execution
+before c39/m14.5 close.
 
 ## Review, risk, and skill-use audit
 
@@ -111,25 +109,12 @@ contracts and installers needed no text change: their selected-kit and
 prime-hybrid requirements already match the executable repair, which semantic
 parity and fresh installation verified.
 
-## Host-only boundary
+## Host gate
 
-The requested post-repair command was attempted in this restricted Codex
-sandbox:
-
-```sh
-POLYLANE_REHEARSE_DEBUG=1 POLYLANE_MIN_DISK_GB=0 bin/polylane-rehearse.sh go
-```
-
-It reached runner launch, then this sandbox denied creation of the fresh tmux
-Unix socket (`Operation not permitted`) before any mock lane launched. That is
-not a GO/NO-GO lifecycle result; therefore the conditional NO-GO rehearsal was
-not run. The coordinator must execute the same GO command, and then the NO-GO
-command only if GO is clean, on a tmux-capable host. A successful rehearsal is
-required to change c39/m14.5 and the terminal acceptance from their current
-pending state. The pre-existing m12.4/c28 visual corpus is still external
-evidence, not a PASS and not a block on this engineering gate.
-
-ACCEPTANCE-GATE: terminal host rehearsal remains incomplete; the sandbox tmux
-denial is not a lifecycle verdict.
+The coordinator's physical GO and NO-GO canaries both passed on a tmux-capable
+host. The pre-existing m12.4/c28 visual corpus remains external evidence, not a
+PASS and not a block on this engineering gate. The verdict remains
+`READY-FOR-HOST-GATE` until the complete frozen terminal command marks the
+durable acceptance record.
 
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c14-self-hosting-truth-20260808

@@ -10,7 +10,7 @@ Run: `c14-self-hosting-truth-20260808` · branch: `lane/c14-integrator`.
 | integrator | current | merged and seam-repaired | self-hosting-truth contract 13/0 |
 
 Lifecycle flags: `tips_merged=true`; `m14_focused=5/5 pass`;
-`acceptance=50 pass, 0 fail, 1 unchecked`; `host_rehearsal=sandbox-blocked-before-launch`;
+`acceptance=50 pass, 0 fail, 1 unchecked`; `host_rehearsal=GO+NO-GO pass`;
 `host_rehearsal_owner=coordinator`; `durable_inbox=empty`;
 `refinement_queue=empty`; `c28_external=open`; and
 `current_verdict=READY-FOR-HOST-GATE`.
@@ -19,12 +19,11 @@ Fresh non-host terminal evidence: full suite **1,866/0 across 100 files**;
 all `bin/*.sh` ShellCheck-clean; Claude/Codex semantic parity **43/0**;
 installer parity **34/0**; and fresh dual-package installation **37/0**.
 `bin/polylane-certify.sh focused` passed with its named
-`self-hosting-truth` layer. The exact post-repair GO command reached runner
-launch but this Codex sandbox denied fresh tmux socket creation before any lane
-ran; it produced no lifecycle verdict. The coordinator must run the frozen GO
-rehearsal once, then NO-GO only if GO is clean.
+`self-hosting-truth` layer. The coordinator's exact physical GO and NO-GO
+canaries now pass; the complete frozen terminal command remains to update the
+durable acceptance record.
 
 State closure: c35–c38 and m14.1–m14.4 are `done`. c39 and m14.5 remain
-`doing` solely for the unchecked coordinator-owned rehearsal; this keeps the
+`doing` solely for the unchecked complete terminal command; this keeps the
 host boundary truthful. The pre-existing c28/m12.4 visual corpus remains
 external and has not been converted to PASS.

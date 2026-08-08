@@ -16,13 +16,17 @@ rehearse_create_fixture_skills() {
   done
 }
 
-rehearse_fixture_counter_path() {
-  local root="$1" name="$2"
+rehearse_fixture_runtime_path() {
+  local runtime_root="$1" name="$2"
   case "$name" in
-    mock-invocations|graph-witness) ;;
+    mock-invocations|graph-witness|mockagent|rehearse.log) ;;
     *) return 2 ;;
   esac
-  printf '%s/.polylane/rehearse/%s\n' "$root" "$name"
+  printf '%s/rehearse/%s\n' "$runtime_root" "$name"
+}
+
+rehearse_fixture_counter_path() {
+  rehearse_fixture_runtime_path "$@"
 }
 
 rehearse_promoted_tree_clean() {
@@ -38,21 +42,24 @@ rehearse_promoted_tree_clean() {
 }
 
 rehearse() {
-  local want="${1:-go}" root tmux_root tmux_parent sess nonce rc=0 report evidence stats promoted cleaned leaks=0 calls calls_path graph_witnesses graph_witness_path retained=0 tree_clean=0 terminal_gates=0 ready=0
+  local want="${1:-go}" root tmux_root tmux_parent sess nonce rc=0 report evidence stats promoted cleaned leaks=0 calls calls_path graph_witnesses graph_witness_path mockagent_path rehearse_log_path worktrees_root retained=0 tree_clean=0 terminal_gates=0 ready=0
   # A rehearse run owns a fresh tmux server.  An inherited client socket or
   # default server can belong to another host/session (for example a remote
   # Codex parent) and makes even `tmux new-session` fail before the canary.
   unset TMUX
   root=$(mktemp -d "${TMPDIR:-/tmp}/polylane-rehearse.XXXXXX")
   root=$(cd "$root" && pwd -P)
-  calls_path=$(rehearse_fixture_counter_path "$root" mock-invocations)
-  graph_witness_path=$(rehearse_fixture_counter_path "$root" graph-witness)
-  mkdir -p "$(dirname "$calls_path")"
   # tmux appends /tmux-<uid>/default, so keep this socket parent short enough
   # for macOS's UNIX-domain socket length limit even when TMPDIR is long.
   tmux_parent="${TMPDIR:-/tmp}"
   tmux_parent=${tmux_parent%/}
   tmux_root=$(mktemp -d "$tmux_parent/plr-tmux.XXXXXX")
+  calls_path=$(rehearse_fixture_counter_path "$tmux_root" mock-invocations)
+  graph_witness_path=$(rehearse_fixture_counter_path "$tmux_root" graph-witness)
+  mockagent_path=$(rehearse_fixture_runtime_path "$tmux_root" mockagent)
+  rehearse_log_path=$(rehearse_fixture_runtime_path "$tmux_root" rehearse.log)
+  worktrees_root="$root/.polylane/rehearse/worktrees"
+  mkdir -p "$(dirname "$calls_path")"
   TMUX_TMPDIR="$tmux_root"
   export TMUX_TMPDIR
   sess="plrh-$$"; nonce="rh-$$-$(date +%s)"
@@ -85,7 +92,7 @@ rehearse() {
     git add -A; git commit -qm seed
   )
 
-  cat > "$root/mockagent" <<MOCK
+  cat > "$mockagent_path" <<MOCK
 #!/usr/bin/env bash
 set -eu
 prompt="\$*"; file="\${prompt##* }"; text="\$(cat "\$file")"
@@ -106,31 +113,31 @@ case "\$text" in
 esac
 exec sleep 30
 MOCK
-  chmod +x "$root/mockagent"
+  chmod +x "$mockagent_path"
   cat > "$root/.polylane/run.json" <<JSON
-{"orchestration_contract":2,"run_id":"$nonce","cycle":1,"state_file":"docs/polylane/max-state.json","lane_skills_file":".polylane/lane-skills.json","cycle_plan_file":"docs/polylane/cycle-plan.md","target_subgoals":["s1"],"base":"main","session":"$sess","agent":"codex","codex_sandbox":"workspace-write","available_models":["gpt-5.6-terra"],"efficiency_canary":{"max_restarts":0,"max_wall_s":900},"integrator":{"name":"integrator","model":"gpt-5.6-terra","effort":"high","branch":"pl/int","worktree":"$root/wt-int","prompt_file":".polylane/lanes/integrator.txt"},"lanes":[{"name":"lane-a","model":"gpt-5.6-terra","effort":"medium","branch":"pl/a","worktree":"$root/wt-a","prompt_file":".polylane/lanes/lane-a.txt","own_globs":["a/**"],"target_subgoals":["s1"]},{"name":"lane-b","model":"gpt-5.6-terra","effort":"medium","branch":"pl/b","worktree":"$root/wt-b","prompt_file":".polylane/lanes/lane-b.txt","own_globs":["b/**"],"target_subgoals":["s1"]}]}
+{"orchestration_contract":2,"run_id":"$nonce","cycle":1,"state_file":"docs/polylane/max-state.json","lane_skills_file":".polylane/lane-skills.json","cycle_plan_file":"docs/polylane/cycle-plan.md","target_subgoals":["s1"],"base":"main","session":"$sess","agent":"codex","codex_sandbox":"workspace-write","available_models":["gpt-5.6-terra"],"efficiency_canary":{"max_restarts":0,"max_wall_s":900},"integrator":{"name":"integrator","model":"gpt-5.6-terra","effort":"high","branch":"pl/int","worktree":"$worktrees_root/integrator","prompt_file":".polylane/lanes/integrator.txt"},"lanes":[{"name":"lane-a","model":"gpt-5.6-terra","effort":"medium","branch":"pl/a","worktree":"$worktrees_root/lane-a","prompt_file":".polylane/lanes/lane-a.txt","own_globs":["a/**"],"target_subgoals":["s1"]},{"name":"lane-b","model":"gpt-5.6-terra","effort":"medium","branch":"pl/b","worktree":"$worktrees_root/lane-b","prompt_file":".polylane/lanes/lane-b.txt","own_globs":["b/**"],"target_subgoals":["s1"]}]}
 JSON
 
   (
     cd "$root"
-    PATH="$root:$PATH" CODEX_SKILLS_DIR="$root/skills" POLYLANE_AGENT_CMD="$root/mockagent {model} {prompt}" \
+    PATH="$root:$PATH" CODEX_SKILLS_DIR="$root/skills" POLYLANE_AGENT_CMD="$mockagent_path {model} {prompt}" \
       POLYLANE_SESSION="$sess" POLYLANE_POLL_INTERVAL=1 POLYLANE_HEALTH_INTERVAL=9999 POLYLANE_INTEGRATOR_REPAIRS=0 \
-      "$RUN" "$root/.polylane/run.json" --yes > "$root/rehearse.log" 2>&1 || true
+      "$RUN" "$root/.polylane/run.json" --yes > "$rehearse_log_path" 2>&1 || true
   )
   if [ "${POLYLANE_REHEARSE_DEBUG:-0}" = "1" ]; then
-    sed -n '1,240p' "$root/rehearse.log" >&2
+    sed -n '1,240p' "$rehearse_log_path" >&2
   fi
   report="$root/docs/polylane-report.md"
   stats="$root/docs/polylane/run-stats.json"
   if [ "$want" = go ]; then
     evidence="$root/docs/verify-integration.md"
   else
-    evidence="$root/wt-int/docs/verify-integration.md"
+    evidence="$worktrees_root/integrator/docs/verify-integration.md"
   fi
   calls=$([ -f "$calls_path" ] && wc -l < "$calls_path" | tr -d ' ' || echo 0)
   graph_witnesses=$([ -f "$graph_witness_path" ] && wc -l < "$graph_witness_path" | tr -d ' ' || echo 0)
   terminal_gates=$(jq -r '.terminal_gates // 0' "$stats" 2>/dev/null || echo 0)
-  if tmux has-session -t "$sess" 2>/dev/null || git -C "$root" worktree list --porcelain | grep -q "worktree $root/wt"; then leaks=1; fi
+  if tmux has-session -t "$sess" 2>/dev/null || git -C "$root" worktree list --porcelain | grep -q "worktree $worktrees_root/"; then leaks=1; fi
   [ "$graph_witnesses" = 3 ] || rc=1
   if [ "$want" = go ]; then
     git -C "$root" show main:a/x >/dev/null 2>&1 && git -C "$root" show main:b/y >/dev/null 2>&1 || rc=1
@@ -149,7 +156,7 @@ JSON
     [ -f "$evidence" ] && grep -q 'NO-GO' "$evidence" && ! git -C "$root" show main:a/x >/dev/null 2>&1 || rc=1
     [ "$calls" = 3 ] || rc=1
     if tmux has-session -t "$sess" 2>/dev/null &&
-       git -C "$root" worktree list --porcelain | grep -q "worktree $root/wt"; then
+       git -C "$root" worktree list --porcelain | grep -q "worktree $worktrees_root/"; then
       retained=1
     else
       rc=1
