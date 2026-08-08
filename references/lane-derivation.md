@@ -1,6 +1,9 @@
 # Phase 4a — Deriving the optimal number of lanes
 
-Input: spec items + the file-set each touches (from recon). Output: N lanes with OWN/FORBIDDEN globs and contracts. N is COMPUTED — never default to 3.
+Input: profile deliverables + the artifact-path set each changes (from recon). Output:
+N lanes with OWN/FORBIDDEN globs and contracts. An artifact may be a document,
+dataset, notebook, model, analysis, runbook, media asset, configuration, or source
+file. N is COMPUTED — never default to 3.
 
 ## Algorithm
 
@@ -8,24 +11,32 @@ Input: spec items + the file-set each touches (from recon). Output: N lanes with
 
 N falls out of a mechanical procedure. Follow it in order; do not eyeball a lane count.
 
-1. **List the work units with their write-sets.** From recon, write each spec item next to the exact set of files it must *modify* (its write-set). Reads don't count — only files a lane would edit can collide, so a shared file that both lanes only read is not an overlap.
+1. **List the work units with their artifact write-sets.** From recon, write each
+   outcome item next to the exact artifact paths it must *change* (its write-set).
+   Reads do not count. A document, dataset, notebook, model, analysis, runbook,
+   media asset, configuration, and source file use the same ownership rule.
 
-2. **Build the overlap matrix.** For every pair of items (i, j), compute `|write-set(i) ∩ write-set(j)|` — the count of files both must edit. Lay it out as a symmetric item×item table. (You never need the diagonal; only the off-diagonal cells decide lanes.)
+2. **Build the overlap matrix.** For every pair of items (i, j), compute
+   `|write-set(i) ∩ write-set(j)|` — the artifact paths both must change. Lay it
+   out as a symmetric item×item table.
 
 3. **Classify every non-zero cell.** Each cell's value plus a glance at *what* the shared files are decides one of four verdicts:
-   - **0 shared files → INDEPENDENT.** Different lanes, fully parallel.
-   - **Heavy overlap** (they edit the *same functions*, or share more than ~2 files with entangled logic) → **MERGE.** Splitting these would guarantee conflicts.
-   - **Light overlap** (1–2 files behind a clean interface) → **CARVE.** Stays two lanes: one lane OWNS the shared file, the other gets a HARD CONTRACT ("public API of X is frozen; request changes via the status file").
+   - **0 shared paths → INDEPENDENT.** Different lanes, fully parallel.
+   - **Heavy overlap** (they change the same artifact or share more than ~2 entangled paths) → **MERGE.**
+   - **Light overlap** (1–2 paths behind a clear artifact contract) → **CARVE.** One lane owns the path; the other requests a change through the relay.
    - **Producer/consumer** (item A's output is item B's input) → **SEQUENCE.** One lane, A before B — or B's lane starts only after A publishes its contract.
 
-3a. **Check for HIDDEN couplings — interfaces that share NO file.** The matrix only counts files both lanes *edit*, so it misses couplings where two lanes touch different files but must agree on a name across the seam. These read as INDEPENDENT and get wrongly split — the classic failure is a **UI feature carved into a markup lane and a behaviour lane**: the JS does `getElementById('export-btn')` in `app.js` while the button lives in `index.html` — zero shared files, but the JS is dead if the id never lands (a real NO-GO this cost, twice). Before finalizing, scan every INDEPENDENT pair for a shared **name interface**:
-   - **DOM hooks** — element ids / `data-*` / classes one lane queries and another must render.
-   - **Route/URL paths, event names, message channels** — emitted in one lane, handled in another.
-   - **Shared data shapes** — a JSON/record schema one writes and another reads.
-   - **Config keys / env var names** — set in one place, read in another.
+3a. **Check for HIDDEN couplings — interfaces that share NO path.** The matrix only
+counts changed paths, so it misses a report that consumes a dataset, a runbook that
+depends on a configuration, or a notebook that emits a model. Before finalizing,
+scan every INDEPENDENT pair for a shared **artifact or name interface**:
+   - report/table schemas, citation keys, dataset columns, model versions, and file formats;
+   - procedure steps, configuration keys, approval boundaries, and evidence locations;
+   - DOM hooks, routes, event names, message channels, and source-data shapes for software.
    Verdict for a hidden coupling:
-   - **Prefer CO-LOCATE.** A single user-facing UI feature (its markup AND the logic bound to it) is ONE lane by default — never split HTML from the JS that queries it. Vertical feature slice beats horizontal markup/logic split.
-   - **If genuinely must split, treat the interface as a frozen contract** exactly like a shared file: list the exact ids / paths / schema in BOTH lanes' contracts, owned by one, consumed verbatim by the other. Add a MERGE edge in Step 4 when co-locating.
+   - **Prefer CO-LOCATE.** Keep a producing artifact and its tightly coupled consumer together when a handoff would be ambiguous.
+   - **If genuinely split, freeze the interface** in both lanes: exact path, schema,
+     version, evidence handoff, owner, and consumer. Add a MERGE edge when co-locating.
 
 4. **Collapse to components — this yields N.** Draw an edge between any two items marked MERGE or SEQUENCE-into-one-lane. Each connected group of items becomes one candidate lane; items joined only by INDEPENDENT or CARVE edges stay separate. **Raw N = the number of connected components.** CARVE does *not* merge lanes — it keeps two lanes joined by a contract, not by shared ownership.
 
@@ -38,9 +49,14 @@ Then refine N downward with the caps below (caps can only *lower* N, never raise
    - Human review bandwidth: >5 lanes is rarely reviewable — merge the smallest clusters.
    - A lane smaller than ~half a session of work → merge into the nearest cluster (spawn overhead + coordination cost exceeds parallelism gain).
    - **Disk space:** each lane worktree is a full checkout, so N lanes ≈ (N+1) × repo size plus per-lane build artifacts. Check `df -h .` during recon; if free space won't cover it comfortably, merge lanes (or flag it at the plan gate) rather than letting a mid-run `ENOSPC` kill the fleet.
-2. **Name each lane** by its subsystem (Fetch, UI, Siri, Efficiency…), not by spec-item number.
-3. **Write the carve explicitly.** For every shared file: which lane OWNS it, what the frozen public API is, and the request path for the non-owner (status-file entry, owner applies the edit). **Do the same for every hidden interface from Step 3a** — a carve across DOM ids / routes / schemas names those hooks in both lanes' contracts, verbatim, even though no file is shared.
-4. **Integrator lane (recommended, runs LAST).** If ≥2 lanes or any shared resource: add a final integrator/verifier lane that merges state, builds everything together, runs cross-lane end-to-end verification, acts as completeness critic, and issues GO/NO-GO. It fixes only cross-lane regressions (logged), never feature code. Two hard rules:
+2. **Name each lane** by its owned outcome artifact (Evidence matrix, Backtest,
+   Incident runbook, Campaign media, Source flow), not by spec-item number.
+3. **Write the carve explicitly.** For every shared artifact path: which lane OWNS
+   it, the frozen schema/format/evidence contract, and the relay request path.
+4. **Integrator lane (recommended, runs LAST).** If ≥2 lanes or any shared resource:
+   add a final integrator/verifier lane that combines artifacts, runs cross-lane
+   evidence checks, acts as completeness critic, and issues GO/NO-GO. It fixes only
+   cross-lane seams, never a lane's primary artifact.
    - **Never trust a prior GO.** Re-merge the CURRENT HEAD of every lane branch first; a GO with commits after it is stale — re-verify from scratch.
    - **On GO, run merge + cleanup** (`references/merge-and-cleanup.md`): verify each branch merged, remove merged worktrees, delete merged branches, quarantine strays into `<project>-useless/`. Consolidate to one project folder.
 
@@ -90,9 +106,9 @@ Two preconditions before any worktree/branch op (both from SKILL.md Phase 3 reco
 
 ## Sanity checks before presenting
 
-- Every lane has a concrete write-set (files it will edit). **No speculative/discovery/
-  exploration lanes** — exploration belongs in single-agent recon, not a parallel lane; a
-  "lane" with nothing to write is not a lane. Fan out for real, isolatable work only.
+- Every lane has a concrete artifact write-set. **No speculative/discovery/exploration
+  lanes** — a lane with no changed artifact and no verifiable evidence is external,
+  not a lane. Fan out for real, isolated ownership only.
 - Every spec item maps to exactly one lane.
 - No file appears in two lanes' OWN lists.
 - Every FORBIDDEN list names the other lanes' OWN globs.

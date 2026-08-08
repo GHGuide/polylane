@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "mixed",
+  "domains": ["custom", "research", "content"],
+  "outcome": "A community pilot has an evidence-backed operating plan and participant materials.",
+  "deliverables": [
+    { "artifact": "analysis", "path": "pilot/needs-analysis.md", "description": "Needs analysis" },
+    { "artifact": "runbook", "path": "pilot/facilitation-runbook.md", "description": "Facilitation plan" },
+    { "artifact": "media", "path": "pilot/materials/**", "description": "Participant materials" }
+  ],
+  "evidence_modes": ["stakeholder-review", "tabletop-exercise", "sample-review"],
+  "risk_tier": "medium",
+  "external_action_policy": {
+    "mode": "approval-required",
+    "actions": [
+      { "name": "Recruit participants", "consequential": true, "approval_required": true, "execution": "approved-manual" }
+    ]
+  }
+}

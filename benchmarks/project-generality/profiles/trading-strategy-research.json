@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "kind": "trading",
+  "outcome": "A reproducible strategy-research recommendation is ready for investment review.",
+  "deliverables": [
+    { "artifact": "notebook", "path": "research/momentum.ipynb", "description": "Reproducible backtest" },
+    { "artifact": "analysis", "path": "research/momentum-report.md", "description": "Assumptions and results" }
+  ],
+  "evidence_modes": ["backtest", "data-quality-check", "peer-review"],
+  "risk_tier": "high",
+  "external_action_policy": {
+    "mode": "approval-required",
+    "actions": [
+      { "name": "Submit live orders", "consequential": true, "approval_required": true, "execution": "manual-approval" }
+    ]
+  }
+}

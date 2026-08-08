@@ -1,6 +1,6 @@
 # Lane prompt template — assemble from prompt-blocks.md
 
-Emit ONE of these per lane, as: a launch line + a fenced paste block. Order the blocks exactly A→J. Everything in `<...>` is filled from recon + derivation; blocks C, E, G, H, I are verbatim. A Codex builder receives native instructions, never fictional Claude slash-command requirements.
+Emit ONE of these per lane, as: a launch line + a fenced paste block. A lane owns disjoint changed artifacts—not necessarily source code. Its `OWN` globs may cover documents, datasets, notebooks, models, analyses, runbooks, media, configurations, or source files. Order the blocks exactly A→J. Everything in `<...>` is filled from the validated outcome profile, recon, and derivation; blocks C, E, G, H, I are verbatim. A Codex builder receives native instructions, never fictional Claude slash-command requirements.
 
 Codex builder: state the locked goals directly and read only the selected kit once.
 
@@ -19,11 +19,11 @@ CURRENT-SUBGOAL: <verbatim cycle subgoal>
 [0 selected-skill preamble: Claude/Codex platform-native instruction; read only named kit once (graph comes pre-refreshed via symlink — query only)]
 [C terse output]
 [D skills for this lane]
-[E graphify-first]   (omit only if graphify-out/ absent AND graphify skill unavailable — then substitute: "Use one read-only Explore agent to map <subsystem> before editing.")
+[E graphify-first]   (for non-code artifacts, query the available artifact graph or use targeted read-only inspection; never create an exploration lane.)
 [F file ownership + contract]
 
 GOAL (LOCKED — do not re-scope):
-<the spec items assigned to this lane, each with its done-when outcome>
+<the profile outcome items assigned to this lane, each with its owned artifact, evidence mode, done-when outcome, and external-action boundary>
 
 WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [G forced verification]
@@ -67,6 +67,7 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
 - The GOAL is copied verbatim from the locked INTEGRATION SPEC — never paraphrased or expanded. If a builder wants scope beyond it, it must raise NEEDS DECISION, not act.
 - Keep each prompt self-contained (a fresh terminal has no session context).
 - Project-specific recipes (build/install commands, device IDs, known-broken tooling) are pulled from the project's CLAUDE.md and inlined into the relevant lane(s) — not hardcoded in this template.
+- A software UI lane is one specialization. Research, operations, content, data, and custom lanes substitute artifact-appropriate commands and evidence; never invent a source change, build, test, UI, deployment, publication, live trade, or physical/manual result when the profile calls for analysis, a dry run, a sample, a backtest, a prepared artifact, or external approval.
 - In prompt-generation-only mode, hand off after the prompts. In autonomous Polylane
   mode, validate contract v2 and launch the supervisor immediately; prompt generation is
   never a stopping point.
