@@ -2247,10 +2247,12 @@ next_fallback_model() {
   return 1
 }
 
-# respawn_lane IDX NAME WT : checkpoint WIP then re-seed the pane with the CURRENT
-# (possibly downgraded) model. Used by both dead-pane recovery and stall fallback.
+# respawn_lane IDX NAME WT [COUNT_RESTART] : checkpoint WIP then re-seed the
+# pane with the CURRENT (possibly downgraded) model. Used by both dead-pane
+# recovery and stall fallback. COUNT_RESTART defaults to 1; startup seed
+# recovery passes 0 because no agent attempt reached the pane.
 respawn_lane() {
-  local idx="$1" name="$2" wt="$3" cmd
+  local idx="$1" name="$2" wt="$3" count_restart="${4:-1}" cmd
   assert_prompt "$(lane_prompt_get "$name")" "$name"
   checkpoint_lane "$wt" "$name"
   refresh_manifest_runtime_settings
@@ -2271,7 +2273,7 @@ respawn_lane() {
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
   fi
   repipe_pane_log "$idx" "$name"
-  run_stats lane-restart --lane "$name"
+  [ "$count_restart" = "0" ] || run_stats lane-restart --lane "$name"
 }
 
 # recreate_lane_pane NAME WT : replace a vanished mapped pane in this owned
@@ -2645,7 +2647,7 @@ verify_seeds() {
     name="${LANE_NAMES[$i]}"
     if pane_dead "${LANE_PANE_IDX[$i]}"; then
       echo "launch: lane '$name' seed did not take (pane at a shell) — re-seeding"
-      respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}"
+      respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}" 0
     fi
   done
 }
