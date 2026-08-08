@@ -5,10 +5,13 @@ Strategy: [STRATEGY](STRATEGY.md) · Decisions: [decisions/INDEX.md](decisions/I
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 13: [plan](cycle-13-plan.md) · [research](cycle-13-research.md) ·
-[30-candidate audit](cycle-13-suggestions.md). Target: manifest-authoritative model policy,
-metadata-ranked skill kits, prompt compilation/token truth, lifecycle hooks, and one
-whole-system certification journey.
+Active cycle 14: [plan](cycle-14-plan.md) · [research](cycle-14-research.md) ·
+[30-candidate audit](cycle-14-suggestions.md). Target: transactional promotion/reporting,
+process-aware liveness, one canonical worker ledger, and resolved skill delivery.
+
+Closed cycle 13: [plan](cycle-13-plan.md) · [research](cycle-13-research.md) ·
+[questions](cycle-13-questions.md) · [council](cycle-13-council.md) ·
+[digest](cycle-13-digest.md) · [integration proof](../verify-integration.md).
 
 Closed cycle 12: [plan](cycle-12-plan.md) · [research](cycle-12-research.md) ·
 [questions](cycle-12-questions.md) · [council](cycle-12-council.md) ·

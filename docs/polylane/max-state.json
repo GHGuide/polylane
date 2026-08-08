@@ -238,6 +238,41 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c35",
+      "text": "Verified promotion is transactional with runner-owned durable state and reports failure truthfully",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c36",
+      "text": "Health recovery distinguishes active high-effort turns from genuinely wedged or dead workers",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c37",
+      "text": "All worktrees append to one canonical monotonic worker history without merge conflicts",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c38",
+      "text": "Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c39",
+      "text": "A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -616,6 +651,52 @@
           "evidence": "coordinator host gate: full terminal command exit 0; live GO ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0; live NO-GO promoted=0 evidence=1 retained=1 bounded=1 cleaned=1"
         }
       ]
+    },
+    {
+      "id": "m14",
+      "text": "Self-hosting truth and recovery hardening",
+      "subgoals": [
+        {
+          "id": "m14.1",
+          "text": "Make promotion and reporting transactional when the runner has updated durable base state",
+          "weight": 50,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m14.2",
+          "text": "Replace false terminal-turn wedge detection with process-aware liveness evidence",
+          "weight": 48,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m14.3",
+          "text": "Route worker capsules messages and acknowledgements through one canonical ledger",
+          "weight": 46,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m14.4",
+          "text": "Deliver selected skills by resolved trusted path and audit actual builder use",
+          "weight": 44,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m14.5",
+          "text": "Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle",
+          "weight": 42,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -738,6 +819,18 @@
       "kind": "decision",
       "text": "whole-system perfection selects 18 evidence-backed improvements",
       "meta": "manifest policy, skill metadata, prompt truth, lifecycle hooks, and end-to-end certification cover the highest-leverage confirmed gaps"
+    },
+    {
+      "cycle": 13,
+      "kind": "learning",
+      "text": "Verified source passed, but runner promotion failed because pre-promotion acceptance/history writes dirtied base; report falsely claimed merge and cleanup. High-effort Codex work was also misclassified as a terminal turn, and worktree-local worker history produced conflicting sequence numbers.",
+      "meta": "Cycle 14 repairs these observed self-hosting failures before any speculative feature work."
+    },
+    {
+      "cycle": 13,
+      "kind": "decision",
+      "text": "Continue autonomously into cycle 14 self-hosting truth hardening.",
+      "meta": "Concrete correctness failures remain despite cycle-13 feature acceptance; all are reproducible and locally fixable."
     }
   ],
   "accept": [
@@ -1163,6 +1256,66 @@
       "tier": "terminal",
       "key": "cycle13-terminal",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m14.1",
+      "cmd": "bash tests/test-promotion-transaction.sh && bash tests/test-write-report.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m14.2",
+      "cmd": "bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m14.3",
+      "cmd": "bash tests/test-workers.sh && bash tests/test-worker-canonical-state.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m14.4",
+      "cmd": "bash tests/test-scout-catalog.sh && bash tests/test-skill-acquire.sh && bash tests/test-prompt-compiler.sh && bash tests/test-skill-delivery.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m14.5",
+      "cmd": "bash tests/test-cycle-14-contract.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m14.5",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "cycle14-terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

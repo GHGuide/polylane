@@ -1,0 +1,32 @@
+# Cycle 14 improvement candidates
+
+- [selected] Reproduce promotion failure when acceptance state dirties the base.
+- [selected] Stage only an allowlist of runner-owned durable files before promotion.
+- [selected] Preserve unrelated user modifications through promotion and cleanup.
+- [selected] Track promotion success separately from the integrator verdict.
+- [selected] Make run reports state merge and cleanup outcomes from observed flags.
+- [selected] Add a failed-promotion report fixture that forbids false success language.
+- [selected] Recognize completed agent turns rather than arbitrary completed commands.
+- [selected] Treat a live agent child process as positive liveness evidence.
+- [selected] Keep bounded recovery for a genuinely dead or frozen pane.
+- [selected] Scale quiet-turn grace by effective effort without making it unbounded.
+- [selected] Route every worker operation to one canonical project state root.
+- [selected] Allocate worker sequence numbers only under the canonical lock.
+- [selected] Prove concurrent worktrees cannot create duplicate sequence numbers.
+- [selected] Preserve every capsule, request, acknowledgement, and coordinator message.
+- [selected] Carry resolved trusted `SKILL.md` paths in lane skill selections.
+- [selected] Reject selected paths outside approved project or installed roots.
+- [selected] Compile selected skill paths into the exact lane prompt once.
+- [selected] Record actual skill reads and use, not prompt-name presence.
+- [selected] Add one cycle-14 reproduction and certification command.
+- [selected] Re-run physical GO and NO-GO lifecycle rehearsal after integration.
+- [follow-on] Persist an integration-source fingerprint for terminal-gate deduplication.
+- [follow-on] Measure repair-loop test impact before re-running the full suite.
+- [follow-on] Expose lifecycle transaction state in the control-room dashboard.
+- [follow-on] Add crash injection between pre-promotion staging and merge.
+- [follow-on] Add crash injection between merge, finalization, cleanup, and report.
+- [follow-on] Version worker-history schema and provide deterministic migrations.
+- [follow-on] Add a Linux/macOS concurrent filesystem behavior matrix.
+- [follow-on] Learn liveness thresholds from successful turn-duration telemetry.
+- [follow-on] Benchmark skill-kit usefulness against a no-skill control lane.
+- [external] Complete the blind ten-product rendered old-vs-new visual corpus.
