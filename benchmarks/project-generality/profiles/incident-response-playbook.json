@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "kind": "operations",
+  "outcome": "Responders can triage and safely contain the recurring incident.",
+  "deliverables": [
+    { "artifact": "runbook", "path": "ops/incident-playbook.md", "description": "Triage and containment procedure" },
+    { "artifact": "configuration", "path": "ops/alert-rules.yaml", "description": "Alert routing configuration" }
+  ],
+  "evidence_modes": ["tabletop-exercise", "dry-run", "peer-review"],
+  "risk_tier": "high",
+  "external_action_policy": {
+    "mode": "approval-required",
+    "actions": [
+      { "name": "Contain production traffic", "consequential": true, "approval_required": true, "execution": "approved-manual" }
+    ]
+  }
+}
