@@ -2830,11 +2830,12 @@ contract_acceptance_gate() {
       # them green and previously made EXTERNAL-EVIDENCE-OPEN impossible: the
       # command failure returned before the external-status allowance below.
       # Refresh only terminal checks whose subgoals are still autonomous.
-      terminal_targets=$(jq -r '
+      terminal_targets=$(jq -r --arg targets ",$targets," '
         ([.milestones[].subgoals[] | select(.status=="external") | .id]) as $external
         | [(.accept // [])[]
             | select((.tier // "focused")=="terminal")
             | .sid
+            | select(. as $sid | ($targets | contains("," + $sid + ",")))
             | select(. as $sid | any($external[]; .==$sid) | not)]
         | unique
         | join(",")
@@ -2851,10 +2852,11 @@ contract_acceptance_gate() {
             --cycle "$CYCLE" --targets "$terminal_targets" --only-terminal
         ) || { report_acceptance_failures; return 1; }
       fi
-      jq -e '
+      jq -e --arg targets ",$targets," '
         ([.milestones[].subgoals[] | select(.status=="external") | .id]) as $external
         | all((.accept // [])[]
-            | select((.tier // "focused")=="terminal");
+            | select((.tier // "focused")=="terminal")
+            | select(.sid as $sid | ($targets | contains("," + $sid + ",")));
             .status=="pass" or (.sid as $sid | any($external[]; .==$sid)))
       ' "$STATE_FILE" >/dev/null || return 1
     else
@@ -2863,12 +2865,17 @@ contract_acceptance_gate() {
         terminal_counted=1
       fi
       (
-        cd "$INT_WORKTREE"
-        export REPO="$PWD" REPO_ROOT="$PWD"
-        "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
-          --cycle "$CYCLE" --only-terminal
-      ) || { report_acceptance_failures; return 1; }
-      jq -e 'all((.accept // [])[]; .status=="pass")' "$STATE_FILE" >/dev/null || return 1
+          cd "$INT_WORKTREE"
+          export REPO="$PWD" REPO_ROOT="$PWD"
+          "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+            --cycle "$CYCLE" --targets "$targets" --only-terminal
+        ) || { report_acceptance_failures; return 1; }
+      jq -e --arg targets ",$targets," '
+        all(.milestones[].subgoals[]; .status!="external")
+        and all((.accept // [])[]
+          | select(.sid as $sid | ($targets | contains("," + $sid + ",")));
+          .status=="pass")
+      ' "$STATE_FILE" >/dev/null || return 1
     fi
   fi
 }

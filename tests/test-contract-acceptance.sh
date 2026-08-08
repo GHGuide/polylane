@@ -29,12 +29,15 @@ MEM="$(dirname "$RUNNER")/polylane-memory.sh"
 "$MEM" "$STATE_FILE" init goal >/dev/null
 "$MEM" "$STATE_FILE" add-criterion c1 works >/dev/null
 "$MEM" "$STATE_FILE" add-milestone m1 build >/dev/null
+"$MEM" "$STATE_FILE" add-subgoal m1 s0 historical 1 >/dev/null
 "$MEM" "$STATE_FILE" add-subgoal m1 s1 target 10 >/dev/null
 "$MEM" "$STATE_FILE" add-subgoal m1 s2 physical 5 >/dev/null
 "$MEM" "$STATE_FILE" add-accept s1 'test "${REPO:-}" = "$PWD" && test "${REPO_ROOT:-}" = "$PWD"' >/dev/null
 "$MEM" "$STATE_FILE" add-accept s1 'test "${REPO:-}" = "$PWD" && test "${REPO_ROOT:-}" = "$PWD"' --tier terminal >/dev/null
 "$MEM" "$STATE_FILE" add-accept s2 false >/dev/null
 "$MEM" "$STATE_FILE" add-accept s2 false --tier terminal >/dev/null
+"$MEM" "$STATE_FILE" add-accept s0 false --tier terminal >/dev/null
+"$MEM" "$STATE_FILE" set-status s0 done "verified in an earlier cycle" 0 >/dev/null
 
 MANIFEST="$P/.polylane/run.json"
 cat > "$MANIFEST" <<'JSON'
@@ -61,6 +64,7 @@ assert_ok "accept-external-allows-declared-gap" contract_acceptance_gate EXTERNA
 assert_eq "accept-terminal-gate-counted" "1" "$(wc -l < "$TERMINAL_LOG" | tr -d ' ')"
 assert_eq "accept-terminal-runs-at-boundary" "pass" "$(jq -r '.accept[1].status' "$STATE_FILE")"
 assert_eq "accept-external-terminal-not-executed" "unchecked" "$(jq -r '.accept[3].status' "$STATE_FILE")"
+assert_eq "accept-historical-terminal-not-replayed" "unchecked" "$(jq -r '.accept[4].status' "$STATE_FILE")"
 assert_fail "accept-go-rejects-external-gap" contract_acceptance_gate GO
 assert_eq "accept-failing-terminal-gate-counted" "2" "$(wc -l < "$TERMINAL_LOG" | tr -d ' ')"
 

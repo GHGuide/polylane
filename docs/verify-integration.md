@@ -42,8 +42,9 @@ Integrator branch: `lane/c12-integrator`
   Bash. The terminal command isolates the known host disk-floor condition, and
   the regression test prevents both command-contract failures from returning.
 - A manual terminal probe initially omitted `--targets m12.4` and began replaying
-  historical terminal checks. It was stopped before certification; the runner's
-  target-scoped host gate is the authoritative terminal result.
+  historical terminal checks. A red regression reproduced the same behavior in
+  the runner, which now executes terminal checks only for the current cycle's
+  targets. The target-scoped host gate is the authoritative terminal result.
 
 ## Focused and compatibility checks
 
