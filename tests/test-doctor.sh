@@ -87,6 +87,19 @@ assert_contains "deps-optional-row" "dep: shellcheck (optional)" "$miss_out"
 # disk check always renders a row.
 assert_contains "disk-check-row" "disk: free space" "$miss_out"
 
+# Sub-GiB hosts must get an actionable quantity, not the misleading integer-floor
+# message "0GB free". Put only a deterministic df shim first on PATH; every other
+# dependency continues resolving from the host PATH.
+mkdir -p "$TEST_TMPDIR/fake-df"
+cat > "$TEST_TMPDIR/fake-df/df" <<'EOF'
+#!/bin/sh
+printf '%s\n' 'Filesystem 1024-blocks Used Available Capacity Mounted on'
+printf '%s\n' '/dev/fake 10000000 9104984 895016 92% /'
+EOF
+chmod +x "$TEST_TMPDIR/fake-df/df"
+low_disk_out=$(PATH="$TEST_TMPDIR/fake-df:$PATH" "$DOCTOR" "$TEST_TMPDIR/does-not-exist.json" 2>&1)
+assert_contains "disk-sub-gib-reports-mib" "only 874MiB free (<1GiB)" "$low_disk_out"
+
 # =============================================================================
 # tmux session-collision check (guarded: only meaningful when tmux is present,
 # since the check returns early otherwise — the dep FAIL then covers absence).

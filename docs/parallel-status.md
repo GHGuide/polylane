@@ -15,7 +15,7 @@ Lifecycle flags: `tips_merged=true`; `m14_focused=5/5 pass`;
 `refinement_queue=empty`; `c28_external=open`; and
 `current_verdict=GO`.
 
-Fresh non-host terminal evidence: full suite **1,891/0 across 100 files**;
+Fresh non-host terminal evidence: full suite **1,892/0 across 100 files**;
 all `bin/*.sh` ShellCheck-clean; Claude/Codex semantic parity **43/0**;
 installer parity **34/0**; and fresh dual-package installation **37/0**.
 `bin/polylane-certify.sh focused` passed with its named

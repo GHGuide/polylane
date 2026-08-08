@@ -3,7 +3,7 @@
 Cycle 14 repaired every concrete orchestration failure exposed by cycle 13, then
 proved the repairs through the production promotion path rather than accepting only
 fixture-level confidence. Three Codex builders and an integrator completed the wave;
-the resulting tree passed 1,891 assertions across 100 test files, ShellCheck, semantic/install
+the resulting tree passed 1,892 assertions across 100 test files, ShellCheck, semantic/install
 parity, fresh dual installation, 51 frozen acceptances, and physical GO and NO-GO
 rehearsals. The verified merge and cleanup completed on `main`. The only open item is
 the previously declared external ten-product blind visual corpus.
@@ -52,6 +52,7 @@ the previously declared external ten-product blind visual corpus.
 - Prevented fixture instrumentation from dirtying the promotion base.
 - Prevented rehearsal artifacts from leaking after GO cleanup.
 - Prevented rehearsal artifacts from leaking after NO-GO retention.
+- Made low-disk preflight report precise MiB instead of a misleading `0GB`.
 - Added a named cycle-14 self-hosting certification layer.
 - Kept Claude and Codex skill semantics aligned.
 - Kept Claude and Codex installation output aligned.

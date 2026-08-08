@@ -243,19 +243,20 @@ check_collisions() {
 # --- disk -----------------------------------------------------------------------
 
 check_disk() {
-  local avail_kb gb
+  local avail_kb mib gib
   avail_kb=$(df -Pk . 2>/dev/null | awk 'NR==2 {print $4}')
   if ! [ "${avail_kb:-x}" -ge 0 ] 2>/dev/null; then
     row WARN "disk: free space" "could not read df output — check disk manually"
     return 0
   fi
-  gb=$((avail_kb / 1048576))
+  mib=$((avail_kb / 1024))
+  gib=$((avail_kb / 1048576))
   if [ "$avail_kb" -lt 1048576 ]; then
-    row FAIL "disk: free space" "only ${gb}GB free (<1GB) — worktrees need room; free space first"
+    row FAIL "disk: free space" "only ${mib}MiB free (<1GiB) — worktrees need room; free space first"
   elif [ "$avail_kb" -lt 5242880 ]; then
-    row WARN "disk: free space" "${gb}GB free (<5GB) — one worktree per lane adds up; consider freeing space"
+    row WARN "disk: free space" "${mib}MiB free (<5GiB) — one worktree per lane adds up; consider freeing space"
   else
-    row PASS "disk: free space" "${gb}GB free"
+    row PASS "disk: free space" "${gib}GiB free"
   fi
 }
 
