@@ -1,0 +1,1 @@
+Make it much easier for small teams to hand work to the next person without losing important context.

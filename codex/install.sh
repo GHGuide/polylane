@@ -46,7 +46,12 @@ install_one() {
   test -x "$dest/scripts/polylane-workers.sh" || { echo "install: retained worker helper missing" >&2; exit 1; }
   test -x "$dest/scripts/polylane-context.sh" || { echo "install: bounded context helper missing" >&2; exit 1; }
   test -x "$dest/scripts/polylane-refine.sh" || { echo "install: refinement helper missing" >&2; exit 1; }
+  test -x "$dest/scripts/polylane-certify.sh" || { echo "install: certification helper missing" >&2; exit 1; }
+  test -x "$dest/scripts/polylane-skill-catalog.sh" || { echo "install: metadata skill catalog missing" >&2; exit 1; }
+  test -x "$dest/scripts/polylane-hooks.sh" || { echo "install: lifecycle hook helper missing" >&2; exit 1; }
   test -s "$dest/references/visual-intelligence.md" || { echo "install: visual intelligence contract missing" >&2; exit 1; }
+  test -s "$dest/references/cycle-13-integration.md" || { echo "install: cycle 13 integration reference missing" >&2; exit 1; }
+  test -s "$dest/assets/hooks/codex-hooks.json" || { echo "install: Codex lifecycle fragment missing" >&2; exit 1; }
   echo "installed Codex skill -> $dest"
 }
 

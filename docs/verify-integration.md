@@ -1,118 +1,131 @@
-# Cycle 12 integration verification
+# Cycle 13 integration verification
 
-Run: `c12-visual-20260808`
-Integrator branch: `lane/c12-integrator`
+Run: `c13-perfection-20260808` on `lane/c13-integrator`.
 
-## Merge and review
+## Integrated tips and cross-lane repairs
 
-- Merged the initial `lane/c12-visual-mechanisms` tip at `91ddd5b`, then
-  incorporated its final runtime/graph tip `93aa17b` as `59e28e9`.
-- Merged `lane/c12-shared-contract` at `cb3597f` as `220807f`.
-- `git diff --check c9f1bbb..HEAD`: clean; the two lane file lists had no
-  ownership overlap.
-- The direct seam review confirmed: reference directions need at least two
-  source IDs and no source can feed all three directions; only one wildcard is
-  allowed; an admitted skill must pass quarantine/audit/benchmark and have a
-  project lock before it can be armed; desktop, mobile, empty, loading, error,
-  hover, and focus states are required; all three lenses must pass; repairs cap
-  at two; and champion replacement requires ten prompts, >=70% wins, and no
-  accessibility regression.
+All current builder tips are ancestors of this branch and merged cleanly:
 
-## Integration repairs
+| Lane | Tip | Integrator merge |
+| --- | --- | --- |
+| model policy | `a6ca9885f138e0f8d527b234d7132f2403f24662` | `32671e0` |
+| skill intelligence | `822a7659d8519ab8d973c891331f372bd5415e12` | `d035768` |
+| prompt compiler | `c0d8ca11723c556f94ec1cd50a27c402e9db946e` | `2149afb` |
+| lifecycle hooks | `1cf08fd585c285938d1f7f6051ae515e90f3b122` | `6f1531a` |
 
-- Added `skill-benchmark-rejects-zero-threshold`: an unchanged challenger with
-  `minimum_improvement: 0` was initially accepted. The admission boundary now
-  requires a strictly positive threshold. `bash tests/test-skill-acquire.sh`:
-  **13 pass, 0 fail**.
-- Added `visual-quality-rejects-nonimage-evidence`: arbitrary nonempty files
-  were initially accepted as screenshots. The deterministic gate now requires
-  PNG, JPEG, or WebP magic bytes. `bash tests/test-visual-quality.sh`:
-  **7 pass, 0 fail**. This verifies file type only, not browser capture
-  provenance.
-- The existing session-loss test was isolated from the host disk floor with
-  `POLYLANE_MIN_DISK_GB=0`; it retains the production disk guard and now proves
-  the intended lost-session path. `bash tests/test-runtime-survival.sh`:
-  **2 pass, 0 fail**.
-- Fixed startup seed recovery accounting. A lost `send-keys` seed is documented
-  as a free launch correction, but `respawn_lane` counted it as a model restart
-  and made the efficiency canary reject its own successful recovery. The new
-  `test-seed-recovery-accounting.sh` proves startup reseeds cost zero restarts
-  while real runtime respawns still cost one.
-- Repaired frozen acceptance commands so regular `test-*.sh` files run through
-  Bash. The terminal command isolates the known host disk-floor condition, and
-  the regression test prevents both command-contract failures from returning.
-- A manual terminal probe initially omitted `--targets m12.4` and began replaying
-  historical terminal checks. A red regression reproduced the same behavior in
-  the runner, which now executes terminal checks only for the current cycle's
-  targets. The target-scoped host gate is the authoritative terminal result.
-- The first target-scoped host gate exposed the strict 10,000-node fixture at
-  **12s** against its frozen 10s ceiling. Same-host comparison measured old
-  `main` at **12.27s** and this branch at **10.40s**, disproving a visual-loop
-  regression. Profiling isolated about seven seconds in the immutable-map Kahn
-  traversal. Ordered compiler output now takes a linear rank-check fast path,
-  while arbitrary-order graphs retain the original Kahn fallback. The focused
-  fixture is now **5s**, and the cycle/compatibility suite remains green.
-- Frozen acceptance previously discarded both command streams, making that
-  failure impossible to diagnose from durable evidence. Failed commands now
-  emit their return code, command, and a bounded output tail. Passing checks
-  remain quiet.
+The runner compiles launch-only prompt copies before panes exist, checks their
+frozen contracts again, and leaves authored prompts untouched. The compiler
+also accepts the historical inline `OWN: … FORBIDDEN: …` boundary. The live
+rehearsal fixtures now include the required `VERIFY:` contract and isolate
+their temporary tmux server from an inherited client socket; the latter cannot
+be exercised on this host because it denies new UNIX sockets.
 
-## Focused and compatibility checks
+Model-policy refresh now restores the prior runtime setting atomically if a
+new policy is invalid. Legacy manifests with explicit custom models/effort and
+no intensity or availability list retain their existing behavior; declared
+availability still receives strict validation.
 
-All commands used `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`.
+## Executed evidence
 
-- `bash tests/test-visual-intelligence.sh`: **9 pass, 0 fail**.
-- `bash tests/test-skill-acquire.sh`: **13 pass, 0 fail**.
-- `bash tests/test-visual-quality.sh`: **7 pass, 0 fail**.
-- `bash tests/test-visual-loop-integration.sh`: **28 pass, 0 fail**.
-- `bash tests/test-scout.sh`: **25 pass, 0 fail**.
-- `bash tests/test-orchestration-contract.sh`: **11 pass, 0 fail**.
+Focused acceptance, through the required cache:
 
-The initial integrator did not consume late durable messages naming the final
-`93aa17b` tip, so its stale-source NO-GO was retained as evidence but not used
-for promotion. The bounded repair merged that exact tip and proved it is an
-ancestor of the final branch. The refinement queue contained the duplicated
-`context`/`compaction` observation (count 2, cycle 12, evidence `bounded packets
-built for run c12-visual-20260808`). **Declined:** it records bounded-packet
-construction, not a demonstrated context-loss regression; there is no scoped,
-check-backed refinement to promote.
+```sh
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- \
+  bash bin/polylane-memory.sh "$PWD/docs/polylane/max-state.json" check-accept \
+  --cycle 13 --targets m13.1,m13.2,m13.3,m13.4,m13.5 --focused
+```
 
-## Final certification
+All five focused acceptance records passed. The hermetic vague-brief journey
+in `bash tests/test-cycle-13-contract.sh` passed 38/0: recommended discovery
+answers, plan/manifest, both providers' policy/skill/prompt/hook contracts,
+simulated GO close, emergent questions, and `CONTINUE` routing. Focused
+installer and semantic-parity checks passed 34/0 and 43/0 respectively.
 
-- Before the acceptance-command repair,
-  `POLYLANE_MIN_DISK_GB=0 tests/run.sh`: **1,633 passed, 0 failed, 91 test
-  files**. Strict graph timings passed unchanged: warm append **224ms** under
-  250ms; the 10,000-event fixture **10s** at its 10s ceiling.
-- `shellcheck -S warning bin/*.sh`: clean.
-- `bash tests/test-skill-parity.sh`: **38 pass, 0 fail**.
-- Fresh Codex installation/parity via `bash tests/test-installers.sh`: **26
-  pass, 0 fail**; it verifies the installed shared core and visual contract.
-- `POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse`: both contract-v3
-  cases passed. GO reached READY, promoted through exactly one terminal gate,
-  cleaned with zero leaks; NO-GO withheld promotion, retained bounded evidence,
-  and cleaned the rehearsal fixture.
-- Post-NO-GO repair command
-  `POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh`:
-  **1,638 passed, 0 failed, 91 test files**; ShellCheck clean; parity **38 pass,
-  0 fail**. This exact command supplied the terminal `pass` recorded in durable
-  state.
-- Fresh post-repair `POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse`:
-  GO promoted through one terminal gate and cleaned with zero leaks; NO-GO
-  withheld promotion, retained bounded evidence, and cleaned. Both contract-v3
-  cases passed.
+The current terminal command was run after the final source repair, without a
+stale source cache result:
 
-The cycle-12 event ledger remains an honest NO-GO because its first terminal
-attempt exceeded the frozen performance ceiling. The later commits repair that
-measured cause and carry fresh terminal and live-rehearsal evidence; they do not
-rewrite the historical event ledger.
+```sh
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- \
+  env POLYLANE_MIN_DISK_GB=0 bash bin/polylane-memory.sh \
+  "$PWD/docs/polylane/max-state.json" check-accept --cycle 13 \
+  --targets m13.5 --only-terminal
+```
 
-## External evidence boundary
+Its frozen command was:
 
-This repository is the orchestration skill, not a UI product, so this cycle did
-not fabricate browser screenshots, live reference fetches, or visual-model
-judgements. Deterministic and live orchestration evidence proves the mechanism,
-image signatures, repair bounds, installation safety, parity, and complete
-supervised lifecycle. A separate old-vs-new UI corpus with real rendered
-products and blind visual judges remains external product-quality evidence.
+```sh
+POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && \
+  bash tests/test-skill-parity.sh && \
+  POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
+```
 
-POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c12-visual-20260808
+Results before the live rehearsal: full suite **1778 pass, 0 fail, 96 test
+files**; full `bin/*.sh` ShellCheck clean; skill parity **43 pass, 0 fail**.
+The GO rehearsal then failed with `ready=0 promoted=0 terminal_gates=0
+cleaned=0 leaks=1` because tmux reported `Operation not permitted` creating
+its UNIX socket under the managed host's temporary directory. The doctor stops
+at that failed GO case, so its NO-GO case was not started and is not claimed.
+This is a real terminal failure, so c30–c34 are implemented and
+focused-verified but their terminal close is intentionally not claimed.
+
+## Observable policy, prompt, skill, and hook evidence
+
+Policy examples are emitted before launch. A Claude balanced manifest resolves
+builder `claude-sonnet-5/high`; mechanical is clamped to medium; security to
+`claude-opus-4-8/high`; and integrator to `claude-fable-5/xhigh`. With Codex
+performance plus a CLI override, builder resolves `gpt-5.6-sol/high`,
+mechanical `gpt-5.6-terra/medium`, security `gpt-5.6-terra/high`, and
+integrator `gpt-5.6-sol/xhigh`.
+
+The frozen prompt fixture changed from 991 bytes / 331 compatibility estimate
+to 957 bytes / 319 after compiling: one repeated 34-byte non-contract line
+was removed and the contracts compared equal. These are local deterministic
+estimates, not provider token or quality claims.
+
+Metadata recommendations enter planning/scouting only; builder prompts receive
+only selected kits. `use-audit` records helped, unused, or hurt receipts under
+`docs/polylane/skill-use/<run>/<lane>.json` and the outcome ledger; a missing
+verify file is explicitly `unused`, not inferred helped. Project admission is
+still authorization, quarantine, audit, measurable benchmark, pin, install,
+and rollback gated.
+
+Both installed packages carry project-scoped hook fragments. The Codex
+SessionStart output includes `hookSpecificOutput.additionalContext`; the stop
+path emits a structured `block` decision requesting one continuation when the
+exact marker/evidence is absent. Claude emits the same capped context in
+`systemMessage`. Hooks remain optional defense in depth; the supervisor stays
+the runtime authority.
+
+## Lifecycle, refinements, and external boundary
+
+The durable worker inbox was read and all historical acknowledgements were
+recorded. Eligible refinement decisions are explicit in
+`docs/polylane/harness/refinement-decisions.jsonl`: declined
+`context:compaction:7` (no demonstrated context-loss regression) and
+`integrator:no-go:2` (historical c12 event, no new local defect). No promotion
+was claimed from either.
+
+`c28`, the historical ten-product rendered visual comparison, remains external
+and open. It does not block independent cycle-13 engineering and has not been
+converted to PASS by prose. Because the terminal criterion remains open, the
+current mechanical route is `CONTINUE m13.1`; it is a retry route, not evidence
+that the terminal or external boundary has passed.
+
+## Skill-evidence scores
+
+SKILL-EVIDENCE: polylane — helped: used the context packet, durable inbox,
+refinement queue/decisions, cache routing, and cycle routing mechanics.
+
+SKILL-EVIDENCE: engineering:code-review — unused: no resolved kit path was
+provided for this integrator run.
+
+SKILL-EVIDENCE: superpowers:verification-before-completion — unused: no
+resolved kit path was provided for this integrator run.
+
+SKILL-EVIDENCE: operations:risk-assessment — unused: no resolved kit path was
+provided for this integrator run.
+
+SKILL-EVIDENCE: engineering:testing-strategy — unused: no resolved kit path
+was provided for this integrator run.
+
+POLYLANE-VERDICT: NO-GO run=c13-perfection-20260808

@@ -72,12 +72,15 @@ validate_scalars() {
 strict_blocks() {
   local prompt="$1" spec label pattern
   validate_scalars "$prompt" || return $?
+  # Historical generated prompts may keep the two adjacent ownership
+  # boundaries on one line (`OWN: … FORBIDDEN: …`). Promptlint has always
+  # accepted that form, so compilation must preserve rather than reject it.
   for spec in \
     'ultimate-goal|^ULTIMATE-GOAL:' \
     'current-subgoal|^CURRENT-SUBGOAL:' \
     'goal|^GOAL:' \
     'ownership|^OWN:' \
-    'forbidden-boundary|^FORBIDDEN:' \
+    'forbidden-boundary|FORBIDDEN:' \
     'predefined-skills|^PREDEFINED-SKILLS:' \
     'lane-specific-skills|^LANE-SPECIFIC-SKILLS:' \
     'selected-kit|Read only the named kit once' \

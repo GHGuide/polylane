@@ -1,4 +1,22 @@
 
+# Cycle 13 integrator — current authoritative status
+
+- Four current tips merged cleanly: model policy `a6ca988`, skill intelligence
+  `822a765`, prompt compiler `c0d8ca1`, lifecycle hooks `1cf08fd`.
+- Focused m13.1–m13.5 acceptance passed. The hermetic cycle-13 contract passed
+  38/0; installers 34/0; semantic skill parity 43/0.
+- Current terminal gate: **NO-GO**. It passed `tests/run.sh` at 1778/0 across
+  96 files, full ShellCheck, and parity 43/0, then the required live GO
+  rehearsal failed when this managed host denied tmux UNIX-socket creation.
+- c30–c34 are implemented and mechanically focused-verified but remain
+  terminal-open. Re-run `env POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh
+  --rehearse` on a tmux-capable host before closing them.
+- Current mechanical route: `CONTINUE m13.1` (retry the terminal-open cycle);
+  it is not evidence that the terminal or external gate passed.
+- c28's external rendered-comparison evidence remains open and is not a PASS.
+
+---
+
 ## LANE: evals — evals/evals.json
 - Status: DONE. Expanded evals.json into real trigger + behavior set.
 - Added: 6 positive-trigger cases (one per SKILL.md description phrase), 5 hard-negative cases (run one agent / review my PR / install a skill / plain single build / "lanes" false-friend), 2 behavior cases (mandatory-4 preamble in order; never `git add -A`). Kept original 4 scenario cases.

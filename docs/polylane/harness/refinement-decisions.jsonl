@@ -1,0 +1,2 @@
+{"proposal_id":"decline:context:compaction:7","outcome":"declined","cycle":13,"reason":"Observed packets are bounded and repeatable, not a demonstrated context-loss regression; no safe local change has a distinct expected check."}
+{"proposal_id":"decline:integrator:no-go:2","outcome":"declined","cycle":13,"reason":"The historical cycle-12 NO-GO is already isolated as a host/source-gate event; this queue item lacks a new local defect and bounded corrective check."}

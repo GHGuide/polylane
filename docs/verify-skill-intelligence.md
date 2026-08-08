@@ -65,10 +65,10 @@ the catalog retains only id, path, frontmatter metadata, source, and fingerprint
 
 ## Selected-kit invocation evidence
 
-SKILL-EVIDENCE: superpowers:test-driven-development — created the catalog fixture and recorded its failing RED run before the implementation.
+SKILL-EVIDENCE: superpowers:test-driven-development — helped: created the catalog fixture and recorded its failing RED run before implementation.
 
-SKILL-EVIDENCE: superpowers:verification-before-completion — ran fresh focused scout/acquisition checks and ShellCheck before reporting the result.
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: ran fresh focused scout/acquisition checks and ShellCheck before reporting the result.
 
-SKILL-EVIDENCE: skill-creator — used progressive-disclosure metadata fields and deterministic discovery fixtures for the catalog design.
+SKILL-EVIDENCE: skill-creator — helped: used progressive-disclosure metadata fields and deterministic discovery fixtures for the catalog design.
 
-SKILL-EVIDENCE: superpowers:writing-skills — made the recommendation/audit contract executable with strong, near-miss, hostile, and outcome fixtures.
+SKILL-EVIDENCE: superpowers:writing-skills — helped: made the recommendation/audit contract executable with strong, near-miss, hostile, and outcome fixtures.

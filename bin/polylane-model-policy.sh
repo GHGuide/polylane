@@ -131,14 +131,19 @@ resolve_model_policy() {
     for model in "${MODEL_OVERRIDES[@]}"; do model_policy_apply_override "$model" "$agent" || return $?; done
   fi
   if [ "$active" = 0 ]; then
-    if [ "${#AVAILABLE_MODELS[@]}" -gt 0 ]; then model_policy_validate_available "$agent" || return $?; fi
+    # A legacy manifest with no intensity and no availability declaration may
+    # deliberately use a custom model/effort through POLYLANE_AGENT_CMD. Do
+    # not turn that old, explicit lane contract into a new tier-policy error.
+    # Once available_models is present, retain the stricter validation below.
+    [ "${#AVAILABLE_MODELS[@]}" -gt 0 ] || return 0
+    model_policy_validate_available "$agent" || return $?
     for i in "${!LANE_NAMES[@]}"; do
       model_policy_tier "$agent" "${LANE_MODELS[$i]}" >/dev/null || { model_policy_die "unsupported $agent model '${LANE_MODELS[$i]}' for lane '${LANE_NAMES[$i]}'"; return $?; }
-      if [ "${#AVAILABLE_MODELS[@]}" -gt 0 ]; then model_policy_available "${LANE_MODELS[$i]}" || { model_policy_die "lane '${LANE_NAMES[$i]}' model '${LANE_MODELS[$i]}' is not in available_models"; return $?; }; fi
+      model_policy_available "${LANE_MODELS[$i]}" || { model_policy_die "lane '${LANE_NAMES[$i]}' model '${LANE_MODELS[$i]}' is not in available_models"; return $?; }
       model_policy_effort_valid "${LANE_EFFORTS[$i]:-medium}" || { model_policy_die "unsupported effort '${LANE_EFFORTS[$i]}' for lane '${LANE_NAMES[$i]}'"; return $?; }
     done
     model_policy_tier "$agent" "$INT_MODEL" >/dev/null || { model_policy_die "unsupported $agent model '$INT_MODEL' for integrator '$INT_NAME'"; return $?; }
-    if [ "${#AVAILABLE_MODELS[@]}" -gt 0 ]; then model_policy_available "$INT_MODEL" || { model_policy_die "integrator model '$INT_MODEL' is not in available_models"; return $?; }; fi
+    model_policy_available "$INT_MODEL" || { model_policy_die "integrator model '$INT_MODEL' is not in available_models"; return $?; }
     model_policy_effort_valid "${INT_EFFORT:-medium}" || { model_policy_die "unsupported effort '$INT_EFFORT' for integrator '$INT_NAME'"; return $?; }
     return 0
   fi
@@ -162,7 +167,7 @@ emit_effective_model_policy() {
   printf '== effective model policy: agent=%s intensity=%s ==\n' "$(model_policy_agent)" "$intensity"
   for i in "${!LANE_NAMES[@]}"; do
     role=$(model_policy_role_for "${LANE_NAMES[$i]}" "${LANE_ROLES[$i]:-}")
-    printf 'policy lane=%s role=%s source=%s model=%s effort=%s\n' "${LANE_NAMES[$i]}" "$role" "${LANE_POLICY_SOURCES[$i]:-manifest}" "${LANE_MODELS[$i]}" "${LANE_EFFORTS[$i]}"
+    printf 'policy lane=%s role=%s source=%s model=%s effort=%s\n' "${LANE_NAMES[$i]}" "$role" "${LANE_POLICY_SOURCES[$i]:-manifest}" "${LANE_MODELS[$i]:-unknown}" "${LANE_EFFORTS[$i]:-unknown}"
   done
-  printf 'policy lane=%s role=integrator source=%s model=%s effort=%s\n' "$INT_NAME" "${INT_POLICY_SOURCE:-manifest}" "$INT_MODEL" "$INT_EFFORT"
+  printf 'policy lane=%s role=integrator source=%s model=%s effort=%s\n' "${INT_NAME:-integrator}" "${INT_POLICY_SOURCE:-manifest}" "${INT_MODEL:-unknown}" "${INT_EFFORT:-unknown}"
 }

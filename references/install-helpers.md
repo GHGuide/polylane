@@ -68,6 +68,17 @@ the runner `--help`) resolve model IDs through the probe helper
 export ANTHROPIC_API_KEY=sk-ant-...   # optional — enables live model probing
 ```
 
+### Optional project lifecycle hooks
+
+Both installed packages carry reviewable project-only fragments at
+`assets/hooks/codex-hooks.json` and `assets/hooks/claude-settings.json`. Hand
+the relevant fragment to the project owner for a merge into that project's hook
+configuration; never write global settings or grant permissions on their behalf.
+The helper restores only bounded lifecycle state and checks a current-run status
+plus verification marker. It is defense in depth: `polylane-supervisor.sh`
+remains the runtime authority. Full behavior and certification commands are in
+`references/cycle-13-integration.md`.
+
 ## Set two paths first (every command below reuses them)
 
 ```bash

@@ -49,6 +49,19 @@ assert_eq "policy-missing-intensity-preserves-manifest" \
   "claude-haiku-4-5|medium|claude-sonnet-5|medium|claude-opus-4-8|xhigh|claude-haiku-4-5|medium|claude-sonnet-5|high" \
   "$(policy_state claude '' '' 'claude-haiku-4-5 claude-sonnet-5 claude-opus-4-8 claude-fable-5')"
 
+# Old manifests that opt out of intensity and available_models may deliberately
+# target a custom agent command. Active policy validation must not retroactively
+# reject that established explicit model/effort contract.
+policy_legacy_custom() {
+  (
+    AGENT=claude; INTENSITY=""; MANIFEST_INTENSITY=""; AVAILABLE_MODELS=()
+    LANE_NAMES=(builder); LANE_MODELS=(custom-model); LANE_EFFORTS=(legacy-effort); LANE_ROLES=(builder)
+    INT_NAME=integrator; INT_MODEL=custom-integrator; INT_EFFORT=legacy-effort; MODEL_OVERRIDES=()
+    resolve_model_policy
+  )
+}
+assert_ok "policy-legacy-custom-manifest-preserved" policy_legacy_custom
+
 policy_rc() {
   (
     AGENT=codex; INTENSITY=balanced; MANIFEST_INTENSITY=""

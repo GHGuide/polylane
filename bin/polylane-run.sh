@@ -535,13 +535,59 @@ prompt_budget_check() {
     }
 }
 
+# compile_prompt SOURCE NAME ROLE : produce the launch-only normalized prompt.
+# The authored prompt remains immutable. A compiled copy may remove only
+# byte-identical ordinary prose after the frozen contracts are compared again.
+compile_prompt() {
+  local source="$1" name="$2" role="$3" dir tmp compiled metrics prime
+  case "$name" in ''|*[!A-Za-z0-9._-]*) die "unsafe prompt lane name '$name'" ;; esac
+  [ -s "$source" ] || { echo "PROMPT-COMPILE: $name source is missing or empty" >&2; return 1; }
+  dir="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}"
+  mkdir -p "$dir" || return 1
+  tmp=$(mktemp "$dir/.${name}.XXXXXX") || return 1
+  compiled="$dir/$name.txt"
+  if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile "$source" > "$tmp"; then
+    rm -f "$tmp"
+    echo "PROMPT-COMPILE: $name rejected source contract" >&2
+    return 1
+  fi
+  if ! "$SCRIPT_DIR/polylane-promptopt.sh" compare "$source" "$tmp" >/dev/null; then
+    rm -f "$tmp"
+    echo "PROMPT-COMPILE: $name lost a frozen contract" >&2
+    return 1
+  fi
+  mv "$tmp" "$compiled"
+  prime=false
+  prime_hybrid_enabled && prime=true
+  POLYLANE_STRICT_PROMPTS=1 "$SCRIPT_DIR/polylane-promptlint.sh" \
+    lint "$compiled" "$name" "$prime" "$role" || {
+      echo "PROMPT-COMPILE: $name failed strict generated-prompt lint" >&2
+      return 1
+    }
+  prompt_budget_check "$compiled" "$name" || return 1
+  metrics=$("$SCRIPT_DIR/polylane-promptopt.sh" metrics "$compiled") || return 1
+  printf 'PROMPT-COMPILE: lane=%s source=%s compiled=%s %s\n' \
+    "$name" "$source" "$compiled" "$metrics"
+  COMPILED_PROMPT="$compiled"
+}
+
+prepare_compiled_prompts() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do
+    compile_prompt "${LANE_PROMPTS[$i]}" "${LANE_NAMES[$i]}" builder || return 1
+    LANE_PROMPTS[i]="$COMPILED_PROMPT"
+  done
+  compile_prompt "$INT_PROMPT" "$INT_NAME" integrator || return 1
+  INT_PROMPT="$COMPILED_PROMPT"
+}
+
 # preflight_contract : Codex runs use orchestration contract v2 by default. This
 # converts the workflow promises into executable launch gates, before worktrees or
 # tmux exist. POLYLANE_ALLOW_LEGACY=1 is an explicit compatibility escape hatch.
 # A --resume may also grandfather an already-materialized legacy Codex run so an
 # upgraded supervisor cannot strand work that was launched under contract v1.
 preflight_contract() {
-  local strict=0 lane prompt sid next next_id previous legacy_wt
+  local strict=0 lane prompt sid next next_id previous legacy_wt i
   if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
     strict=1
   elif [ "$(agent_selected)" = "codex" ] || [ "$(agent_selected)" = "gpt" ] || [ "$(agent_selected)" = "openai" ]; then
@@ -600,9 +646,12 @@ preflight_contract() {
     die "contract v2 prompt lint failed"
   "$SCRIPT_DIR/polylane-scout.sh" validate "$LANE_SKILLS_FILE" "$MANIFEST" ||
     die "contract v2 lane skill kits failed"
-  for lane in "${LANE_NAMES[@]}"; do
-    prompt=$(jq -r --arg n "$lane" '.lanes[] | select(.name==$n) | .prompt_file' "$MANIFEST")
-    prompt=$(abs_project_path "$prompt")
+  # Validate source prompts first, then launch only frozen-contract-equivalent
+  # compiled copies. This reduces duplicate context without editing the source.
+  prepare_compiled_prompts || die "contract v2 prompt compilation failed"
+  for i in "${!LANE_NAMES[@]}"; do
+    lane="${LANE_NAMES[$i]}"
+    prompt="${LANE_PROMPTS[$i]}"
     "$SCRIPT_DIR/polylane-scout.sh" lint "$LANE_SKILLS_FILE" "$lane" "$prompt" ||
       die "contract v2 lane '$lane' prompt does not invoke its armed skills"
     grep -qF "STATUS: $lane DONE run=$RUN_ID" "$prompt" ||
@@ -1392,6 +1441,36 @@ prime_hybrid_record_builder_completions() {
   done
 }
 
+# record_skill_use_evidence : close the planning → execution loop without
+# exposing a catalog to builders. The planner arms a tiny named kit; after a
+# completed lane we record only its explicit SKILL-EVIDENCE outcome. Missing
+# evidence is mechanically `unused`, never inferred as success.
+record_skill_use_evidence() {
+  local i lane verify glob_text domain ledger dir receipt tmp scout
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
+  [ "${DRY_RUN:-0}" = 1 ] && return 0
+  [ -n "${LANE_SKILLS_FILE:-}" ] && [ -f "$LANE_SKILLS_FILE" ] || return 0
+  scout="$SCRIPT_DIR/polylane-scout.sh"
+  ledger="$PROJECT_ROOT/docs/polylane/skill-outcomes.jsonl"
+  dir="$PROJECT_ROOT/docs/polylane/skill-use/${RUN_ID:-legacy}"
+  mkdir -p "$dir" || return 1
+  for i in "${!LANE_NAMES[@]}"; do
+    lane="${LANE_NAMES[$i]}"
+    receipt="$dir/$lane.json"
+    [ -s "$receipt" ] && continue
+    verify="${LANE_WORKTREES[$i]}/docs/verify-$lane.md"
+    glob_text=$(jq -r --arg lane "$lane" '.lanes[] | select(.name == $lane) | .own_globs[]?' "$MANIFEST" | tr '\n' ' ')
+    domain=$("$scout" domain $glob_text) || return 1
+    tmp="$dir/.${lane}.json.tmp.$$"
+    if ! "$scout" use-audit "$LANE_SKILLS_FILE" "$lane" "$verify" "$domain" "$ledger" > "$tmp"; then
+      rm -f "$tmp"
+      return 1
+    fi
+    mv "$tmp" "$receipt"
+    printf 'SKILL-USE: lane=%s receipt=%s\n' "$lane" "$receipt"
+  done
+}
+
 # ---------------------------------------------------------------------------
 # resume — skip lanes whose DONE file is already valid
 # ---------------------------------------------------------------------------
@@ -2101,13 +2180,26 @@ runtime_settings_fingerprint() {
 # lane without restarting or duplicating the supervisor. Unchanged manifests do
 # not overwrite usage-limit or command-churn fallbacks held in runner memory.
 refresh_manifest_runtime_settings() {
-  local current i name model effort int_model int_effort codex_sandbox m
+  local current i name model effort int_model int_effort codex_sandbox m policy_active=0
+  local previous_int_model previous_int_effort previous_sandbox previous_intensity
+  local -a previous_lane_models previous_lane_efforts previous_lane_roles previous_available_models
   current=$(runtime_settings_fingerprint) || return 0
   [ -n "${MANIFEST_RUNTIME_FINGERPRINT:-}" ] || {
     MANIFEST_RUNTIME_FINGERPRINT="$current"
     return 0
   }
   [ "$current" != "$MANIFEST_RUNTIME_FINGERPRINT" ] || return 0
+
+  # Keep a rejected selected-policy refresh atomic. A runner-owned fallback is
+  # live state, not a draft manifest value that an invalid edit may overwrite.
+  previous_lane_models=("${LANE_MODELS[@]}")
+  previous_lane_efforts=("${LANE_EFFORTS[@]}")
+  previous_lane_roles=("${LANE_ROLES[@]}")
+  previous_available_models=("${AVAILABLE_MODELS[@]}")
+  previous_int_model="$INT_MODEL"
+  previous_int_effort="$INT_EFFORT"
+  previous_sandbox="$CODEX_SANDBOX"
+  previous_intensity="${MANIFEST_INTENSITY:-}"
 
   for i in "${!LANE_NAMES[@]}"; do
     name="${LANE_NAMES[$i]}"
@@ -2142,7 +2234,23 @@ refresh_manifest_runtime_settings() {
       return 0
       ;;
   esac
-  if ! resolve_model_policy; then
+  # A legacy live edit that changes only explicit lane model/effort values has
+  # no selected intensity or CLI override to resolve. Preserve that established
+  # behavior (including runner-owned fallback retention) instead of inventing a
+  # Claude/Codex family check after mutating the live values. Selected policy
+  # inputs remain authoritative and are still validated before this fingerprint
+  # is advanced.
+  [ -n "${MANIFEST_INTENSITY:-}" ] && policy_active=1
+  [ "${#MODEL_OVERRIDES[@]:-0}" -gt 0 ] && policy_active=1
+  if [ "$policy_active" = 1 ] && ! resolve_model_policy; then
+    LANE_MODELS=("${previous_lane_models[@]}")
+    LANE_EFFORTS=("${previous_lane_efforts[@]}")
+    LANE_ROLES=("${previous_lane_roles[@]}")
+    AVAILABLE_MODELS=("${previous_available_models[@]}")
+    INT_MODEL="$previous_int_model"
+    INT_EFFORT="$previous_int_effort"
+    CODEX_SANDBOX="$previous_sandbox"
+    MANIFEST_INTENSITY="$previous_intensity"
     echo "runtime-config: ignored unsupported live manifest model policy" >&2
     return 0
   fi
@@ -3577,6 +3685,7 @@ main() {
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then
     graph_authority_record_builders succeeded || exit 1
+    record_skill_use_evidence || exit 1
     prime_hybrid_record_builder_completions || exit 1
     echo "All builders DONE."
     notify_event "done" "all ${#LANE_NAMES[@]} lane(s) DONE — starting integrator"

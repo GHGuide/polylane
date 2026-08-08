@@ -132,6 +132,19 @@ polylane-run.sh <manifest> [--dry-run] [--yes] [--push] [--resume] [--intensity 
 
 `--dry-run` previews every pane before anything launches; `--yes` pre-approves the runner's own prompts for unattended runs; `--intensity <economy|balanced|performance|max>` remaps every lane's model at launch and `--model lane=id` pins one lane on top of it — no manifest editing.
 
+For contract-v2 runs, Polylane prints the resolved model/effort policy before
+launch, validates and launches frozen-contract-equivalent compiled prompt copies,
+and records explicit selected-skill outcomes after each builder. The planner uses
+a metadata-only local skill catalog; builders receive only their selected ids.
+See [cycle-13-integration.md](references/cycle-13-integration.md) for the exact
+commands and project-local safe-admission boundary.
+
+Lifecycle hook fragments are optional and project-scoped: review
+`assets/hooks/codex-hooks.json` or `assets/hooks/claude-settings.json` before
+merging either into a target project. They never modify global settings or
+replace the supervisor. Use `bin/polylane-certify.sh focused` during integration
+and `bin/polylane-certify.sh terminal` once for the fresh terminal matrix.
+
 ### Cross-lane relay
 
 The runner exports `POLYLANE_PROJECT_ROOT` and `POLYLANE_COORDINATION_FILE` into

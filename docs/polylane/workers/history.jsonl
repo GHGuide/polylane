@@ -24,3 +24,12 @@
 {"event":"capsule","id":"capsule:prompt-compiler:1","worker":"prompt-compiler","version":1,"cycle":13,"seq":24,"at":"2026-08-08T15:55:00Z"}
 {"event":"capsule","id":"capsule:lifecycle-hooks:1","worker":"lifecycle-hooks","version":1,"cycle":13,"seq":25,"at":"2026-08-08T15:55:00Z"}
 {"event":"capsule","id":"capsule:integrator:3","worker":"integrator","version":3,"cycle":13,"seq":26,"at":"2026-08-08T15:55:00Z"}
+{"event":"ack","id":"ack:integrator:message:12","recipient":"integrator","message_id":"message:12","seq":27,"at":"2026-08-08T16:18:04Z"}
+{"event":"ack","id":"ack:integrator:message:13","recipient":"integrator","message_id":"message:13","seq":28,"at":"2026-08-08T16:18:04Z"}
+{"event":"ack","id":"ack:integrator:message:14","recipient":"integrator","message_id":"message:14","seq":29,"at":"2026-08-08T16:18:05Z"}
+{"event":"ack","id":"ack:integrator:relay:/Users/leonardo/Downloads/polylane/.polylane/coordination.jsonl:5","recipient":"integrator","message_id":"relay:/Users/leonardo/Downloads/polylane/.polylane/coordination.jsonl:5","seq":30,"at":"2026-08-08T16:18:05Z"}
+{"event":"ack","id":"ack:integrator:relay:/Users/leonardo/Downloads/polylane/.polylane/coordination.jsonl:6","recipient":"integrator","message_id":"relay:/Users/leonardo/Downloads/polylane/.polylane/coordination.jsonl:6","seq":31,"at":"2026-08-08T16:18:05Z"}
+{"event":"ack","id":"ack:integrator:relay:/Users/leonardo/Downloads/polylane/.polylane/coordination.jsonl:7","recipient":"integrator","message_id":"relay:/Users/leonardo/Downloads/polylane/.polylane/coordination.jsonl:7","seq":32,"at":"2026-08-08T16:18:05Z"}
+{"event":"ack","id":"ack:integrator:message:19","recipient":"integrator","message_id":"message:19","seq":33,"at":"2026-08-08T16:18:05Z"}
+{"event":"ack","id":"ack:integrator:message:20","recipient":"integrator","message_id":"message:20","seq":34,"at":"2026-08-08T16:18:05Z"}
+{"event":"ack","id":"ack:integrator:message:21","recipient":"integrator","message_id":"message:21","seq":35,"at":"2026-08-08T16:18:05Z"}

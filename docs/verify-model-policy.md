@@ -53,10 +53,10 @@ effort still changes; roles then apply their ceilings and floors.
 - Repeated supervisor preparation for the same run id can rebuild packets but
   records one compaction observation, so it cannot inflate refinement evidence.
 
-SKILL-EVIDENCE: superpowers:test-driven-development — the named kit was not installed in this workspace; RED behavioral tests were added before the resolver and rerun GREEN.
+SKILL-EVIDENCE: superpowers:test-driven-development — unused: no resolved kit path was available; RED/GREEN tests are behavioral evidence, not kit-use evidence.
 
-SKILL-EVIDENCE: superpowers:systematic-debugging — the named kit was not installed in this workspace; focused failures exposed the old Claude-only ladder and malformed Codex tier output.
+SKILL-EVIDENCE: superpowers:systematic-debugging — unused: no resolved kit path was available; the focused failure is recorded separately.
 
-SKILL-EVIDENCE: engineering:system-design — the named kit was not installed in this workspace; the implementation keeps one sourced policy entrypoint for initial launch and live refresh.
+SKILL-EVIDENCE: engineering:system-design — unused: no resolved kit path was available; the single policy entrypoint is implementation evidence only.
 
-SKILL-EVIDENCE: operations:process-optimization — the named kit was not installed in this workspace; checks use the required model-policy cache and the run-id idempotence key avoids duplicate refinement work.
+SKILL-EVIDENCE: operations:process-optimization — unused: no resolved kit path was available; cache and idempotence behavior is separately tested.

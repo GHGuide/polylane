@@ -103,7 +103,7 @@ byte cap, require the same current-run marker and run-tagged evidence, request
 at most one continuation, and fail open visibly if optional state is invalid.
 They are not security coverage for hosted tools or every execution path.
 
-SKILL-EVIDENCE: superpowers:test-driven-development — resolved `SKILL.md` path was not supplied in this runtime; deliberately not read by name alone.
-SKILL-EVIDENCE: superpowers:systematic-debugging — resolved `SKILL.md` path was not supplied in this runtime; deliberately not read by name alone.
-SKILL-EVIDENCE: engineering:system-design — resolved `SKILL.md` path was not supplied in this runtime; deliberately not read by name alone.
-SKILL-EVIDENCE: operations:risk-assessment — resolved `SKILL.md` path was not supplied in this runtime; deliberately not read by name alone.
+SKILL-EVIDENCE: superpowers:test-driven-development — unused: no resolved `SKILL.md` path was supplied in this runtime.
+SKILL-EVIDENCE: superpowers:systematic-debugging — unused: no resolved `SKILL.md` path was supplied in this runtime.
+SKILL-EVIDENCE: engineering:system-design — unused: no resolved `SKILL.md` path was supplied in this runtime.
+SKILL-EVIDENCE: operations:risk-assessment — unused: no resolved `SKILL.md` path was supplied in this runtime.

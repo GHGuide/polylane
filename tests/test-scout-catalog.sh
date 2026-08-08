@@ -91,4 +91,13 @@ assert_eq "catalog-use-audit-proves-armed-skill" "ui:visual-regression" "$(jq -r
 assert_eq "catalog-use-audit-marks-missing-unused" "superpowers:test-driven-development" "$(jq -r '.unused[0]' "$AUDIT")"
 assert_eq "catalog-use-audit-records-unused" "unused" "$(jq -r 'select(.skill == "superpowers:test-driven-development") | .outcome' "$LEDGER" | tail -1)"
 
+# A lane may report a harmful invocation explicitly. The close-loop audit must
+# preserve that observable outcome rather than treating every nonempty line as
+# helped, so the next metadata recommendation excludes the skill.
+printf '%s\n' 'SKILL-EVIDENCE: superpowers:test-driven-development — hurt: added irrelevant test churn.' >> "$VERIFY"
+HURT_AUDIT="$TEST_TMPDIR/hurt-audit.json"
+assert_ok "catalog-use-audit-explicit-hurt" bash -c '"$1" use-audit "$2" "$3" "$4" "$5" "$6" > "$7"' _ "$CATALOG" "$KIT" ui-lane "$VERIFY" ui "$LEDGER" "$HURT_AUDIT"
+assert_eq "catalog-use-audit-keeps-hurt" "superpowers:test-driven-development" "$(jq -r '.hurt[0].id' "$HURT_AUDIT")"
+assert_eq "catalog-use-audit-records-hurt" "hurt" "$(jq -r 'select(.skill == "superpowers:test-driven-development") | .outcome' "$LEDGER" | tail -1)"
+
 finish

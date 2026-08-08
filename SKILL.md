@@ -406,6 +406,12 @@ outcome-learned scout kit, and route outcomes/selection/salvage/seams only throu
 `bin/polylane-advanced.sh`. Quality uses exactly three `quality_judges` through
 `bin/polylane-judges.sh` and its one bounded graph repair route.
 
+For the integrated model policy, metadata-only skill planning, compiled launch
+prompts, optional project hooks, and named certification matrix, follow
+`references/cycle-13-integration.md`. Keep the builder prompt to its selected
+kit; never paste a skill inventory into it. Run `bin/polylane-certify.sh focused`
+during integration and its terminal mode only at the final source boundary.
+
 For observation, `bin/polylane-dashboard.sh .polylane/run.json --once --json`
 is the canonical control room. It projects state, durable max-state, graph/events,
 report, ledger, heartbeat, and cleanup; unknown values remain unknown. Never parse

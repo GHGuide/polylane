@@ -161,15 +161,34 @@ append_outcome() {
 }
 
 use_audit() {
-  local kit="$1" lane="$2" verify="$3" domain="$4" ledger="$5" skill effect helped='[]' unused='[]'
-  [ -f "$kit" ] && [ -f "$verify" ] || { echo "SKILL-CATALOG: kit and verify file are required" >&2; return 2; }
+  local kit="$1" lane="$2" verify="$3" domain="$4" ledger="$5" skill effect outcome why helped='[]' unused='[]' hurt='[]'
+  [ -f "$kit" ] || { echo "SKILL-CATALOG: kit is required" >&2; return 2; }
   jq -e '.version == 2 and (.lanes | type == "object")' "$kit" >/dev/null || { echo "SKILL-CATALOG: invalid kit" >&2; return 2; }
   while IFS= read -r skill; do
-    effect=$(awk -v prefix="SKILL-EVIDENCE: $skill — " 'index($0, prefix) == 1 { print substr($0, length(prefix) + 1); exit }' "$verify")
-    if [ -n "$effect" ]; then helped=$(jq --arg id "$skill" --arg effect "$effect" '. + [{id:$id,effect:$effect}]' <<<"$helped"); append_outcome "$ledger" "$lane" "$domain" "$skill" helped "$effect"
-    else unused=$(jq --arg id "$skill" '. + [$id]' <<<"$unused"); append_outcome "$ledger" "$lane" "$domain" "$skill" unused "missing SKILL-EVIDENCE record in $verify"; fi
+    effect=''
+    [ -f "$verify" ] && effect=$(awk -v prefix="SKILL-EVIDENCE: $skill — " 'index($0, prefix) == 1 { print substr($0, length(prefix) + 1); exit }' "$verify")
+    if [ -z "$effect" ]; then
+      unused=$(jq --arg id "$skill" '. + [$id]' <<<"$unused")
+      append_outcome "$ledger" "$lane" "$domain" "$skill" unused "missing SKILL-EVIDENCE record in $verify"
+      continue
+    fi
+    # Evidence is a scored observation, not a flattering free-form claim.
+    # Existing unprefixed evidence remains compatible and means helped; new
+    # lanes can report `unused:` or `hurt:` without being misclassified.
+    outcome=helped; why="$effect"
+    case "$effect" in
+      unused:*) outcome=unused; why=${effect#unused:} ;;
+      hurt:*) outcome=hurt; why=${effect#hurt:} ;;
+      helped:*) outcome=helped; why=${effect#helped:} ;;
+    esac
+    case "$outcome" in
+      helped) helped=$(jq --arg id "$skill" --arg effect "$why" '. + [{id:$id,effect:$effect}]' <<<"$helped") ;;
+      unused) unused=$(jq --arg id "$skill" '. + [$id]' <<<"$unused") ;;
+      hurt) hurt=$(jq --arg id "$skill" --arg effect "$why" '. + [{id:$id,effect:$effect}]' <<<"$hurt") ;;
+    esac
+    append_outcome "$ledger" "$lane" "$domain" "$skill" "$outcome" "$why"
   done < <(jq -r --arg lane "$lane" '((.lanes[$lane].predefined // []) + (.lanes[$lane].specific // [])) | unique[]' "$kit")
-  jq -n --arg lane "$lane" --arg verify "$verify" --argjson helped "$helped" --argjson unused "$unused" '{schema:1,lane:$lane,verify_file:$verify,helped:$helped,unused:$unused}'
+  jq -n --arg lane "$lane" --arg verify "$verify" --argjson helped "$helped" --argjson unused "$unused" --argjson hurt "$hurt" '{schema:1,lane:$lane,verify_file:$verify,helped:$helped,unused:$unused,hurt:$hurt}'
 }
 
 main() {

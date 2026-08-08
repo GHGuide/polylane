@@ -27,6 +27,11 @@ test -x "$DEST/bin/polylane-harness.sh" || { echo "install: prime harness helper
 test -x "$DEST/bin/polylane-workers.sh" || { echo "install: retained worker helper missing" >&2; exit 1; }
 test -x "$DEST/bin/polylane-context.sh" || { echo "install: bounded context helper missing" >&2; exit 1; }
 test -x "$DEST/bin/polylane-refine.sh" || { echo "install: refinement helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-certify.sh" || { echo "install: certification helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-skill-catalog.sh" || { echo "install: metadata skill catalog missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-hooks.sh" || { echo "install: lifecycle hook helper missing" >&2; exit 1; }
+test -s "$DEST/references/cycle-13-integration.md" || { echo "install: cycle 13 integration reference missing" >&2; exit 1; }
+test -s "$DEST/assets/hooks/claude-settings.json" || { echo "install: Claude lifecycle fragment missing" >&2; exit 1; }
 
 echo "installed Claude Code skill -> $DEST"
 echo "deps: tmux + jq + claude on PATH. Invoke in Claude Code with: /polylane"

@@ -64,7 +64,7 @@ The corpus is static at `benchmarks/prompt-optimization/`; no provider or model
 evaluation was run. Its comparison is a frozen functional contract gate, not an
 external quality result.
 
-SKILL-EVIDENCE: read /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/test-driven-development/SKILL.md
-SKILL-EVIDENCE: read /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md
-SKILL-EVIDENCE: read /Users/leonardo/.codex/plugins/cache/caveman/caveman/local/skills/caveman-compress/SKILL.md
-SKILL-EVIDENCE: read /Users/leonardo/.codex/plugins/cache/claude-cowork/product-management/1.2.0/skills/write-spec/SKILL.md
+SKILL-EVIDENCE: superpowers:test-driven-development — helped: the resolved kit informed the RED corpus before compiler implementation.
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: the resolved kit informed the fresh focused checks and contract comparison.
+SKILL-EVIDENCE: caveman:caveman-compress — helped: the resolved kit constrained deduplication to byte-identical ordinary prose.
+SKILL-EVIDENCE: product-management:write-spec — helped: the resolved kit kept frozen prompt contracts explicit in the corpus.
