@@ -1,4 +1,4 @@
-# Per-cycle build pipeline
+# Per-cycle project-outcome pipeline
 
 Use this after the locked goal and current cycle target exist. It is shared
 planning knowledge; the active platform skill decides CLI syntax and installed
@@ -7,6 +7,23 @@ skill names.
 Autonomous Polylane executes the plan. Prompt generation, plan approval, council
 output, or a verdict is not a stopping point. A user may explicitly request
 prompt-generation-only mode; otherwise continue through launch and cycle routing.
+
+## Project profile is the planning input
+
+Before carving work, run the pre-goal gate:
+`bin/polylane-project.sh gate docs/polylane/PROJECT_PROFILE.md docs/polylane/PROJECT_PROFILE.json`.
+It validates the durable human record and its machine form; a failed or absent gate
+blocks goal decomposition and lane derivation. Planning consumes its outcome,
+deliverables, evidence modes, risk tier, and external-action policy—not an assumed
+source/build/test/UI workflow. Each deliverable must map to a changed artifact and
+an owner: documents, datasets, notebooks, models, analyses, runbooks, media,
+configurations, or source files are all first-class. A request that cannot produce
+a changed artifact or verifiable evidence is external work, never a fictional lane.
+
+The profile's policy is binding. A consequential action remains approval-required;
+plans may prepare samples, dry runs, backtests, simulations, and artifacts, but may
+not trade live, spend money, publish, deploy production, contact third parties, or
+claim physical/manual completion without explicit authority and evidence.
 
 ## 1. Freeze the executable target
 
@@ -34,9 +51,10 @@ implementation choices take the recommended path and are recorded.
 Run `git status` and `git worktree list` first. Preserve unrelated user changes.
 Read `AGENTS.md` and the real build/test commands.
 
-Map target behavior to files and hidden couplings:
+Map outcome deliverables to artifact paths and hidden couplings:
 
-- shared entrypoints, routers, schemas, types, config, and generated code;
+- shared documents, datasets, notebooks, models, analyses, runbooks, media,
+  configurations, source files, schemas, and generated artifacts;
 - DOM ids/events, route names, storage keys, API contracts, migrations;
 - physical mutexes such as device, database, deploy target, or signed package.
 
@@ -48,7 +66,7 @@ read-only and single-threaded; do not spend builder lanes on generic exploration
 Follow `lane-derivation.md`. Generate two or three candidate carvings mentally
 and select the one with:
 
-1. zero source-file overlap;
+1. zero artifact-path overlap;
 2. the fewest frozen cross-lane contracts;
 3. meaningful concurrent work;
 4. low integration and stall risk.
@@ -89,17 +107,18 @@ must match the selected CLI, but these agent-neutral blocks are mandatory:
 
 - identity, project context, `ULTIMATE-GOAL`, and exact locked `CURRENT-SUBGOAL`;
 - exact `OWN` and `FORBIDDEN` paths;
-- frozen shared APIs and request-an-edit behavior;
+- frozen shared artifact contracts and request-an-edit behavior;
 - `PREDEFINED-SKILLS:` and `LANE-SPECIFIC-SKILLS:`;
 - explicit instruction to read only the named installed kit once; no generic stack or post-launch inventory discovery;
-- `TEST-CADENCE:` focused while iterating, subsystem before DONE, full terminal
-  suite only in integration/final certification;
+- `TEST-CADENCE:` focused artifact/evidence checks while iterating, lane-level
+  verification before DONE, full terminal gate only in integration/final certification;
 - `DELEGATION:` forbidden; each tmux CLI is the sole agent for its lane and may
   not spawn app/subagents or nested fan-out;
 - `CHECK-CACHE:` use `bin/polylane-check.sh "$PWD/.polylane/check-cache/<lane>" -- <command>` for expensive commands and reuse the
   recorded pass/fail until source or build environment changes;
-- `EXTERNAL-EVIDENCE:` manual/physical evidence stays external while autonomous
-  work continues;
+- `EXTERNAL-EVIDENCE:` manual/physical and consequential-action evidence stays
+  external while autonomous work continues; no live external action occurs without
+  explicit approval;
 - when `prime_hybrid: true`, the runner-provided context-packet/inbox instruction
   from `prompt-blocks.md` (read the bounded packet once; use the durable inbox for
   follow-ups; global prompt/skill ideas remain skill-evolution proposals);

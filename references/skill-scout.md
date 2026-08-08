@@ -66,19 +66,24 @@ structured v2:
 
 Infer each lane from:
 
-- its name and locked target;
-- `own_globs` and file types;
-- concrete activities and evidence it must produce;
+- its owned outcome artifacts and locked target;
+- `own_globs`, artifact types, concrete activities, and evidence modes;
 - the prior skill ledger.
 
-Typical domain slots:
+Select for the activity and evidence need, not a UI/API/data bucket. Typical slots:
 
-- UI/web: design critique, accessibility, browser control, visual testing;
-- API/backend: HTTP contracts, OpenAPI/security audit, integration tests;
-- data/database: schema safety, SQL/query review, migrations, data validation;
-- mobile/desktop: platform build, signing, device automation, accessibility;
-- documents/reporting: the actual PDF/DOCX/PPTX/XLSX production skill;
-- testing/reliability: test strategy, debugging, incident or performance tools.
+- artifact production: document, spreadsheet, presentation, dataset, notebook, model,
+  media, configuration, or source-editing skills that match the owned deliverable;
+- analysis and research: source evaluation, citation audit, statistical review,
+  reproducibility, backtest, or peer-review evidence;
+- operations: incident analysis, tabletop/dry-run design, change safety, and runbook review;
+- content: editorial, brand, accessibility, link-check, and sample-review evidence;
+- software: testing, debugging, integration, security, visual, or accessibility evidence.
+
+Never select a skill merely because an industry label resembles it. The selected
+skill must name an observable contribution to one artifact or evidence mode in the
+lane's verification record. Installed-only selection and safe admission rules still
+apply; an unknown industry is not a reason to reject a `custom` or `mixed` profile.
 
 Use installed relevant skills as the recommended default. In autonomous mode,
 take that default and continue. Installation is a state-changing decision: only

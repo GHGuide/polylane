@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "software",
+  "outcome": "A working appointment reminder flow is available to staff.",
+  "deliverables": [
+    { "artifact": "source", "path": "src/reminders/**", "description": "Reminder flow implementation" },
+    { "artifact": "document", "path": "docs/reminder-runbook.md", "description": "Operator runbook" }
+  ],
+  "evidence_modes": ["automated-test", "build", "manual-demo"],
+  "risk_tier": "medium",
+  "external_action_policy": { "mode": "not-needed", "actions": [] }
+}

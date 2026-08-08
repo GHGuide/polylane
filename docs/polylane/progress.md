@@ -2,15 +2,15 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 14
+## Cycle 15
 
-subgoals: 42/43 done · criteria: 38/39 done · 97%
+subgoals: 43/44 done · criteria: 39/40 done · 97%
 
-**Route:** `EXTERNAL-EVIDENCE-OPEN m12.4  real 10-product rendered old-vs-new blind corpus`
+**Route:** `NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
 
 ## Open autonomous work
 
-- None.
+- None
 
 ## External/user evidence
 
@@ -61,10 +61,13 @@ subgoals: 42/43 done · criteria: 38/39 done · 97%
 - `c37` [done] — All worktrees append to one canonical monotonic worker history without merge conflicts
 - `c38` [done] — Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use
 - `c39` [done] — A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run
+- `c40` [done] — Polylane discovers, plans, executes, and verifies software, trading/research, operations, and content/data projects without forcing app vocabulary or unsafe real-world claims
 
 ## Acceptance checks
 
-- Total: 51
+- Total: 53
 - Pass: 51
 - Fail: 0
-- Unchecked: 0
+- Unchecked: 2
+  - `m15.1` [unchecked] — bash tests/test-project-generality.sh
+  - `m15.1` [unchecked] — bash tests/run.sh && shellcheck -S warning bin/*.sh

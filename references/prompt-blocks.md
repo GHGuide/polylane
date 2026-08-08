@@ -25,7 +25,8 @@ of the same commit. Lanes only QUERY (block E). **Step 3 `/ponytail full` is inc
 ```
 ULTIMATE-GOAL: <verbatim durable product goal>
 CURRENT-SUBGOAL: <verbatim cycle subgoal>
-Project: <PROJECT one-liner>. Read THIS project's CLAUDE.md and memory/MEMORY.md first. IGNORE any unrelated CLAUDE.md from other projects. YOUR LANE = <LANE NAME>. Other Claudes run <other lanes> in parallel — do NOT touch their files.
+Project outcome: <profile outcome>. Owned deliverables: <artifact paths and types>. Evidence modes: <profile evidence modes>. External-action policy: <profile policy>.
+Project: <PROJECT one-liner>. Read THIS project's CLAUDE.md and memory/MEMORY.md first. IGNORE any unrelated CLAUDE.md from other projects. YOUR LANE = <LANE NAME>. Other lanes run in parallel — do NOT touch their artifacts.
 ```
 
 ## B. Model + effort header
@@ -111,28 +112,26 @@ STEP 1 (before ANY Read/Grep): build a map of your subsystem by QUERYING the gra
   python graphify-out/q.py file <path-sub>    # nodes defined in a file
 Query every key symbol in your OWN file set + the shared-file boundary, print the resulting map, and work from it. Each result gives file:line so you can do a TARGETED Read only when you truly need the source. Treat line numbers as APPROXIMATE (the graph is refreshed per cycle, not per edit) — confirm the exact anchor with a targeted Read/Grep right before an edit; use Grep/Glob ONLY for that confirmation, never to find where code lives.
 ```
-If `graphify-out/q.py` is absent: substitute one read-only Explore agent to map the subsystem before editing.
+For non-code artifacts, query paths, schemas, and evidence locations rather than only symbols. If `graphify-out/q.py` is absent: do targeted read-only inspection yourself; do not create a discovery lane or delegate exploration.
 
 ## F. File ownership
 ```
 YOU OWN (edit only these): <OWN globs>
 FORBIDDEN (other lanes own — do not edit/refactor): <FORBIDDEN globs>
-HARD CONTRACT: <frozen public APIs>. If you need a change in a file you do not own, use the canonical relay; do NOT edit it.
+HARD CONTRACT: <frozen artifact paths, schemas, formats, APIs, or evidence handoffs>. If you need a change in an artifact you do not own, use the canonical relay; do NOT edit it.
 ```
 
 ## G. Forced verification (no done without proof)
 ```
-VERIFY with evidence — no claim without it. Write docs/verify-<lane>.md containing: <lane-appropriate evidence>. Never say "done"/"works"/"looks good" without the artifact in that file. <For UI: preview_start + screenshots. For device: build/install/log. For logic: test output.>
-TEST-CADENCE: run focused checks while iterating, subsystem checks before DONE, and
-leave the expensive full terminal suite for integration/final certification.
+VERIFY with evidence — no claim without it. Write docs/verify-<lane>.md containing: <lane-appropriate evidence mode and artifact path>. Never say "done"/"works"/"looks good" without that evidence. Examples: test/build for source, citation audit for a review, sample/quality report for data, backtest for strategy research, tabletop/dry-run for operations, editorial/brand review for content.
+TEST-CADENCE: run focused artifact/evidence checks while iterating, lane-level verification before DONE, and leave the expensive full terminal gate for integration/final certification when the profile requires one.
 DELEGATION: forbidden. This tmux CLI is the sole agent for this lane. Do not spawn
 Codex app collaboration agents, subagents, or nested fan-out.
 CHECK-CACHE: route every expensive check through
 `bin/polylane-check.sh "$PWD/.polylane/check-cache/<lane>" -- <command>`.
 Reuse an unchanged PASS or FAIL; a FAIL requires a source/environment change before
 the command may execute again.
-EXTERNAL-EVIDENCE: physical/manual proof the system cannot produce stays explicitly
-external; continue every autonomous task and never turn missing evidence into PASS.
+EXTERNAL-EVIDENCE: physical/manual proof and every consequential external action stay explicitly external; continue every autonomous task and never turn missing evidence into PASS. You may validate simulations, samples, dry runs, backtests, and prepared artifacts. Do not execute live trades, spend money, publish, deploy production, contact third parties, or claim physical/manual outcomes without explicit authority and evidence.
 ```
 
 ## H. Coordination + resource mutex
@@ -154,13 +153,13 @@ Also write a `## DEFERRED` section at the END of docs/verify-<lane>.md: every fo
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
 - **Merge into YOUR OWN integrator branch — NEVER the base branch.** You run in your own worktree on your own branch. Merge each lane branch's CURRENT tip INTO THIS branch and verify the combined tree HERE. Do NOT check out or merge into `main`/base — the runner fast-forwards the base to your branch itself, and ONLY on a GO, so a NO-GO can never touch the base. Never trust a prior GO: if commits followed one, re-verify from scratch.
-- Read all verify-*.md plus the canonical relay snapshot, and, for a prime-hybrid run, the bounded integrator packet and eligible refinement evidence. Build everything together, run cross-lane end-to-end checks WITH evidence, list what's missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane regressions, each logged in the relay; write `docs/parallel-status.md` once as the durable post-cycle summary. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite in this sandbox.
+- Read all verify-*.md plus the canonical relay snapshot, and, for a prime-hybrid run, the bounded integrator packet and eligible refinement evidence. Combine current artifact tips, run cross-lane focused evidence checks, list what is missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane seams, each logged in the relay; write `docs/parallel-status.md` once as the durable post-cycle summary. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite in this sandbox.
 - **If ponytail is installed, run `/ponytail-review` on the merged diff** — flag any over-engineering a lane introduced (dead abstraction, speculative generality, needless deps). Note findings in verify-integration.md; a lane that grossly over-built against its goal is a quality regression worth a NO-GO. Keeps the token-efficiency mission enforced at the gate, not just per-lane.
 - **Independent evidence, never a vibes-only GO.** Use independent verifier lanes
-  when the plan includes them; otherwise combine mechanical acceptance, seam checks,
-  build/test evidence, and an adversarial review in the integrator. Codex app
+  when the plan includes them; otherwise combine mechanical acceptance, artifact
+  checks, declared evidence modes, and an adversarial review in the integrator. Codex app
   subagents never replace the runner's tmux Codex CLI lanes.
-- **Mechanical seam scan (before you decide).** Run `bin/polylane-seams.sh scan <your integrator worktree> >> docs/verify-integration.md` — it greps the merged tree for cross-file name danglers (a DOM id referenced in JS that no HTML produces — the classic "two halves don't wire up" bug). A `SEAM-DANGLING:` line it appends is an AUTO-NO-GO the gate enforces regardless of your prose, so fix the wiring (or reassign the lane) before issuing GO.
+- **Mechanical seam scan (before you decide).** Run `bin/polylane-seams.sh scan <your integrator worktree> >> docs/verify-integration.md` when source seams apply; also check every declared artifact handoff, schema, version, and evidence location. A dangling seam or missing required evidence is AUTO-NO-GO; live external action is never a substitute for evidence.
 - **End docs/verify-integration.md with exactly one verdict sentinel on its OWN line:**
   `POLYLANE-VERDICT: GO run=<RUN_ID>`,
   `POLYLANE-VERDICT: READY-FOR-HOST-GATE run=<RUN_ID>`,
@@ -172,8 +171,8 @@ Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `mod
   repair feedback, not a stopping point. The runner trusts only the current nonce
   and commits the evidence.
 - **Skip impossible identical repair waves:** only when the current
-  host/account/hardware blocks a required gate before source execution and no
-  owned source change can alter it, add
+  host/account/hardware blocks a required gate before artifact verification and no
+  owned artifact change can alter it, add
   `POLYLANE-REPAIRABLE: NO run=<RUN_ID>` immediately before the NO-GO sentinel.
   Do not use this for source defects or uncertainty. The outer orchestrator must
   route other autonomous work rather than treating the marker as completion.

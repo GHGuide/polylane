@@ -1,6 +1,9 @@
 # Phase 4c — Skill / GitHub-repo suggestions
 
-After the spec is locked, for each lane's task type: (1) check what's already installed, (2) fill gaps from the ecosystem, (3) present a suggestion list. RECOMMEND ONLY — never auto-install. A third-party skill runs in your context = prompt-injection + supply-chain surface; the user approves each, ideally after eyeballing the source.
+After the outcome profile is locked, select installed skills by each lane's artifact,
+activity, and evidence mode. Ecosystem results are suggestions only—never automatic
+installation or executable defaults. A third-party skill runs in your context =
+prompt-injection + supply-chain surface; the user approves each after review.
 
 ## Step 1 — inventory installed skills
 The available-skills list in the session context + `~/.claude/skills/` + `<project>/.claude/skills/` + `.agents/skills/`. Map installed skills to lanes first; only search the web for genuine gaps.
@@ -15,11 +18,12 @@ Curated indexes (search these for the lane's task type):
 | Lane task type | Candidate skill/repo | Purpose |
 |---|---|---|
 | Any dev workflow | obra/superpowers | TDD, systematic-debugging, writing-plans, verification, worktrees, code-review |
-| Frontend/UI | frontend-design, design skills, web-artifacts-builder | non-generic UI, React/Tailwind/shadcn artifacts |
-| iOS / device | ios-simulator-skill | build/navigate/test iOS apps via automation |
-| Security / audit | Trail of Bits security skills | static analysis, variant analysis, vuln detection |
-| MCP / tooling | mcp-builder | build MCP servers/clients |
-| Docs output | docx / pdf / pptx / xlsx (Anthropic official) | generate formatted deliverables |
+| Artifact or evidence need | Candidate skill/repo | Purpose |
+| Document, presentation, spreadsheet, or media | official document/PDF/PPTX/XLSX/media skill | produce the owned artifact |
+| Dataset, notebook, model, or analysis | data-validation/reproducibility/statistical-review skill | verify samples, quality, or backtests |
+| Operations runbook | incident/change-safety skill | tabletop or dry-run evidence without live intervention |
+| Content campaign | editorial/brand/link-check skill | review publication-ready artifacts without publishing |
+| Software specialization | frontend/design, security, MCP, or platform skill | source/build/test/UI evidence when applicable |
 | Token efficiency | caveman | compressed output mode (~75% fewer output tokens) |
 | Codebase Q&A | graphify | knowledge-graph over the repo for navigation |
 
@@ -27,4 +31,4 @@ Curated indexes (search these for the lane's task type):
 `superpowers` (verification, debugging, plans), `caveman` (token efficiency), `graphify` (navigation when `graphify-out/` exists). If any is missing, put it at the TOP of the suggestion list with its install command.
 
 ## Step 4 — present the suggestion list
-Format each: `- <name> — <why it helps THIS build> — install: <command>` grouped by lane. Mark already-installed ones ✓. End with: "Approve which to install; I recommend none run without you eyeballing the repo first." Do not gate prompt generation on installs — the prompts reference skills by name and work once installed.
+Format each: `- <name> — <artifact/activity/evidence contribution> — install: <command>` grouped by lane. Mark already-installed ones ✓. End with: "Approve which to install; I recommend none run without you eyeballing the repo first." Do not gate prompts on installs or name a suggestion as an executable skill.

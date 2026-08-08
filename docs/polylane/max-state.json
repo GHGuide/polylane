@@ -278,7 +278,7 @@
       "id": "c40",
       "text": "Polylane discovers, plans, executes, and verifies software, trading/research, operations, and content/data projects without forcing app vocabulary or unsafe real-world claims",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -713,9 +713,9 @@
           "id": "m15.1",
           "text": "Generalize the Claude and Codex skill contracts, discovery, lane routing, skill selection, documentation, prompts, and verification around project outcomes rather than apps",
           "weight": 10,
-          "status": "doing",
+          "status": "done",
           "cycle": 15,
-          "evidence": "User expanded Polylane from app building to any project, including trading."
+          "evidence": "Merged c15 domain contract and runtime; project-profile gate, corpus, provider parity, installer smoke, and marker checks passed; terminal certification is the remaining local gate."
         }
       ]
     }

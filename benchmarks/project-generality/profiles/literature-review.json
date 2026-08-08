@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "research",
+  "outcome": "A decision-ready literature synthesis answers the intervention question.",
+  "deliverables": [
+    { "artifact": "document", "path": "review/synthesis.md", "description": "Cited synthesis" },
+    { "artifact": "dataset", "path": "review/source-matrix.csv", "description": "Screening matrix" }
+  ],
+  "evidence_modes": ["citation-audit", "coverage-review"],
+  "risk_tier": "low",
+  "external_action_policy": { "mode": "not-needed", "actions": [] }
+}

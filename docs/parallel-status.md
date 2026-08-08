@@ -1,29 +1,27 @@
-# Cycle 14 integration status
+# Cycle 15 integration status
 
-Run: `c14-self-hosting-truth-20260808` · branch: `lane/c14-integrator`.
+Run: `c15-domain-general-20260808` · branch: `lane/c15-integrator`.
 
 | Lane | Tip | Integration state | Fresh focused evidence |
 | --- | --- | --- | --- |
-| runner truth | `8df7952` + post-`5566152` repair | merged | promotion transaction 17/0; report 31/0; liveness/recovery 37/0 |
-| skill delivery | `57781b5` | merged | selected-skill delivery 80/0; legacy audit 40/0 |
-| worker ledger | `6f38155` | merged | worker ledger 68/0; prime-hybrid root isolation 47/0 |
-| integrator | current | merged and seam-repaired | self-hosting-truth contract 13/0 |
+| domain contract | `faa7f4d` | merged | profile router, concise provider triggers, conditional UI contract, and truthful external-action language inspected |
+| project runtime | `85dc6a6` | merged | seven-profile corpus, artifact-lane compilation, custom/mixed acceptance, and unsafe trading rejection |
+| integrator | `c4e03b9` + current seam repairs | merged and seam-repaired | durable Markdown/JSON profile gate; restored Codex manifest identity; strengthened provider-parity coverage |
 
-Lifecycle flags: `tips_merged=true`; `m14_focused=5/5 pass`;
-`acceptance=51 pass, 0 fail, 0 unchecked`; `host_rehearsal=GO+NO-GO pass`;
-`host_rehearsal_owner=coordinator`; `durable_inbox=empty`;
-`refinement_queue=empty`; `c28_external=open`; and
-`current_verdict=GO`.
+Focused commands and results:
 
-Fresh non-host terminal evidence: full suite **1,892/0 across 100 files**;
-all `bin/*.sh` ShellCheck-clean; Claude/Codex semantic parity **43/0**;
-installer parity **34/0**; and fresh dual-package installation **37/0**.
-`bin/polylane-certify.sh focused` passed with its named
-`self-hosting-truth` layer. The coordinator's exact physical GO and NO-GO
-canaries pass, and the complete frozen terminal command updated the durable
-acceptance record to **51 pass, 0 fail, 0 unchecked**.
+- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- tests/test-project-generality.sh` — **35/35** TAP assertions passed: software, trading strategy research, literature review, incident-response playbook, content campaign, dataset-quality pipeline, and mixed custom profiles all validate and compile to non-overlapping artifact lanes.
+- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-skill-parity.sh` — **48/0** provider-parity checks passed.
+- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-visual-loop-integration.sh` — **28/0** visual-loop contract checks passed after restoring six obligations dropped by entrypoint compaction.
+- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-installers.sh` — **34/0** checks passed from a fresh copied checkout: Codex package **20/0**, Claude package **13/0**, and one shared-core checksum assertion.
+- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bin/polylane-markers.sh check-docs references/` — passed with no marker error.
 
-State closure: c35–c39 and m14.1–m14.5 are `done`. The pre-existing c28/m12.4
-visual corpus remains external and has not been converted to PASS. Production
-promotion completed at `aa9c66d`; cleanup completed at `fa10cc6`; the final route
-is `EXTERNAL-EVIDENCE-OPEN` with no open autonomous work.
+The final terminal boundary is `bash tests/run.sh && shellcheck -S warning bin/*.sh` over
+**101 test files** and **52 Bash scripts**. The durable integrator inbox was empty.
+Both eligible refinement records were explicitly declined in the canonical harness:
+`context/compaction:12` has no new packet defect, and `integrator/no-go:4` is covered
+by the current project-profile, parity, installer, full-suite, and ShellCheck matrix.
+
+`m15.1` and `c40` are closed in durable state subject to that one host-owned terminal acceptance.
+The only remaining global external item is `m12.4`/`c28`: a real ten-product rendered
+old-vs-new blind visual corpus. It remains external and is not represented as a pass.

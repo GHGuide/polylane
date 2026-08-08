@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "data",
+  "outcome": "The customer dataset is profiled, cleaned, and accompanied by a quality report.",
+  "deliverables": [
+    { "artifact": "dataset", "path": "data/clean/customers.parquet", "description": "Cleaned dataset" },
+    { "artifact": "analysis", "path": "data/quality-report.md", "description": "Quality findings" }
+  ],
+  "evidence_modes": ["data-quality-check", "reproducible-run"],
+  "risk_tier": "medium",
+  "external_action_policy": { "mode": "not-needed", "actions": [] }
+}

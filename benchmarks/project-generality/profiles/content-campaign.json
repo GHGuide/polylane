@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "kind": "content",
+  "outcome": "A launch campaign is approved and ready for publication.",
+  "deliverables": [
+    { "artifact": "document", "path": "campaign/brief.md", "description": "Campaign brief" },
+    { "artifact": "media", "path": "campaign/assets/**", "description": "Approved creative assets" }
+  ],
+  "evidence_modes": ["editorial-review", "brand-review", "link-check"],
+  "risk_tier": "medium",
+  "external_action_policy": {
+    "mode": "approval-required",
+    "actions": [
+      { "name": "Publish campaign", "consequential": true, "approval_required": true, "execution": "approved-manual" }
+    ]
+  }
+}
