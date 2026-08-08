@@ -65,6 +65,13 @@ assert_ok "prime-hybrid-workers-canonical" test -d "$PROJECT/docs/polylane/worke
 assert_ok "prime-hybrid-alpha-packet" test -s "$PROJECT/.polylane/context/alpha.md"
 assert_ok "prime-hybrid-beta-packet" test -s "$PROJECT/.polylane/context/beta.md"
 assert_ok "prime-hybrid-integrator-packet" test -s "$PROJECT/.polylane/context/integrator.md"
+RUNTIME_ROOT="$PROJECT/.polylane/runtime/$RUN_ID"
+assert_ok "prime-hybrid-runtime-bridge" test -f "$RUNTIME_ROOT/.initialized"
+assert_ok "prime-hybrid-runtime-tools" test -x "$RUNTIME_ROOT/bin/polylane-workers.sh"
+assert_ok "prime-hybrid-runtime-context-identical" cmp "$PROJECT/.polylane/context/alpha.md" "$RUNTIME_ROOT/.polylane/context/alpha.md"
+assert_ok "prime-hybrid-runtime-relay-empty" test ! -s "$RUNTIME_ROOT/.polylane/coordination.jsonl"
+RUNTIME_ADD_DIR=$(AGENT=codex CODEX_SANDBOX=workspace-write codex_workspace_git_add_dir "$PROJECT")
+assert_contains "prime-hybrid-runtime-is-only-extra-codex-write-root" "--add-dir $(printf '%q' "$RUNTIME_ROOT")" "$RUNTIME_ADD_DIR"
 assert_ok "prime-hybrid-packet-bounded" test "$(wc -c < "$PROJECT/.polylane/context/alpha.md" | tr -d ' ')" -le 12000
 assert_contains "prime-hybrid-packet-goal" "A stranger succeeds unattended" "$(cat "$PROJECT/.polylane/context/alpha.md" 2>/dev/null || true)"
 assert_contains "prime-hybrid-integrator-receives-pending-refinement" "alpha-rollback" \
@@ -75,20 +82,30 @@ assert_eq "prime-hybrid-relay-imported" "1" "$(jq -s '[.[] | select(.event == "r
 assert_eq "prime-hybrid-compaction-observed" "1" "$(jq -s '[.[] | select(.kind == "compaction" and .subject == "context")] | length' "$HARNESS/refinement-observations.jsonl")"
 
 CMD=$(pane_cmd "$TEST_TMPDIR/alpha" gpt-test "$TEST_TMPDIR/alpha-prompt" high)
-assert_contains "prime-hybrid-export-alpha-harness" "POLYLANE_HARNESS_DIR=$PROJECT/docs/polylane/harness" "$CMD"
-assert_contains "prime-hybrid-export-alpha-workers" "POLYLANE_WORKERS_DIR=$PROJECT/docs/polylane/workers" "$CMD"
+assert_contains "prime-hybrid-export-runtime-root" "POLYLANE_PROJECT_ROOT=$RUNTIME_ROOT" "$CMD"
+assert_contains "prime-hybrid-export-runtime-relay" "POLYLANE_COORDINATION_FILE=$RUNTIME_ROOT/.polylane/coordination.jsonl" "$CMD"
+assert_contains "prime-hybrid-export-alpha-harness" "POLYLANE_HARNESS_DIR=$RUNTIME_ROOT/docs/polylane/harness" "$CMD"
+assert_contains "prime-hybrid-export-alpha-workers" "POLYLANE_WORKERS_DIR=$RUNTIME_ROOT/docs/polylane/workers" "$CMD"
 assert_contains "prime-hybrid-export-alpha-worker-id" "POLYLANE_WORKER_ID=alpha" "$CMD"
-assert_contains "prime-hybrid-export-alpha-context-packet" "POLYLANE_CONTEXT_PACKET=$PROJECT/.polylane/context/alpha.md" "$CMD"
+assert_contains "prime-hybrid-export-alpha-context-packet" "POLYLANE_CONTEXT_PACKET=$RUNTIME_ROOT/.polylane/context/alpha.md" "$CMD"
 CMD=$(pane_cmd "$TEST_TMPDIR/beta" gpt-test "$TEST_TMPDIR/beta-prompt" high)
-assert_contains "prime-hybrid-export-beta-harness" "POLYLANE_HARNESS_DIR=$PROJECT/docs/polylane/harness" "$CMD"
-assert_contains "prime-hybrid-export-beta-workers" "POLYLANE_WORKERS_DIR=$PROJECT/docs/polylane/workers" "$CMD"
+assert_contains "prime-hybrid-export-beta-harness" "POLYLANE_HARNESS_DIR=$RUNTIME_ROOT/docs/polylane/harness" "$CMD"
+assert_contains "prime-hybrid-export-beta-workers" "POLYLANE_WORKERS_DIR=$RUNTIME_ROOT/docs/polylane/workers" "$CMD"
 assert_contains "prime-hybrid-export-beta-worker-id" "POLYLANE_WORKER_ID=beta" "$CMD"
-assert_contains "prime-hybrid-export-beta-context-packet" "POLYLANE_CONTEXT_PACKET=$PROJECT/.polylane/context/beta.md" "$CMD"
+assert_contains "prime-hybrid-export-beta-context-packet" "POLYLANE_CONTEXT_PACKET=$RUNTIME_ROOT/.polylane/context/beta.md" "$CMD"
 CMD=$(pane_cmd "$TEST_TMPDIR/integrator" gpt-test "$TEST_TMPDIR/integrator-prompt" xhigh)
-assert_contains "prime-hybrid-export-integrator-harness" "POLYLANE_HARNESS_DIR=$PROJECT/docs/polylane/harness" "$CMD"
-assert_contains "prime-hybrid-export-integrator-workers" "POLYLANE_WORKERS_DIR=$PROJECT/docs/polylane/workers" "$CMD"
+assert_contains "prime-hybrid-export-integrator-harness" "POLYLANE_HARNESS_DIR=$RUNTIME_ROOT/docs/polylane/harness" "$CMD"
+assert_contains "prime-hybrid-export-integrator-workers" "POLYLANE_WORKERS_DIR=$RUNTIME_ROOT/docs/polylane/workers" "$CMD"
 assert_contains "prime-hybrid-export-integrator-worker-id" "POLYLANE_WORKER_ID=integrator" "$CMD"
-assert_contains "prime-hybrid-export-integrator-context-packet" "POLYLANE_CONTEXT_PACKET=$PROJECT/.polylane/context/integrator.md" "$CMD"
+assert_contains "prime-hybrid-export-integrator-context-packet" "POLYLANE_CONTEXT_PACKET=$RUNTIME_ROOT/.polylane/context/integrator.md" "$CMD"
+
+# The scratch bridge is the live writable channel; the runner imports its
+# append-only events into canonical durable history at completion.
+assert_ok "prime-hybrid-runtime-request" "$RUNTIME_ROOT/bin/polylane-coordinate.sh" request \
+  "$RUNTIME_ROOT/.polylane/coordination.jsonl" alpha beta "runtime bridge request"
+assert_ok "prime-hybrid-runtime-relay-import" prime_hybrid_import_relay
+assert_eq "prime-hybrid-runtime-relay-durable" "1" \
+  "$(jq -s '[.[] | select(.event == "relay-import" and .relay.message == "runtime bridge request")] | length' "$PROJECT/docs/polylane/workers/history.jsonl")"
 
 assert_ok "prime-hybrid-completion-capsule" prime_hybrid_record_completion alpha
 assert_eq "prime-hybrid-completion-is-canonical" "complete" "$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT" alpha | jq -r .status)"
@@ -129,7 +146,7 @@ CYCLE=13
 ALPHA_VERSION=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT" alpha | jq -r .version)
 assert_ok "prime-hybrid-prelaunch-idempotent" prime_hybrid_prepare
 assert_eq "prime-hybrid-identity-not-recreated" "$ALPHA_VERSION" "$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT" alpha | jq -r .version)"
-assert_eq "prime-hybrid-relay-import-idempotent" "1" "$(jq -s '[.[] | select(.event == "relay-import")] | length' "$PROJECT/docs/polylane/workers/history.jsonl")"
+assert_eq "prime-hybrid-relay-import-idempotent" "2" "$(jq -s '[.[] | select(.event == "relay-import")] | length' "$PROJECT/docs/polylane/workers/history.jsonl")"
 
 DRY_RUN=1
 DRY_BEFORE=$(find "$PROJECT/docs/polylane" -type f -exec cksum {} \; | LC_ALL=C sort)

@@ -2,15 +2,15 @@
   "version": 1,
   "run_id": "c15-domain-general-20260808",
   "started_at": 1786219912,
-  "updated_at": 1786220213,
-  "wall_s": 301,
+  "updated_at": 1786220540,
+  "wall_s": 628,
   "lanes": {
     "domain-contract": {
-      "launches": 4,
+      "launches": 5,
       "restarts": 0
     },
     "project-runtime": {
-      "launches": 2,
+      "launches": 3,
       "restarts": 0
     }
   },
@@ -19,8 +19,8 @@
   "tokens": null,
   "token_state": "unknown",
   "usage_offsets": {
-    "domain-contract": 9767,
-    "project-runtime": 3450
+    "domain-contract": 12797,
+    "project-runtime": 6740
   },
   "cleanup": "pending",
   "events": [
@@ -205,6 +205,32 @@
     {
       "type": "initialized",
       "at": 1786220213
+    },
+    {
+      "type": "initialized",
+      "at": 1786220510
+    },
+    {
+      "type": "usage_capture",
+      "lane": "domain-contract",
+      "at": 1786220540,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "domain-contract",
+      "at": 1786220540
+    },
+    {
+      "type": "usage_capture",
+      "lane": "project-runtime",
+      "at": 1786220540,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "project-runtime",
+      "at": 1786220540
     }
   ]
 }

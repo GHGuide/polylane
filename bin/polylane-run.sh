@@ -1253,6 +1253,43 @@ prime_hybrid_harness_dir() { printf '%s/docs/polylane/harness' "$PROJECT_ROOT"; 
 prime_hybrid_workers_dir() { printf '%s/docs/polylane/workers' "$PROJECT_ROOT"; }
 prime_hybrid_context_dir() { printf '%s/.polylane/context' "$PROJECT_ROOT"; }
 prime_hybrid_context_packet() { printf '%s/%s.md' "$(prime_hybrid_context_dir)" "$1"; }
+prime_hybrid_runtime_root() { printf '%s/.polylane/runtime/%s' "$PROJECT_ROOT" "${RUN_ID:-legacy}"; }
+prime_hybrid_runtime_coordination_file() { printf '%s/.polylane/coordination.jsonl' "$(prime_hybrid_runtime_root)"; }
+prime_hybrid_runtime_context_packet() { printf '%s/.polylane/context/%s.md' "$(prime_hybrid_runtime_root)" "$1"; }
+
+# A Codex lane is intentionally sandboxed to its worktree and shared Git
+# metadata.  The canonical project may therefore be unreadable from the pane
+# even though the runner can read it (macOS Downloads protection makes this
+# especially visible).  Seed one run-scoped bridge containing only the bounded
+# context, coordination helpers, and continuity snapshots a lane is allowed to
+# consume.  The bridge is scratch under .polylane and is the only extra writable
+# directory granted to Codex; canonical source files remain outside its sandbox.
+prime_hybrid_prepare_runtime() {
+  local root marker tool worker source dest
+  prime_hybrid_enabled || return 0
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  root=$(prime_hybrid_runtime_root); marker="$root/.initialized"
+  [ ! -L "$root" ] || { echo "prime-hybrid: refusing symlinked runtime bridge: $root" >&2; return 1; }
+  mkdir -p "$root/bin" "$root/.polylane/context" "$root/docs/polylane" || return 1
+  for tool in polylane-coordinate.sh polylane-workers.sh polylane-refine.sh polylane-harness.sh; do
+    cp "$SCRIPT_DIR/$tool" "$root/bin/$tool" || return 1
+    chmod 700 "$root/bin/$tool" 2>/dev/null || true
+  done
+  if [ ! -f "$marker" ]; then
+    rm -rf "$root/docs/polylane/workers" "$root/docs/polylane/harness"
+    cp -R "$(prime_hybrid_workers_dir)" "$root/docs/polylane/workers" || return 1
+    cp -R "$(prime_hybrid_harness_dir)" "$root/docs/polylane/harness" || return 1
+    : > "$(prime_hybrid_runtime_coordination_file)"
+    : > "$marker"
+  fi
+  for worker in "${LANE_NAMES[@]}" "$INT_NAME"; do
+    source=$(prime_hybrid_context_packet "$worker")
+    dest=$(prime_hybrid_runtime_context_packet "$worker")
+    [ -s "$source" ] || { echo "prime-hybrid: missing canonical context packet for $worker" >&2; return 1; }
+    cp "$source" "$dest" || return 1
+    chmod 600 "$dest" 2>/dev/null || true
+  done
+}
 
 # Worker calls must use this runner's canonical project, never an inherited
 # launcher contract.  A lane may be invoked from a worktree beneath another
@@ -1271,8 +1308,9 @@ prime_hybrid_pane_exports() {
     echo "prime-hybrid: no stable worker identity for worktree $worktree" >&2
     return 1
   }
-  harness=$(prime_hybrid_harness_dir); workers=$(prime_hybrid_workers_dir)
-  packet=$(prime_hybrid_context_packet "$worker")
+  harness="$(prime_hybrid_runtime_root)/docs/polylane/harness"
+  workers="$(prime_hybrid_runtime_root)/docs/polylane/workers"
+  packet=$(prime_hybrid_runtime_context_packet "$worker")
   printf 'POLYLANE_HARNESS_DIR=%q POLYLANE_WORKERS_DIR=%q POLYLANE_WORKER_ID=%q POLYLANE_CONTEXT_PACKET=%q' \
     "$harness" "$workers" "$worker" "$packet"
 }
@@ -1323,10 +1361,15 @@ prime_hybrid_register_worker() {
 }
 
 prime_hybrid_import_relay() {
+  local runtime_relay
   prime_hybrid_enabled || return 0
   mkdir -p "$(dirname "$COORDINATION_FILE")"
   [ -e "$COORDINATION_FILE" ] || : > "$COORDINATION_FILE"
   prime_hybrid_workers import-relay "$PROJECT_ROOT" "$COORDINATION_FILE" "$CYCLE" >/dev/null
+  runtime_relay=$(prime_hybrid_runtime_coordination_file)
+  if [ -s "$runtime_relay" ]; then
+    prime_hybrid_workers import-relay "$PROJECT_ROOT" "$runtime_relay" "$CYCLE" >/dev/null
+  fi
 }
 
 prime_hybrid_validate_pending() {
@@ -1419,6 +1462,7 @@ prime_hybrid_prepare() {
     prime_hybrid_build_packet "${LANE_NAMES[$i]}" builder || return 1
   done
   prime_hybrid_build_packet "$INT_NAME" integrator || return 1
+  prime_hybrid_prepare_runtime || return 1
   # A cycle's bounded compression is observable evidence only. Two repeated
   # observations are still required before a local refinement can be proposed.
   prime_hybrid_observe compaction context "bounded packets built for run ${RUN_ID:-legacy}"
@@ -1561,7 +1605,7 @@ agent_template() {
 # the canonical common Git directory; read-only and explicitly dangerous modes
 # intentionally receive no additional access flag.
 codex_workspace_git_add_dir() {
-  local wt="$1" common
+  local wt="$1" common runtime
   case "$(agent_selected):$(codex_sandbox_selected)" in
     codex:workspace-write|gpt:workspace-write|openai:workspace-write) : ;;
     *) return 0 ;;
@@ -1573,6 +1617,11 @@ codex_workspace_git_add_dir() {
   esac
   [ -d "$common" ] || return 0
   printf ' --add-dir %s' "$(printf '%q' "$common")"
+  if prime_hybrid_enabled; then
+    runtime=$(prime_hybrid_runtime_root)
+    [ -d "$runtime" ] || return 0
+    printf ' --add-dir %s' "$(printf '%q' "$runtime")"
+  fi
 }
 
 # agent_procs : process names that mean "the agent is still working" (for pane_dead).
@@ -1590,11 +1639,17 @@ pane_cmd() {
   local qwt qmodel qpf qeffort qproject qcoord qhybrid project_root coord_file tmpl add_dir runtime_pf
   runtime_pf=$(stage_pane_prompt "$wt" "$pf") || return 1
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$runtime_pf"); qeffort=$(printf '%q' "${effort:-medium}")
-  # Every pane remains in its isolated worktree, while its live relay always
-  # resolves under the canonical run project. These are shell-escaped env values,
-  # never prompt text, so an untrusted prompt path cannot inject into the command.
-  project_root="${COORDINATION_PROJECT_ROOT:-${REPO_ROOT:-${POLYLANE_PROJECT_ROOT:-$(pwd)}}}"
-  coord_file="${COORDINATION_FILE:-${POLYLANE_COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
+  # Every pane remains in its isolated worktree. Prime-hybrid panes receive a
+  # run-scoped bridge; legacy panes keep the canonical relay contract. These are
+  # shell-escaped env values, never prompt text, so an untrusted path cannot
+  # inject into the command.
+  if prime_hybrid_enabled; then
+    project_root=$(prime_hybrid_runtime_root)
+    coord_file=$(prime_hybrid_runtime_coordination_file)
+  else
+    project_root="${COORDINATION_PROJECT_ROOT:-${REPO_ROOT:-${POLYLANE_PROJECT_ROOT:-$(pwd)}}}"
+    coord_file="${COORDINATION_FILE:-${POLYLANE_COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
+  fi
   qproject=$(printf '%q' "$project_root"); qcoord=$(printf '%q' "$coord_file")
   qhybrid=$(prime_hybrid_pane_exports "$wt") || return 1
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
