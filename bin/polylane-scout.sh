@@ -11,6 +11,9 @@
 #   arm-role <file> <lane> <predefined|specific> <skill>...
 #   github <file> <lane> <repo-or-skill> <why> -> informational suggestion
 #   github-suggest <activity> [limit] -> read-only ranked GitHub candidates
+#   catalog-index <output> -> trusted metadata-only skill catalog
+#   catalog-recommend <catalog> <lane.json> <outcomes.jsonl> -> explained matches
+#   use-audit <kit> <lane> <verify> <domain> <outcomes.jsonl> -> evidence-led outcomes
 #   acquire <project> <candidate> <source.json> <benchmark.json> -> authorized admission
 #   arm-admitted <project> <file> <lane> <role> <skill> -> arm only a locked project skill
 #   armed <file> <lane>         -> print every executable skill in a lane's kit
@@ -232,6 +235,13 @@ acquire() {
   "$helper" admit "$project" "$candidate" "$source" "$benchmark"
 }
 
+catalog_helper() {
+  local helper
+  helper="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-skill-catalog.sh"
+  [ -x "$helper" ] || { echo "polylane-scout: skill catalog helper missing" >&2; return 2; }
+  "$helper" "$@"
+}
+
 # arm_admitted PROJECT FILE LANE ROLE SKILL: do not trust a mere directory;
 # require the durable lock's admitted status before temporarily resolving the
 # project-scoped copy as the selected kit member.
@@ -340,11 +350,14 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     armed-role) shift; armed_role "${1:?}" "${2:?}" "${3:?}" ;;
     github)    shift; record_github "${1:?}" "${2:?}" "${3:?}" "${4:?}" ;;
     github-suggest) shift; github_suggest "${1:?usage: github-suggest <activity> [limit]}" "${2:-5}" ;;
+    catalog-index) shift; catalog_helper index "${1:?}" ;;
+    catalog-recommend) shift; catalog_helper recommend "${1:?}" "${2:?}" "${3:?}" ;;
+    use-audit) shift; catalog_helper use-audit "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" ;;
     acquire) shift; acquire "${1:?}" "${2:?}" "${3:?}" "${4:?}" ;;
     arm-admitted) shift; arm_admitted "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" ;;
     validate)  shift; validate_kits "${1:?}" "${2:?}" ;;
     armed)     shift; armed "${1:?}" "${2:?}" ;;
     lint)      shift; lint "${1:?}" "${2:?}" "${3:?}" ;;
-    *) echo "usage: polylane-scout.sh domain|suggest|installed|resolve|recommend|record-outcome|bake|arm-role|armed-role|github|github-suggest|acquire|arm-admitted|validate|armed|lint ..." >&2; exit 2 ;;
+    *) echo "usage: polylane-scout.sh domain|suggest|installed|resolve|recommend|record-outcome|bake|arm-role|armed-role|github|github-suggest|catalog-index|catalog-recommend|use-audit|acquire|arm-admitted|validate|armed|lint ..." >&2; exit 2 ;;
   esac
 fi
