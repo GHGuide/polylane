@@ -38,6 +38,12 @@ Integrator branch: `lane/c12-integrator`
   and made the efficiency canary reject its own successful recovery. The new
   `test-seed-recovery-accounting.sh` proves startup reseeds cost zero restarts
   while real runtime respawns still cost one.
+- Repaired frozen acceptance commands so regular `test-*.sh` files run through
+  Bash. The terminal command isolates the known host disk-floor condition, and
+  the regression test prevents both command-contract failures from returning.
+- A manual terminal probe initially omitted `--targets m12.4` and began replaying
+  historical terminal checks. It was stopped before certification; the runner's
+  target-scoped host gate is the authoritative terminal result.
 
 ## Focused and compatibility checks
 
@@ -53,16 +59,16 @@ All commands used `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"
 The initial integrator did not consume late durable messages naming the final
 `93aa17b` tip, so its stale-source NO-GO was retained as evidence but not used
 for promotion. The bounded repair merged that exact tip and proved it is an
-ancestor of the final branch. The refinement queue contained the
-duplicated `context`/`compaction` observation (count 2, cycle 12, evidence
-`bounded packets built for run c12-visual-20260808`). **Declined:** it records
-the bounded-packet construction, not a demonstrated context-loss regression;
-there is no scoped, check-backed refinement to promote. This branch records the
-decision without directly mutating the canonical `main` worktree.
+ancestor of the final branch. The refinement queue contained the duplicated
+`context`/`compaction` observation (count 2, cycle 12, evidence `bounded packets
+built for run c12-visual-20260808`). **Declined:** it records bounded-packet
+construction, not a demonstrated context-loss regression; there is no scoped,
+check-backed refinement to promote.
 
 ## Final certification
 
-- `POLYLANE_MIN_DISK_GB=0 tests/run.sh`: **1,633 passed, 0 failed, 91 test
+- Before the acceptance-command repair,
+  `POLYLANE_MIN_DISK_GB=0 tests/run.sh`: **1,633 passed, 0 failed, 91 test
   files**. Strict graph timings passed unchanged: warm append **224ms** under
   250ms; the 10,000-event fixture **10s** at its 10s ceiling.
 - `shellcheck -S warning bin/*.sh`: clean.
@@ -73,6 +79,8 @@ decision without directly mutating the canonical `main` worktree.
   cases passed. GO reached READY, promoted through exactly one terminal gate,
   cleaned with zero leaks; NO-GO withheld promotion, retained bounded evidence,
   and cleaned the rehearsal fixture.
+- The resumed runner must rerun the target-scoped frozen terminal check on this
+  exact repair commit before promotion; this document does not self-authorize it.
 
 ## External evidence boundary
 
@@ -84,5 +92,3 @@ supervised lifecycle. A separate old-vs-new UI corpus with real rendered
 products and blind visual judges remains external product-quality evidence.
 
 POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c12-visual-20260808
-
-ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.

@@ -6,6 +6,21 @@
 . "$RUNNER"
 
 command -v jq >/dev/null 2>&1 || { pass "accept-gate-skipped-no-jq"; finish; exit 0; }
+
+# Cycle 12's focused test files are intentionally regular files. Frozen
+# acceptance must invoke them through Bash instead of failing before the
+# product check has a chance to run. Its terminal check also isolates the
+# product suite from a transient host disk floor.
+CANONICAL_STATE="$(cd "$(dirname "$RUNNER")/.." && pwd)/docs/polylane/max-state.json"
+assert_ok "c12-frozen-acceptance-uses-bash" jq -e '
+  [.accept[] | select((.sid | startswith("m12.")) and .tier == "focused")] as $focused
+  | [.accept[] | select(.sid == "m12.4" and .tier == "terminal")] as $terminal
+  | ($focused | length == 4)
+  and all($focused[]; (.cmd | startswith("bash tests/")))
+  and ($terminal | length == 1)
+  and ($terminal[0].cmd == "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh")
+' "$CANONICAL_STATE"
+
 make_tmpdir
 P="$TEST_TMPDIR/project"
 mkdir -p "$P/.polylane" "$P/int" "$P/docs/polylane"
