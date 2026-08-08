@@ -15,3 +15,4 @@
 {"cycle":11,"ts":"2026-08-07T11:23:51Z","verdict":"GO","tokens":54577070,"cost":0.00,"subgoals_done":29,"subgoals_total":29,"nogo":0,"lanes":3,"wall_s":2232}
 {"cycle":12,"ts":"2026-08-08T14:56:22Z","verdict":"NO-GO","tokens":7861112,"cost":0.00,"subgoals_done":29,"subgoals_total":33,"nogo":1,"lanes":2,"wall_s":279}
 {"cycle":13,"ts":"2026-08-08T17:37:34Z","verdict":"EXTERNAL-EVIDENCE-OPEN","tokens":14227202,"cost":0.00,"subgoals_done":32,"subgoals_total":38,"nogo":0,"lanes":4,"wall_s":284}
+{"cycle":14,"ts":"2026-08-08T17:48:56Z","verdict":"HALTED","tokens":11048705,"cost":0.00,"subgoals_done":37,"subgoals_total":43,"nogo":1,"lanes":3,"wall_s":43}

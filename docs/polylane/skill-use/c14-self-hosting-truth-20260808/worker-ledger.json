@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "lane": "worker-ledger",
+  "verify_file": "/private/tmp/polylane-c14-worktrees/worker-ledger/docs/verify-worker-ledger.md",
+  "helped": [],
+  "unused": [
+    "engineering:architecture",
+    "operations:process-optimization",
+    "superpowers:test-driven-development",
+    "superpowers:verification-before-completion"
+  ],
+  "hurt": []
+}

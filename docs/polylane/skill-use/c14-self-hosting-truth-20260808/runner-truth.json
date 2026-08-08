@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "lane": "runner-truth",
+  "verify_file": "/private/tmp/polylane-c14-worktrees/runner-truth/docs/verify-runner-truth.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "operations:risk-assessment",
+    "superpowers:systematic-debugging",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

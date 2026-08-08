@@ -2,17 +2,17 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 9,
-    "latest_cycle": 13,
-    "latest_evidence": "bounded packets built for run c13-perfection-20260808",
+    "observation_count": 11,
+    "latest_cycle": 14,
+    "latest_evidence": "bounded packets built for run c14-self-hosting-truth-20260808",
     "required_action": "propose-or-decline"
   },
   {
     "subject": "integrator",
     "kind": "no-go",
-    "observation_count": 3,
-    "latest_cycle": 13,
-    "latest_evidence": "integrator verdict NO-GO in run c13-perfection-20260808",
+    "observation_count": 4,
+    "latest_cycle": 14,
+    "latest_evidence": "integrator verdict NO-GO in run c14-self-hosting-truth-20260808",
     "required_action": "propose-or-decline"
   }
 ]

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "lane": "skill-delivery",
+  "verify_file": "/private/tmp/polylane-c14-worktrees/skill-delivery/docs/verify-skill-delivery.md",
+  "helped": [
+    {
+      "id": "skill-creator",
+      "effect": " kept selected-skill identity as a compact structured contract with progressive disclosure rather than adding any skill-body inventory to prompts."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " added the requested failing missing-path, unreadable-path, out-of-root, duplicate-prompt, and fake-receipt fixtures before implementation."
+    },
+    {
+      "id": "superpowers:verification-before-completion",
+      "effect": " ran the fresh focused checks and ShellCheck recorded above before the completion marker."
+    },
+    {
+      "id": "superpowers:writing-skills",
+      "effect": " made the generated builder instruction an explicit positive recipe: read only the exact emitted paths and do not rediscover skills."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

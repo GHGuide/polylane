@@ -9,3 +9,6 @@
 {"lane":"context-query","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-07T11:23:51Z"}
 {"lane":"visual-mechanisms","sig":"b14:hub0:crowd0","model":"gpt-5.6-terra","verdict":"NO-GO","ts":"2026-08-08T14:56:22Z"}
 {"lane":"shared-contract","sig":"b5:hub0:crowd1","model":"gpt-5.6-terra","verdict":"NO-GO","ts":"2026-08-08T14:56:22Z"}
+{"lane":"runner-truth","sig":"b7:hub0:crowd0","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T17:48:56Z"}
+{"lane":"worker-ledger","sig":"b5:hub0:crowd0","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T17:48:56Z"}
+{"lane":"skill-delivery","sig":"b10:hub0:crowd0","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T17:48:56Z"}

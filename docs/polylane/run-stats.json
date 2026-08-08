@@ -1,281 +1,227 @@
 {
   "version": 1,
-  "run_id": "c13-perfection-20260808",
-  "started_at": 1786204498,
-  "updated_at": 1786210438,
-  "wall_s": 5940,
+  "run_id": "c14-self-hosting-truth-20260808",
+  "started_at": 1786211293,
+  "updated_at": 1786215100,
+  "wall_s": 3807,
   "lanes": {
-    "model-policy": {
-      "launches": 4,
+    "runner-truth": {
+      "launches": 1,
       "restarts": 0
     },
-    "skill-intelligence": {
-      "launches": 3,
+    "worker-ledger": {
+      "launches": 1,
+      "restarts": 2
+    },
+    "skill-delivery": {
+      "launches": 1,
       "restarts": 0
-    },
-    "prompt-compiler": {
-      "launches": 3,
-      "restarts": 1
-    },
-    "lifecycle-hooks": {
-      "launches": 2,
-      "restarts": 1
     },
     "integrator": {
       "launches": 1,
       "restarts": 1
     }
   },
-  "supervisor_restarts": 3,
+  "supervisor_restarts": 8,
   "terminal_gates": 1,
-  "tokens": 14227202,
+  "tokens": 18863550,
   "token_state": "known",
   "usage_offsets": {
-    "model-policy": 161046,
-    "skill-intelligence": 147331,
-    "prompt-compiler": 205092,
-    "lifecycle-hooks": 228882,
-    "integrator": 3545969
+    "runner-truth": 225329,
+    "worker-ledger": 720883,
+    "skill-delivery": 196594,
+    "integrator": 3628053
   },
   "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786204498
+      "at": 1786211293
     },
     {
       "type": "usage_capture",
-      "lane": "model-policy",
-      "at": 1786204537,
+      "lane": "runner-truth",
+      "at": 1786211330,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "model-policy",
-      "at": 1786204537
+      "lane": "runner-truth",
+      "at": 1786211330
     },
     {
       "type": "usage_capture",
-      "lane": "skill-intelligence",
-      "at": 1786204537,
+      "lane": "worker-ledger",
+      "at": 1786211330,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "skill-intelligence",
-      "at": 1786204537
+      "lane": "worker-ledger",
+      "at": 1786211330
     },
     {
       "type": "usage_capture",
-      "lane": "prompt-compiler",
-      "at": 1786204538,
+      "lane": "skill-delivery",
+      "at": 1786211331,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "prompt-compiler",
-      "at": 1786204538
+      "lane": "skill-delivery",
+      "at": 1786211331
     },
     {
       "type": "usage_capture",
-      "lane": "lifecycle-hooks",
-      "at": 1786204538,
+      "lane": "runner-truth",
+      "at": 1786211335,
       "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "lifecycle-hooks",
-      "at": 1786204538
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786204543
-    },
-    {
-      "type": "initialized",
-      "at": 1786204543
     },
     {
       "type": "usage_capture",
-      "lane": "model-policy",
-      "at": 1786204581,
+      "lane": "worker-ledger",
+      "at": 1786211335,
       "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "model-policy",
-      "at": 1786204581
     },
     {
       "type": "usage_capture",
-      "lane": "prompt-compiler",
-      "at": 1786204582,
+      "lane": "skill-delivery",
+      "at": 1786211335,
       "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "prompt-compiler",
-      "at": 1786204582
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786204589
-    },
-    {
-      "type": "initialized",
-      "at": 1786204589
-    },
-    {
-      "type": "usage_capture",
-      "lane": "model-policy",
-      "at": 1786204627,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "model-policy",
-      "at": 1786204627
-    },
-    {
-      "type": "usage_capture",
-      "lane": "skill-intelligence",
-      "at": 1786204627,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "skill-intelligence",
-      "at": 1786204627
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786204634
-    },
-    {
-      "type": "initialized",
-      "at": 1786204634
-    },
-    {
-      "type": "initialized",
-      "at": 1786204853
-    },
-    {
-      "type": "usage_capture",
-      "lane": "model-policy",
-      "at": 1786204894,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "model-policy",
-      "at": 1786204894
-    },
-    {
-      "type": "usage_capture",
-      "lane": "skill-intelligence",
-      "at": 1786204894,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "skill-intelligence",
-      "at": 1786204894
-    },
-    {
-      "type": "usage_capture",
-      "lane": "prompt-compiler",
-      "at": 1786204894,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "prompt-compiler",
-      "at": 1786204895
-    },
-    {
-      "type": "usage_capture",
-      "lane": "lifecycle-hooks",
-      "at": 1786204895,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "lifecycle-hooks",
-      "at": 1786204895
-    },
-    {
-      "type": "restarts",
-      "lane": "lifecycle-hooks",
-      "at": 1786205038
-    },
-    {
-      "type": "restarts",
-      "lane": "prompt-compiler",
-      "at": 1786205127
-    },
-    {
-      "type": "initialized",
-      "at": 1786205256
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786205594,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "integrator",
-      "at": 1786205594
-    },
-    {
-      "type": "usage_capture",
-      "lane": "model-policy",
-      "at": 1786208560,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "skill-intelligence",
-      "at": 1786208560,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "prompt-compiler",
-      "at": 1786208560,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "lifecycle-hooks",
-      "at": 1786208560,
-      "added": 3178497
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786208560,
-      "added": null
-    },
-    {
-      "type": "restarts",
-      "lane": "integrator",
-      "at": 1786208562
-    },
-    {
-      "type": "initialized",
-      "at": 1786210370
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786210412,
+      "at": 1786211335,
       "added": 11048705
     },
     {
+      "type": "supervisor_restart",
+      "at": 1786211338
+    },
+    {
+      "type": "initialized",
+      "at": 1786211338
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786211343
+    },
+    {
+      "type": "initialized",
+      "at": 1786211343
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786211348
+    },
+    {
+      "type": "initialized",
+      "at": 1786211348
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786211353
+    },
+    {
+      "type": "initialized",
+      "at": 1786211353
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786211358
+    },
+    {
+      "type": "initialized",
+      "at": 1786211359
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786211364
+    },
+    {
+      "type": "initialized",
+      "at": 1786211364
+    },
+    {
+      "type": "initialized",
+      "at": 1786211380
+    },
+    {
+      "type": "restarts",
+      "lane": "worker-ledger",
+      "at": 1786212103
+    },
+    {
+      "type": "restarts",
+      "lane": "worker-ledger",
+      "at": 1786212829
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786213479,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "integrator",
+      "at": 1786213479
+    },
+    {
+      "type": "usage_capture",
+      "lane": "runner-truth",
+      "at": 1786214746,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "worker-ledger",
+      "at": 1786214746,
+      "added": 7814845
+    },
+    {
+      "type": "usage_capture",
+      "lane": "skill-delivery",
+      "at": 1786214746,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786214746,
+      "added": null
+    },
+    {
       "type": "terminal_gate",
-      "at": 1786210438
+      "at": 1786214746
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786215040
+    },
+    {
+      "type": "initialized",
+      "at": 1786215040
+    },
+    {
+      "type": "restarts",
+      "lane": "integrator",
+      "at": 1786215098
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786215098,
+      "added": null
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786215100
+    },
+    {
+      "type": "initialized",
+      "at": 1786215100
     }
   ]
 }

@@ -1,0 +1,24 @@
+{"lane":"runner-truth","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/runner-truth/docs/verify-runner-truth.md"}
+
+{"lane":"runner-truth","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/runner-truth/docs/verify-runner-truth.md"}
+
+{"lane":"runner-truth","domain":"test","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/runner-truth/docs/verify-runner-truth.md"}
+
+{"lane":"runner-truth","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/runner-truth/docs/verify-runner-truth.md"}
+
+{"lane":"worker-ledger","domain":"test","skill":"engineering:architecture","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/worker-ledger/docs/verify-worker-ledger.md"}
+
+{"lane":"worker-ledger","domain":"test","skill":"operations:process-optimization","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/worker-ledger/docs/verify-worker-ledger.md"}
+
+{"lane":"worker-ledger","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/worker-ledger/docs/verify-worker-ledger.md"}
+
+{"lane":"worker-ledger","domain":"test","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c14-worktrees/worker-ledger/docs/verify-worker-ledger.md"}
+
+{"lane":"skill-delivery","domain":"test","skill":"skill-creator","outcome":"helped","why":" kept selected-skill identity as a compact structured contract with progressive disclosure rather than adding any skill-body inventory to prompts."}
+
+{"lane":"skill-delivery","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" added the requested failing missing-path, unreadable-path, out-of-root, duplicate-prompt, and fake-receipt fixtures before implementation."}
+
+{"lane":"skill-delivery","domain":"test","skill":"superpowers:verification-before-completion","outcome":"helped","why":" ran the fresh focused checks and ShellCheck recorded above before the completion marker."}
+
+{"lane":"skill-delivery","domain":"test","skill":"superpowers:writing-skills","outcome":"helped","why":" made the generated builder instruction an explicit positive recipe: read only the exact emitted paths and do not rediscover skills."}
+
