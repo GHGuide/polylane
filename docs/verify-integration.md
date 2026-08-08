@@ -45,6 +45,17 @@ Integrator branch: `lane/c12-integrator`
   historical terminal checks. A red regression reproduced the same behavior in
   the runner, which now executes terminal checks only for the current cycle's
   targets. The target-scoped host gate is the authoritative terminal result.
+- The first target-scoped host gate exposed the strict 10,000-node fixture at
+  **12s** against its frozen 10s ceiling. Same-host comparison measured old
+  `main` at **12.27s** and this branch at **10.40s**, disproving a visual-loop
+  regression. Profiling isolated about seven seconds in the immutable-map Kahn
+  traversal. Ordered compiler output now takes a linear rank-check fast path,
+  while arbitrary-order graphs retain the original Kahn fallback. The focused
+  fixture is now **5s**, and the cycle/compatibility suite remains green.
+- Frozen acceptance previously discarded both command streams, making that
+  failure impossible to diagnose from durable evidence. Failed commands now
+  emit their return code, command, and a bounded output tail. Passing checks
+  remain quiet.
 
 ## Focused and compatibility checks
 

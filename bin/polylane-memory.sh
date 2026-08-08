@@ -81,11 +81,23 @@ _need() {
 # Uses timeout/gtimeout when present; otherwise runs uncapped (never wedges the
 # verb — a hung check is the check author's bug, surfaced by the orchestrator).
 _accept_run() {
-  local cmd="$1" to="${POLYLANE_ACCEPT_TIMEOUT:-60}" t=""
+  local cmd="$1" to="${POLYLANE_ACCEPT_TIMEOUT:-60}" t="" out rc tail_lines
   command -v timeout  >/dev/null 2>&1 && t=timeout
   [ -z "$t" ] && command -v gtimeout >/dev/null 2>&1 && t=gtimeout
-  if [ -n "$t" ]; then "$t" "$to" bash -c "$cmd" >/dev/null 2>&1
-  else bash -c "$cmd" >/dev/null 2>&1; fi
+  out=$(mktemp "${TMPDIR:-/tmp}/polylane-accept.XXXXXX") || return 1
+  if [ -n "$t" ]; then
+    if "$t" "$to" bash -c "$cmd" >"$out" 2>&1; then rc=0; else rc=$?; fi
+  else
+    if bash -c "$cmd" >"$out" 2>&1; then rc=0; else rc=$?; fi
+  fi
+  if [ "$rc" -ne 0 ]; then
+    tail_lines="${POLYLANE_ACCEPT_TAIL_LINES:-80}"
+    case "$tail_lines" in ''|*[!0-9]*) tail_lines=80 ;; esac
+    printf 'ACCEPTANCE-COMMAND-FAILED rc=%s: %s\n' "$rc" "$cmd" >&2
+    tail -n "$tail_lines" "$out" >&2
+  fi
+  rm -f "$out"
+  return "$rc"
 }
 
 # _fingerprint GLOB... : deterministic content hash of every existing file matching

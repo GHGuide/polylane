@@ -73,6 +73,17 @@ assert_fail "accept-refused-when-done" "$MEM" "$A" add-accept s1 "true"
 assert_fail "accept-check-fails"    "$MEM" "$A" check-accept
 assert_fail "met-blocked-by-accept" "$MEM" "$A" met
 assert_contains "unmet-lists-failing" "s2: exit 1" "$("$MEM" "$A" unmet-accept)"
+
+# A failing frozen grader must leave enough evidence for an autonomous repair;
+# swallowing both streams turns every terminal failure into a blind full rerun.
+D="$TEST_TMPDIR/accept-diagnostic.json"
+"$MEM" "$D" init g >/dev/null; "$MEM" "$D" add-milestone m1 M >/dev/null
+"$MEM" "$D" add-subgoal m1 s1 A >/dev/null
+"$MEM" "$D" add-accept s1 "printf 'accept-diagnostic-token\\n' >&2; exit 7" >/dev/null
+diagnostic_out=$("$MEM" "$D" check-accept 2>&1); diagnostic_rc=$?
+assert_eq "accept-diagnostic-fails" "1" "$diagnostic_rc"
+assert_contains "accept-failure-surfaces-command" "ACCEPTANCE-COMMAND-FAILED rc=7" "$diagnostic_out"
+assert_contains "accept-failure-surfaces-output" "accept-diagnostic-token" "$diagnostic_out"
 # flip the grader to pass -> check + met both clear
 B="$TEST_TMPDIR/accept-ok.json"
 "$MEM" "$B" init g >/dev/null; "$MEM" "$B" add-criterion c1 x >/dev/null

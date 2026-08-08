@@ -121,22 +121,31 @@ validate_graph() {
         )) as $step
       | visit($adjacency; $step.queue; $head + 1; $step.tail; $step.indegree; $visited + 1)
       end;
-    (reduce $graph.nodes[] as $node (
-      {indegree: {}, adjacency: {}};
-      .indegree[$node.id] = 0 | .adjacency[$node.id] = {}
-    ) |
-    reduce $graph.edges[] as $edge (.;
-      .indegree[$edge.to] += 1
-      | .adjacency[$edge.from][$edge.to] = ((.adjacency[$edge.from][$edge.to] // 0) + 1)
-    )) as $topology |
-    (reduce ($topology.indegree | keys_unsorted)[] as $node (
-      {queue: {}, tail: 0};
-      if $topology.indegree[$node] == 0 then
-        .queue[(.tail | tostring)] = $node | .tail += 1
-      else . end
-    )) as $initial |
-    visit($topology.adjacency; $initial.queue; 0; $initial.tail; $topology.indegree; 0)
-      == ($graph.nodes | length)
+    # Compiler output is already topologically ordered. Prove that in one
+    # linear edge scan; retain Kahn as the compatibility fallback for valid
+    # hand-authored graphs whose node array uses a different order.
+    (reduce ($graph.nodes | to_entries[]) as $entry ({};
+      .[$entry.value.id] = $entry.key
+    )) as $rank |
+    if all($graph.edges[]; $rank[.from] < $rank[.to]) then true
+    else
+      (reduce $graph.nodes[] as $node (
+        {indegree: {}, adjacency: {}};
+        .indegree[$node.id] = 0 | .adjacency[$node.id] = {}
+      ) |
+      reduce $graph.edges[] as $edge (.;
+        .indegree[$edge.to] += 1
+        | .adjacency[$edge.from][$edge.to] = ((.adjacency[$edge.from][$edge.to] // 0) + 1)
+      )) as $topology |
+      (reduce ($topology.indegree | keys_unsorted)[] as $node (
+        {queue: {}, tail: 0};
+        if $topology.indegree[$node] == 0 then
+          .queue[(.tail | tostring)] = $node | .tail += 1
+        else . end
+      )) as $initial |
+      visit($topology.adjacency; $initial.queue; 0; $initial.tail; $topology.indegree; 0)
+        == ($graph.nodes | length)
+    end
   ' "$graph" >/dev/null 2>&1 || invalid "ordinary edges must be acyclic" || return 1
 
   jq -e '
