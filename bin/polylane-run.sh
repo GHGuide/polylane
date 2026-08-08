@@ -98,6 +98,10 @@ TMUX_SESSION="${POLYLANE_SESSION:-polylane}"
 # dir this script lives in — the notify hook is resolved as a sibling.
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)
 
+# One policy owns manifest intensity, explicit overrides, agent tiers, role
+# clamps, validation, and the pre-launch explanation.
+. "$SCRIPT_DIR/polylane-model-policy.sh"
+
 # run_stats OP ... : keep the one durable telemetry implementation at the
 # process boundaries. The file lives with durable cycle evidence rather than
 # .polylane scratch so the final report can describe cleanup truthfully.
@@ -313,6 +317,7 @@ disk_guard() {
 # arg parsing
 # ---------------------------------------------------------------------------
 
+# shellcheck disable=SC2034 # sourced model policy reads INTENSITY
 parse_args() {
   DRY_RUN=0
   YES=0
@@ -462,6 +467,8 @@ load_manifest() {
   ORCHESTRATION_CONTRACT=$(jq -r '.orchestration_contract // 0' "$MANIFEST")
   MANIFEST_GRAPH_MODE=$(jq -r '.graph_mode // ""' "$MANIFEST")
   CYCLE=$(jq -r '.cycle // 0' "$MANIFEST")
+  # shellcheck disable=SC2034 # read by sourced model policy
+  MANIFEST_INTENSITY=$(jq -r '.intensity // ""' "$MANIFEST")
   STATE_FILE=$(jq -r '.state_file // ""' "$MANIFEST")
   LANE_SKILLS_FILE=$(jq -r '.lane_skills_file // ""' "$MANIFEST")
   CYCLE_PLAN_FILE=$(jq -r '.cycle_plan_file // ""' "$MANIFEST")
@@ -489,7 +496,7 @@ load_manifest() {
     [ -n "$m" ] && AVAILABLE_MODELS+=("$m")
   done < <(jq -r '.available_models // [] | .[]' "$MANIFEST")
 
-  LANE_NAMES=(); LANE_MODELS=(); LANE_EFFORTS=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
+  LANE_NAMES=(); LANE_MODELS=(); LANE_EFFORTS=(); LANE_ROLES=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
   LANE_PANE_IDX=(); LANE_RESUMED=(); LANE_ADOPTED=(); LANE_WHASH=(); LANE_WCNT=()
   LANE_PHASH=(); LANE_PCNT=(); LANE_PCOMMANDS=(); LANE_PREPLANS=()
   INT_PANE_IDX=-1; NEXT_PANE_IDX=0; SESSION_STARTED=0
@@ -499,6 +506,7 @@ load_manifest() {
     LANE_NAMES+=("$(jq -r ".lanes[$i].name" "$MANIFEST")")
     LANE_MODELS+=("$(jq -r ".lanes[$i].model" "$MANIFEST")")
     LANE_EFFORTS+=("$(jq -r ".lanes[$i].effort // \"\"" "$MANIFEST")")
+    LANE_ROLES+=("$(jq -r ".lanes[$i].role // \"\"" "$MANIFEST")")
     LANE_BRANCHES+=("$(jq -r ".lanes[$i].branch" "$MANIFEST")")
     LANE_WORKTREES+=("$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
     LANE_PROMPTS+=("$(abs_prompt "$(jq -r ".lanes[$i].prompt_file" "$MANIFEST")")")
@@ -1108,110 +1116,17 @@ validate_manifest() {
 # intensity presets + runtime overrides (--intensity / --model)
 # ---------------------------------------------------------------------------
 
-# model_available ID : 0 iff ID is one of AVAILABLE_MODELS.
-model_available() {
-  local want="$1" m
-  for m in "${AVAILABLE_MODELS[@]:-}"; do
-    [ "$m" = "$want" ] && return 0
-  done
-  return 1
-}
-
-# preset_effort PRESET : echo the reasoning effort for a preset; rc 1 if unknown.
-preset_effort() {
-  # MUST match references/model-selection.md's intensity table (single source of truth).
-  case "$1" in
-    economy)     echo medium ;;
-    balanced)    echo high ;;
-    performance) echo high ;;
-    max)         echo xhigh ;;
-    *) return 1 ;;
-  esac
-}
-
-# preset_model PRESET : echo the model id a preset resolves to. Walks the
-# preset's preference ladder and returns the first id present in
-# AVAILABLE_MODELS; if none of the ladder is available, falls back to the first
-# available id (graceful). rc 1 for an unknown preset. Assumes a non-empty
-# AVAILABLE_MODELS (apply_overrides guards that before calling).
+# Compatibility names retained for focused callers. The authoritative resolver
+# is agent-aware and applies all role clamps before launch.
+model_available() { model_policy_available "$1"; }
+preset_effort() { model_policy_effort "$1"; }
 preset_model() {
-  local preset="$1" ladder m
-  case "$preset" in
-    economy)     ladder="claude-haiku-4-5 claude-fable-5 claude-sonnet-5 claude-opus-4-8" ;;
-    balanced)    ladder="claude-sonnet-5 claude-fable-5 claude-haiku-4-5 claude-opus-4-8" ;;
-    performance) ladder="claude-opus-4-8 claude-sonnet-5 claude-fable-5 claude-haiku-4-5" ;;
-    max)         ladder="claude-opus-4-8 claude-sonnet-5 claude-fable-5 claude-haiku-4-5" ;;
-    *) return 1 ;;
-  esac
-  for m in $ladder; do
-    if model_available "$m"; then echo "$m"; return 0; fi
-  done
-  echo "${AVAILABLE_MODELS[0]}"
+  local agent desired
+  agent=$(model_policy_agent) || return 1
+  desired=$(model_policy_target_tier "$1" "$agent") || return 1
+  model_policy_choose_tier "$agent" "$desired"
 }
-
-# apply_overrides : mutate the loaded lane/integrator model+effort from the CLI
-# --intensity preset (all lanes + integrator) then --model lane=id (one lane,
-# wins over the preset). Runs BEFORE any worktree/pane side effect; a bad
-# preset / empty available_models / unknown lane exits non-zero, creating
-# nothing. No-op when neither flag is passed.
-apply_overrides() {
-  local i eff mdl ov name id found
-
-  if [ -n "${INTENSITY:-}" ]; then
-    if ! eff=$(preset_effort "$INTENSITY"); then
-      echo "polylane-run: unknown --intensity '$INTENSITY' (want economy|balanced|performance|max)" >&2
-      exit 2
-    fi
-    if [ "${#AVAILABLE_MODELS[@]}" -eq 0 ]; then
-      echo "polylane-run: --intensity needs a non-empty \"available_models\" in $MANIFEST" >&2
-      exit 1
-    fi
-    mdl=$(preset_model "$INTENSITY")
-    for i in "${!LANE_NAMES[@]}"; do
-      LANE_MODELS[i]="$mdl"; LANE_EFFORTS[i]="$eff"
-    done
-    # integrator effort is clamped to xhigh regardless of preset (spec: the integrator's
-    # cross-lane verify is the run's most critical judgment — never under-power it).
-    INT_MODEL="$mdl"; INT_EFFORT="xhigh"
-    echo "== intensity '$INTENSITY' -> lanes model=$mdl effort=$eff · integrator effort=xhigh =="
-  fi
-
-  for ov in "${MODEL_OVERRIDES[@]:-}"; do
-    [ -n "$ov" ] || continue
-    case "$ov" in
-      *=*) : ;;
-      *) echo "polylane-run: malformed --model '$ov' (want lane=model_id)" >&2; exit 2 ;;
-    esac
-    name="${ov%%=*}"; id="${ov#*=}"
-    if [ -z "$name" ] || [ -z "$id" ]; then
-      echo "polylane-run: malformed --model '$ov' (want lane=model_id)" >&2; exit 2
-    fi
-    found=0
-    if [ "$name" = "$INT_NAME" ]; then INT_MODEL="$id"; found=1; fi
-    for i in "${!LANE_NAMES[@]}"; do
-      if [ "${LANE_NAMES[$i]}" = "$name" ]; then LANE_MODELS[i]="$id"; found=1; fi
-    done
-    if [ "$found" != "1" ]; then
-      echo "polylane-run: --model names unknown lane '$name' (not a lane or the integrator)" >&2
-      exit 2
-    fi
-    # Warn (don't die) if the id isn't in available_models — the list may be a stale
-    # probe and the user may know a model it can't see; but a typo'd id would only
-    # surface as a per-lane launch failure minutes later, so flag it now.
-    if [ "${#AVAILABLE_MODELS[@]}" -gt 0 ] && ! model_available "$id"; then
-      echo "polylane-run: WARNING — override model '$id' is not in available_models; launching anyway (typo? the lane will fail if the CLI can't reach it)" >&2
-    fi
-    echo "== model override: $name -> $id =="
-  done
-  case "$(agent_selected)" in
-    codex|gpt|openai)
-      case "$INT_MODEL" in gpt-*) : ;; *) die "Codex integrator model '$INT_MODEL' must be a gpt-* id" ;; esac
-      for i in "${!LANE_MODELS[@]}"; do
-        case "${LANE_MODELS[$i]}" in gpt-*) : ;; *) die "Codex lane '${LANE_NAMES[$i]}' model '${LANE_MODELS[$i]}' must be a gpt-* id" ;; esac
-      done
-      ;;
-  esac
-}
+apply_overrides() { resolve_model_policy; }
 
 # ---------------------------------------------------------------------------
 # split — one worktree per lane (idempotent)
@@ -1376,9 +1291,21 @@ prime_hybrid_validate_pending() {
 }
 
 prime_hybrid_observe() {
-  local kind="$1" subject="$2" evidence="$3"
+  local kind="$1" subject="$2" evidence="$3" observations
   prime_hybrid_enabled || return 0
   [ "${DRY_RUN:-0}" = "1" ] && { echo "+ (dry-run) would observe $kind for $subject in the refinement ledger"; return 0; }
+  # Rebuilding bounded packets is safe on supervisor resume, but recording the
+  # same run's compaction evidence again would manufacture a refinement signal.
+  # Scope only this idempotence key: repeated NO-GO/stall evidence remains real.
+  if [ "$kind:$subject" = "compaction:context" ] && [ -n "${RUN_ID:-}" ]; then
+    observations="$(prime_hybrid_harness_dir)/refinement-observations.jsonl"
+    if [ -f "$observations" ] && jq -e -s --arg run "$RUN_ID" '
+      any(.[]; .kind == "compaction" and .subject == "context" and
+        (.evidence | contains("run " + $run)))
+    ' "$observations" >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
   "$SCRIPT_DIR/polylane-refine.sh" observe "$(prime_hybrid_harness_dir)" "$CYCLE" "$kind" "$subject" "$evidence" >/dev/null
 }
 
@@ -2158,7 +2085,9 @@ runtime_settings_fingerprint() {
   [ -n "${MANIFEST:-}" ] && [ -f "$MANIFEST" ] || return 1
   jq -c '{
     codex_sandbox:(.codex_sandbox // "workspace-write"),
-    lanes: [.lanes[] | {name, model, effort:(.effort // "")}],
+    intensity:(.intensity // ""),
+    available_models:(.available_models // []),
+    lanes: [.lanes[] | {name, role:(.role // ""), model, effort:(.effort // "")}],
     integrator: {
       name:.integrator.name,
       model:.integrator.model,
@@ -2172,7 +2101,7 @@ runtime_settings_fingerprint() {
 # lane without restarting or duplicating the supervisor. Unchanged manifests do
 # not overwrite usage-limit or command-churn fallbacks held in runner memory.
 refresh_manifest_runtime_settings() {
-  local current i name model effort int_model int_effort codex_sandbox
+  local current i name model effort int_model int_effort codex_sandbox m
   current=$(runtime_settings_fingerprint) || return 0
   [ -n "${MANIFEST_RUNTIME_FINGERPRINT:-}" ] || {
     MANIFEST_RUNTIME_FINGERPRINT="$current"
@@ -2184,6 +2113,7 @@ refresh_manifest_runtime_settings() {
     name="${LANE_NAMES[$i]}"
     model=$(jq -r --arg n "$name" '.lanes[] | select(.name==$n) | .model' "$MANIFEST" 2>/dev/null | head -n 1)
     effort=$(jq -r --arg n "$name" '.lanes[] | select(.name==$n) | (.effort // "")' "$MANIFEST" 2>/dev/null | head -n 1)
+    LANE_ROLES[i]=$(jq -r --arg n "$name" '.lanes[] | select(.name==$n) | (.role // "")' "$MANIFEST" 2>/dev/null | head -n 1)
     [ -n "$model" ] && [ "$model" != "null" ] || {
       echo "runtime-config: ignored invalid live manifest edit for lane '$name'" >&2
       return 0
@@ -2200,6 +2130,10 @@ refresh_manifest_runtime_settings() {
   }
   INT_MODEL="$int_model"
   INT_EFFORT="$int_effort"
+  # shellcheck disable=SC2034 # sourced model policy reads this live value
+  MANIFEST_INTENSITY=$(jq -r '.intensity // ""' "$MANIFEST" 2>/dev/null)
+  AVAILABLE_MODELS=()
+  while IFS= read -r m; do [ -n "$m" ] && AVAILABLE_MODELS+=("$m"); done < <(jq -r '.available_models // [] | .[]' "$MANIFEST" 2>/dev/null)
   codex_sandbox=$(jq -r '.codex_sandbox // "workspace-write"' "$MANIFEST" 2>/dev/null)
   case "$codex_sandbox" in
     read-only|workspace-write|danger-full-access) CODEX_SANDBOX="$codex_sandbox" ;;
@@ -2208,6 +2142,10 @@ refresh_manifest_runtime_settings() {
       return 0
       ;;
   esac
+  if ! resolve_model_policy; then
+    echo "runtime-config: ignored unsupported live manifest model policy" >&2
+    return 0
+  fi
   MANIFEST_RUNTIME_FINGERPRINT="$current"
   echo "runtime-config: reloaded live manifest model/effort/sandbox settings"
 }
@@ -3606,7 +3544,8 @@ main() {
     return 0
   fi
   preflight_agent
-  apply_overrides   # --intensity / --model remap BEFORE any worktree/pane exists
+  apply_overrides   # policy resolves BEFORE any worktree/pane exists
+  emit_effective_model_policy
   preflight_contract
   prime_hybrid_prepare || exit 1
   advanced_runtime preflight || exit 1
