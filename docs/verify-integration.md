@@ -2,130 +2,112 @@
 
 Run: `c13-perfection-20260808` on `lane/c13-integrator`.
 
-## Integrated tips and cross-lane repairs
+## Integration and cross-lane review
 
-All current builder tips are ancestors of this branch and merged cleanly:
+All current lane tips are clean ancestors of this branch: model policy
+`a6ca988`, skill intelligence `822a765`, prompt compiler `c0d8ca1`, and
+lifecycle hooks `1cf08fd`. `git diff --check 9ffffd9..HEAD` is clean and the
+four builder worktrees are clean. The merged runner resolves policy before
+launch, compiles launch-only prompts before preflight, writes skill-use audits
+after verification, and keeps hooks optional to the supervisor.
 
-| Lane | Tip | Integrator merge |
-| --- | --- | --- |
-| model policy | `a6ca9885f138e0f8d527b234d7132f2403f24662` | `32671e0` |
-| skill intelligence | `822a7659d8519ab8d973c891331f372bd5415e12` | `d035768` |
-| prompt compiler | `c0d8ca11723c556f94ec1cd50a27c402e9db946e` | `2149afb` |
-| lifecycle hooks | `1cf08fd585c285938d1f7f6051ae515e90f3b122` | `6f1531a` |
+## Fresh commands and results
 
-The runner compiles launch-only prompt copies before panes exist, checks their
-frozen contracts again, and leaves authored prompts untouched. The compiler
-also accepts the historical inline `OWN: … FORBIDDEN: …` boundary. The live
-rehearsal fixtures now include the required `VERIFY:` contract and isolate
-their temporary tmux server from an inherited client socket; the latter cannot
-be exercised on this host because it denies new UNIX sockets.
-
-Model-policy refresh now restores the prior runtime setting atomically if a
-new policy is invalid. Legacy manifests with explicit custom models/effort and
-no intensity or availability list retain their existing behavior; declared
-availability still receives strict validation.
-
-## Executed evidence
-
-Focused acceptance, through the required cache:
+Every repeatable check used `bin/polylane-check.sh` with
+`$PWD/.polylane/check-cache/integrator`.
 
 ```sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- \
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/acceptance-focused-cycle13" -- \
   bash bin/polylane-memory.sh "$PWD/docs/polylane/max-state.json" check-accept \
   --cycle 13 --targets m13.1,m13.2,m13.3,m13.4,m13.5 --focused
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/test-cycle-13-contract" -- \
+  bash tests/test-cycle-13-contract.sh
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/test-skill-parity" -- \
+  bash tests/test-skill-parity.sh
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/test-installers" -- \
+  bash tests/test-installers.sh
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-full-suite" -- \
+  env POLYLANE_MIN_DISK_GB=0 bash tests/run.sh
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-shellcheck" -- \
+  shellcheck -S warning bin/*.sh
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-fresh-install" -- \
+  bash tests/test-install-fresh.sh
 ```
 
-All five focused acceptance records passed. The hermetic vague-brief journey
-in `bash tests/test-cycle-13-contract.sh` passed 38/0: recommended discovery
-answers, plan/manifest, both providers' policy/skill/prompt/hook contracts,
-simulated GO close, emergent questions, and `CONTINUE` routing. Focused
-installer and semantic-parity checks passed 34/0 and 43/0 respectively.
+Focused frozen acceptance passed for all five m13 targets. The hermetic vague
+brief contract passed **38/0**; semantic parity **43/0**; installer parity
+**34/0**. The current full suite passed **1,778/0 across 96 files**;
+ShellCheck is clean for every `bin/*.sh`; fresh Claude/Codex installs passed
+**37/0**. The new focused seam counts were model policy **15/0**, intensity
+**20/0**, models **21/0**, catalog **26/0**, scout **26/0**, outcomes **18/0**,
+acquisition **16/0**, prompt optimizer **9/0**, prompt lint **22/0**, compiler
+**12/0**, hooks **29/0**, workers **45/0**, and cycle routing **18/0**.
+`bash bin/polylane-certify.sh focused` also passed its named discovery,
+planning/prompt, model-policy, skill-routing, graph/runtime/recovery,
+integration/learning, install/parity, and ShellCheck layers; rehearsal is
+explicitly terminal-only.
 
-The current terminal command was run after the final source repair, without a
-stale source cache result:
+The durable goal state now marks c30–c33 and m13.1–m13.4 `done`. It marks c34
+and m13.5 `external`, with the unavailable physical rehearsal as their exact
+evidence boundary; this does not convert either to PASS.
+
+## Observable contracts
+
+Before launch, Claude balanced resolves builder `claude-sonnet-5/high`,
+mechanical `claude-sonnet-5/medium`, security `claude-opus-4-8/high`, and
+integrator `claude-fable-5/xhigh`. Codex performance with a CLI override
+resolves builder `gpt-5.6-sol/high`, mechanical `gpt-5.6-terra/medium`,
+security `gpt-5.6-terra/high`, and integrator `gpt-5.6-sol/xhigh`. Thus the
+manifest is effective, CLI intent is applied first, and role safety clamps are
+final and printed.
+
+The frozen prompt fixture compiles from **991 bytes / 331** local compatibility
+estimate to **957 bytes / 319**: one 34-byte repeated non-contract line is
+removed and frozen contracts compare equal. These are deterministic local
+estimates, not provider token or quality claims. Catalog recommendations remain
+metadata-only until planning selects a kit; `use-audit` records a missing verify
+file as `unused`. Acquisition still requires authorization, quarantine, audit,
+benchmark, pin, project install, and rollback metadata.
+
+Both installed packages include project-scoped hook fragments only. Codex
+SessionStart emits bounded `hookSpecificOutput.additionalContext`; Claude emits
+the same bounded context in `systemMessage`; a stale Stop marker returns one
+structured `block` decision. The supervisor remains the runtime authority.
+
+## Continuity, skill evidence, and external proof
+
+The local durable inbox is empty. The refinement queue is empty; both eligible
+records have already been explicitly declined in
+`docs/polylane/harness/refinement-decisions.jsonl` because neither demonstrated
+a new bounded local fix. The resulting route is `NEEDS-USER` for the external
+m12.4 rendered corpus and m13.5 tmux rehearsal only; there is no remaining
+autonomous implementation item.
+
+| Lane | SKILL-EVIDENCE observed from its verification |
+| --- | --- |
+| model policy | `test-driven-development`, `systematic-debugging`, `system-design`, and `process-optimization`: unused (no resolved kit path). |
+| skill intelligence | `test-driven-development`, `verification-before-completion`, `skill-creator`, and `writing-skills`: helped. |
+| prompt compiler | `test-driven-development`, `verification-before-completion`, `caveman-compress`, and `write-spec`: helped. |
+| lifecycle hooks | `test-driven-development`, `systematic-debugging`, `system-design`, and `risk-assessment`: unused (no resolved kit path). |
+| integrator | `polylane`: helped by context, inbox, refinements, cache, and routing; `code-review`, `verification-before-completion`, `risk-assessment`, and `testing-strategy`: unused (no resolved kit path). |
+
+At the final source-state terminal boundary, the required rehearsal was
+executed once (the preserved pre-repair attempt remains in
+`docs/verify-integration-attempt-1.md`):
 
 ```sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- \
-  env POLYLANE_MIN_DISK_GB=0 bash bin/polylane-memory.sh \
-  "$PWD/docs/polylane/max-state.json" check-accept --cycle 13 \
-  --targets m13.5 --only-terminal
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-rehearsal" -- \
+  env POLYLANE_MIN_DISK_GB=0 bash bin/polylane-doctor.sh --rehearse
 ```
 
-Its frozen command was:
+Its GO case stopped before a pane launched:
+`REHEARSE-GO contract-v3=1 ready=0 promoted=0 terminal_gates=0 cleaned=0 leaks=1`.
+The confirming private-server probe reported `Operation not permitted` while
+creating `tmux-501/...` and then `has-session` returned 1. This managed host
+cannot create the UNIX socket required for a physical tmux rehearsal; no source
+change can manufacture that evidence. The NO-GO case was therefore not run or
+claimed. Historical c28 rendered ten-product comparison evidence remains
+external and has not been converted to PASS. Engineering is independently
+verified; both physical proof items remain open.
 
-```sh
-POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && \
-  bash tests/test-skill-parity.sh && \
-  POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-```
-
-Results before the live rehearsal: full suite **1778 pass, 0 fail, 96 test
-files**; full `bin/*.sh` ShellCheck clean; skill parity **43 pass, 0 fail**.
-The GO rehearsal then failed with `ready=0 promoted=0 terminal_gates=0
-cleaned=0 leaks=1` because tmux reported `Operation not permitted` creating
-its UNIX socket under the managed host's temporary directory. The doctor stops
-at that failed GO case, so its NO-GO case was not started and is not claimed.
-This is a real terminal failure, so c30–c34 are implemented and
-focused-verified but their terminal close is intentionally not claimed.
-
-## Observable policy, prompt, skill, and hook evidence
-
-Policy examples are emitted before launch. A Claude balanced manifest resolves
-builder `claude-sonnet-5/high`; mechanical is clamped to medium; security to
-`claude-opus-4-8/high`; and integrator to `claude-fable-5/xhigh`. With Codex
-performance plus a CLI override, builder resolves `gpt-5.6-sol/high`,
-mechanical `gpt-5.6-terra/medium`, security `gpt-5.6-terra/high`, and
-integrator `gpt-5.6-sol/xhigh`.
-
-The frozen prompt fixture changed from 991 bytes / 331 compatibility estimate
-to 957 bytes / 319 after compiling: one repeated 34-byte non-contract line
-was removed and the contracts compared equal. These are local deterministic
-estimates, not provider token or quality claims.
-
-Metadata recommendations enter planning/scouting only; builder prompts receive
-only selected kits. `use-audit` records helped, unused, or hurt receipts under
-`docs/polylane/skill-use/<run>/<lane>.json` and the outcome ledger; a missing
-verify file is explicitly `unused`, not inferred helped. Project admission is
-still authorization, quarantine, audit, measurable benchmark, pin, install,
-and rollback gated.
-
-Both installed packages carry project-scoped hook fragments. The Codex
-SessionStart output includes `hookSpecificOutput.additionalContext`; the stop
-path emits a structured `block` decision requesting one continuation when the
-exact marker/evidence is absent. Claude emits the same capped context in
-`systemMessage`. Hooks remain optional defense in depth; the supervisor stays
-the runtime authority.
-
-## Lifecycle, refinements, and external boundary
-
-The durable worker inbox was read and all historical acknowledgements were
-recorded. Eligible refinement decisions are explicit in
-`docs/polylane/harness/refinement-decisions.jsonl`: declined
-`context:compaction:7` (no demonstrated context-loss regression) and
-`integrator:no-go:2` (historical c12 event, no new local defect). No promotion
-was claimed from either.
-
-`c28`, the historical ten-product rendered visual comparison, remains external
-and open. It does not block independent cycle-13 engineering and has not been
-converted to PASS by prose. Because the terminal criterion remains open, the
-current mechanical route is `CONTINUE m13.1`; it is a retry route, not evidence
-that the terminal or external boundary has passed.
-
-## Skill-evidence scores
-
-SKILL-EVIDENCE: polylane — helped: used the context packet, durable inbox,
-refinement queue/decisions, cache routing, and cycle routing mechanics.
-
-SKILL-EVIDENCE: engineering:code-review — unused: no resolved kit path was
-provided for this integrator run.
-
-SKILL-EVIDENCE: superpowers:verification-before-completion — unused: no
-resolved kit path was provided for this integrator run.
-
-SKILL-EVIDENCE: operations:risk-assessment — unused: no resolved kit path was
-provided for this integrator run.
-
-SKILL-EVIDENCE: engineering:testing-strategy — unused: no resolved kit path
-was provided for this integrator run.
-
-POLYLANE-VERDICT: NO-GO run=c13-perfection-20260808
+POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c13-perfection-20260808
