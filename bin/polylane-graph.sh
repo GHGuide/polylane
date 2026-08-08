@@ -225,6 +225,7 @@ compile_graph() {
         timeout_s:1800, retry_budget:1, evidence:{required:["status", "verification"]}
       };
     (.quality_judges? | type == "array" and length > 0) as $has_judges |
+    (.visual_quality? | if . == true then true elif type == "object" then ((.enabled // true) == true) else false end) as $has_visual_quality |
     {
       graph_schema: 1,
       graph_id: $graph_id,
@@ -239,6 +240,8 @@ compile_graph() {
           agent("integrator"; .integrator.model; .integrator.effort; .target_subgoals; []),
           node("verifier"; "verifier"; ["passed", "failed"]),
           node("repair"; "repair"; ["repaired", "failed"]),
+          (if $has_visual_quality then node("visual-quality"; "verifier"; ["passed", "failed"]) else empty end),
+          (if $has_visual_quality then node("visual-repair"; "repair"; ["repaired", "failed"]) else empty end),
           (if $has_judges then node("judges"; "verifier"; ["passed", "failed"]) else empty end),
           (if $has_judges then node("judge-repair"; "repair"; ["repaired", "failed"]) else empty end),
           node("promote"; "checkpoint"; ["succeeded"]),
@@ -254,10 +257,14 @@ compile_graph() {
           {from:"builders-joined", to:"integrator", outcome:"succeeded"},
           {from:"integrator", to:"verifier", outcome:"succeeded"},
            {from:"integrator", to:"halt", outcome:"failed"},
-          {from:"verifier", to:(if $has_judges then "judges" else "promote" end), outcome:"passed"},
+          {from:"verifier", to:(if $has_visual_quality then "visual-quality" elif $has_judges then "judges" else "promote" end), outcome:"passed"},
           {from:"verifier", to:"repair", outcome:"failed"},
           {from:"verifier", to:"halt", outcome:"failed"},
            {from:"repair", to:"halt", outcome:"failed"},
+          (if $has_visual_quality then {from:"visual-quality", to:(if $has_judges then "judges" else "promote" end), outcome:"passed"} else empty end),
+          (if $has_visual_quality then {from:"visual-quality", to:"visual-repair", outcome:"failed"} else empty end),
+          (if $has_visual_quality then {from:"visual-quality", to:"halt", outcome:"failed"} else empty end),
+          (if $has_visual_quality then {from:"visual-repair", to:"halt", outcome:"failed"} else empty end),
           (if $has_judges then {from:"judges", to:"promote", outcome:"passed"} else empty end),
           (if $has_judges then {from:"judges", to:"judge-repair", outcome:"failed"} else empty end),
           (if $has_judges then {from:"judges", to:"halt", outcome:"failed"} else empty end),
@@ -266,6 +273,7 @@ compile_graph() {
         ]
       ),
       loops: ([{from:"repair", to:"verifier", outcome:"repaired", max_iterations:1}]
+        + (if $has_visual_quality then [{from:"visual-repair", to:"visual-quality", outcome:"repaired", max_iterations:2}] else [] end)
         + (if $has_judges then [{from:"judge-repair", to:"judges", outcome:"repaired", max_iterations:1}] else [] end))
     }
   ' "$manifest" > "$tmp" || { rm -f "$tmp"; trap - RETURN; return 1; }
