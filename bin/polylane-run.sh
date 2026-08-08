@@ -3311,10 +3311,12 @@ prepare_promotion_base() {
 # already-proven done/external/pass state regresses. This is intentionally not
 # a generic JSON merge.
 candidate_state_conflict_is_safe() {
-  local path="$1" base_json candidate_json
-  base_json=$(git -C "$REPO_ROOT" show ":2:$path" 2>/dev/null) || return 1
-  candidate_json=$(git -C "$REPO_ROOT" show ":3:$path" 2>/dev/null) || return 1
-  jq -e -n --argjson base "$base_json" --argjson candidate "$candidate_json" '
+  local path="$1"
+  git -C "$REPO_ROOT" show ":2:$path" >/dev/null 2>&1 || return 1
+  git -C "$REPO_ROOT" show ":3:$path" >/dev/null 2>&1 || return 1
+  jq -e -n \
+    --slurpfile base <(git -C "$REPO_ROOT" show ":2:$path") \
+    --slurpfile candidate <(git -C "$REPO_ROOT" show ":3:$path") '
     def structure:
       {
         ultimate,
@@ -3327,22 +3329,23 @@ candidate_state_conflict_is_safe() {
           sid, cmd, tier, key: (.key // ""), deps: (.deps // [])
         }] | sort_by(.sid, .tier, .key, .cmd))
       };
-    ($base | structure) == ($candidate | structure)
-    and ($base.log == $candidate.log)
-    and all($base.criteria[];
-      . as $b | any($candidate.criteria[];
+    ($base[0]) as $base_state | ($candidate[0]) as $candidate_state |
+    ($base_state | structure) == ($candidate_state | structure)
+    and ($base_state.log == $candidate_state.log)
+    and all($base_state.criteria[];
+      . as $b | any($candidate_state.criteria[];
         .id == $b.id and
         (if $b.status == "done" then .status == "done"
          elif $b.status == "external" then .status == "external"
          else true end)))
-    and all($base.milestones[].subgoals[];
-      . as $b | any($candidate.milestones[].subgoals[];
+    and all($base_state.milestones[].subgoals[];
+      . as $b | any($candidate_state.milestones[].subgoals[];
         .id == $b.id and
         (if $b.status == "done" then .status == "done"
          elif $b.status == "external" then .status == "external"
          else true end)))
-    and all($base.accept[];
-      . as $b | any($candidate.accept[];
+    and all($base_state.accept[];
+      . as $b | any($candidate_state.accept[];
         .sid == $b.sid and .cmd == $b.cmd and .tier == $b.tier and
         (.key // "") == ($b.key // "") and
         (if $b.status == "pass" then .status == "pass" else true end)))
