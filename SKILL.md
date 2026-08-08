@@ -226,6 +226,36 @@ Record the loop baseline: `git rev-parse HEAD` → this is `cycle-1` baseline. F
 here every phase reads/writes `$STATE` (the blackboard + tree).
 
 ## Phase 1 — build a cycle (the parallel-lane pipeline, no re-interview after cycle 1)
+### Visual Intelligence Loop — mandatory for UI work
+
+When discovery or recon detects a user-facing UI, follow
+`references/visual-intelligence.md` before generating builders. Put the literal
+`ULTIMATE-GOAL` and the evidence-backed reference packet in every UI prompt; it
+must synthesize 3-5 relevant references plus one wildcard, three directions, and
+an automatic council choice before the design lock of tokens, layout, motion, and signature.
+Use Claude-native selected-skill invocation syntax and invoke the selected skills;
+Codex keeps its own native syntax under `codex/SKILL.md`. Do not substitute a
+generic aesthetic.
+
+An uncovered UI skill uses the authorized route only: automatic discover →
+quarantine → audit → isolated benchmark → pinned project install → arm. Never
+execute rejected content. On failure, record why, use the best installed kit, and
+continue. Evidence requires desktop/mobile; empty/loading/error/hover/focus;
+and one real flow. Three independent visual lenses judge the locked design; the
+council makes its selection automatic unless brand identities are fundamentally
+different, and permits at most two targeted repairs.
+
+Run the product-specific typography, imagery/icons/illustration, and humanized UX
+copy pass. Reject emoji-as-product-art, generic stock gradients, meaningless hero
+text, nested-card soup, decorative pills, and default-font sameness unless product
+evidence justifies them. Promotion over the current champion needs >=10 varied prompts,
+anonymized screenshots, blind decisive comparison, >=70% creative/polish wins, and no accessibility regression. Missing screenshot/live/benchmark evidence
+stays external; failed certification keeps the current champion. The verification
+evidence must contain one Visual certification record linking the design lock,
+captures or external blockers, three verdicts, bounded repairs/re-reviews, and the
+old-vs-new tally, accessibility result, and champion decision; missing artifacts are
+external or NO-GO, never a prose-only pass.
+
 **Start every cycle from the compact brief + the north-star + a budget check — not
 from memory:**
 ```
@@ -295,6 +325,10 @@ skills>` slot AFTER a passing `test -f`, and write the per-lane picks to
 lane → suggest removal; the scout reads the ledger first and never re-suggests removed /
 unused / declined ones. The ponytail/claude-mem install-once offers (whole-run wins) fire
 only the first time they're absent, and a decline is logged so a resumed run won't re-nag.
+For an actual UI gap, do not stop at that informational path: use the UI-only,
+authorized automatic admission in `references/visual-intelligence.md` — discover,
+quarantine, audit, isolated benchmark, pinned project install, then arm. Rejected
+content never executes; a failed stage records why and uses the best installed kit.
 
 **Gate 1c — mechanical isolation + best-of-N + salvage (cheap, catches what LLMs miss):**
 - **Isolation pre-check (free, before launch):** `bin/polylane-scope.sh check-static

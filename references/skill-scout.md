@@ -83,12 +83,19 @@ Typical domain slots:
 Use installed relevant skills as the recommended default. In autonomous mode,
 take that default and continue. Installation is a state-changing decision: only
 install when the user authorized it or the governing environment explicitly
-allows it.
+allows it. The sole UI-gap exception is the authorized route in
+`visual-intelligence.md`: automatically discover a candidate, quarantine it, audit
+provenance/permissions/injection risk, benchmark it in isolation, make a pinned
+project-scoped install, and only then arm it. Do not execute candidate content at
+any earlier stage. Failed audit or benchmark records why and selects the best
+installed kit; rejected content never executes.
 
 ## GitHub suggester
 
-For gaps not filled locally, search GitHub for candidate skills. The suggester
-answers “what could be useful to install,” not “what is executable now.”
+For non-UI gaps not filled locally, search GitHub for candidate skills. The
+suggester answers “what could be useful to install,” not “what is executable now.”
+An identified UI gap follows the separate automatic admission route above; it is
+not a GitHub suggestion default.
 
 Record candidates with `github`; do not:
 

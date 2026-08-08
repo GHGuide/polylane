@@ -18,6 +18,14 @@ Read the durable goal brief, north star, settled decisions, and current
 - at least one frozen focused acceptance command;
 - a small terminal check only when broad/final certification is needed.
 
+Detect whether the target creates or materially changes a user-facing UI. If it
+does, [visual-intelligence.md](visual-intelligence.md) is a frozen acceptance
+contract: its reference packet, three directions, automatic council choice/design
+lock, safe skill-admission record, staged screenshots, three-lens verdict, bounded
+repairs, champion benchmark, and one durable Visual certification record belong in
+the plan before implementation. Missing capture or benchmark evidence stays
+explicitly external; it never becomes a plan-only pass.
+
 Ask only if a core product decision would materially change the build. Routine
 implementation choices take the recommended path and are recorded.
 
@@ -68,8 +76,11 @@ reliably fits each lane.
 
 Run the per-lane scout from `skill-scout.md`. Every builder gets a bounded selected
 kit: one or two installed predefined plus one or two installed lane-specific skills,
-at most four unique. GitHub results are informational opt-in recommendations, never
-executable defaults.
+at most four unique. For a UI skill gap, use only the authorized automatic route in
+`visual-intelligence.md`: discover, quarantine, audit, isolated benchmark, pinned
+project install, then arm. It never executes rejected content; an admission failure
+records why and falls back to the best installed kit. Other GitHub results remain
+informational opt-in recommendations, never executable defaults.
 
 ## 5. Generate self-contained prompts
 
@@ -95,6 +106,12 @@ must match the selected CLI, but these agent-neutral blocks are mandatory:
 - `docs/verify-<lane>.md` evidence contract;
 - scoped staging/commits and no `git add -A`;
 - exact `STATUS: <lane> DONE run=<run_id>` first-line marker.
+
+For a UI lane, additionally compose the visual block from
+`prompt-blocks.md`: literal goal and design lock, evidence-backed reference packet,
+native selected-skill invocation, staged state/flow captures, three independent
+lenses, at most two targeted repairs, product-specific asset/copy pass, and the
+old-vs-new champion certification. Do not substitute a generic aesthetic.
 
 The integrator prompt also requires:
 
