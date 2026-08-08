@@ -4,17 +4,13 @@ Generated mechanically from `max-state.json`. Conversation summaries are not aut
 
 ## Cycle 14
 
-subgoals: 37/43 done · criteria: 33/39 done · 85%
+subgoals: 41/43 done · criteria: 37/39 done · 95%
 
-**Route:** `CONTINUE m14.1  Make promotion and reporting transactional when the runner has updated durable base state`
+**Route:** `CONTINUE m14.5  Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle`
 
 ## Open autonomous work
 
-- `m14.1` [open, w50] — Make promotion and reporting transactional when the runner has updated durable base state
-- `m14.2` [open, w48] — Replace false terminal-turn wedge detection with process-aware liveness evidence
-- `m14.3` [open, w46] — Route worker capsules messages and acknowledgements through one canonical ledger
-- `m14.4` [open, w44] — Deliver selected skills by resolved trusted path and audit actual builder use
-- `m14.5` [open, w42] — Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle
+- `m14.5` [doing, w42] — Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle
 
 ## External/user evidence
 
@@ -60,21 +56,16 @@ subgoals: 37/43 done · criteria: 33/39 done · 85%
 - `c32` [done] — Builder prompts are contradiction-free, deduplicated, goal-complete, and kept within a conservative measured context budget
 - `c33` [done] — Claude and Codex lifecycle guards restore compact context and prevent dishonest completion without weakening runtime supervision
 - `c34` [done] — One named certification matrix proves discovery through next-cycle continuation, installs, runtime, integration, and learning
-- `c35` [open] — Verified promotion is transactional with runner-owned durable state and reports failure truthfully
-- `c36` [open] — Health recovery distinguishes active high-effort turns from genuinely wedged or dead workers
-- `c37` [open] — All worktrees append to one canonical monotonic worker history without merge conflicts
-- `c38` [open] — Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use
-- `c39` [open] — A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run
+- `c35` [done] — Verified promotion is transactional with runner-owned durable state and reports failure truthfully
+- `c36` [done] — Health recovery distinguishes active high-effort turns from genuinely wedged or dead workers
+- `c37` [done] — All worktrees append to one canonical monotonic worker history without merge conflicts
+- `c38` [done] — Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use
+- `c39` [doing] — A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run
 
 ## Acceptance checks
 
 - Total: 51
-- Pass: 45
+- Pass: 50
 - Fail: 0
-- Unchecked: 6
-  - `m14.1` [unchecked] — bash tests/test-promotion-transaction.sh && bash tests/test-write-report.sh
-  - `m14.2` [unchecked] — bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh
-  - `m14.3` [unchecked] — bash tests/test-workers.sh && bash tests/test-worker-canonical-state.sh
-  - `m14.4` [unchecked] — bash tests/test-scout-catalog.sh && bash tests/test-skill-acquire.sh && bash tests/test-prompt-compiler.sh && bash tests/test-skill-delivery.sh
-  - `m14.5` [unchecked] — bash tests/test-cycle-14-contract.sh
+- Unchecked: 1
   - `m14.5` [unchecked] — POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse

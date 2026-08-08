@@ -1,114 +1,97 @@
-# Cycle 13 integration verification
+# Cycle 14 integration verification
 
-Run: `c13-perfection-20260808` on `lane/c13-integrator`.
+Run: `c14-self-hosting-truth-20260808` on `lane/c14-integrator`.
 
-## Integration and cross-lane review
+## Cross-lane review and closed source contracts
 
-All current lane tips are clean ancestors of this branch: model policy
-`a6ca988`, skill intelligence `822a765`, prompt compiler `c0d8ca1`, and
-lifecycle hooks `1cf08fd`. `git diff --check 9ffffd9..HEAD` is clean and the
-four builder worktrees are clean. The merged runner resolves policy before
-launch, compiles launch-only prompts before preflight, writes skill-use audits
-after verification, and keeps hooks optional to the supervisor.
+The current runner-truth (`8df7952`), skill-delivery (`57781b5`), and
+worker-ledger (`6f38155`) tips are merged. The integration seam repair makes
+every prime-hybrid worker call bind `POLYLANE_PROJECT_ROOT` and
+`POLYLANE_WORKERS_DIR` from the active runner, so an inherited parent run
+cannot redirect a Git worktree's canonical worker ledger. Its regression makes
+the fixture a Git repository with a deliberately mismatched ambient contract.
 
-## Fresh commands and results
+- c35 / m14.1: runner-owned durable dirt is narrowly committed before
+  promotion; unrelated user dirt blocks without alteration; merge failure
+  aborts and reporting says neither merge nor cleanup occurred.
+- c36 / m14.2: a quiet high-effort live Codex turn receives its bounded grace;
+  terminal turns and dead or missing panes remain recoverable.
+- c37 / m14.3: two Git worktrees share one canonical lock/history and produce
+  unique, strictly monotonic worker events without a merge conflict.
+- c38 / m14.4: selected `{id,path,reason,source,fingerprint}` records reach
+  compiled prompts exactly once; a helpful receipt needs matching
+  `SKILL-READ` evidence. The cycle-13 fixture now migrates and validates the
+  historical name-only kit before auditing it.
+- c39 / m14.5 source layer: the named self-hosting-truth contract verifies all
+  four paths together. Its physical rehearsal portion remains host-owned.
 
-Every repeatable check used `bin/polylane-check.sh` with
-`$PWD/.polylane/check-cache/integrator`.
+## Fresh checks
 
-```sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/acceptance-focused-cycle13" -- \
-  bash bin/polylane-memory.sh "$PWD/docs/polylane/max-state.json" check-accept \
-  --cycle 13 --targets m13.1,m13.2,m13.3,m13.4,m13.5 --focused
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/test-cycle-13-contract" -- \
-  bash tests/test-cycle-13-contract.sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/test-skill-parity" -- \
-  bash tests/test-skill-parity.sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/test-installers" -- \
-  bash tests/test-installers.sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-full-suite" -- \
-  env POLYLANE_MIN_DISK_GB=0 bash tests/run.sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-shellcheck" -- \
-  shellcheck -S warning bin/*.sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-fresh-install" -- \
-  bash tests/test-install-fresh.sh
-```
+Every repeatable command was routed through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"` after the
+relevant source change.
 
-Focused frozen acceptance passed for all five m13 targets. The hermetic vague
-brief contract passed **38/0**; semantic parity **43/0**; installer parity
-**34/0**. The current full suite passed **1,778/0 across 96 files**;
-ShellCheck is clean for every `bin/*.sh`; fresh Claude/Codex installs passed
-**37/0**. The new focused seam counts were model policy **15/0**, intensity
-**20/0**, models **21/0**, catalog **26/0**, scout **26/0**, outcomes **18/0**,
-acquisition **16/0**, prompt optimizer **9/0**, prompt lint **22/0**, compiler
-**12/0**, hooks **29/0**, workers **45/0**, and cycle routing **18/0**.
-`bash bin/polylane-certify.sh focused` also passed its named discovery,
-planning/prompt, model-policy, skill-routing, graph/runtime/recovery,
-integration/learning, install/parity, and ShellCheck layers; rehearsal is
-explicitly terminal-only.
-
-The durable goal state now marks c30–c34 and m13.1–m13.5 `done`. Their focused
-and terminal acceptance records are `pass`, including the coordinator-owned
-physical rehearsal.
-
-## Observable contracts
-
-Before launch, Claude balanced resolves builder `claude-sonnet-5/high`,
-mechanical `claude-sonnet-5/medium`, security `claude-opus-4-8/high`, and
-integrator `claude-fable-5/xhigh`. Codex performance with a CLI override
-resolves builder `gpt-5.6-sol/high`, mechanical `gpt-5.6-terra/medium`,
-security `gpt-5.6-terra/high`, and integrator `gpt-5.6-sol/xhigh`. Thus the
-manifest is effective, CLI intent is applied first, and role safety clamps are
-final and printed.
-
-The frozen prompt fixture compiles from **991 bytes / 331** local compatibility
-estimate to **957 bytes / 319**: one 34-byte repeated non-contract line is
-removed and frozen contracts compare equal. These are deterministic local
-estimates, not provider token or quality claims. Catalog recommendations remain
-metadata-only until planning selects a kit; `use-audit` records a missing verify
-file as `unused`. Acquisition still requires authorization, quarantine, audit,
-benchmark, pin, project install, and rollback metadata.
-
-Both installed packages include project-scoped hook fragments only. Codex
-SessionStart emits bounded `hookSpecificOutput.additionalContext`; Claude emits
-the same bounded context in `systemMessage`; a stale Stop marker returns one
-structured `block` decision. The supervisor remains the runtime authority.
-
-## Continuity, skill evidence, and external proof
-
-The local durable inbox is empty. The refinement queue is empty; both eligible
-records have already been explicitly declined in
-`docs/polylane/harness/refinement-decisions.jsonl` because neither demonstrated
-a new bounded local fix. The resulting route is `NEEDS-USER` only for the
-external m12.4 rendered corpus; there is no remaining autonomous implementation
-item.
-
-| Lane | SKILL-EVIDENCE observed from its verification |
+| Check | Result |
 | --- | --- |
-| model policy | `test-driven-development`, `systematic-debugging`, `system-design`, and `process-optimization`: unused (no resolved kit path). |
-| skill intelligence | `test-driven-development`, `verification-before-completion`, `skill-creator`, and `writing-skills`: helped. |
-| prompt compiler | `test-driven-development`, `verification-before-completion`, `caveman-compress`, and `write-spec`: helped. |
-| lifecycle hooks | `test-driven-development`, `systematic-debugging`, `system-design`, and `risk-assessment`: unused (no resolved kit path). |
-| integrator | `polylane`: helped by context, inbox, refinements, cache, and routing; `code-review`, `verification-before-completion`, `risk-assessment`, and `testing-strategy`: unused (no resolved kit path). |
+| m14.1 promotion/report reproduction | 43 pass, 0 fail |
+| m14.2 liveness/recovery reproduction | 37 pass, 0 fail |
+| m14.3 canonical worker ledger reproduction | 68 pass, 0 fail |
+| m14.4 trusted selected-skill reproduction | 80 pass, 0 fail |
+| `tests/test-cycle-14-contract.sh` | 13 pass, 0 fail |
+| `tests/test-cycle-13-contract.sh` seam regression | 40 pass, 0 fail |
+| `tests/test-prime-hybrid-integration.sh` | 47 pass, 0 fail |
+| `tests/test-skill-parity.sh` | 43 pass, 0 fail |
+| `tests/test-installers.sh` | 34 pass, 0 fail |
+| `tests/test-install-fresh.sh` | 37 pass, 0 fail |
+| `tests/run.sh` | 1,866 pass, 0 fail, 100 files |
+| `shellcheck -S warning bin/*.sh` | 0 diagnostics |
+| `bin/polylane-certify.sh focused` | exit 0, including `self-hosting-truth` |
 
-The sandboxed integrator correctly could not create a host tmux socket, so the
-outer coordinator executed the required rehearsal. The preserved pre-repair
-attempt remains in `docs/verify-integration-attempt-1.md`:
+The durable state has 51 acceptance records: 50 pass, 0 fail, and 1 unchecked.
+c35–c38 and m14.1–m14.4 are `done`. c39 and m14.5 remain `doing` only because
+the unchecked frozen terminal command includes the physical rehearsal.
+
+## Review, risk, and skill-use audit
+
+SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
+SKILL-EVIDENCE: engineering:code-review — helped: reviewed the merged runner,
+worker, and selected-skill seams; found and repaired the inherited worker-root
+and legacy name-only receipt contracts.
+
+SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: required
+fresh cached reproduction, parity/install, full-suite, ShellCheck, and focused
+certification evidence before this readiness verdict.
+
+SKILL-READ: operations:risk-assessment | /Users/leonardo/.codex/plugins/cache/claude-cowork/operations/1.3.0/skills/risk-assessment/SKILL.md | 3889652016-1630
+SKILL-EVIDENCE: operations:risk-assessment — helped: kept user dirt,
+failed-promotion cleanup, canonical worker history, and the host-only terminal
+boundary as separate controlled risks.
+
+SKILL-READ: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | 2811424084-1279
+SKILL-EVIDENCE: engineering:testing-strategy — helped: grouped the five
+business-critical c14 reproductions into the named 13-assertion integration
+contract while retaining focused and terminal layers.
+
+The durable inbox was read, the pending lifecycle reply was sent, and all
+observed messages were acknowledged. Both queued refinement signals received
+bounded declines; the authoritative queue is empty. The root Claude/Codex skill
+contracts and installers needed no text change: their selected-kit and
+prime-hybrid requirements already match the executable repair, which semantic
+parity and fresh installation verified.
+
+## Host-only boundary
+
+No physical tmux rehearsal was run in this restricted Codex sandbox. The one
+remaining frozen terminal command is:
 
 ```sh
-env -u TMUX POLYLANE_MIN_DISK_GB=0 bash bin/polylane-doctor.sh --rehearse
+POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
 ```
 
-The host result was:
+The coordinator must execute it once on this integrated source. A successful
+GO/NO-GO rehearsal is required to change c39/m14.5 and the terminal acceptance
+from their current pending state. The pre-existing m12.4/c28 visual corpus is
+still external evidence, not a PASS and not a block on this engineering gate.
 
-```text
-REHEARSE-GO contract-v3=1 ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0
-REHEARSE-NOGO contract-v3=1 promoted=0 evidence=1 retained=1 bounded=1 cleaned=1
-rehearse: both contract-v3 cases passed — supervised lifecycle is sound
-```
-
-The exact frozen terminal acceptance then exited 0 and recorded `m13.5` as
-`pass`. Historical c28 rendered ten-product comparison evidence remains
-external and has not been converted to PASS.
-
-POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c13-perfection-20260808
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c14-self-hosting-truth-20260808

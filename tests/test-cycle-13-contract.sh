@@ -128,6 +128,8 @@ CODEX_MANIFEST="$P/.polylane/codex.json"
 CLAUDE_MANIFEST="$P/.polylane/claude.json"
 write_manifest "$CODEX_MANIFEST" codex c13-codex '["gpt-5.6-luna","gpt-5.6-terra","gpt-5.6-sol"]' gpt-5.6-terra
 write_manifest "$CLAUDE_MANIFEST" claude c13-claude '["claude-haiku-4-5","claude-sonnet-5","claude-opus-4-8","claude-fable-5"]' claude-sonnet-5
+assert_ok "cycle13-skill-kit-migrates-to-trusted-paths" "$SCOUT" migrate "$KIT"
+assert_ok "cycle13-skill-kit-validates-trusted-paths" "$SCOUT" validate "$KIT" "$CODEX_MANIFEST"
 
 # Contract-v2 preflight compiles a separate launch prompt; the authored source
 # stays unchanged while pane_cmd receives the verified normalized copy.
@@ -171,12 +173,15 @@ RECOMMEND="$P/.polylane/recommend.json"
 assert_ok "cycle13-catalog-recommend" bash -c '"$1" catalog-recommend "$2" "$3" "$4" > "$5"' _ "$SCOUT" "$CATALOG" "$LANE_SPEC" "$OUTCOMES" "$RECOMMEND"
 assert_eq "cycle13-catalog-recommendation-explained" "ui:browser-screenshots" "$(jq -r '.candidates[0].id' "$RECOMMEND")"
 assert_eq "cycle13-catalog-never-emits-skill-body" "false" "$(jq -e '.skills[] | select(.description | contains("must be read"))' "$CATALOG" >/dev/null && echo true || echo false)"
+BROWSER_PATH=$(jq -r '.lanes.builder.selected.specific[] | select(.id == "ui:browser-screenshots") | .path' "$KIT")
+BROWSER_FINGERPRINT=$(jq -r '.lanes.builder.selected.specific[] | select(.id == "ui:browser-screenshots") | .fingerprint' "$KIT")
 cat > "$P/docs/verify-builder.md" <<'VERIFY'
 SKILL-EVIDENCE: engineering:testing-strategy — helped: a focused contract assertion caught a missing compiled launch path.
 SKILL-EVIDENCE: superpowers:verification-before-completion — helped: checked the current-run marker before simulated close.
 SKILL-EVIDENCE: ui:browser-screenshots — helped: recommendation matches the screenshot activity and required tool.
 SKILL-EVIDENCE: ui:accessibility-review — unused: no interactive state was implemented in this fixture.
 VERIFY
+printf 'SKILL-READ: ui:browser-screenshots | %s | %s\n' "$BROWSER_PATH" "$BROWSER_FINGERPRINT" >> "$P/docs/verify-builder.md"
 AUDIT="$P/.polylane/skill-use.json"
 assert_ok "cycle13-skill-use-audit" bash -c '"$1" use-audit "$2" "$3" "$4" "$5" "$6" > "$7"' _ "$SCOUT" "$KIT" builder "$P/docs/verify-builder.md" ui "$OUTCOMES" "$AUDIT"
 assert_eq "cycle13-skill-use-helped" "ui:browser-screenshots" "$(jq -r '.helped[] | select(.id == "ui:browser-screenshots") | .id' "$AUDIT")"

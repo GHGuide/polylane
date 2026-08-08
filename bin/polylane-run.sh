@@ -1254,6 +1254,16 @@ prime_hybrid_workers_dir() { printf '%s/docs/polylane/workers' "$PROJECT_ROOT"; 
 prime_hybrid_context_dir() { printf '%s/.polylane/context' "$PROJECT_ROOT"; }
 prime_hybrid_context_packet() { printf '%s/%s.md' "$(prime_hybrid_context_dir)" "$1"; }
 
+# Worker calls must use this runner's canonical project, never an inherited
+# launcher contract.  A lane may be invoked from a worktree beneath another
+# active run, and the worker helper deliberately rejects that mismatched pair.
+prime_hybrid_workers() {
+  local workers
+  workers=$(prime_hybrid_workers_dir)
+  POLYLANE_PROJECT_ROOT="$PROJECT_ROOT" POLYLANE_WORKERS_DIR="$workers" \
+    "$SCRIPT_DIR/polylane-workers.sh" "$@"
+}
+
 prime_hybrid_pane_exports() {
   local worktree="$1" worker harness workers packet
   prime_hybrid_enabled || return 0
@@ -1293,13 +1303,13 @@ prime_hybrid_subgoal() {
 prime_hybrid_register_worker() {
   local worker="$1" role="$2" existing version last_cycle current_role rc=0
   prime_hybrid_enabled || return 0
-  existing=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT_ROOT" "$worker" 2>/dev/null) || rc=$?
+  existing=$(prime_hybrid_workers show "$PROJECT_ROOT" "$worker" 2>/dev/null) || rc=$?
   if [ "$rc" = 0 ]; then
     version=$(printf '%s' "$existing" | jq -r '.version')
     last_cycle=$(printf '%s' "$existing" | jq -r '.last_cycle')
     current_role=$(printf '%s' "$existing" | jq -r '.role')
     [ "$last_cycle" -lt "${CYCLE:-0}" ] 2>/dev/null || return 0
-    "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" "$version" \
+    prime_hybrid_workers capsule "$PROJECT_ROOT" "$worker" "$version" \
       "$current_role" "$CYCLE" active "registered for run ${RUN_ID:-legacy}" \
       "read the canonical bounded context packet once" "prelaunch retained identity" >/dev/null
     return 0
@@ -1307,7 +1317,7 @@ prime_hybrid_register_worker() {
   # Exit 4 is the public API's explicit missing-identity result. Anything else
   # is a corrupt/unreadable canonical store and must fail the launch closed.
   [ "$rc" = 4 ] || return "$rc"
-  "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" 0 "$role" "$CYCLE" active \
+  prime_hybrid_workers capsule "$PROJECT_ROOT" "$worker" 0 "$role" "$CYCLE" active \
     "registered for run ${RUN_ID:-legacy}" "read the canonical bounded context packet once" \
     "prelaunch retained identity" >/dev/null
 }
@@ -1316,7 +1326,7 @@ prime_hybrid_import_relay() {
   prime_hybrid_enabled || return 0
   mkdir -p "$(dirname "$COORDINATION_FILE")"
   [ -e "$COORDINATION_FILE" ] || : > "$COORDINATION_FILE"
-  "$SCRIPT_DIR/polylane-workers.sh" import-relay "$PROJECT_ROOT" "$COORDINATION_FILE" "$CYCLE" >/dev/null
+  prime_hybrid_workers import-relay "$PROJECT_ROOT" "$COORDINATION_FILE" "$CYCLE" >/dev/null
 }
 
 prime_hybrid_validate_pending() {
@@ -1419,7 +1429,7 @@ prime_hybrid_record_completion() {
   prime_hybrid_enabled || return 0
   [ "${DRY_RUN:-0}" = "1" ] && return 0
   if [ "$worker" = "${INT_NAME:-}" ]; then verify='docs/verify-integration.md'; else verify="docs/verify-$worker.md"; fi
-  existing=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT_ROOT" "$worker") || return $?
+  existing=$(prime_hybrid_workers show "$PROJECT_ROOT" "$worker") || return $?
   version=$(printf '%s' "$existing" | jq -r '.version')
   last_cycle=$(printf '%s' "$existing" | jq -r '.last_cycle')
   status=$(printf '%s' "$existing" | jq -r '.status')
@@ -1428,7 +1438,7 @@ prime_hybrid_record_completion() {
     prime_hybrid_import_relay
     return 0
   fi
-  "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" "$version" "$current_role" "$CYCLE" complete \
+  prime_hybrid_workers capsule "$PROJECT_ROOT" "$worker" "$version" "$current_role" "$CYCLE" complete \
     "completed run ${RUN_ID:-legacy}" "completion capsule from $verify" "$verify" >/dev/null
   prime_hybrid_import_relay
 }
