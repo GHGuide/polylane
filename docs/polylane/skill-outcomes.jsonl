@@ -22,3 +22,19 @@
 
 {"lane":"skill-delivery","domain":"test","skill":"superpowers:writing-skills","outcome":"helped","why":" made the generated builder instruction an explicit positive recipe: read only the exact emitted paths and do not rediscover skills."}
 
+{"lane":"domain-contract","domain":"report","skill":"product-management:write-spec","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c15-worktrees/domain-contract/docs/verify-domain-contract.md"}
+
+{"lane":"domain-contract","domain":"report","skill":"skill-creator","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c15-worktrees/domain-contract/docs/verify-domain-contract.md"}
+
+{"lane":"domain-contract","domain":"report","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c15-worktrees/domain-contract/docs/verify-domain-contract.md"}
+
+{"lane":"domain-contract","domain":"report","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing SKILL-EVIDENCE record in /private/tmp/polylane-c15-worktrees/domain-contract/docs/verify-domain-contract.md"}
+
+{"lane":"project-runtime","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /private/tmp/polylane-c15-worktrees/project-runtime/docs/verify-project-runtime.md"}
+
+{"lane":"project-runtime","domain":"test","skill":"product-management:product-brainstorming","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /private/tmp/polylane-c15-worktrees/project-runtime/docs/verify-project-runtime.md"}
+
+{"lane":"project-runtime","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /private/tmp/polylane-c15-worktrees/project-runtime/docs/verify-project-runtime.md"}
+
+{"lane":"project-runtime","domain":"test","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /private/tmp/polylane-c15-worktrees/project-runtime/docs/verify-project-runtime.md"}
+

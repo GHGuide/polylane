@@ -1,1 +1,1 @@
-{"name":"domain-contract","role":"builder","last_cycle":15,"version":1,"status":"active","summary":"registered for run c15-domain-general-20260808","context":"read the canonical bounded context packet once","evidence":"prelaunch retained identity"}
+{"name":"domain-contract","role":"builder","last_cycle":15,"version":2,"status":"complete","summary":"completed run c15-domain-general-20260808","context":"completion capsule from docs/verify-domain-contract.md","evidence":"docs/verify-domain-contract.md"}

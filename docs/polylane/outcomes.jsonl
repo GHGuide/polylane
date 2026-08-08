@@ -12,3 +12,5 @@
 {"lane":"runner-truth","sig":"b7:hub0:crowd0","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T17:48:56Z"}
 {"lane":"worker-ledger","sig":"b5:hub0:crowd0","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T17:48:56Z"}
 {"lane":"skill-delivery","sig":"b10:hub0:crowd0","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T17:48:56Z"}
+{"lane":"domain-contract","sig":"b12:hub0:crowd0","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T20:42:09Z"}
+{"lane":"project-runtime","sig":"b11:hub0:crowd1","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T20:42:09Z"}

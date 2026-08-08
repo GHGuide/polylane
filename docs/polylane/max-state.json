@@ -1352,7 +1352,7 @@
       "cmd": "bash tests/test-project-generality.sh",
       "tier": "focused",
       "key": "project-generality",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1362,7 +1362,7 @@
       "cmd": "bash tests/run.sh && shellcheck -S warning bin/*.sh",
       "tier": "terminal",
       "key": "full-domain-certification",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

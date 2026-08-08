@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "domain-contract",
+  "verify_file": "/private/tmp/polylane-c15-worktrees/domain-contract/docs/verify-domain-contract.md",
+  "helped": [],
+  "unused": [
+    "product-management:write-spec",
+    "skill-creator",
+    "superpowers:test-driven-development",
+    "superpowers:verification-before-completion"
+  ],
+  "hurt": []
+}
