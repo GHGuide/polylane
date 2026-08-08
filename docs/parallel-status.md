@@ -15,13 +15,15 @@ Lifecycle flags: `tips_merged=true`; `m14_focused=5/5 pass`;
 `refinement_queue=empty`; `c28_external=open`; and
 `current_verdict=GO`.
 
-Fresh non-host terminal evidence: full suite **1,866/0 across 100 files**;
+Fresh non-host terminal evidence: full suite **1,891/0 across 100 files**;
 all `bin/*.sh` ShellCheck-clean; Claude/Codex semantic parity **43/0**;
 installer parity **34/0**; and fresh dual-package installation **37/0**.
 `bin/polylane-certify.sh focused` passed with its named
 `self-hosting-truth` layer. The coordinator's exact physical GO and NO-GO
-canaries now pass; the complete frozen terminal command remains to update the
-durable acceptance record.
+canaries pass, and the complete frozen terminal command updated the durable
+acceptance record to **51 pass, 0 fail, 0 unchecked**.
 
 State closure: c35–c39 and m14.1–m14.5 are `done`. The pre-existing c28/m12.4
-visual corpus remains external and has not been converted to PASS.
+visual corpus remains external and has not been converted to PASS. Production
+promotion completed at `aa9c66d`; cleanup completed at `fa10cc6`; the final route
+is `EXTERNAL-EVIDENCE-OPEN` with no open autonomous work.

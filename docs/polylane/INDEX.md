@@ -5,9 +5,12 @@ Strategy: [STRATEGY](STRATEGY.md) · Decisions: [decisions/INDEX.md](decisions/I
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 14: [plan](cycle-14-plan.md) · [research](cycle-14-research.md) ·
-[30-candidate audit](cycle-14-suggestions.md). Target: transactional promotion/reporting,
-process-aware liveness, one canonical worker ledger, and resolved skill delivery.
+Closed cycle 14: [plan](cycle-14-plan.md) · [research](cycle-14-research.md) ·
+[30-candidate audit](cycle-14-suggestions.md) · [questions](cycle-14-questions.md) ·
+[council](cycle-14-council.md) · [digest](cycle-14-digest.md) ·
+[integration proof](../verify-integration.md). Transactional promotion/reporting,
+process-aware liveness, one canonical worker ledger, and resolved skill delivery are
+certified. Route: `EXTERNAL-EVIDENCE-OPEN` for the ten-product blind visual corpus only.
 
 Closed cycle 13: [plan](cycle-13-plan.md) · [research](cycle-13-research.md) ·
 [questions](cycle-13-questions.md) · [council](cycle-13-council.md) ·
@@ -26,6 +29,6 @@ Earlier digests: [c1](cycle-1-digest.md) · [c2](cycle-2-digest.md) ·
 [c6](cycle-6-digest.md) · [c7](cycle-7-digest.md) · [c8](cycle-8-digest.md) ·
 [c9](cycle-9-digest.md) · [c10](cycle-10-digest.md).
 
-Post-goal packet: [original 30 suggestions](next-suggestions.md). Cycle 12's rendered
-ten-product visual comparison remains external; cycle 13 continues every independent
-autonomous improvement.
+Post-goal packet: [original 30 suggestions](next-suggestions.md). Every independent
+autonomous criterion is complete. Cycle 12's rendered ten-product visual comparison
+remains external and is the only unfinished evidence in the frozen goal tree.

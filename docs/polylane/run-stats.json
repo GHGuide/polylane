@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c14-self-hosting-truth-20260808",
   "started_at": 1786211293,
-  "updated_at": 1786215100,
-  "wall_s": 3807,
+  "updated_at": 1786217718,
+  "wall_s": 6425,
   "lanes": {
     "runner-truth": {
       "launches": 1,
@@ -32,7 +32,7 @@
     "skill-delivery": 196594,
     "integrator": 3628053
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -222,6 +222,11 @@
     {
       "type": "initialized",
       "at": 1786215100
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786217718
     }
   ]
 }
