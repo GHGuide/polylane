@@ -168,6 +168,55 @@ quality_judges_requested() {
   jq -e '.quality_judges | type == "array" and length > 0' "$MANIFEST" >/dev/null 2>&1
 }
 
+# Visual quality is deliberately opt-in. Legacy and non-UI manifests never
+# reach this boundary, so their existing runner behaviour remains unchanged.
+visual_quality_requested() {
+  jq -e '
+    .visual_quality? |
+    if . == true then true
+    elif type == "object" then ((.enabled // true) == true)
+    else false end
+  ' "$MANIFEST" >/dev/null 2>&1
+}
+
+visual_quality_relative_path() {
+  local field="$1" fallback="$2" path
+  path=$(jq -r --arg field "$field" --arg fallback "$fallback" '
+    if (.visual_quality? | type) == "object" then (.visual_quality[$field] // $fallback) else $fallback end
+  ' "$MANIFEST") || return 1
+  case "$path" in ''|/*|*'..'*) echo "polylane-run: unsafe visual quality path: $path" >&2; return 2 ;; esac
+  printf '%s\n' "$path"
+}
+
+visual_quality_gate() {
+  local helper evidence contract verdict attempt=0
+  helper="$SCRIPT_DIR/polylane-visual-quality.sh"
+  [ -x "$helper" ] || { echo "polylane-run: visual quality helper missing: $helper" >&2; return 1; }
+  evidence=$(visual_quality_relative_path evidence 'docs/polylane/design/visual-evidence.json') || return 1
+  contract=$(visual_quality_relative_path contract 'docs/polylane/design/visual-contract.json') || return 1
+  verdict=$(visual_quality_relative_path verdict 'docs/polylane/design/visual-verdict.json') || return 1
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would run visual quality evidence gate"
+    VISUAL_QUALITY_ATTEMPT=0
+    return 0
+  fi
+  VISUAL_QUALITY_ATTEMPT=0
+  "$helper" run "$INT_WORKTREE/$evidence" "$INT_WORKTREE/$contract" "$INT_WORKTREE/$verdict" "$attempt" && return 0
+  while [ "$attempt" -lt 2 ]; do
+    graph_authority_record_ready_node visual-quality failed "$attempt" visual-quality-failed || return 1
+    attempt=$((attempt + 1))
+    VISUAL_QUALITY_ATTEMPT="$attempt"
+    graph_authority_require visual-repair "route targeted visual quality repair" || return 1
+    repair_integrator_verdict "$attempt" visual || return 1
+    poll_done "$INT_NAME:$INT_WORKTREE" || return 1
+    merge_gate || return 1
+    graph_authority_record_ready_node visual-repair succeeded "$attempt" visual-repair || return 1
+    graph_authority_require visual-quality "rerun visual quality after targeted repair" || return 1
+    "$helper" run "$INT_WORKTREE/$evidence" "$INT_WORKTREE/$contract" "$INT_WORKTREE/$verdict" "$attempt" && return 0
+  done
+  return 1
+}
+
 seam_gate() {
   local evidence="$INT_WORKTREE/docs/verify-integration.md"
   advanced_runtime seams "$INT_WORKTREE" "$evidence" && return 0
@@ -206,6 +255,17 @@ graph_quality_halt() {
   else
     graph_shadow_record_node judges failed 1 judge-repair-exhausted || return 1
     graph_shadow_record_node halt succeeded 0 judge-repair-exhausted
+  fi
+}
+
+graph_visual_quality_halt() {
+  if graph_authority_enabled; then
+    graph_authority_record_ready_node visual-quality failed 2 visual-repair-exhausted || return 1
+    graph_authority_require halt "halt after visual quality repair failure" || return 1
+    graph_authority_record_ready_node halt succeeded 0 visual-repair-exhausted
+  else
+    graph_shadow_record_node visual-quality failed 2 visual-repair-exhausted || return 1
+    graph_shadow_record_node halt succeeded 0 visual-repair-exhausted
   fi
 }
 
@@ -2187,10 +2247,12 @@ next_fallback_model() {
   return 1
 }
 
-# respawn_lane IDX NAME WT : checkpoint WIP then re-seed the pane with the CURRENT
-# (possibly downgraded) model. Used by both dead-pane recovery and stall fallback.
+# respawn_lane IDX NAME WT [COUNT_RESTART] : checkpoint WIP then re-seed the
+# pane with the CURRENT (possibly downgraded) model. Used by both dead-pane
+# recovery and stall fallback. COUNT_RESTART defaults to 1; startup seed
+# recovery passes 0 because no agent attempt reached the pane.
 respawn_lane() {
-  local idx="$1" name="$2" wt="$3" cmd
+  local idx="$1" name="$2" wt="$3" count_restart="${4:-1}" cmd
   assert_prompt "$(lane_prompt_get "$name")" "$name"
   checkpoint_lane "$wt" "$name"
   refresh_manifest_runtime_settings
@@ -2211,7 +2273,7 @@ respawn_lane() {
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
   fi
   repipe_pane_log "$idx" "$name"
-  run_stats lane-restart --lane "$name"
+  [ "$count_restart" = "0" ] || run_stats lane-restart --lane "$name"
 }
 
 # recreate_lane_pane NAME WT : replace a vanished mapped pane in this owned
@@ -2585,7 +2647,7 @@ verify_seeds() {
     name="${LANE_NAMES[$i]}"
     if pane_dead "${LANE_PANE_IDX[$i]}"; then
       echo "launch: lane '$name' seed did not take (pane at a shell) — re-seeding"
-      respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}"
+      respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}" 0
     fi
   done
 }
@@ -2768,11 +2830,12 @@ contract_acceptance_gate() {
       # them green and previously made EXTERNAL-EVIDENCE-OPEN impossible: the
       # command failure returned before the external-status allowance below.
       # Refresh only terminal checks whose subgoals are still autonomous.
-      terminal_targets=$(jq -r '
+      terminal_targets=$(jq -r --arg targets ",$targets," '
         ([.milestones[].subgoals[] | select(.status=="external") | .id]) as $external
         | [(.accept // [])[]
             | select((.tier // "focused")=="terminal")
             | .sid
+            | select(. as $sid | ($targets | contains("," + $sid + ",")))
             | select(. as $sid | any($external[]; .==$sid) | not)]
         | unique
         | join(",")
@@ -2789,10 +2852,11 @@ contract_acceptance_gate() {
             --cycle "$CYCLE" --targets "$terminal_targets" --only-terminal
         ) || { report_acceptance_failures; return 1; }
       fi
-      jq -e '
+      jq -e --arg targets ",$targets," '
         ([.milestones[].subgoals[] | select(.status=="external") | .id]) as $external
         | all((.accept // [])[]
-            | select((.tier // "focused")=="terminal");
+            | select((.tier // "focused")=="terminal")
+            | select(.sid as $sid | ($targets | contains("," + $sid + ",")));
             .status=="pass" or (.sid as $sid | any($external[]; .==$sid)))
       ' "$STATE_FILE" >/dev/null || return 1
     else
@@ -2801,12 +2865,17 @@ contract_acceptance_gate() {
         terminal_counted=1
       fi
       (
-        cd "$INT_WORKTREE"
-        export REPO="$PWD" REPO_ROOT="$PWD"
-        "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
-          --cycle "$CYCLE" --only-terminal
-      ) || { report_acceptance_failures; return 1; }
-      jq -e 'all((.accept // [])[]; .status=="pass")' "$STATE_FILE" >/dev/null || return 1
+          cd "$INT_WORKTREE"
+          export REPO="$PWD" REPO_ROOT="$PWD"
+          "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+            --cycle "$CYCLE" --targets "$targets" --only-terminal
+        ) || { report_acceptance_failures; return 1; }
+      jq -e --arg targets ",$targets," '
+        all(.milestones[].subgoals[]; .status!="external")
+        and all((.accept // [])[]
+          | select(.sid as $sid | ($targets | contains("," + $sid + ",")));
+          .status=="pass")
+      ' "$STATE_FILE" >/dev/null || return 1
     fi
   fi
 }
@@ -2906,7 +2975,16 @@ build_judge_repair_prompt() {
   printf 'This is the single bounded judge-repair attempt; a second failure must halt.\n'
 }
 
-# repair_integrator_verdict ATTEMPT [integration|judge] : preserve the failed
+build_visual_repair_prompt() {
+  local src="$1" attempt="$2" verdict="$3"
+  cat "$src" 2>/dev/null
+  printf '\n\nVISUAL-REPAIR: attempt=%s max=2\n' "$attempt"
+  printf 'Visual evidence blocked promotion. Read %s and repair only the named surface, region, and action.\n' "$verdict"
+  printf 'Do not weaken the frozen visual contract, evidence requirements, lenses, or repair bound.\n'
+  printf 'Capture fresh evidence and write a new nonce-bound integration verdict.\n'
+}
+
+# repair_integrator_verdict ATTEMPT [integration|judge|visual] : preserve the failed
 # boundary evidence, clear only terminal markers, then immediately respawn the
 # same tmux Codex lane with the matching typed repair packet.
 repair_integrator_verdict() {
@@ -2921,6 +2999,10 @@ repair_integrator_verdict() {
       archive="$INT_WORKTREE/docs/verify-integration-judge-attempt-$attempt.md"
       prompt="$REPO_ROOT/.polylane/lanes/$INT_NAME.judge-repair-$attempt.txt"
       ;;
+    visual)
+      archive="$INT_WORKTREE/docs/verify-integration-visual-attempt-$attempt.md"
+      prompt="$REPO_ROOT/.polylane/lanes/$INT_NAME.visual-repair-$attempt.txt"
+      ;;
     *) echo "polylane-run: unknown integrator repair kind: $repair_kind" >&2; return 2 ;;
   esac
   if [ "${DRY_RUN:-0}" = "1" ]; then
@@ -2932,6 +3014,9 @@ repair_integrator_verdict() {
   if [ "$repair_kind" = judge ]; then
     build_judge_repair_prompt "$INT_PROMPT" "$attempt" \
       'docs/polylane/judges/judges.json' "docs/$(basename "$archive")" > "$prompt" || return 1
+  elif [ "$repair_kind" = visual ]; then
+    build_visual_repair_prompt "$INT_PROMPT" "$attempt" \
+      'docs/polylane/design/visual-verdict.json' > "$prompt" || return 1
   else
     build_integrator_repair_prompt "$INT_PROMPT" "$attempt" "$verdict" \
       "docs/$(basename "$archive")" > "$prompt" || return 1
@@ -3609,6 +3694,16 @@ main() {
     else
       graph_shadow_record_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     fi
+    if visual_quality_requested; then
+      if ! visual_quality_gate; then
+        graph_visual_quality_halt || exit 1
+        advanced_runtime salvage
+        advanced_runtime record NO-GO
+        echo "Halt: visual quality failed after two targeted repairs. Nothing merged." >&2
+        exit 1
+      fi
+      graph_authority_record_ready_node visual-quality succeeded "${VISUAL_QUALITY_ATTEMPT:-0}" visual-quality-passed || exit 1
+    fi
     if quality_judges_requested; then
       if ! quality_judge_gate; then
         graph_quality_halt || exit 1
@@ -3620,7 +3715,7 @@ main() {
       graph_authority_record_ready_node judges succeeded "${QUALITY_JUDGE_ATTEMPT:-0}" judges-passed || exit 1
     fi
     assert_no_conflict "$INT_WORKTREE"
-    if ! graph_authority_enabled && quality_judges_requested; then
+    if ! graph_authority_enabled && { quality_judges_requested || visual_quality_requested; }; then
       graph_shadow_record_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
       graph_shadow_record_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     elif ! graph_authority_enabled; then

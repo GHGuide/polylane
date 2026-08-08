@@ -1,55 +1,88 @@
-# Cycle 9 integration verification
+# Cycle 12 integration verification
 
-Run: `c9-product-autonomy-1786054003`  
-Branch: `lane/c9-integrator`
+Run: `c12-visual-20260808`
+Integrator branch: `lane/c12-integrator`
 
-## Verdict basis
+## Merge and review
 
-- Current tips are contained: `lane/c9-product-foundation` at `5d54f649f4dbe1520bba0c0284aeb18283b02aa1`, `lane/c9-worker-efficiency` at `5d71629626ba024420312b619f80c137c7c8b076`, `lane/c9-quality-runtime` at `8d08d9b83b9321e7e2aa766d74f0a304f4dadfad`, and `lane/c9-control-docs` at `1ee85b17941722affd734efa95d18dc0e1d9d762`.
-- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- tests/run.sh`: **1160 passed, 0 failed, 76 test files**. Log: `.polylane/check-cache/integrator/1557743017-64.output`.
-- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- shellcheck -S warning bin/*.sh`: exit 0 across all 37 scripts. Log: `.polylane/check-cache/integrator/1608172591-955.output`.
-- `bin/polylane-seams.sh scan "$PWD"`: exit 0, no production dangling seam. Cached log: `.polylane/check-cache/integrator/4250095565-114.output`.
-- No canonical `.polylane/run.json` exists in this checkout, so `bin/polylane-scope.sh check-static` had no canonical target and was not represented as PASS.
-- `graphify-out` was queried read-only first for `polylane-run`, `polylane-graph`, dashboard, scout, and models; it was not rebuilt or committed.
+- Merged the initial `lane/c12-visual-mechanisms` tip at `91ddd5b`, then
+  incorporated its final runtime/graph tip `93aa17b` as `59e28e9`.
+- Merged `lane/c12-shared-contract` at `cb3597f` as `220807f`.
+- `git diff --check c9f1bbb..HEAD`: clean; the two lane file lists had no
+  ownership overlap.
+- The direct seam review confirmed: reference directions need at least two
+  source IDs and no source can feed all three directions; only one wildcard is
+  allowed; an admitted skill must pass quarantine/audit/benchmark and have a
+  project lock before it can be armed; desktop, mobile, empty, loading, error,
+  hover, and focus states are required; all three lenses must pass; repairs cap
+  at two; and champion replacement requires ten prompts, >=70% wins, and no
+  accessibility regression.
 
-## Focused and affected evidence
+## Integration repairs
 
-- Frozen m8 acceptance tests: product benchmark 20/0; discovery graph 25/0; Codex profile 8/0; prompt optimizer 6/0; advanced runtime 11/0; graph quality loop 4/0; judges 9/0; scout outcomes 18/0; control room 10/0.
-- Additional cross-lane gates: dashboard 35/0; scout 22/0; orchestration contract 7/0; verdict repair 26/0; docs truth 17/0; skill parity 18/0; installers 11/0.
-- Graph compatibility and replay: graph contract 42/0, graph events 43/0, graph shadow 52/0, graph authority 50/0, graph benchmark 17/0. Final benchmark timings were ready 62 ms, append 116 ms, and packet samples 1873–1888 ms.
-- Runtime/quoting/portability: agent adapter 39/0, models 20/0, intensity 20/0, runtime recovery 5/0, runtime refresh 11/0, runtime survival 2/0, prompt economy 17/0, prompt lint 18/0, marker contract 9/0, and seams 5/0.
-- A pre-final terminal pass exposed two synthetic-manifest failures in `test-verdict-repair.sh` (1158/2). The fixture was aligned with the advanced seam contract, then passed 26/0; the final post-fix terminal invocation produced the 1160/0 result above.
+- Added `skill-benchmark-rejects-zero-threshold`: an unchanged challenger with
+  `minimum_improvement: 0` was initially accepted. The admission boundary now
+  requires a strictly positive threshold. `bash tests/test-skill-acquire.sh`:
+  **13 pass, 0 fail**.
+- Added `visual-quality-rejects-nonimage-evidence`: arbitrary nonempty files
+  were initially accepted as screenshots. The deterministic gate now requires
+  PNG, JPEG, or WebP magic bytes. `bash tests/test-visual-quality.sh`:
+  **7 pass, 0 fail**. This verifies file type only, not browser capture
+  provenance.
+- The existing session-loss test was isolated from the host disk floor with
+  `POLYLANE_MIN_DISK_GB=0`; it retains the production disk guard and now proves
+  the intended lost-session path. `bash tests/test-runtime-survival.sh`:
+  **2 pass, 0 fail**.
+- Fixed startup seed recovery accounting. A lost `send-keys` seed is documented
+  as a free launch correction, but `respawn_lane` counted it as a model restart
+  and made the efficiency canary reject its own successful recovery. The new
+  `test-seed-recovery-accounting.sh` proves startup reseeds cost zero restarts
+  while real runtime respawns still cost one.
 
-## Runtime demonstrations
+## Focused and compatibility checks
 
-- Mock product corpus: all five `benchmarks/schema-v1` cases produced one isolated result each; `adapter_failures=0`, `mean_wall_time_s=0`, `mean_tokens=400`, `mean_interventions=0`, `mean_completion=1`, `mean_product_quality=0.8`, and `mean_score=0.85`.
-- Exactly three judges ran independently: correctness (`test-product-benchmark.sh`, 20/0), architecture (`test-graph-quality-loop.sh`, 4/0), and operability (`test-control-room.sh`, 10/0). Aggregate status is `passed`; all three exits are 0 and each has a separate evidence file under `.polylane/judges-integrator/`.
-- Dashboard JSON and text snapshots both used run `c9-product-autonomy-1786054003`, cycle 9, graph `graph-v1-3480793479-779`, ready node `start`, canonical goal, lane/model state, spend, and next action. The replay regression additionally proves three admitted events advance readiness from `start` to `lane:api`.
+All commands used `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`.
 
-## Integration fixes
+- `bash tests/test-visual-intelligence.sh`: **9 pass, 0 fail**.
+- `bash tests/test-skill-acquire.sh`: **13 pass, 0 fail**.
+- `bash tests/test-visual-quality.sh`: **7 pass, 0 fail**.
+- `bash tests/test-visual-loop-integration.sh`: **28 pass, 0 fail**.
+- `bash tests/test-scout.sh`: **25 pass, 0 fail**.
+- `bash tests/test-orchestration-contract.sh`: **11 pass, 0 fail**.
 
-- Benchmark scoring now records completion and product quality, preserves unknown metrics as `null`, and treats valid-but-wrong-shaped adapter JSON as unknown instead of aborting.
-- Discovery persists contradictions, blocks lock while any are open, records bounded typed resolutions, and applies left/right resolution to accepted strategy answers.
-- Codex launch admission rejects every non-`gpt-*` integrator, lane, available-model, and runtime override path; the schema example contains no Claude model.
-- Contract-v2 prompt admission enforces mandatory blocks plus token/byte budgets before initial launch, respawn, and integrator repair. Graph-authority fixtures now satisfy that same boundary.
-- Scout skill resolution rejects traversal-shaped identifiers and uses exact installed `SKILL.md` paths with isolated outcome-ledger tests.
-- The runner routes seams through the single advanced-runtime adapter. The seam scanner excludes intentional test fixtures while retaining actionable production evidence.
-- Judges require exactly three unique lenses, cap timeouts at 300 seconds, stage evidence privately until all commands finish, and feed one typed `judge-repair` loop. Old graphs without judges still validate and replay.
-- Dashboard snapshots consume nonce-aware state, max-state, validated graph replay, spend `.cost`, report, and cleanup data; missing facts remain null/unknown in JSON and text.
-- Claude-root and Codex-overlay skills remain separate files, both point to the shared frozen reference, and both describe benchmark, discovery, prompt, advanced seam, judge, and control-room behavior consistently.
+The initial integrator did not consume late durable messages naming the final
+`93aa17b` tip, so its stale-source NO-GO was retained as evidence but not used
+for promotion. The bounded repair merged that exact tip and proved it is an
+ancestor of the final branch. The refinement queue contained the
+duplicated `context`/`compaction` observation (count 2, cycle 12, evidence
+`bounded packets built for run c12-visual-20260808`). **Declined:** it records
+the bounded-packet construction, not a demonstrated context-loss regression;
+there is no scoped, check-backed refinement to promote. This branch records the
+decision without directly mutating the canonical `main` worktree.
 
-## Changed files
+## Final certification
 
-- Contract/docs: `.polylane/SCHEMA.md`, `README.md`, `SKILL.md`, `codex/SKILL.md`, `codex/install.sh`, `docs/polylane/cycle-9-plan.md`, `references/cycle-9-control-room.md`, `references/documentation.md`, `references/model-selection.md`, `references/planning.md`, `references/prompt-blocks.md`, `references/skill-scout.md`.
-- Corpus: `benchmarks/schema-v1/dog-walk-route.json`, `pantry-planner.json`, `repair-reminder.json`, `shift-handoff.json`, `study-circle.json`.
-- Runtime: `bin/polylane-advanced.sh`, `polylane-dashboard.sh`, `polylane-discovery.sh`, `polylane-graph.sh`, `polylane-judges.sh`, `polylane-models.sh`, `polylane-product-benchmark.sh`, `polylane-promptopt.sh`, `polylane-run.sh`, `polylane-scout.sh`, `polylane-seams.sh`.
-- Evidence/status: `docs/status-control-docs.md`, `docs/status-integrator.md`, `docs/status-product-foundation.md`, `docs/status-quality-runtime.md`, `docs/status-worker-efficiency.md`, `docs/verify-control-docs.md`, `docs/verify-integration.md`, `docs/verify-product-foundation.md`, `docs/verify-quality-runtime.md`, `docs/verify-worker-efficiency.md`.
-- Tests: `tests/test-advanced-runtime.sh`, `test-codex-profile.sh`, `test-control-room.sh`, `test-dashboard.sh`, `test-discovery-graph.sh`, `test-docs-truth.sh`, `test-graph-authority.sh`, `test-graph-quality-loop.sh`, `test-installers.sh`, `test-judges.sh`, `test-models.sh`, `test-orchestration-contract.sh`, `test-product-benchmark.sh`, `test-promptopt.sh`, `test-scout-outcomes.sh`, `test-scout.sh`, `test-skill-parity.sh`, `test-verdict-repair.sh`.
+- `POLYLANE_MIN_DISK_GB=0 tests/run.sh`: **1,633 passed, 0 failed, 91 test
+  files**. Strict graph timings passed unchanged: warm append **224ms** under
+  250ms; the 10,000-event fixture **10s** at its 10s ceiling.
+- `shellcheck -S warning bin/*.sh`: clean.
+- `bash tests/test-skill-parity.sh`: **38 pass, 0 fail**.
+- Fresh Codex installation/parity via `bash tests/test-installers.sh`: **26
+  pass, 0 fail**; it verifies the installed shared core and visual contract.
+- `POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse`: both contract-v3
+  cases passed. GO reached READY, promoted through exactly one terminal gate,
+  cleaned with zero leaks; NO-GO withheld promotion, retained bounded evidence,
+  and cleaned the rehearsal fixture.
 
-## DEFERRED
+## External evidence boundary
 
-DEFERRED: none. No credential or hardware evidence was required or counted as PASS.
+This repository is the orchestration skill, not a UI product, so this cycle did
+not fabricate browser screenshots, live reference fetches, or visual-model
+judgements. Deterministic and live orchestration evidence proves the mechanism,
+image signatures, repair bounds, installation safety, parity, and complete
+supervised lifecycle. A separate old-vs-new UI corpus with real rendered
+products and blind visual judges remains external product-quality evidence.
 
-POLYLANE-VERDICT: GO run=c9-product-autonomy-1786054003
+POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c12-visual-20260808
 
 ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.

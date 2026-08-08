@@ -121,22 +121,31 @@ validate_graph() {
         )) as $step
       | visit($adjacency; $step.queue; $head + 1; $step.tail; $step.indegree; $visited + 1)
       end;
-    (reduce $graph.nodes[] as $node (
-      {indegree: {}, adjacency: {}};
-      .indegree[$node.id] = 0 | .adjacency[$node.id] = {}
-    ) |
-    reduce $graph.edges[] as $edge (.;
-      .indegree[$edge.to] += 1
-      | .adjacency[$edge.from][$edge.to] = ((.adjacency[$edge.from][$edge.to] // 0) + 1)
-    )) as $topology |
-    (reduce ($topology.indegree | keys_unsorted)[] as $node (
-      {queue: {}, tail: 0};
-      if $topology.indegree[$node] == 0 then
-        .queue[(.tail | tostring)] = $node | .tail += 1
-      else . end
-    )) as $initial |
-    visit($topology.adjacency; $initial.queue; 0; $initial.tail; $topology.indegree; 0)
-      == ($graph.nodes | length)
+    # Compiler output is already topologically ordered. Prove that in one
+    # linear edge scan; retain Kahn as the compatibility fallback for valid
+    # hand-authored graphs whose node array uses a different order.
+    (reduce ($graph.nodes | to_entries[]) as $entry ({};
+      .[$entry.value.id] = $entry.key
+    )) as $rank |
+    if all($graph.edges[]; $rank[.from] < $rank[.to]) then true
+    else
+      (reduce $graph.nodes[] as $node (
+        {indegree: {}, adjacency: {}};
+        .indegree[$node.id] = 0 | .adjacency[$node.id] = {}
+      ) |
+      reduce $graph.edges[] as $edge (.;
+        .indegree[$edge.to] += 1
+        | .adjacency[$edge.from][$edge.to] = ((.adjacency[$edge.from][$edge.to] // 0) + 1)
+      )) as $topology |
+      (reduce ($topology.indegree | keys_unsorted)[] as $node (
+        {queue: {}, tail: 0};
+        if $topology.indegree[$node] == 0 then
+          .queue[(.tail | tostring)] = $node | .tail += 1
+        else . end
+      )) as $initial |
+      visit($topology.adjacency; $initial.queue; 0; $initial.tail; $topology.indegree; 0)
+        == ($graph.nodes | length)
+    end
   ' "$graph" >/dev/null 2>&1 || invalid "ordinary edges must be acyclic" || return 1
 
   jq -e '
@@ -225,6 +234,7 @@ compile_graph() {
         timeout_s:1800, retry_budget:1, evidence:{required:["status", "verification"]}
       };
     (.quality_judges? | type == "array" and length > 0) as $has_judges |
+    (.visual_quality? | if . == true then true elif type == "object" then ((.enabled // true) == true) else false end) as $has_visual_quality |
     {
       graph_schema: 1,
       graph_id: $graph_id,
@@ -239,6 +249,8 @@ compile_graph() {
           agent("integrator"; .integrator.model; .integrator.effort; .target_subgoals; []),
           node("verifier"; "verifier"; ["passed", "failed"]),
           node("repair"; "repair"; ["repaired", "failed"]),
+          (if $has_visual_quality then node("visual-quality"; "verifier"; ["passed", "failed"]) else empty end),
+          (if $has_visual_quality then node("visual-repair"; "repair"; ["repaired", "failed"]) else empty end),
           (if $has_judges then node("judges"; "verifier"; ["passed", "failed"]) else empty end),
           (if $has_judges then node("judge-repair"; "repair"; ["repaired", "failed"]) else empty end),
           node("promote"; "checkpoint"; ["succeeded"]),
@@ -254,10 +266,14 @@ compile_graph() {
           {from:"builders-joined", to:"integrator", outcome:"succeeded"},
           {from:"integrator", to:"verifier", outcome:"succeeded"},
            {from:"integrator", to:"halt", outcome:"failed"},
-          {from:"verifier", to:(if $has_judges then "judges" else "promote" end), outcome:"passed"},
+          {from:"verifier", to:(if $has_visual_quality then "visual-quality" elif $has_judges then "judges" else "promote" end), outcome:"passed"},
           {from:"verifier", to:"repair", outcome:"failed"},
           {from:"verifier", to:"halt", outcome:"failed"},
            {from:"repair", to:"halt", outcome:"failed"},
+          (if $has_visual_quality then {from:"visual-quality", to:(if $has_judges then "judges" else "promote" end), outcome:"passed"} else empty end),
+          (if $has_visual_quality then {from:"visual-quality", to:"visual-repair", outcome:"failed"} else empty end),
+          (if $has_visual_quality then {from:"visual-quality", to:"halt", outcome:"failed"} else empty end),
+          (if $has_visual_quality then {from:"visual-repair", to:"halt", outcome:"failed"} else empty end),
           (if $has_judges then {from:"judges", to:"promote", outcome:"passed"} else empty end),
           (if $has_judges then {from:"judges", to:"judge-repair", outcome:"failed"} else empty end),
           (if $has_judges then {from:"judges", to:"halt", outcome:"failed"} else empty end),
@@ -266,6 +282,7 @@ compile_graph() {
         ]
       ),
       loops: ([{from:"repair", to:"verifier", outcome:"repaired", max_iterations:1}]
+        + (if $has_visual_quality then [{from:"visual-repair", to:"visual-quality", outcome:"repaired", max_iterations:2}] else [] end)
         + (if $has_judges then [{from:"judge-repair", to:"judges", outcome:"repaired", max_iterations:1}] else [] end))
     }
   ' "$manifest" > "$tmp" || { rm -f "$tmp"; trap - RETURN; return 1; }

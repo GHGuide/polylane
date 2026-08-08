@@ -10,6 +10,9 @@ TMUX_SESSION="lost-session-$$"
 SESSION_STARTED=1
 RUN_ID=survival-run
 ORCHESTRATION_CONTRACT=2
+# This test exercises a simulated lost tmux session. Keep the host's transient
+# free-space floor from selecting the unrelated disk-guard exit path first.
+POLYLANE_MIN_DISK_GB=0
 tmux() { return 1; }
 
 lost_out=$(poll_done "builder:$TEST_TMPDIR/wt" 2>&1); lost_rc=$?
