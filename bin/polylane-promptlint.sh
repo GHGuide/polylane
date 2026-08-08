@@ -24,6 +24,7 @@ lint_one() {
   grep -q   'run='  "$f"             || miss="$miss nonce(run=<RUN_ID>)"
   grep -qi  'verify' "$f"            || miss="$miss verify-evidence"
   if [ "${POLYLANE_STRICT_PROMPTS:-0}" = "1" ]; then
+    grep -qE '^[[:space:]]*GOAL:' "$f" || miss="$miss goal-contract"
     grep -qi 'PREDEFINED-SKILLS:' "$f"    || miss="$miss predefined-skills"
     grep -qi 'LANE-SPECIFIC-SKILLS:' "$f" || miss="$miss lane-specific-skills"
     grep -qi 'TEST-CADENCE:' "$f"         || miss="$miss test-cadence"
@@ -33,6 +34,7 @@ lint_one() {
     grep -qi 'Read only the named kit once' "$f" || miss="$miss selected-kit-once"
     grep -qiE '^[[:space:]]*(browse|list|find) .*skill' "$f" && miss="$miss skill-inventory-dump"
     grep -qi 'EXTERNAL-EVIDENCE:' "$f"    || miss="$miss external-evidence-routing"
+    exact_once_labels "$f" || miss="$miss duplicate-exact-once-label"
   fi
   if [ "$prime_hybrid" = true ]; then
     grep -q 'POLYLANE_CONTEXT_PACKET' "$f" || miss="$miss prime-hybrid-context-packet"
@@ -44,6 +46,16 @@ lint_one() {
   fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi
   return 0
+}
+
+# Hard scalar contracts are not ordinary repeatable prose. Keep the check local
+# and Bash-3.2-safe so lint catches a generated prompt before launch.
+exact_once_labels() {
+  local f="$1" label count
+  for label in ULTIMATE-GOAL CURRENT-SUBGOAL GOAL OWN FORBIDDEN PREDEFINED-SKILLS LANE-SPECIFIC-SKILLS TEST-CADENCE DELEGATION CHECK-CACHE EXTERNAL-EVIDENCE VERIFY; do
+    count=$(grep -ciE "^[[:space:]]*$label:" "$f" || true)
+    [ "$count" -le 1 ] || return 1
+  done
 }
 
 lint_run() {

@@ -1,0 +1,12 @@
+ULTIMATE-GOAL: Deliver a verified product from one vague idea.
+CURRENT-SUBGOAL: Compile smaller contradiction-free builder prompts.
+GOAL: Preserve every hard contract exactly once.
+OWN: bin/polylane-promptopt.sh and tests/test-promptopt.sh.
+FORBIDDEN: runner policy and shared skill files.
+PREDEFINED-SKILLS: superpowers:test-driven-development
+LANE-SPECIFIC-SKILLS: caveman:caveman-compress
+Read only the named kit once from its resolved SKILL.md paths and use it.
+TEST-CADENCE: focused tests first.
+DELEGATION: forbidden.
+CHECK-CACHE: use $PWD/.polylane/check-cache/prompt-compiler.
+VERIFY: STATUS: prompt-compiler DONE run=frozen-prompt-corpus.
