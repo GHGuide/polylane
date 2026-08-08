@@ -71,4 +71,30 @@ merge_gate() { :; }
 assert_fail "judge-gate-stops-after-one-repair" quality_judge_gate
 assert_eq "judge-gate-routes-typed-repair" "1 judge" "$(cat "$REPAIR_CALL")"
 assert_eq "judge-gate-runs-exactly-twice" "2" "$(wc -c < "$JUDGE_RUNS" | tr -d ' ')"
+
+# Visual quality is an explicit contract-v2 boundary. Its own typed repair path
+# is allowed twice, then promotion is blocked without a third repair.
+VISUAL_MANIFEST="$TEST_TMPDIR/visual-manifest.json"
+jq '.visual_quality=true' "$M" > "$VISUAL_MANIFEST"
+VISUAL_RUNS="$TEST_TMPDIR/visual-runs"; VISUAL_REPAIRS="$TEST_TMPDIR/visual-repairs"
+export VISUAL_RUNS VISUAL_REPAIRS
+cat > "$FAKE_RUNTIME/polylane-visual-quality.sh" <<'EOF'
+#!/usr/bin/env bash
+printf x >> "$VISUAL_RUNS"
+exit 1
+EOF
+chmod +x "$FAKE_RUNTIME/polylane-visual-quality.sh"
+SCRIPT_DIR="$FAKE_RUNTIME"; MANIFEST="$VISUAL_MANIFEST"; INT_WORKTREE="$TREE"; INT_NAME=integrator
+graph_authority_record_ready_node() { :; }
+graph_authority_require() { :; }
+repair_integrator_verdict() { printf '%s %s\n' "$1" "${2:-}" >> "$VISUAL_REPAIRS"; }
+poll_done() { :; }
+merge_gate() { :; }
+assert_ok "visual-quality-is-opt-in" visual_quality_requested
+MANIFEST="$M"
+assert_fail "visual-quality-does-not-change-legacy-manifests" visual_quality_requested
+MANIFEST="$VISUAL_MANIFEST"
+assert_fail "visual-quality-gate-halts-after-two-repairs" visual_quality_gate
+assert_eq "visual-quality-gate-routes-typed-repairs" $'1 visual\n2 visual' "$(cat "$VISUAL_REPAIRS")"
+assert_eq "visual-quality-gate-runs-initial-plus-two-repairs" "3" "$(wc -c < "$VISUAL_RUNS" | tr -d ' ')"
 finish

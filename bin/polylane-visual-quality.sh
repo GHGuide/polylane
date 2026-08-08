@@ -11,6 +11,7 @@ evidence_shape() {
     . as $e
     | .schema == 1
     and (.root | type == "string" and startswith("/"))
+    and .anonymized == true
     and (.screenshots | type == "array")
     and all(.screenshots[]; (.surface | type == "string" and length > 0)
       and (.viewport | IN("desktop", "mobile"))
@@ -108,7 +109,7 @@ benchmark_quality() {
   ' "$corpus" >/dev/null 2>&1 || {
     echo "VISUAL-QUALITY: benchmark corpus must contain at least ten scored prompts" >&2; return 2;
   }
-  wins=$(jq '[.prompts[] | select((.new.distinction + .new.polish) > (.old.distinction + .old.polish))] | length' "$corpus")
+  wins=$(jq '[.prompts[] | select(.new.distinction > .old.distinction and .new.polish > .old.polish)] | length' "$corpus")
   total=$(jq '.prompts | length' "$corpus")
   if jq -e --argjson wins "$wins" --argjson total "$total" '
       ($wins * 100 >= $total * 70)
