@@ -47,9 +47,9 @@ planning/prompt, model-policy, skill-routing, graph/runtime/recovery,
 integration/learning, install/parity, and ShellCheck layers; rehearsal is
 explicitly terminal-only.
 
-The durable goal state now marks c30–c33 and m13.1–m13.4 `done`. It marks c34
-and m13.5 `external`, with the unavailable physical rehearsal as their exact
-evidence boundary; this does not convert either to PASS.
+The durable goal state now marks c30–c34 and m13.1–m13.5 `done`. Their focused
+and terminal acceptance records are `pass`, including the coordinator-owned
+physical rehearsal.
 
 ## Observable contracts
 
@@ -79,9 +79,9 @@ structured `block` decision. The supervisor remains the runtime authority.
 The local durable inbox is empty. The refinement queue is empty; both eligible
 records have already been explicitly declined in
 `docs/polylane/harness/refinement-decisions.jsonl` because neither demonstrated
-a new bounded local fix. The resulting route is `NEEDS-USER` for the external
-m12.4 rendered corpus and m13.5 tmux rehearsal only; there is no remaining
-autonomous implementation item.
+a new bounded local fix. The resulting route is `NEEDS-USER` only for the
+external m12.4 rendered corpus; there is no remaining autonomous implementation
+item.
 
 | Lane | SKILL-EVIDENCE observed from its verification |
 | --- | --- |
@@ -91,23 +91,24 @@ autonomous implementation item.
 | lifecycle hooks | `test-driven-development`, `systematic-debugging`, `system-design`, and `risk-assessment`: unused (no resolved kit path). |
 | integrator | `polylane`: helped by context, inbox, refinements, cache, and routing; `code-review`, `verification-before-completion`, `risk-assessment`, and `testing-strategy`: unused (no resolved kit path). |
 
-At the final source-state terminal boundary, the required rehearsal was
-executed once (the preserved pre-repair attempt remains in
-`docs/verify-integration-attempt-1.md`):
+The sandboxed integrator correctly could not create a host tmux socket, so the
+outer coordinator executed the required rehearsal. The preserved pre-repair
+attempt remains in `docs/verify-integration-attempt-1.md`:
 
 ```sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator/terminal-rehearsal" -- \
-  env POLYLANE_MIN_DISK_GB=0 bash bin/polylane-doctor.sh --rehearse
+env -u TMUX POLYLANE_MIN_DISK_GB=0 bash bin/polylane-doctor.sh --rehearse
 ```
 
-Its GO case stopped before a pane launched:
-`REHEARSE-GO contract-v3=1 ready=0 promoted=0 terminal_gates=0 cleaned=0 leaks=1`.
-The confirming private-server probe reported `Operation not permitted` while
-creating `tmux-501/...` and then `has-session` returned 1. This managed host
-cannot create the UNIX socket required for a physical tmux rehearsal; no source
-change can manufacture that evidence. The NO-GO case was therefore not run or
-claimed. Historical c28 rendered ten-product comparison evidence remains
-external and has not been converted to PASS. Engineering is independently
-verified; both physical proof items remain open.
+The host result was:
+
+```text
+REHEARSE-GO contract-v3=1 ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0
+REHEARSE-NOGO contract-v3=1 promoted=0 evidence=1 retained=1 bounded=1 cleaned=1
+rehearse: both contract-v3 cases passed — supervised lifecycle is sound
+```
+
+The exact frozen terminal acceptance then exited 0 and recorded `m13.5` as
+`pass`. Historical c28 rendered ten-product comparison evidence remains
+external and has not been converted to PASS.
 
 POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c13-perfection-20260808

@@ -236,7 +236,7 @@
       "id": "c34",
       "text": "One named certification matrix proves discovery through next-cycle continuation, installs, runtime, integration, and learning",
       "weight": 10,
-      "status": "external",
+      "status": "done",
       "score": 0
     }
   ],
@@ -611,9 +611,9 @@
           "id": "m13.5",
           "text": "Certify every advertised subsystem and a vague-brief-to-next-cycle journey on both agent manifests",
           "weight": 36,
-          "status": "external",
+          "status": "done",
           "cycle": 13,
-          "evidence": "vague-brief contract, full suite, ShellCheck, parity and installs green; live tmux rehearsal unavailable on this host"
+          "evidence": "coordinator host gate: full terminal command exit 0; live GO ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0; live NO-GO promoted=0 evidence=1 retained=1 bounded=1 cleaned=1"
         }
       ]
     }
@@ -1162,7 +1162,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle13-terminal",
-      "status": "fail",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
