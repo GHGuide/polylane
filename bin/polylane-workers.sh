@@ -71,6 +71,49 @@ project_path() {
   (cd "$1" && pwd -P)
 }
 
+git_common_dir() {
+  local project="$1" common
+  common=$(git -C "$project" rev-parse --git-common-dir 2>/dev/null) || return 1
+  case "$common" in
+    /*) (cd "$common" && pwd -P) ;;
+    *) (cd "$project/$common" && pwd -P) ;;
+  esac
+}
+
+# A lane's positional project is its local checkout, not an authority for
+# shared coordination.  The launcher provides an absolute canonical root to
+# every lane.  Standalone callers deliberately retain the historical local
+# project behavior when that explicit runtime contract is absent.
+canonical_project_path() {
+  local requested="$1" contract workers canonical expected_workers requested_git canonical_git
+  requested=$(project_path "$requested")
+  contract="${POLYLANE_PROJECT_ROOT:-}"
+  workers="${POLYLANE_WORKERS_DIR:-}"
+  # The paired exports are emitted together by polylane-run for a lane.  A
+  # root alone is common in parent shells and is not sufficient to redirect a
+  # standalone caller's durable state.
+  if [ -z "$contract" ] || [ -z "$workers" ]; then
+    printf '%s\n' "$requested"
+    return 0
+  fi
+  case "$contract" in /*) ;; *) die 'POLYLANE_PROJECT_ROOT must be an absolute directory' ;; esac
+  case "$workers" in /*) ;; *) die 'POLYLANE_WORKERS_DIR must be an absolute directory' ;; esac
+  canonical=$(project_path "$contract")
+  # Compare the paired exports in their launcher spelling before resolving the
+  # root physically: /var may be a symlink to /private/var on macOS.
+  expected_workers="$contract/docs/polylane/workers"
+  [ "$workers" = "$expected_workers" ] || die 'POLYLANE_WORKERS_DIR does not match POLYLANE_PROJECT_ROOT'
+  [ "$requested" = "$canonical" ] && { printf '%s\n' "$canonical"; return 0; }
+  requested_git=$(git_common_dir "$requested" 2>/dev/null || true)
+  # A plain directory is an ordinary standalone-project invocation, even when
+  # a parent shell happens to export a lane contract for another project.
+  [ -n "$requested_git" ] || { printf '%s\n' "$requested"; return 0; }
+  canonical_git=$(git_common_dir "$canonical" 2>/dev/null || true)
+  [ -n "$canonical_git" ] && [ "$requested_git" = "$canonical_git" ] ||
+    die 'project is outside the declared canonical project'
+  printf '%s\n' "$canonical"
+}
+
 safe_child_dir() {
   local name="$2" child="$1/$2"
   [ ! -L "$child" ] || die "refusing symlinked runtime path: $child"
@@ -175,7 +218,7 @@ capsule() {
   reject_credential summary "$summary"
   reject_credential context "$context"
   reject_credential evidence "$evidence"
-  project=$(project_path "$project")
+  project=$(canonical_project_path "$project")
   state=$(state_for_write "$project")
   file=$(capsule_path "$state" "$name")
   acquire_lock "$state"; trap 'release_lock' EXIT HUP INT TERM
@@ -206,7 +249,7 @@ send_message() {
   valid_uint "$cycle" || die 'cycle must be a non-negative integer'
   require_bounded message "$message" "$(limit_value POLYLANE_WORKER_MESSAGE_MAX_BYTES 4096)"
   reject_credential message "$message"
-  project=$(project_path "$project"); state=$(state_for_write "$project")
+  project=$(canonical_project_path "$project"); state=$(state_for_write "$project")
   acquire_lock "$state"; trap 'release_lock' EXIT HUP INT TERM
   require_capsule "$state" "$from"; require_capsule "$state" "$to"
   history=$(history_path "$state")
@@ -222,7 +265,7 @@ send_message() {
 inbox_json() {
   local project="$1" recipient="$2" state history
   valid_name "$recipient" || die "invalid worker name: $recipient"
-  project=$(project_path "$project"); state=$(state_for_read "$project")
+  project=$(canonical_project_path "$project"); state=$(state_for_read "$project")
   require_capsule "$state" "$recipient"
   history=$(history_path "$state")
   if [ ! -s "$history" ]; then printf '%s\n' '[]'; return 0; fi
@@ -244,7 +287,7 @@ inbox_json() {
 ack_message() {
   local project="$1" recipient="$2" message_id="$3" state history payload
   valid_name "$recipient" || die "invalid worker name: $recipient"
-  project=$(project_path "$project"); state=$(state_for_write "$project")
+  project=$(canonical_project_path "$project"); state=$(state_for_write "$project")
   acquire_lock "$state"; trap 'release_lock' EXIT HUP INT TERM
   require_capsule "$state" "$recipient"; history=$(history_path "$state")
   [ -s "$history" ] || missing "message is absent for recipient: $recipient"
@@ -275,7 +318,7 @@ canonical_relay_path() {
 import_relay() {
   local project="$1" relay="$2" cycle="$3" state source history relay_line relay_seq raw_size id payload imported=0
   valid_uint "$cycle" || die 'cycle must be a non-negative integer'
-  project=$(project_path "$project"); source=$(canonical_relay_path "$relay" "$project")
+  project=$(canonical_project_path "$project"); source=$(canonical_relay_path "$relay" "$project")
   jq -e -n 'all(inputs; type == "object" and (.event | type == "string") and (.seq | type == "number") and (.at | type == "string"))' "$source" >/dev/null || die 'relay is not valid public JSONL'
   state=$(state_for_write "$project")
   acquire_lock "$state"; trap 'release_lock' EXIT HUP INT TERM
@@ -302,7 +345,7 @@ resume_packet() {
   local project="$1" name="$2" maximum="$3" state file capsule pending packet size truncated=false
   valid_name "$name" || die "invalid worker name: $name"
   valid_uint "$maximum" && [ "$maximum" -ge 256 ] || die 'resume MAX_BYTES must be an integer of at least 256'
-  project=$(project_path "$project"); state=$(state_for_read "$project"); require_capsule "$state" "$name"
+  project=$(canonical_project_path "$project"); state=$(state_for_read "$project"); require_capsule "$state" "$name"
   file=$(capsule_path "$state" "$name")
   capsule=$(jq -c '.summary = (.summary[0:128]) | .context = (.context[0:128]) | .evidence = (.evidence[0:128])' "$file")
   pending=$(inbox_json "$project" "$name" | jq -c '[.[] | .message = (.message[0:256]) | del(.relay)]')
@@ -343,7 +386,7 @@ main() {
 local_show() {
   local project="$1" name="$2" state file
   valid_name "$name" || die "invalid worker name: $name"
-  project=$(project_path "$project"); state=$(state_for_read "$project"); require_capsule "$state" "$name"
+  project=$(canonical_project_path "$project"); state=$(state_for_read "$project"); require_capsule "$state" "$name"
   file=$(capsule_path "$state" "$name")
   jq -c . "$file"
 }
