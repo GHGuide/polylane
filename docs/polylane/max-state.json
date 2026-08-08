@@ -203,6 +203,41 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c30",
+      "text": "Manifest intensity and per-lane effort resolve correctly for Claude and Codex with role and safety clamps",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c31",
+      "text": "Every builder receives an explainable relevant installed skill kit, and authorized missing skills pass quarantine, benchmark, pin, and rollback before use",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c32",
+      "text": "Builder prompts are contradiction-free, deduplicated, goal-complete, and kept within a conservative measured context budget",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c33",
+      "text": "Claude and Codex lifecycle guards restore compact context and prevent dishonest completion without weakening runtime supervision",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c34",
+      "text": "One named certification matrix proves discovery through next-cycle continuation, installs, runtime, integration, and learning",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -535,6 +570,52 @@
           "evidence": "real 10-product rendered old-vs-new blind corpus remains external"
         }
       ]
+    },
+    {
+      "id": "m13",
+      "text": "Whole-system autonomous perfection",
+      "subgoals": [
+        {
+          "id": "m13.1",
+          "text": "Make intensity, model, effort, role clamps, and cost policy agent-aware and mechanically authoritative",
+          "weight": 40,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m13.2",
+          "text": "Make per-lane skill discovery metadata-indexed, evidence-ranked, explainable, safely acquirable, and invocation-proven",
+          "weight": 39,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m13.3",
+          "text": "Compile smaller contradiction-free builder prompts with conservative token truth and frozen comparative evaluation",
+          "weight": 38,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m13.4",
+          "text": "Add portable lifecycle hooks for compact context restoration and honest completion across Claude and Codex",
+          "weight": 37,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m13.5",
+          "text": "Certify every advertised subsystem and a vague-brief-to-next-cycle journey on both agent manifests",
+          "weight": 36,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -651,6 +732,12 @@
       "kind": "decision",
       "text": "Adopt a reference-grounded Visual Intelligence Loop with safe project-scoped skill acquisition and three screenshot judges",
       "meta": "User approved 3-5 relevant sites plus wildcard, automatic council selection, and strict visual gates"
+    },
+    {
+      "cycle": 13,
+      "kind": "decision",
+      "text": "whole-system perfection selects 18 evidence-backed improvements",
+      "meta": "manifest policy, skill metadata, prompt truth, lifecycle hooks, and end-to-end certification cover the highest-leverage confirmed gaps"
     }
   ],
   "accept": [
@@ -1016,6 +1103,66 @@
       "tier": "terminal",
       "key": "visual-loop-full",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m13.1",
+      "cmd": "bash tests/test-intensity.sh && bash tests/test-models.sh && bash tests/test-model-policy.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m13.2",
+      "cmd": "bash tests/test-scout.sh && bash tests/test-scout-outcomes.sh && bash tests/test-scout-catalog.sh && bash tests/test-skill-acquire.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m13.3",
+      "cmd": "bash tests/test-promptopt.sh && bash tests/test-promptlint.sh && bash tests/test-prompt-economy.sh && bash tests/test-prompt-compiler.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m13.4",
+      "cmd": "bash tests/test-hooks.sh && bash tests/test-agent-adapter.sh && bash tests/test-installers.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m13.5",
+      "cmd": "bash tests/test-cycle-13-contract.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m13.5",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "cycle13-terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
