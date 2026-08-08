@@ -715,7 +715,7 @@
           "weight": 10,
           "status": "done",
           "cycle": 15,
-          "evidence": "Merged c15 domain contract and runtime; project-profile gate, corpus, provider parity, installer smoke, and marker checks passed; terminal certification is the remaining local gate."
+          "evidence": "Cycle 15 promoted the domain-general contract and runtime. Seven project profiles including trading passed 35/35 focused checks; the final complete suite passed 1941/1941; ShellCheck and live GO/NO-GO rehearsal passed; nested per-run tmux isolation and atomic 4096-byte worker launch were certified; Claude and both Codex installs validated byte-identical."
         }
       ]
     }

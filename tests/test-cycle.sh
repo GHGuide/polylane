@@ -94,7 +94,8 @@ TMUX
 chmod +x "$TEST_TMPDIR/bin/tmux"
 old_path="$PATH"; PATH="$TEST_TMPDIR/bin:$PATH"; export PATH
 watch=$(FAKE_TMUX_ACTIVE=1 POLYLANE_SESSION=cycle-live "$CYCLE" runtime "$ROOT/.polylane/run.json" 0)
-assert_eq "runtime-exact-attach-line" "tmux attach -t cycle-live" "$watch"
+TMUX_ROOT=$("$(dirname "$RUNNER")/polylane-tmux.sh" root runtime-test)
+assert_eq "runtime-exact-attach-line" "env -u TMUX TMUX_TMPDIR=$TMUX_ROOT tmux attach -t cycle-live" "$watch"
 assert_eq "runtime-one-line" "1" "$(printf '%s\n' "$watch" | wc -l | tr -d ' ')"
 assert_rc "runtime-inactive-rc9" 9 env FAKE_TMUX_ACTIVE=0 POLYLANE_SESSION=cycle-live \
   "$CYCLE" runtime "$ROOT/.polylane/run.json" 0
@@ -102,14 +103,14 @@ assert_rc "runtime-inactive-rc9" 9 env FAKE_TMUX_ACTIVE=0 POLYLANE_SESSION=cycle
 # Persisted manifest session works without an observer remembering the env var.
 jq '.session="manifest-live"' "$ROOT/.polylane/run.json" > "$ROOT/.polylane/run-session.json"
 watch=$(unset POLYLANE_SESSION; FAKE_TMUX_ACTIVE=1 "$CYCLE" runtime "$ROOT/.polylane/run-session.json" 0)
-assert_eq "runtime-manifest-session" "tmux attach -t manifest-live" "$watch"
+assert_eq "runtime-manifest-session" "env -u TMUX TMUX_TMPDIR=$TMUX_ROOT tmux attach -t manifest-live" "$watch"
 
 # Legacy active runs are recovered from runner-owned tmux tags.
 watch=$(unset POLYLANE_SESSION; FAKE_TMUX_ACTIVE=1 FAKE_TMUX_DISCOVERY=1 \
   FAKE_TMUX_SESSION=discovered-live FAKE_TMUX_RUN_ID=runtime-test \
   FAKE_TMUX_PROJECT="$(cd "$ROOT" && pwd -P)" \
   "$CYCLE" runtime "$ROOT/.polylane/run.json" 0)
-assert_eq "runtime-discovers-owned-session" "tmux attach -t discovered-live" "$watch"
+assert_eq "runtime-discovers-owned-session" "env -u TMUX TMUX_TMPDIR=$TMUX_ROOT tmux attach -t discovered-live" "$watch"
 PATH="$old_path"; export PATH
 
 finish

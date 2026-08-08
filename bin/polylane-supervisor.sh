@@ -39,6 +39,10 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # lane_done, parse_verdict, notify_event.
 # shellcheck source=polylane-run.sh
 . "$SCRIPT_DIR/polylane-run.sh"
+# Keep this explicit as well: packaged supervisors and test harnesses may swap
+# in a minimal runner adapter, but tmux isolation remains a supervisor contract.
+# shellcheck source=polylane-tmux.sh
+. "$SCRIPT_DIR/polylane-tmux.sh"
 
 TMUX_SESSION="${POLYLANE_SESSION:-$(jq -r '.session // "polylane"' "$SUP_MANIFEST")}"
 SUP_INTERVAL="${POLYLANE_SUP_INTERVAL:-5}"
@@ -47,6 +51,7 @@ SUP_MAX_RESTARTS="${POLYLANE_SUP_MAX_RESTARTS:-10}"
 # runner uses, else nonce-tagged DONE lanes read as not-done and get needlessly revived.
 # shellcheck disable=SC2034  # consumed by the sourced runner's lane_done
 RUN_ID=$(jq -r '.run_id // ""' "$SUP_MANIFEST")
+polylane_tmux_configure "$RUN_ID" ensure
 
 MDIR=$(cd "$(dirname "$SUP_MANIFEST")" && pwd -P)
 PROJECT_ROOT=$(cd "$MDIR/.." && pwd -P)
@@ -125,7 +130,7 @@ heartbeat() {
 # one watch tick (also the --check-once body): relay + heartbeat.
 tick() { drain_approvals; heartbeat "${1:-unknown}" "${2:-0}"; }
 
-tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
+tmux_watch_command() { polylane_tmux_watch_command "$TMUX_SESSION"; }
 
 # acquire_lock : only one supervisor may own a manifest. Atomic mkdir works on
 # macOS/bash 3.2 and prevents two restart loops from launching competing runners.

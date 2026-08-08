@@ -62,6 +62,9 @@ rehearse() {
   mkdir -p "$(dirname "$calls_path")"
   TMUX_TMPDIR="$tmux_root"
   export TMUX_TMPDIR
+  POLYLANE_TMUX_TMPDIR="$tmux_root"
+  POLYLANE_TMUX_AUTO=0
+  export POLYLANE_TMUX_TMPDIR POLYLANE_TMUX_AUTO
   sess="plrh-$$"; nonce="rh-$$-$(date +%s)"
   # shellcheck disable=SC2064 # expand root/session now
   trap "tmux kill-session -t '$sess' 2>/dev/null || true; rm -rf '$root' '$tmux_root'" RETURN

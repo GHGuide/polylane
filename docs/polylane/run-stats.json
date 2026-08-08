@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c15-domain-general-20260808",
   "started_at": 1786219912,
-  "updated_at": 1786223965,
-  "wall_s": 4053,
+  "updated_at": 1786224227,
+  "wall_s": 4315,
   "lanes": {
     "domain-contract": {
       "launches": 8,
@@ -27,7 +27,7 @@
     "project-runtime": 488676,
     "integrator": 485747
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -465,6 +465,11 @@
     {
       "type": "terminal_gate",
       "at": 1786223965
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786224227
     }
   ]
 }

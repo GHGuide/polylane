@@ -52,6 +52,7 @@ BASE=$(jq -r '.base // "main"' "$MANIFEST")
 # matches. MUST match the runner's, or a nonce-tagged DONE reads here as not-done.
 # shellcheck disable=SC2034  # consumed by the sourced runner's lane_done/parse_verdict
 RUN_ID=$(jq -r '.run_id // ""' "$MANIFEST")
+polylane_tmux_configure "$RUN_ID"
 # shellcheck disable=SC2034  # consumed by the sourced runner's agent_procs/pane_dead
 AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
@@ -78,7 +79,7 @@ discover_session() {
 TMUX_SESSION=$(discover_session)
 
 tmux_session_active() { tmux has-session -t "$TMUX_SESSION" 2>/dev/null; }
-tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
+tmux_watch_command() { polylane_tmux_watch_command "$TMUX_SESSION"; }
 
 # --- pane discovery by worktree path (index-free, restart-proof) --------------
 PANE_LIST=$(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}|#{pane_current_command}' 2>/dev/null || true)

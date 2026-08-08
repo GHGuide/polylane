@@ -9,6 +9,7 @@
 set -euo pipefail
 
 BIN=$(cd "$(dirname "$0")" && pwd)
+. "$BIN/polylane-tmux.sh"
 for dep in git jq tmux codex; do
   command -v "$dep" >/dev/null 2>&1 || {
     echo "codex-canary: missing $dep" >&2; exit 2
@@ -19,6 +20,7 @@ ROOT=$(mktemp -d "${TMPDIR:-/tmp}/polylane-codex-canary.XXXXXX")
 SESSION="pl-codex-canary-$$"
 MODEL="${POLYLANE_CANARY_MODEL:-gpt-5.6-terra}"
 RUN_ID="canary-$(date +%s)-$$"
+polylane_tmux_configure "$RUN_ID" ensure
 
 cleanup_canary() {
   tmux kill-session -t "$SESSION" 2>/dev/null || true

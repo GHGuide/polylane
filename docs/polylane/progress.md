@@ -66,8 +66,6 @@ subgoals: 43/44 done · criteria: 39/40 done · 97%
 ## Acceptance checks
 
 - Total: 53
-- Pass: 51
+- Pass: 53
 - Fail: 0
-- Unchecked: 2
-  - `m15.1` [unchecked] — bash tests/test-project-generality.sh
-  - `m15.1` [unchecked] — bash tests/run.sh && shellcheck -S warning bin/*.sh
+- Unchecked: 0

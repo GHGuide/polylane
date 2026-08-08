@@ -20,6 +20,7 @@ make_tmpdir
 BIN="$TEST_TMPDIR/bin"; PROJ="$TEST_TMPDIR/proj"
 mkdir -p "$BIN" "$PROJ/.polylane" "$PROJ/docs"
 cp "$SUP_SRC" "$BIN/polylane-supervisor.sh"
+cp "$(cd "$(dirname "$RUNNER")" && pwd)/polylane-tmux.sh" "$BIN/polylane-tmux.sh"
 
 # fake runner: behavior file .polylane/mode drives it —
 #   crash-then-go : crash rc137 first, then report+rc0   (revive path)

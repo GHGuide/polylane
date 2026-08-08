@@ -18,6 +18,7 @@ printf 'cycle-9 benchmark fixture\n' > "$REPO/benchmarks/install-sentinel.txt"
 (cd "$REPO" && ./codex/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-codex-skill" test -f "$REPO/.codex/skills/polylane/SKILL.md"
 assert_ok "install-codex-runner" test -x "$REPO/.codex/skills/polylane/scripts/polylane-run.sh"
+assert_ok "install-codex-tmux-runtime" test -x "$REPO/.codex/skills/polylane/scripts/polylane-tmux.sh"
 assert_ok "install-codex-coordination-helper" test -x "$REPO/.codex/skills/polylane/scripts/polylane-coordinate.sh"
 assert_ok "install-codex-cycle-guard" test -x "$REPO/.codex/skills/polylane/scripts/polylane-cycle.sh"
 assert_ok "install-codex-control-reference" test -f "$REPO/.codex/skills/polylane/references/cycle-9-control-room.md"
@@ -48,6 +49,7 @@ fi
 (cd "$REPO" && ./claude-code/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-claude-skill" test -f "$REPO/.claude/skills/polylane/SKILL.md"
 assert_ok "install-claude-runner" test -x "$REPO/.claude/skills/polylane/bin/polylane-run.sh"
+assert_ok "install-claude-tmux-runtime" test -x "$REPO/.claude/skills/polylane/bin/polylane-tmux.sh"
 assert_ok "install-claude-skill-evolution" test -x "$REPO/.claude/skills/polylane/bin/polylane-skill-evolve.sh"
 assert_ok "install-claude-prime-harness" test -x "$REPO/.claude/skills/polylane/bin/polylane-harness.sh"
 assert_ok "install-claude-retained-workers" test -x "$REPO/.claude/skills/polylane/bin/polylane-workers.sh"

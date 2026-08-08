@@ -101,6 +101,9 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)
 # One policy owns manifest intensity, explicit overrides, agent tiers, role
 # clamps, validation, and the pre-launch explanation.
 . "$SCRIPT_DIR/polylane-model-policy.sh"
+# One nonce-bound tmux environment is shared by the runner, supervisor, and
+# observers. This must be sourced before load_manifest configures the run.
+. "$SCRIPT_DIR/polylane-tmux.sh"
 
 # run_stats OP ... : keep the one durable telemetry implementation at the
 # process boundaries. The file lives with durable cycle evidence rather than
@@ -410,7 +413,7 @@ preflight_agent() {
   fi
 }
 
-tmux_watch_command() { printf 'tmux attach -t %s' "$TMUX_SESSION"; }
+tmux_watch_command() { polylane_tmux_watch_command "$TMUX_SESSION"; }
 
 # ---------------------------------------------------------------------------
 # manifest -> globals
@@ -1834,12 +1837,21 @@ adopt_existing_session() {
 
 lane_adopted() { [ "${LANE_ADOPTED[$1]:-0}" = "1" ]; }
 
-# new_pane WINDOW_NAME : create the next pane (new-session for the first,
+# pane_launch_command CMD : make a tmux shell-command that starts CMD directly
+# and leaves a login shell behind after the agent exits. Passing this as tmux's
+# pane command is atomic: no send-keys/shell-readiness race can swallow a seed.
+pane_launch_command() {
+  local shell_path="${SHELL:-/bin/sh}"
+  printf '%s; exec %q -l' "$1" "$shell_path"
+}
+
+# new_pane WINDOW_NAME [CMD] : create the next pane (new-session for the first,
 # split-window after) and set NEW_PANE_IDX. Panes are targeted by EXPLICIT
 # index ($TMUX_SESSION:0.N) everywhere, so health-check/respawn/stats stay
 # correct when --resume skips lanes (positional index != lane order then).
 new_pane() {
-  local idx=""
+  local idx="" launch=""
+  [ -z "${2:-}" ] || launch=$(pane_launch_command "$2")
   if [ "${SESSION_STARTED:-0}" != "1" ]; then
     if [ "${DRY_RUN:-0}" != "1" ] && tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
       die "SESSION-COLLISION: tmux '$TMUX_SESSION' already exists; resume the owned run or choose a distinct POLYLANE_SESSION"
@@ -1848,20 +1860,37 @@ new_pane() {
     # ("no space for new pane" -> a later seed_pane hits "can't find pane: N"). tmux
     # resizes to the real client on attach, so a big virtual size is free.
     if [ "${DRY_RUN:-0}" = "1" ]; then
-      run tmux new-session -d -s "$TMUX_SESSION" -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}"
+      if [ -n "$launch" ]; then
+        run tmux new-session -d -s "$TMUX_SESSION" -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}" "$launch"
+      else
+        run tmux new-session -d -s "$TMUX_SESSION" -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}"
+      fi
       idx="${NEXT_PANE_IDX:-0}"
     else
-      idx=$(tmux new-session -d -P -F '#{pane_index}' -s "$TMUX_SESSION" \
-        -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}") || return 1
+      if [ -n "$launch" ]; then
+        idx=$(tmux new-session -d -P -F '#{pane_index}' -s "$TMUX_SESSION" \
+          -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}" "$launch") || return 1
+      else
+        idx=$(tmux new-session -d -P -F '#{pane_index}' -s "$TMUX_SESSION" \
+          -x "${POLYLANE_TMUX_COLS:-250}" -y "${POLYLANE_TMUX_ROWS:-60}" -n "${1:-lanes}") || return 1
+      fi
     fi
     SESSION_STARTED=1
     tag_session
   else
     if [ "${DRY_RUN:-0}" = "1" ]; then
-      run tmux split-window -t "$TMUX_SESSION:0"
+      if [ -n "$launch" ]; then
+        run tmux split-window -t "$TMUX_SESSION:0" "$launch"
+      else
+        run tmux split-window -t "$TMUX_SESSION:0"
+      fi
       idx="${NEXT_PANE_IDX:-0}"
     else
-      idx=$(tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}') || return 1
+      if [ -n "$launch" ]; then
+        idx=$(tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}' "$launch") || return 1
+      else
+        idx=$(tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}') || return 1
+      fi
     fi
     run tmux select-layout -t "$TMUX_SESSION:0" tiled
   fi
@@ -1870,8 +1899,8 @@ new_pane() {
   NEXT_PANE_IDX=$(( NEW_PANE_IDX + 1 ))
 }
 
-# seed_pane IDX CMD : type the seeded launch command into pane IDX.
-# -l = literal: the command types as-is even if a chunk matches a tmux key name.
+# seed_pane IDX CMD : legacy/fallback transport for an already-running shell.
+# Fresh panes receive CMD atomically from new_pane and never call this function.
 seed_pane() {
   run tmux send-keys -t "$TMUX_SESSION:0.$1" -l "$2"
   run tmux send-keys -t "$TMUX_SESSION:0.$1" C-m
@@ -1893,11 +1922,10 @@ launch_panes() {
     echo "lane ${LANE_NAMES[$i]}: model=${LANE_MODELS[$i]} effort=${LANE_EFFORTS[$i]:-(default)}"
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
     graph_authority_require "lane:${LANE_NAMES[$i]}" "launch lane '${LANE_NAMES[$i]}'" || return 1
-    new_pane "${LANE_NAMES[$i]}"
+    new_pane "${LANE_NAMES[$i]}" "$pc"
     LANE_PANE_IDX[i]="$NEW_PANE_IDX"
     baseline_usage_log "${LANE_NAMES[$i]}"
     pipe_pane_log "$NEW_PANE_IDX" "${LANE_NAMES[$i]}"
-    seed_pane "$NEW_PANE_IDX" "$pc"
     run_stats lane-launch --lane "${LANE_NAMES[$i]}"
     LAUNCHED=$(( LAUNCHED + 1 ))
   done
@@ -2425,7 +2453,7 @@ respawn_lane() {
   [ "$(retry_get "$name")" = "1" ] && resume=resume
   cmd=$(pane_cmd_for "$name" "$resume")
   pane_exists "$idx" || return 1
-  if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$cmd" 2>/dev/null; then
+  if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$(pane_launch_command "$cmd")" 2>/dev/null; then
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-c 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "$cmd" 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
@@ -2443,13 +2471,12 @@ recreate_lane_pane() {
   checkpoint_lane "$wt" "$name"
   refresh_manifest_runtime_settings
   cmd=$(pane_cmd_for "$name") || return 1
-  idx=$(run tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}' 2>/dev/null) || return 1
+  idx=$(run tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}' "$(pane_launch_command "$cmd")" 2>/dev/null) || return 1
   case "$idx" in ''|*[!0-9]*) return 1 ;; esac
   pane_exists "$idx" || return 1
   pane_index_set "$name" "$idx" || return 1
   wedge_hash_set "$name" ""; wedge_cnt_set "$name" 0
   progress_hash_set "$name" ""; progress_count_set "$name" 0
-  seed_pane "$idx" "$cmd" || return 1
   pipe_pane_log "$idx" "$name"
   run_stats lane-restart --lane "$name"
 }
@@ -2810,10 +2837,8 @@ health_check() {
   done
 }
 
-# verify_seeds : shortly after launch, re-seed any pane whose seed was lost to the
-# send-keys race (keys typed before the pane's shell was ready → command vanished,
-# pane sits at a bare shell). Without this the first health check catches it, but
-# only after POLYLANE_HEALTH_INTERVAL (15s) of dead air. Free — not a retry.
+# verify_seeds : compatibility guard for adopted/legacy panes. Fresh panes start
+# their commands atomically through tmux and cannot lose a typed seed.
 verify_seeds() {
   [ "${DRY_RUN:-0}" = "1" ] && return 0
   local wait="${POLYLANE_SEED_VERIFY:-2}" i name
@@ -2821,8 +2846,9 @@ verify_seeds() {
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
     name="${LANE_NAMES[$i]}"
+    lane_done "${LANE_WORKTREES[$i]}" "$name" && continue
     if pane_dead "${LANE_PANE_IDX[$i]}"; then
-      echo "launch: lane '$name' seed did not take (pane at a shell) — re-seeding"
+      echo "launch: lane '$name' process exited during startup — restarting"
       respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}" 0
     fi
   done
@@ -2897,11 +2923,10 @@ run_integrator() {
   echo "lane $INT_NAME: model=$INT_MODEL effort=${INT_EFFORT:-(default)}"
   pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
   # new_pane also handles the all-lanes-resumed case (no session yet).
-  new_pane "$INT_NAME"
+  new_pane "$INT_NAME" "$pc"
   INT_PANE_IDX="$NEW_PANE_IDX"
   baseline_usage_log "$INT_NAME"
   pipe_pane_log "$NEW_PANE_IDX" "$INT_NAME"
-  seed_pane "$NEW_PANE_IDX" "$pc"
   run_stats lane-launch --lane "$INT_NAME"
 }
 
@@ -3245,7 +3270,7 @@ repair_integrator_verdict() {
   cmd=$(pane_cmd_for "$INT_NAME")
   echo "gate-repair: integrator verdict $verdict — autonomous repair $attempt"
   notify_event stall "integrator $verdict — repair wave $attempt"
-  if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$INT_PANE_IDX" "$cmd" 2>/dev/null; then
+  if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$INT_PANE_IDX" "$(pane_launch_command "$cmd")" 2>/dev/null; then
     run tmux send-keys -t "$TMUX_SESSION:0.$INT_PANE_IDX" C-c 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$INT_PANE_IDX" -l "$cmd" 2>/dev/null || true
     run tmux send-keys -t "$TMUX_SESSION:0.$INT_PANE_IDX" C-m 2>/dev/null || true
@@ -3903,7 +3928,7 @@ write_report() {
     if [ -n "${STALLED_LANES:-}" ]; then
       echo "- Lane(s) stalled on a usage limit: **${STALLED_LANES}** — a paywall/credits"
       echo "  prompt is waiting in their pane. That's a money decision, so nothing was"
-      echo "  auto-answered or respawned: attach (\`tmux attach -t ${TMUX_SESSION}\`), answer it,"
+      echo "  auto-answered or respawned: attach (\`$(tmux_watch_command)\`), answer it,"
       echo "  and the lane resumes."
     fi
     if [ -n "$steps" ]; then
@@ -3989,6 +4014,11 @@ main() {
   parse_args "$@"
   preflight_basic
   load_manifest
+  if [ "$DRY_RUN" = "1" ]; then
+    polylane_tmux_configure "$RUN_ID"
+  else
+    polylane_tmux_configure "$RUN_ID" ensure
+  fi
   run_stats init
   if post_promote_resume_ready; then
     recover_post_promote_run

@@ -29,6 +29,7 @@ trap 'tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true; cleanup_tmpdirs'
 PROJECT_ROOT="$TEST_TMPDIR/project"
 MANIFEST="$PROJECT_ROOT/.polylane/run.json"
 RUN_ID="run-adopt"
+polylane_tmux_configure "$RUN_ID" ensure
 RESUME=1
 DRY_RUN=0
 INT_NAME=integrator
@@ -59,7 +60,7 @@ printf '{"base":"main","run_id":"%s","integrator":{"name":"integrator","branch":
   "$RUN_ID" "$INT_WORKTREE" "${LANE_WORKTREES[0]}" > "$MANIFEST"
 printf '%s runner=alive restarts=0\n' "$(date '+%F %T')" > "$PROJECT_ROOT/.polylane/supervisor-heartbeat"
 watch=$(unset POLYLANE_SESSION; "$(dirname "$RUNNER")/polylane-cycle.sh" runtime "$MANIFEST" 0)
-assert_eq "resume-observer-discovers-session" "tmux attach -t $TMUX_SESSION" "$watch"
+assert_eq "resume-observer-discovers-session" "env -u TMUX TMUX_TMPDIR=$TMUX_TMPDIR tmux attach -t $TMUX_SESSION" "$watch"
 
 # tmux reports a login shell while Codex may be its child. The health check must
 # inspect descendants and leave that live agent alone.

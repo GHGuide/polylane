@@ -84,7 +84,8 @@ assert_eq "state-idle-session-hides-watch" "-" "$(printf '%s' "$J_IDLE" | jq -r 
 printf '%s runner=alive restarts=0\n' "$(date '+%F %T')" > "$G/.polylane/supervisor-heartbeat"
 OUT_HB=$(cd "$G" && POLYLANE_SESSION=idle-state "$STATE" .polylane/run.json)
 assert_contains "state-heartbeat-alive" "runner: alive" "$OUT_HB"
-assert_contains "state-live-session-shows-manifest-watch" "watch: tmux attach -t manifest-owned" "$OUT_HB"
+TMUX_ROOT=$("$(dirname "$RUNNER")/polylane-tmux.sh" root current-nonce)
+assert_contains "state-live-session-shows-manifest-watch" "watch: env -u TMUX TMUX_TMPDIR=$TMUX_ROOT tmux attach -t manifest-owned" "$OUT_HB"
 PATH="$old_path"; export PATH
 
 # report present flips the field

@@ -30,6 +30,7 @@ cp -R "$REPO/." "$CLA/" >/dev/null 2>&1
 
 assert_ok "claude-skill-md"        test -f "$CLA/SKILL.md"
 assert_ok "claude-run-executable"  test -x "$CLA/bin/polylane-run.sh"
+assert_ok "claude-tmux-executable" test -x "$CLA/bin/polylane-tmux.sh"
 assert_ok "claude-mem-executable"  test -x "$CLA/bin/polylane-memory.sh"
 assert_ok "claude-references-dir"  test -d "$CLA/references"
 assert_ok "claude-assets-dir"      test -d "$CLA/assets"
@@ -48,6 +49,7 @@ assert_ok "codex-install-ok"  env HOME="$CODEX_HOME" bash "$REPO/codex/install.s
 
 DEST="$CODEX_HOME/.codex/skills/polylane"
 assert_ok       "codex-skill-md"        test -f "$DEST/SKILL.md"
+assert_ok       "codex-tmux-runtime"    test -x "$DEST/scripts/polylane-tmux.sh"
 assert_contains "codex-skill-name"      "name: polylane" "$(grep -m1 '^name:' "$DEST/SKILL.md")"
 assert_ok       "codex-20-scripts"      test "$(count_exec_scripts "$DEST/scripts")" -ge 20
 assert_ok       "codex-prompt-blocks"   test -f "$DEST/references/prompt-blocks.md"
