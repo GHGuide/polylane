@@ -12,8 +12,10 @@ cannot redirect a Git worktree's canonical worker ledger. Its regression makes
 the fixture a Git repository with a deliberately mismatched ambient contract.
 
 - c35 / m14.1: runner-owned durable dirt is narrowly committed before
-  promotion; unrelated user dirt blocks without alteration; merge failure
-  aborts and reporting says neither merge nor cleanup occurred.
+  promotion. This now includes the exact skill-outcomes ledger and only the
+  current run's named lane receipts; unrelated user dirt still blocks without
+  alteration. Merge failure aborts and reporting says neither merge nor cleanup
+  occurred.
 - c36 / m14.2: a quiet high-effort live Codex turn receives its bounded grace;
   terminal turns and dead or missing panes remain recoverable.
 - c37 / m14.3: two Git worktrees share one canonical lock/history and produce
@@ -46,6 +48,10 @@ relevant source change.
 | `tests/run.sh` | 1,866 pass, 0 fail, 100 files |
 | `shellcheck -S warning bin/*.sh` | 0 diagnostics |
 | `bin/polylane-certify.sh focused` | exit 0, including `self-hosting-truth` |
+| post-`5566152` `tests/test-promotion-transaction.sh` | 17 pass, 0 fail; ledger + exact receipt promoted, `README.md` dirt blocked |
+| post-`5566152` promotion/report/worker focus | `test-promote` 4/0; `test-write-report` 31/0; `test-workers` 47/0; `test-worker-canonical-state` 23/0 |
+| post-`5566152` `tests/test-cycle-14-contract.sh` | 13 pass, 0 fail |
+| post-`5566152` ShellCheck | `bin/polylane-run.sh` and `bin/polylane-workers.sh`: 0 diagnostics |
 
 The durable state has 51 acceptance records: 50 pass, 0 fail, and 1 unchecked.
 c35–c38 and m14.1–m14.4 are `done`. c39 and m14.5 remain `doing` only because
@@ -82,18 +88,23 @@ parity and fresh installation verified.
 
 ## Host-only boundary
 
-No physical tmux rehearsal was run in this restricted Codex sandbox. The one
-remaining frozen terminal command is:
+The requested post-repair command was attempted in this restricted Codex
+sandbox:
 
 ```sh
-POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
+POLYLANE_REHEARSE_DEBUG=1 POLYLANE_MIN_DISK_GB=0 bin/polylane-rehearse.sh go
 ```
 
-The coordinator must execute it once on this integrated source. A successful
-GO/NO-GO rehearsal is required to change c39/m14.5 and the terminal acceptance
-from their current pending state. The pre-existing m12.4/c28 visual corpus is
-still external evidence, not a PASS and not a block on this engineering gate.
+It reached runner launch, then this sandbox denied creation of the fresh tmux
+Unix socket (`Operation not permitted`) before any mock lane launched. That is
+not a GO/NO-GO lifecycle result; therefore the conditional NO-GO rehearsal was
+not run. The coordinator must execute the same GO command, and then the NO-GO
+command only if GO is clean, on a tmux-capable host. A successful rehearsal is
+required to change c39/m14.5 and the terminal acceptance from their current
+pending state. The pre-existing m12.4/c28 visual corpus is still external
+evidence, not a PASS and not a block on this engineering gate.
+
+ACCEPTANCE-GATE: terminal host rehearsal remains incomplete; the sandbox tmux
+denial is not a lifecycle verdict.
 
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c14-self-hosting-truth-20260808
-
-ACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.

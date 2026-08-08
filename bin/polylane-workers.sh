@@ -169,7 +169,7 @@ require_bounded() {
 # ban on ordinary prose such as "token budget" or "secretary".
 contains_credential() {
   LC_ALL=C printf '%s\n' "$1" | grep -Eiq \
-    '(api[_-]?key|password|secret|access[_-]?token|token)[[:space:]]*[:=]|-----BEGIN( [A-Z]+)? PRIVATE KEY-----|sk-[A-Za-z0-9_-]{8,}'
+    '(api[_-]?key|password|secret|access[_-]?token|token)[[:space:]]*[:=]|-----BEGIN( [A-Z]+)? PRIVATE KEY-----|(^|[^[:alnum:]_])sk-[A-Za-z0-9_-]{8,}($|[^[:alnum:]_-])'
 }
 
 reject_credential() {

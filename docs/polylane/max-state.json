@@ -662,7 +662,7 @@
           "weight": 50,
           "status": "done",
           "cycle": 14,
-          "evidence": "transactional promotion and failure-truth reproduction passed"
+          "evidence": "post-5566152 ledger/receipt transactional promotion, unrelated-dirt refusal, and failure-truth reproductions passed"
         },
         {
           "id": "m14.2",
@@ -694,7 +694,7 @@
           "weight": 42,
           "status": "doing",
           "cycle": 14,
-          "evidence": "all non-host checks pass; coordinator-owned rehearsal is the remaining frozen terminal gate"
+          "evidence": "all non-host checks pass; post-repair sandbox GO attempt blocked before lane launch by denied tmux socket, so the coordinator-owned rehearsal remains the frozen terminal gate"
         }
       ]
     }

@@ -3222,13 +3222,26 @@ assert_no_conflict() {
 # committed before the verified integration branch is merged. Keep this list
 # narrow: user source, evidence, prompts, and reports never qualify.
 runner_owned_promotion_path() {
-  case "$1" in
+  local path="$1" lane
+  case "$path" in
     docs/polylane/max-state.json|docs/polylane/progress.md|\
     docs/polylane/run-stats.json|docs/polylane/efficiency-proof.md|\
     docs/polylane/outcomes.jsonl|docs/polylane/hubs.txt|\
     docs/polylane/harness/*.json|docs/polylane/harness/*.jsonl|\
     docs/polylane/workers/history.jsonl|docs/polylane/workers/capsules/*.json)
       return 0
+      ;;
+    # record_skill_use_evidence writes this append-only ledger before the
+    # integrator runs. It also writes one receipt for every current lane; do
+    # not accept arbitrary files below skill-use, only those exact receipts.
+    docs/polylane/skill-outcomes.jsonl)
+      return 0
+      ;;
+    docs/polylane/skill-use/*)
+      for lane in "${LANE_NAMES[@]}"; do
+        [ "$path" = "docs/polylane/skill-use/${RUN_ID:-legacy}/${lane}.json" ] && return 0
+      done
+      return 1
       ;;
     *) return 1 ;;
   esac

@@ -20,6 +20,12 @@ assert_eq "workers-read-does-not-create-runtime" no "$( [ -e "$PROJECT/docs/poly
 # input before the runtime exists, so a failed write leaves no residue.
 assert_fail "workers-capsule-rejects-secret" "$WORKERS" capsule "$PROJECT" secretless 0 builder 11 active 'api_key=sk-example-token' context evidence
 assert_eq "workers-secret-rejects-write" no "$( [ -e "$PROJECT/docs/polylane/workers/capsules/secretless.json" ] && printf yes || printf no )"
+assert_fail "workers-capsule-rejects-standalone-sk-token" "$WORKERS" capsule "$PROJECT" standalone-secret 0 builder 11 active 'sk-example-token' context evidence
+
+# Ordinary hyphenated prose must not be rejected just because it contains the
+# letters `sk-` inside a word. A real standalone sk- token remains covered by
+# the standalone-token rejection immediately above.
+assert_ok "workers-capsule-allows-risk-assessment" "$WORKERS" capsule "$PROJECT" assessment 0 builder 11 active 'complete the risk-assessment before release' context evidence
 
 # A named capsule persists stable identity and bounded working context.
 assert_ok "workers-create-alpha" "$WORKERS" capsule "$PROJECT" alpha 0 builder 11 active 'keeps the public API stable' 'inspect relay contract and tests' 'bash tests/test-workers.sh'
@@ -37,7 +43,7 @@ assert_eq "workers-bound-rejects-write" no "$( [ -e "$PROJECT/docs/polylane/work
 assert_ok "workers-capsule-cas-update" "$WORKERS" capsule "$PROJECT" alpha 1 builder 12 waiting 'handoff ready' 'resume after cycle boundary' 'docs/verify-worker-continuity.md'
 assert_rc "workers-capsule-stale-writer-rejected" 75 "$WORKERS" capsule "$PROJECT" alpha 1 builder 12 active stale context evidence
 assert_eq "workers-capsule-version-incremented" 2 "$("$WORKERS" show "$PROJECT" alpha | jq -r .version)"
-assert_eq "workers-capsule-history-append-only" 2 "$(jq -s '[.[] | select(.event == "capsule")] | length' "$PROJECT/docs/polylane/workers/history.jsonl")"
+assert_eq "workers-capsule-history-append-only" 3 "$(jq -s '[.[] | select(.event == "capsule")] | length' "$PROJECT/docs/polylane/workers/history.jsonl")"
 
 # Recipients are explicit identities; concurrent appenders retain both events.
 assert_ok "workers-create-beta" "$WORKERS" capsule "$PROJECT" beta 0 reviewer 11 active summary context evidence
