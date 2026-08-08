@@ -22,7 +22,9 @@ Detect whether the target creates or materially changes a user-facing UI. If it
 does, [visual-intelligence.md](visual-intelligence.md) is a frozen acceptance
 contract: its reference packet, three directions, automatic council choice/design
 lock, safe skill-admission record, staged screenshots, three-lens verdict, bounded
-repairs, and champion benchmark belong in the plan before implementation.
+repairs, champion benchmark, and one durable Visual certification record belong in
+the plan before implementation. Missing capture or benchmark evidence stays
+explicitly external; it never becomes a plan-only pass.
 
 Ask only if a core product decision would materially change the build. Routine
 implementation choices take the recommended path and are recorded.

@@ -89,3 +89,12 @@ paths, judge protocol, comparison results, and accessibility output as benchmark
 evidence. If a capture, live site, or remote evaluator is unavailable, leave that
 item external and do not claim a completed certification. A failed or incomplete
 certification keeps the current champion.
+
+Write one durable **Visual certification record** in the lane or integration
+verification evidence. It must link the approved direction and design lock; every
+desktop/mobile/state/flow capture or the precise external blocker; the three
+independent verdicts; each of the zero-to-two targeted repairs and re-reviews; and
+the old-vs-new prompt set, anonymization map held by the coordinator, blind tally,
+accessibility result, and resulting champion decision. The record is executable
+acceptance evidence: a missing required artifact is `external` or `NO-GO`, never a
+prose-only pass.

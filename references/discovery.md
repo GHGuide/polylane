@@ -27,7 +27,9 @@ and filling the gaps they can't answer with research + sensible defaults.
   carry the literal `ULTIMATE-GOAL` into a 3–5-reference-plus-wildcard packet,
   synthesize three directions, and lock the selected system before builders generate
   UI. A reference is evidence with an observed screen/pattern and product relevance,
-  never a vague style adjective or permission to copy an incumbent.
+  never a vague style adjective or permission to copy an incumbent. Seed the Visual
+  certification record with that packet and lock so later captures, lenses, repairs,
+  and the champion decision remain auditable.
 - **Batched, not endless.** 2–4 questions per AskUserQuestion round, multiple rounds
   ("numerous"), re-presenting the growing strategy after each so the user sees it form.
 - **Think like a product strategist, not an order-taker.** Push back gently, surface

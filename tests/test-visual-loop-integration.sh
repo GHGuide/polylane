@@ -59,5 +59,16 @@ reference lock 'tokens.*layout.*motion.*signature'
 reference staged-evidence 'desktop.*mobile'
 reference originality 'emoji-as-product-art|generic stock gradients'
 reference certification '70%'
+reference certification-record 'visual certification record|VISUAL-CERTIFICATION'
+
+# The installed reference is the executable consumer boundary: a UI lane must be
+# able to leave one durable record that joins the lock, state captures, independent
+# verdicts, bounded repairs, and champion comparison.  This keeps the evidence
+# contract usable after Codex installation rather than merely present in source.
+if tr '\n' ' ' < "$VISUAL" | grep -qiE -e 'design lock.*(capture|screenshot).*(three|3).*(verdict|lens).*repair.*(champion|old-vs-new)|VISUAL-CERTIFICATION.*design.*capture.*verdict.*repair.*champion'; then
+  pass "visual-reference-certification-artifacts"
+else
+  fail "visual-reference-certification-artifacts" "missing installed evidence contract"
+fi
 
 finish

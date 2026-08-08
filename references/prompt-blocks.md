@@ -75,7 +75,10 @@ soup, decorative pills, and default-font sameness unless evidence justifies them
 For a visual-champion replacement, preserve external/unavailable evidence honestly
 and require >=10 varied prompts, anonymized screenshots, blind decisive comparison,
 >=70% creative/polish wins, and no accessibility regression; otherwise retain the
-current champion.
+current champion. Write the Visual certification record in verification evidence:
+design lock, every capture or external blocker, three verdicts, each targeted repair
+and re-review, and the old-vs-new blind tally/accessibility/champion decision. A
+missing artifact is external or NO-GO, never a prose-only pass.
 ```
 
 ## D.1 Prime hybrid continuity — only when manifest `prime_hybrid: true`

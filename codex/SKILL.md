@@ -128,7 +128,11 @@ copy pass. Reject emoji-as-product-art, generic stock gradients, meaningless her
 text, nested-card soup, decorative pills, and default-font sameness unless product
 evidence justifies them. Promotion over the current champion needs >=10 varied prompts,
 anonymized screenshots, blind decisive comparison, >=70% creative/polish wins, and no accessibility regression. Missing screenshot/live/benchmark evidence
-stays external; failed certification keeps the current champion.
+stays external; failed certification keeps the current champion. The verification
+evidence must contain one Visual certification record linking the design lock,
+captures or external blockers, three verdicts, bounded repairs/re-reviews, and the
+old-vs-new tally, accessibility result, and champion decision; missing artifacts are
+external or NO-GO, never a prose-only pass.
 
 ### Prime hybrid continuity (opt-in for long product work)
 
