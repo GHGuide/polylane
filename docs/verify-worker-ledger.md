@@ -50,7 +50,11 @@ $ bin/polylane-check.sh "$PWD/.polylane/check-cache/worker-ledger" -- bash tests
 test-workers.sh: 45 pass, 0 fail
 CHECK-CACHE: PASS
 
-$ shellcheck -S warning bin/polylane-workers.sh tests/test-workers.sh tests/test-worker-canonical-state.sh
+$ bin/polylane-check.sh "$PWD/.polylane/check-cache/worker-ledger" -- tests/run.sh
+SUMMARY: 1801 passed, 0 failed, 97 test files
+CHECK-CACHE: PASS
+
+$ bin/polylane-check.sh "$PWD/.polylane/check-cache/worker-ledger" -- shellcheck -S warning bin/*.sh
 # exit 0; no diagnostics
 ```
 
@@ -65,10 +69,10 @@ The canonical-state test asserts all of the following from the shared history:
 - a relay located in a lane is rejected even when that lane invoked the API.
 
 SKILL-EVIDENCE: test-driven-development — read
-`/Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/test-driven-development/SKILL.md` once; used the real-worktree capsule, message, and acknowledgement regression to pin the canonical behavior, and rejected an over-strict boundary experiment when it broke the required hermetic standalone fixture.
+`/Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/test-driven-development/SKILL.md` once; used the real-worktree capsule, message, and acknowledgement regression to pin the canonical behavior, and retained the required hermetic standalone fixture.
 
 SKILL-EVIDENCE: verification-before-completion — read
-`/Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md` once; recorded targeted command output and the fresh full-suite result before committing.
+`/Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md` once; recorded fresh targeted command output, ShellCheck, and the full-suite result before committing.
 
 SKILL-EVIDENCE: architecture — read
 `/Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/architecture/SKILL.md` once; selected the explicit canonical-root contract with standalone fallback, rather than granting worktrees independent state authority.
