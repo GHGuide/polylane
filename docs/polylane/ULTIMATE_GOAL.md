@@ -1,7 +1,8 @@
 # Ultimate goal
 polylane is production-grade: a stranger can clone it, install both skills (Claude Code +
-Codex), pass doctor, and complete a flawless first run — with every advertised feature
-actually working, proven by executable checks, live canaries, and a real self-run.
+Codex), pass doctor, and complete a flawless first run for any repository-backed project —
+with every advertised feature actually working and every claimed outcome supported by
+appropriate evidence, live canaries, and a real self-run.
 
 ## Success criteria
 - c1 Fresh-clone install works for BOTH platforms from a clean environment (no repo-local state).
@@ -20,12 +21,12 @@ actually working, proven by executable checks, live canaries, and a real self-ru
 - c10 The same clean canary proves truthful cumulative usage, one coordinator-owned terminal
   gate, and complete runtime cleanup on the promoted tree.
 
-## Measured product-autonomy expansion (cycle 9)
+## Measured project-autonomy expansion (cycle 9)
 
-- c11 A versioned corpus of realistic vague app briefs runs reproducibly and scores completion,
-  product quality, time, and tokens.
+- c11 A versioned corpus of realistic vague project briefs runs reproducibly and scores
+  completion, outcome quality, time, and tokens.
 - c12 Discovery persists an adaptive question graph with recommended, deeper, and bold routes,
-  so a fresh task can reconstruct and lock the strategy without transcript memory.
+  so a fresh task can reconstruct a profile and lock the strategy without transcript memory.
 - c13 Codex workers use a measured lean profile and generated prompts stay inside a mechanical
   context budget without dropping goal, ownership, evidence, or safety contracts.
 - c14 Risk, seam, outcome, champion-selection, and configured salvage helpers are executable
@@ -65,3 +66,14 @@ actually working, proven by executable checks, live canaries, and a real self-ru
 - c27 Local learning may never silently promote a global prompt or executable skill: global
   mutations flow through the existing frozen champion/challenger, hidden-case, three-judge,
   canary, and rollback gate, with Claude/Codex install parity and end-to-end proof.
+
+## Domain-general outcome contract (cycle 15)
+
+- c28 Both entrypoints trigger for any repository-backed project and require a durable project
+  profile before decomposition; software, trading/quant research, research/analysis,
+  operations, content, data/automation, and custom/mixed work receive profile-appropriate
+  deliverables, evidence, safety gates, documentation, and completion language.
+- c29 Consequential external actions remain explicit-authority gates. In particular, trading
+  defaults to reproducible research, backtest, walk-forward, and paper evidence; no live
+  capital, publication, sent communication, production change, or physical execution is
+  claimed without the authority and actual evidence.

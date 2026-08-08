@@ -1,8 +1,8 @@
 # polylane
 
-**Describe what you want in plain English. Polylane strategizes it, splits safe
-file-isolated lanes, executes parallel Codex or Claude CLIs in visible tmux panes,
-integrates verified work, and keeps iterating until the locked goal is complete.**
+**Describe what you want in plain English. Polylane turns any repository-backed project
+goal into a profile, strategy, safe file-isolated lanes, verified evidence, and a durable
+handoff—then keeps iterating until the locked outcome is complete.**
 
 The repository has two product entrypoints: a standalone, Codex-native
 `codex/SKILL.md` and the Claude Code `SKILL.md`. They share one deterministic
@@ -31,8 +31,8 @@ Then the whole happy path is three lines:
 
 ```
 cd your-project && codex
-> $polylane build me an app that <your idea>
-# Answer only material product/secrets/money decisions. Polylane keeps working.
+> $polylane turn this goal into a verified outcome: <your idea, research, workflow, data, content, or app>
+# Answer only material outcome/secrets/money/external-authority decisions. Polylane keeps working.
 ```
 
 Prefer to just plan and stop at paste-ready prompts? Say "only plan the lanes, don't run them" — polylane will stop at the plan gate. (See [install-helpers](references/install-helpers.md) for details.)
@@ -43,6 +43,21 @@ Prefer to just plan and stop at paste-ready prompts? Say "only plan the lanes, d
 - [superpowers](https://github.com/obra/superpowers) — verification / debugging / plans
 
 None are hard requirements — polylane degrades gracefully (Explore-agent fallback if there's no graph, a terse instruction if caveman isn't installed, etc.).
+
+### Project profiles and truthful completion
+
+Polylane begins by selecting a concise profile and writing
+`docs/polylane/PROJECT_PROFILE.md`: outcome, deliverables, stakeholders, constraints,
+evidence, risk, external actions, and finish conditions. It supports software,
+trading/quant research, research/analysis, operations/business, content/creative,
+data/automation, and custom/mixed projects. UI visual intelligence is used only for
+user-facing UI work.
+
+Trading defaults to research, backtest, walk-forward, and paper evidence with data
+provenance, leakage, costs/slippage, drawdown, robustness, and risk limits. Live capital,
+publication, sent communications, production changes, purchases, and physical execution
+always need explicit user authority and actual evidence; a plan or simulation is not a
+completed action. See [project profiles](references/project-types.md).
 
 ---
 
@@ -106,7 +121,7 @@ The result: a big feature set built in parallel, with the token profile of a car
 
 ## What it does, step by step
 
-1. **Interview → spec.** Batched click-through questions (you pick, you don't type) until a numbered **integration spec** is locked. Half-satisfiable items (need a bundle / paid service / product call) get flagged so the final GO isn't surprised.
+1. **Interview → profile → spec.** Batched click-through questions establish the intended outcome, deliverables, evidence, risk, and finish conditions before a numbered integration spec is locked. External or authority-gated items are explicit so final GO is never surprised.
 2. **Recon.** `git status` first — any uncommitted orphan work is surfaced and protected before any branch op. Then maps goals → files (via the graph, not grep).
 3. **Derive lanes.** Optimal count + carving from file-overlap. Every builder gets one or two predefined and one or two lane-specific installed skills; GitHub candidates stay informational.
 4. **Plan gate.** You approve the lane table, models, isolation mode (worktrees vs shared tree), and which suggested skills to install.
