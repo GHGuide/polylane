@@ -9,6 +9,7 @@
 #   installed <skill>           -> exit 0 iff the skill/plugin is installed
 #   bake <file> <lane> <skill>. -> legacy flat kit (only installed skills)
 #   arm-role <file> <lane> <predefined|specific> <skill>...
+#   migrate <file>             -> resolve historical v2 name lists into typed v3 records
 #   github <file> <lane> <repo-or-skill> <why> -> informational suggestion
 #   github-suggest <activity> [limit] -> read-only ranked GitHub candidates
 #   catalog-index <output> -> trusted metadata-only skill catalog
@@ -62,6 +63,54 @@ _skill_roots() {
   old_ifs=$IFS; IFS=:
   for root in $roots; do [ -n "$root" ] && printf '%s\n' "$root"; done
   IFS=$old_ifs
+}
+
+# canonical_skill_file PATH: a readable regular file with no final symlink.
+# `cd -P` makes the root comparison below resistant to an alias in a parent path.
+canonical_skill_file() {
+  local path="$1" dir
+  [ -f "$path" ] && [ -r "$path" ] && [ ! -L "$path" ] || return 1
+  dir=$(cd -P "$(dirname "$path")" 2>/dev/null && pwd) || return 1
+  printf '%s/%s\n' "$dir" "$(basename "$path")"
+}
+
+# trusted_skill_source PATH: print the configured trusted source which owns PATH.
+# Plugin cache is a read-only installed source; project admission is distinguished
+# from an ordinary configured root for receipt and incident evidence.
+trusted_skill_source() {
+  local path="$1" root canonical_root cache canonical_cache
+  while IFS= read -r root; do
+    canonical_root=$(cd -P "$root" 2>/dev/null && pwd) || continue
+    case "$path" in
+      "$canonical_root"/*)
+        case "$canonical_root" in */.polylane/skills) echo project-admitted ;; *) echo trusted-root ;; esac
+        return 0 ;;
+    esac
+  done < <(_skill_roots)
+  cache="$HOME/.codex/plugins/cache"
+  canonical_cache=$(cd -P "$cache" 2>/dev/null && pwd) || return 1
+  case "$path" in "$canonical_cache"/*) echo plugin-cache; return 0 ;; esac
+  return 1
+}
+
+skill_fingerprint() { cksum "$1" | awk '{print $1 "-" $2}'; }
+
+# selected_record ID REASON: metadata only. It never reads a skill body.
+selected_record() {
+  local id="$1" reason="$2" resolved path source fingerprint
+  resolved=$(resolve "$id" 2>/dev/null) || {
+    echo "polylane-scout: selected skill '$id' cannot be resolved" >&2; return 1;
+  }
+  path=$(canonical_skill_file "$resolved") || {
+    echo "polylane-scout: selected skill '$id' has missing or unreadable path" >&2; return 1;
+  }
+  source=$(trusted_skill_source "$path") || {
+    echo "polylane-scout: selected skill '$id' resolved outside trusted roots: $path" >&2; return 1;
+  }
+  fingerprint=$(skill_fingerprint "$path")
+  jq -cn --arg id "$id" --arg path "$path" --arg reason "$reason" \
+    --arg source "$source" --arg fingerprint "$fingerprint" \
+    '{id:$id,path:$path,reason:$reason,source:$source,fingerprint:$fingerprint}'
 }
 
 # resolve SKILL : print the exact trusted local SKILL.md for a qualified or
@@ -179,28 +228,75 @@ _installed_array() {
   '
 }
 
+selected_array() {
+  local role="$1" ids="$2"
+  local records='[]' skill record
+  while IFS= read -r skill; do
+    record=$(selected_record "$skill" "$role role selection") || continue
+    records=$(jq --argjson record "$record" '. + [$record]' <<<"$records")
+  done < <(jq -r '.[]' <<<"$ids")
+  printf '%s\n' "$records"
+}
+
+write_armed_role() {
+  local f="$1" lane="$2" role="$3" ids="$4" selected="$5" tmp
+  mkdir -p "$(dirname "$f")" 2>/dev/null || true
+  [ -f "$f" ] || echo '{"version":3,"lanes":{}}' > "$f"
+  tmp="$f.tmp.$$"
+  jq --arg l "$lane" --arg r "$role" --argjson v "$ids" --argjson selected "$selected" '
+    .version = 3
+    | .lanes = (.lanes // {})
+    | .lanes[$l] = (.lanes[$l] // {
+        predefined: [], specific: [], selected: {predefined: [], specific: []}, github_suggestions: []
+      })
+    | .lanes[$l][$r] = $v
+    | .lanes[$l].selected = (.lanes[$l].selected // {predefined: [], specific: []})
+    | .lanes[$l].selected[$r] = $selected
+    | .lanes[$l].github_suggestions = (.lanes[$l].github_suggestions // [])
+  ' "$f" > "$tmp" && mv "$tmp" "$f"
+}
+
 # arm_role FILE LANE ROLE SKILL... : write a strict, role-separated kit. Builders
 # receive both a stable base kit and skills chosen specifically for their lane.
 arm_role() {
-  local f="$1" lane="$2" role="$3" arr tmp
+  local f="$1" lane="$2" role="$3" arr selected
   shift 3
   case "$role" in predefined|specific) ;; *)
     echo "polylane-scout: role must be predefined or specific" >&2; return 2 ;;
   esac
   command -v jq >/dev/null 2>&1 || { echo "polylane-scout: jq required" >&2; return 2; }
   arr=$(_installed_array "$@")
-  mkdir -p "$(dirname "$f")" 2>/dev/null || true
-  [ -f "$f" ] || echo '{"version":2,"lanes":{}}' > "$f"
-  tmp="$f.tmp.$$"
-  jq --arg l "$lane" --arg r "$role" --argjson v "$arr" '
-    .version = 2
-    | .lanes = (.lanes // {})
-    | .lanes[$l] = (.lanes[$l] // {
-        predefined: [], specific: [], github_suggestions: []
-      })
-    | .lanes[$l][$r] = $v
-    | .lanes[$l].github_suggestions = (.lanes[$l].github_suggestions // [])
-  ' "$f" > "$tmp" && mv "$tmp" "$f"
+  selected=$(selected_array "$role" "$arr")
+  [ "$(jq 'length' <<<"$selected")" -eq "$(jq 'length' <<<"$arr")" ] || {
+    echo "polylane-scout: refusing to arm unresolved or untrusted selected skill" >&2; return 2;
+  }
+  write_armed_role "$f" "$lane" "$role" "$arr" "$selected"
+}
+
+# arm_recommendation FILE LANE ROLE RECOMMENDATION_JSON ID: preserve the exact
+# candidate selected by the planner. The record is re-resolved before persistence
+# so stale recommendation metadata cannot arm a changed or untrusted file.
+arm_recommendation() {
+  local f="$1" lane="$2" role="$3" recommendation="$4" id="$5" candidate candidate_path canonical_candidate current ids
+  case "$role" in predefined|specific) ;; *) echo "polylane-scout: role must be predefined or specific" >&2; return 2 ;; esac
+  [ -f "$recommendation" ] || { echo "polylane-scout: recommendation file is missing" >&2; return 2; }
+  candidate=$(jq -c --arg id "$id" '(.candidates // [])[] | select(.id == $id)' "$recommendation" | head -n 1)
+  [ -n "$candidate" ] || { echo "polylane-scout: recommendation does not select '$id'" >&2; return 2; }
+  jq -e '(.id | type == "string") and (.path | type == "string") and (.reason | type == "string" and length > 0) and (.source | type == "string") and (.fingerprint | type == "string")' <<<"$candidate" >/dev/null || {
+    echo "polylane-scout: recommendation lacks typed selected-skill metadata" >&2; return 2;
+  }
+  candidate_path=$(jq -r '.path' <<<"$candidate")
+  canonical_candidate=$(canonical_skill_file "$candidate_path" 2>/dev/null) || {
+    echo "polylane-scout: recommendation path is missing or unreadable" >&2; return 2;
+  }
+  current=$(selected_record "$id" "$(jq -r '.reason' <<<"$candidate")") || return 2
+  jq -e --arg path "$canonical_candidate" --argjson current "$current" '
+    .id == $current.id and $path == $current.path and .source == $current.source and .fingerprint == $current.fingerprint
+  ' <<<"$candidate" >/dev/null || {
+    echo "polylane-scout: recommendation identity no longer matches trusted resolved skill" >&2; return 2;
+  }
+  ids=$(jq -cn --arg id "$id" '[$id]')
+  write_armed_role "$f" "$lane" "$role" "$ids" "[$current]"
 }
 
 armed_role() {
@@ -288,14 +384,55 @@ armed() {
   ' "$1" 2>/dev/null
 }
 
+# migrate FILE: v2 kits were only names, so they cannot prove what a builder
+# read. Resolve them once now into the same v3 record that new arming writes.
+migrate_kit() {
+  local f="$1" version lane role ids records tmp
+  [ -f "$f" ] || { echo "SCOUT-KIT: missing kit: $f" >&2; return 7; }
+  version=$(jq -r '.version // 0' "$f" 2>/dev/null) || { echo "SCOUT-KIT: invalid kit: $f" >&2; return 7; }
+  [ "$version" = 2 ] || [ "$version" = 3 ] || { echo "SCOUT-KIT: unsupported kit version: $version" >&2; return 7; }
+  [ "$version" = 3 ] && return 0
+  tmp="$f.tmp.$$"
+  jq '.version = 3 | .lanes |= with_entries(.value.selected = {predefined: [], specific: []})' "$f" > "$tmp" && mv "$tmp" "$f"
+  for lane in $(jq -r '.lanes | keys[]' "$f"); do
+    for role in predefined specific; do
+      ids=$(jq -r --arg l "$lane" --arg r "$role" '(.lanes[$l][$r] // [])[]' "$f")
+      records='[]'
+      for id in $ids; do
+        records=$(jq --argjson record "$(selected_record "$id" "migrated legacy $role role selection")" '. + [$record]' <<<"$records") || return 7
+      done
+      tmp="$f.tmp.$$"
+      jq --arg l "$lane" --arg r "$role" --argjson records "$records" '.lanes[$l].selected[$r] = $records' "$f" > "$tmp" && mv "$tmp" "$f"
+    done
+  done
+}
+
+validate_selected_record() {
+  local record="$1" id path reason source fingerprint resolved actual_source
+  id=$(jq -r '.id // empty' <<<"$record")
+  path=$(jq -r '.path // empty' <<<"$record")
+  reason=$(jq -r '.reason // empty' <<<"$record")
+  source=$(jq -r '.source // empty' <<<"$record")
+  fingerprint=$(jq -r '.fingerprint // empty' <<<"$record")
+  case "$id:$path:$reason:$source:$fingerprint" in *'::'*|:*|*:) return 1 ;; esac
+  [ "${path#/}" != "$path" ] || return 1
+  [ "$(canonical_skill_file "$path" 2>/dev/null || true)" = "$path" ] || return 1
+  actual_source=$(trusted_skill_source "$path" 2>/dev/null) || return 1
+  [ "$source" = "$actual_source" ] || return 1
+  [ "$fingerprint" = "$(skill_fingerprint "$path")" ] || return 1
+  resolved=$(resolve "$id" 2>/dev/null) || return 1
+  [ "$(canonical_skill_file "$resolved" 2>/dev/null || true)" = "$path" ] || return 1
+}
+
 # validate_kits FILE MANIFEST : a strict orchestration contract for builders.
 # GitHub suggestions are advisory metadata and never count as installed kit skills.
 validate_kits() {
-  local f="$1" manifest="$2" lane role count skill
+  local f="$1" manifest="$2" lane role count skill record paths duplicates
   if [ ! -f "$f" ] ||
-     ! jq -e '.version == 2 and (.lanes | type == "object")' "$f" >/dev/null 2>&1; then
+     ! jq -e '(.version == 2 or .version == 3) and (.lanes | type == "object")' "$f" >/dev/null 2>&1; then
     echo "SCOUT-KIT: missing or invalid structured lane kit: $f" >&2; return 7
   fi
+  migrate_kit "$f" || { echo "SCOUT-KIT: legacy v2 kit could not migrate to trusted selected-skill records" >&2; return 7; }
   if [ ! -f "$manifest" ] ||
      ! jq -e '.lanes | type == "array"' "$manifest" >/dev/null 2>&1; then
     echo "SCOUT-KIT: invalid manifest: $manifest" >&2; return 7
@@ -314,6 +451,16 @@ validate_kits() {
           return 7
         }
       done
+      while IFS= read -r record; do
+        validate_selected_record "$record" || {
+          echo "SCOUT-KIT: lane '$lane' has missing, unreadable, changed, or out-of-root selected $role skill path" >&2
+          return 7
+        }
+      done < <(jq -c --arg l "$lane" --arg r "$role" '(.lanes[$l].selected[$r] // [])[]' "$f")
+      count=$(jq -r --arg l "$lane" --arg r "$role" '(.lanes[$l].selected[$r] // []) | length' "$f")
+      [ "$count" -eq "$(jq -r --arg l "$lane" --arg r "$role" '(.lanes[$l][$r] // []) | length' "$f")" ] || {
+        echo "SCOUT-KIT: lane '$lane' selected $role records do not match armed skill ids" >&2; return 7;
+      }
     done
     count=$(jq -r --arg l "$lane" '((.lanes[$l].predefined // []) + (.lanes[$l].specific // [])) | unique | length' "$f")
     if [ "$count" -gt 4 ]; then
@@ -323,6 +470,9 @@ validate_kits() {
     jq -e --arg l "$lane" '(.lanes[$l].github_suggestions // []) | type == "array"' "$f" >/dev/null || {
       echo "SCOUT-KIT: lane '$lane' has invalid GitHub suggestion metadata" >&2; return 7
     }
+    paths=$(jq -r --arg l "$lane" '((.lanes[$l].selected.predefined // []) + (.lanes[$l].selected.specific // [])) | .[]?.path' "$f")
+    duplicates=$(printf '%s\n' "$paths" | sed '/^$/d' | LC_ALL=C sort | uniq -d)
+    [ -z "$duplicates" ] || { echo "SCOUT-KIT: lane '$lane' repeats selected skill path" >&2; return 7; }
   done
 }
 
@@ -347,6 +497,8 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     record-outcome) shift; record_outcome "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" "${6:-}" ;;
     bake)      shift; bake "$@" ;;
     arm-role)  shift; arm_role "$@" ;;
+    arm-recommendation) shift; arm_recommendation "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" ;;
+    migrate)   shift; migrate_kit "${1:?usage: migrate <kit>}" ;;
     armed-role) shift; armed_role "${1:?}" "${2:?}" "${3:?}" ;;
     github)    shift; record_github "${1:?}" "${2:?}" "${3:?}" "${4:?}" ;;
     github-suggest) shift; github_suggest "${1:?usage: github-suggest <activity> [limit]}" "${2:-5}" ;;
@@ -358,6 +510,6 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     validate)  shift; validate_kits "${1:?}" "${2:?}" ;;
     armed)     shift; armed "${1:?}" "${2:?}" ;;
     lint)      shift; lint "${1:?}" "${2:?}" "${3:?}" ;;
-    *) echo "usage: polylane-scout.sh domain|suggest|installed|resolve|recommend|record-outcome|bake|arm-role|armed-role|github|github-suggest|catalog-index|catalog-recommend|use-audit|acquire|arm-admitted|validate|armed|lint ..." >&2; exit 2 ;;
+    *) echo "usage: polylane-scout.sh domain|suggest|installed|resolve|recommend|record-outcome|bake|arm-role|arm-recommendation|migrate|armed-role|github|github-suggest|catalog-index|catalog-recommend|use-audit|acquire|arm-admitted|validate|armed|lint ..." >&2; exit 2 ;;
   esac
 fi

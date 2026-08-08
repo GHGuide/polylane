@@ -148,7 +148,7 @@ recommend_catalog() {
       | ($outcomes | map(select(.skill == $skill.id))) as $history
       | ([ $history[] | select(.outcome == "helped") ] | length) as $helped | ([ $history[] | select(.outcome == "unused") ] | length) as $unused | ([ $history[] | select(.outcome == "hurt") ] | length) as $hurt
       | select($hurt == 0) | select(($skill.compatibility | length) == 0 or ($skill.compatibility | map(ascii_downcase) | index($lane.agent | ascii_downcase))) | select(($lane.required_tools | length) == ($tool_matches | length)) | select(($activity_matches | length) > 0 or (($goal_matches | length) >= 2 and ($domain_matches | length) > 0))
-      | {id:$skill.id,path:$skill.path,source:$skill.source,score:(($activity_matches | length) * 30 + ($goal_matches | length) * 4 + ($domain_matches | length) * 6 + ($tool_matches | length) * 5 + $helped * 10 - $unused * 3),helped:$helped,unused:$unused,reason:("activities:" + ($activity_matches | join(",")) + "; globs:" + $domain + "; agent:" + $lane.agent + "; tools:" + ($tool_matches | join(",")) + " — capability: " + $skill.description)}
+      | {id:$skill.id,path:$skill.path,source:$skill.source,fingerprint:$skill.fingerprint,score:(($activity_matches | length) * 30 + ($goal_matches | length) * 4 + ($domain_matches | length) * 6 + ($tool_matches | length) * 5 + $helped * 10 - $unused * 3),helped:$helped,unused:$unused,reason:("activities:" + ($activity_matches | join(",")) + "; globs:" + $domain + "; agent:" + $lane.agent + "; tools:" + ($tool_matches | join(",")) + " — capability: " + $skill.description)}
     ) | sort_by(-.score, .id, .path) | .[0:3] | {schema:1,role:$lane.role,domain:$domain,candidates:.}
   ' "$catalog"
 }
@@ -161,15 +161,35 @@ append_outcome() {
 }
 
 use_audit() {
-  local kit="$1" lane="$2" verify="$3" domain="$4" ledger="$5" skill effect outcome why helped='[]' unused='[]' hurt='[]'
+  local kit="$1" lane="$2" verify="$3" domain="$4" ledger="$5" version record skill path fingerprint effect outcome why helped='[]' unused='[]' hurt='[]'
   [ -f "$kit" ] || { echo "SKILL-CATALOG: kit is required" >&2; return 2; }
-  jq -e '.version == 2 and (.lanes | type == "object")' "$kit" >/dev/null || { echo "SKILL-CATALOG: invalid kit" >&2; return 2; }
-  while IFS= read -r skill; do
+  jq -e '(.version == 2 or .version == 3) and (.lanes | type == "object")' "$kit" >/dev/null || { echo "SKILL-CATALOG: invalid kit" >&2; return 2; }
+  version=$(jq -r '.version' "$kit")
+  if [ "$version" = 2 ]; then
+    # A v2 kit remembered only names. It can remain readable by old callers, but
+    # neither its path nor its immutable identity is observable, so no receipt is
+    # sufficient to upgrade it to helped.
+    while IFS= read -r skill; do
+      unused=$(jq --arg id "$skill" '. + [$id]' <<<"$unused")
+      append_outcome "$ledger" "$lane" "$domain" "$skill" unused "legacy v2 kit has no trusted selected-skill record; migrate before claiming use"
+    done < <(jq -r --arg lane "$lane" '((.lanes[$lane].predefined // []) + (.lanes[$lane].specific // [])) | unique[]' "$kit")
+    jq -n --arg lane "$lane" --arg verify "$verify" --argjson helped "$helped" --argjson unused "$unused" --argjson hurt "$hurt" '{schema:2,lane:$lane,verify_file:$verify,helped:$helped,unused:$unused,hurt:$hurt}'
+    return 0
+  fi
+  while IFS= read -r record; do
+    skill=$(jq -r '.id' <<<"$record")
+    path=$(jq -r '.path' <<<"$record")
+    fingerprint=$(jq -r '.fingerprint' <<<"$record")
     effect=''
     [ -f "$verify" ] && effect=$(awk -v prefix="SKILL-EVIDENCE: $skill — " 'index($0, prefix) == 1 { print substr($0, length(prefix) + 1); exit }' "$verify")
     if [ -z "$effect" ]; then
       unused=$(jq --arg id "$skill" '. + [$id]' <<<"$unused")
       append_outcome "$ledger" "$lane" "$domain" "$skill" unused "missing SKILL-EVIDENCE record in $verify"
+      continue
+    fi
+    if ! awk -v expected="SKILL-READ: $skill | $path | $fingerprint" '$0 == expected { found=1 } END { exit !found }' "$verify"; then
+      unused=$(jq --arg id "$skill" '. + [$id]' <<<"$unused")
+      append_outcome "$ledger" "$lane" "$domain" "$skill" unused "missing matching SKILL-READ evidence for trusted path and fingerprint in $verify"
       continue
     fi
     # Evidence is a scored observation, not a flattering free-form claim.
@@ -187,8 +207,8 @@ use_audit() {
       hurt) hurt=$(jq --arg id "$skill" --arg effect "$why" '. + [{id:$id,effect:$effect}]' <<<"$hurt") ;;
     esac
     append_outcome "$ledger" "$lane" "$domain" "$skill" "$outcome" "$why"
-  done < <(jq -r --arg lane "$lane" '((.lanes[$lane].predefined // []) + (.lanes[$lane].specific // [])) | unique[]' "$kit")
-  jq -n --arg lane "$lane" --arg verify "$verify" --argjson helped "$helped" --argjson unused "$unused" --argjson hurt "$hurt" '{schema:1,lane:$lane,verify_file:$verify,helped:$helped,unused:$unused,hurt:$hurt}'
+  done < <(jq -c --arg lane "$lane" '((.lanes[$lane].selected.predefined // []) + (.lanes[$lane].selected.specific // [])) | unique_by(.id)[]' "$kit")
+  jq -n --arg lane "$lane" --arg verify "$verify" --argjson helped "$helped" --argjson unused "$unused" --argjson hurt "$hurt" '{schema:2,lane:$lane,verify_file:$verify,helped:$helped,unused:$unused,hurt:$hurt}'
 }
 
 main() {
