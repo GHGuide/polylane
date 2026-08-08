@@ -1,0 +1,7 @@
+# case|champion|challenger|expected outcome
+valid|fixtures/valid-source.txt|fixtures/valid-source.txt|WIN
+duplicate|fixtures/duplicate-label.txt|-|DUPLICATE
+contradictory|fixtures/contradictory.txt|-|CONFLICT
+over-budget|fixtures/over-budget.txt|-|BUDGET
+missing-contract|fixtures/missing-contract.txt|-|MISSING
+behavior-loss|fixtures/valid-source.txt|fixtures/weakened-goal.txt|LOSS

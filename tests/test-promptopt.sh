@@ -25,11 +25,11 @@ EOF
 ORIGINAL=$(cksum "$PROMPT")
 
 METRICS=$("$PROMPTOPT" metrics "$PROMPT")
-assert_ok "promptopt-metrics-json" jq -e '.bytes > 0 and .tokens > 0 and .estimated_tokens == .tokens and .token_estimate_method == "ceil(bytes/3)"' <<<"$METRICS"
+assert_ok "promptopt-metrics-json" jq -e '.bytes > 0 and .tokens > 0 and .estimated_tokens == .tokens and .token_estimate_method == "ceil(bytes/3)" and .conservative_token_estimate == .bytes and .conservative_token_estimate_method == "bytes"' <<<"$METRICS"
 bytes=$(jq -r '.bytes' <<<"$METRICS")
 expected=$(( (bytes + 2) / 3 ))
 assert_eq "promptopt-metrics-conservative-byte-estimate" "$expected" "$(jq -r '.tokens' <<<"$METRICS")"
-assert_ok "promptopt-check-valid" "$PROMPTOPT" check "$PROMPT" 500
+assert_ok "promptopt-check-valid" "$PROMPTOPT" check "$PROMPT" "$bytes"
 assert_eq "promptopt-check-never-rewrites-source" "$ORIGINAL" "$(cksum "$PROMPT")"
 
 MISSING="$TEST_TMPDIR/missing.md"

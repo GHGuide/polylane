@@ -10,6 +10,7 @@ make_tmpdir
 GOOD="$TEST_TMPDIR/good.txt"
 cat > "$GOOD" <<'P'
 ULTIMATE-GOAL: build the product from a brief to verified completion. CURRENT-SUBGOAL: prompt economy.
+GOAL: preserve every strict prompt contract.
 OWN: src/x. FORBIDDEN: everything else.
 DONE-SIGNAL: STATUS: x DONE run=<RUN_ID>. Write docs/verify-x.md with proof.
 PREDEFINED-SKILLS: engineering:debug
