@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-promptopt.sh metrics <prompt> | check <prompt> [budget] | compile <prompt> | compare <champion> <challenger>" >&2
+  echo "usage: polylane-promptopt.sh metrics <prompt> | check <prompt> [budget] | compile <prompt> | compile-selected <prompt> <kit> <lane> <output> | compare <champion> <challenger>" >&2
 }
 
 require_prompt() {
@@ -118,6 +118,48 @@ compile() {
   done < "$prompt"
 }
 
+# compile_selected PROMPT KIT LANE OUTPUT: retain the prompt's name-only role
+# labels, then append the typed selected records exactly once. It reads JSON
+# metadata only; SKILL.md bodies are intentionally never loaded here.
+compile_selected() {
+  local prompt="$1" kit="$2" lane="$3" output="$4" raw line previous="" seen="" records paths duplicate tmp
+  require_prompt "$prompt" || return $?
+  strict_blocks "$prompt" || return $?
+  [ -f "$kit" ] && jq -e --arg lane "$lane" '
+    .version == 3 and (.lanes[$lane] | type == "object")
+    and (((.lanes[$lane].selected.predefined // []) + (.lanes[$lane].selected.specific // [])) | length > 0)
+    and all(((.lanes[$lane].selected.predefined // []) + (.lanes[$lane].selected.specific // []))[];
+      (.id | type == "string" and length > 0)
+      and (.path | type == "string" and startswith("/") and endswith("/SKILL.md"))
+      and (.reason | type == "string" and length > 0)
+      and (.source | type == "string" and length > 0)
+      and (.fingerprint | type == "string" and test("^[0-9]+-[0-9]+$")))
+  ' "$kit" >/dev/null 2>&1 || {
+    echo "polylane-promptopt: missing or invalid typed selected-skill records for lane '$lane'" >&2; return 5;
+  }
+  records=$(jq -c --arg lane "$lane" '((.lanes[$lane].selected.predefined // []) + (.lanes[$lane].selected.specific // [])) | unique_by(.id, .path)' "$kit")
+  [ "$(jq 'length' <<<"$records")" -le 4 ] || { echo "polylane-promptopt: selected skill inventory exceeds four" >&2; return 5; }
+  paths=$(jq -r '.[].path' <<<"$records")
+  duplicate=$(printf '%s\n' "$paths" | LC_ALL=C sort | uniq -d)
+  [ -z "$duplicate" ] || { echo "polylane-promptopt: selected skill path duplicated" >&2; return 5; }
+  tmp="$output.tmp.$$"
+  while IFS= read -r raw || [ -n "$raw" ]; do
+    line=$(trim_line "$raw")
+    case "$line" in SELECTED-SKILL:*) continue ;; esac
+    if [ -z "$line" ]; then
+      [ -z "$previous" ] || printf '\n' >> "$tmp"
+      previous=""
+      continue
+    fi
+    case "|$seen|" in *"|$line|"*) continue ;; *) seen="$seen|$line" ;; esac
+    printf '%s\n' "$line" >> "$tmp"
+    previous="$line"
+  done < "$prompt"
+  printf '\nSKILL-DELIVERY: Read only these exact selected SKILL.md files; do not rediscover or inventory skills.\n' >> "$tmp"
+  jq -r '.[] | "SELECTED-SKILL: \(.id) | \(.path) | \(.source) | \(.fingerprint) | \(.reason)"' <<<"$records" >> "$tmp"
+  mv "$tmp" "$output"
+}
+
 check() {
   local prompt="$1" budget="${2:-8000}" byte_budget="${POLYLANE_PROMPT_BYTE_BUDGET:-}" result bytes tokens conservative_tokens
   require_prompt "$prompt" || return $?
@@ -174,6 +216,7 @@ main() {
     metrics) [ "$#" -eq 2 ] || { usage; return 2; }; metrics "$2" ;;
     check) [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || { usage; return 2; }; check "$2" "${3:-}" ;;
     compile) [ "$#" -eq 2 ] || { usage; return 2; }; compile "$2" ;;
+    compile-selected) [ "$#" -eq 5 ] || { usage; return 2; }; compile_selected "$2" "$3" "$4" "$5" ;;
     compare) [ "$#" -eq 3 ] || { usage; return 2; }; compare "$2" "$3" ;;
     *) usage; return 2 ;;
   esac

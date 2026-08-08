@@ -17,6 +17,13 @@ printf '# Cycle 11 digest\nPrior work.\n' > "$PROJECT/docs/polylane/cycle-11-dig
 printf '{"ultimate":"Ship safely","criteria":[],"log":[]}' > "$PROJECT/docs/polylane/max-state.json"
 printf '%s\n' '{"event":"request","lane":"alpha","to":"beta","message":"review bounded packet","seq":1,"at":"2026-08-07T10:39:30Z"}' > "$PROJECT/.polylane/coordination.jsonl"
 
+# Make the fixture a Git project and deliberately inherit another valid worker
+# contract.  Prime-hybrid helpers must explicitly bind their own canonical root
+# instead of redirecting this run's worker ledger to the ambient project.
+git -C "$PROJECT" init -q
+AMBIENT_PROJECT="$TEST_TMPDIR/ambient-project"
+git init -q "$AMBIENT_PROJECT"
+
 PROJECT_ROOT="$PROJECT"
 REPO_ROOT="$PROJECT"
 COORDINATION_PROJECT_ROOT="$PROJECT"
@@ -39,6 +46,9 @@ printf 'alpha prompt\n' > "$TEST_TMPDIR/alpha-prompt"
 printf 'beta prompt\n' > "$TEST_TMPDIR/beta-prompt"
 printf 'integrator prompt\n' > "$TEST_TMPDIR/integrator-prompt"
 
+export POLYLANE_PROJECT_ROOT="$AMBIENT_PROJECT"
+export POLYLANE_WORKERS_DIR="$AMBIENT_PROJECT/docs/polylane/workers"
+
 # A previously activated local refinement may only survive when its declared
 # expected check passes in the next cycle. This fixture forces the rollback.
 HARNESS="$PROJECT/docs/polylane/harness"
@@ -49,6 +59,7 @@ HARNESS="$PROJECT/docs/polylane/harness"
 "$SCRIPT_DIR/polylane-refine.sh" propose "$HARNESS" alpha-rollback 11 13 local prompt alpha-focus 1 tuned repeated -- false >/dev/null
 
 assert_ok "prime-hybrid-prelaunch" prime_hybrid_prepare
+unset POLYLANE_PROJECT_ROOT POLYLANE_WORKERS_DIR
 assert_ok "prime-hybrid-harness-canonical" test -f "$HARNESS/state.json"
 assert_ok "prime-hybrid-workers-canonical" test -d "$PROJECT/docs/polylane/workers/capsules"
 assert_ok "prime-hybrid-alpha-packet" test -s "$PROJECT/.polylane/context/alpha.md"

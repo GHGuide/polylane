@@ -1,6 +1,9 @@
-STATUS: integrator DONE run=c13-perfection-20260808
+STATUS: integrator DONE run=c14-self-hosting-truth-20260808
 
-All four current cycle-13 tips are merged and verified on `lane/c13-integrator`.
-Criteria c30–c34 and m13.1–m13.5 are done. The coordinator-owned host gate
-passed both physical GO and NO-GO rehearsals after the Codex sandbox correctly
-deferred tmux socket creation to the outer runner.
+Integrated the runner-truth (`8df7952`), skill-delivery (`57781b5`), and
+worker-ledger (`6f38155`) tips. Post-`5566152`, the runner transaction now
+promotes its skill-outcomes ledger and only exact current-run lane receipts;
+the user-dirt refusal and bounded credential detector regressions pass. The
+non-host c14 acceptance is complete, and coordinator-owned physical GO and
+NO-GO canaries both pass. The complete frozen terminal command also passes;
+cycle-14 is ready for transactional promotion.

@@ -17,10 +17,16 @@ assert_contains "rehearse-uses-private-tmux-server-dir" 'TMUX_TMPDIR="$tmux_root
 assert_contains "rehearse-keeps-tmux-socket-parent-short" 'plr-tmux.XXXXXX' \
   "$(sed -n '/^rehearse()/,/^}/p' "$RH")"
 
+# Invocation counters, graph witnesses, the mock executable, and its run log
+# must live outside the Git worktree so successful runner cleanup cannot erase
+# them before grading. Fixture worktrees remain under runner-owned scratch.
+make_tmpdir
+fixture_runtime_paths_check='source "$1"; repo="$2"; runtime="$3"; for name in mock-invocations graph-witness mockagent rehearse.log; do path=$(rehearse_fixture_runtime_path "$runtime" "$name") || exit 1; [ "$path" = "$runtime/rehearse/$name" ] || exit 1; case "$path" in "$repo"/*) exit 1;; esac; done; grep -qF '\''worktrees_root="$root/.polylane/rehearse/worktrees"'\'' "$1"; ! grep -qE '\''\$root/(mockagent|rehearse\.log|wt-(a|b|int))'\'' "$1"'
+assert_ok "rehearse-separates-grading-runtime-from-runner-scratch" bash -c "$fixture_runtime_paths_check" _ "$RH" "$TEST_TMPDIR/repo" "$TEST_TMPDIR/runtime"
+
 # The live fixture advances durable state before writing reports. Cleanup must
 # remove tracked and untracked current-run status markers without rejecting
 # that intended durable state change.
-make_tmpdir
 REHEARSE_REPO="$TEST_TMPDIR/repo"
 REHEARSE_SKILLS="$TEST_TMPDIR/skills"
 fixture_skills_check='source "$1"; rehearse_create_fixture_skills "$2"; for skill in fixture-test fixture-debug fixture-review fixture-check; do test -f "$2/$skill/SKILL.md" || exit 1; done'

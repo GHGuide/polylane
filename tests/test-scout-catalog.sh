@@ -72,6 +72,7 @@ EOF
 RECOMMEND="$TEST_TMPDIR/recommend.json"
 assert_ok "catalog-recommend-strong-match" bash -c '"$1" recommend "$2" "$3" "$4" > "$5"' _ "$CATALOG" "$INDEX" "$LANE" "$LEDGER" "$RECOMMEND"
 assert_eq "catalog-recommend-strong-first" "ui:visual-regression" "$(jq -r '.candidates[0].id' "$RECOMMEND")"
+assert_ok "catalog-recommend-carries-fingerprint" jq -e '.candidates[0].fingerprint | test("^[0-9]+-[0-9]+$")' "$RECOMMEND"
 assert_contains "catalog-recommend-explains-lane-evidence" "activities:capture screenshots" "$(jq -r '.candidates[0].reason' "$RECOMMEND")"
 assert_contains "catalog-recommend-explains-capability" "browser screenshots" "$(jq -r '.candidates[0].reason' "$RECOMMEND")"
 assert_eq "catalog-recommend-rejects-keyword-near-miss" "0" "$(jq '[.candidates[] | select(.id == "docs:test-writing")] | length' "$RECOMMEND")"
@@ -87,9 +88,9 @@ printf '%s\n' '{"version":2,"lanes":{"ui-lane":{"predefined":["superpowers:test-
 printf '%s\n' 'SKILL-EVIDENCE: ui:visual-regression — screenshot comparison caught a changed state.' > "$VERIFY"
 AUDIT="$TEST_TMPDIR/audit.json"
 assert_ok "catalog-use-audit-json" bash -c '"$1" use-audit "$2" "$3" "$4" "$5" "$6" > "$7"' _ "$CATALOG" "$KIT" ui-lane "$VERIFY" ui "$LEDGER" "$AUDIT"
-assert_eq "catalog-use-audit-proves-armed-skill" "ui:visual-regression" "$(jq -r '.helped[0].id' "$AUDIT")"
-assert_eq "catalog-use-audit-marks-missing-unused" "superpowers:test-driven-development" "$(jq -r '.unused[0]' "$AUDIT")"
-assert_eq "catalog-use-audit-records-unused" "unused" "$(jq -r 'select(.skill == "superpowers:test-driven-development") | .outcome' "$LEDGER" | tail -1)"
+assert_eq "catalog-use-audit-v2-is-truthfully-unused" "ui:visual-regression" "$(jq -r '.unused[]' "$AUDIT" | grep '^ui:visual-regression$')"
+assert_eq "catalog-use-audit-marks-missing-unused" "superpowers:test-driven-development" "$(jq -r '.unused[]' "$AUDIT" | grep '^superpowers:test-driven-development$')"
+assert_contains "catalog-use-audit-v2-explains-limitation" "legacy v2 kit has no trusted selected-skill record" "$(jq -r 'select(.skill == "ui:visual-regression") | .why' "$LEDGER" | tail -1)"
 
 # A lane may report a harmful invocation explicitly. The close-loop audit must
 # preserve that observable outcome rather than treating every nonempty line as
@@ -97,7 +98,6 @@ assert_eq "catalog-use-audit-records-unused" "unused" "$(jq -r 'select(.skill ==
 printf '%s\n' 'SKILL-EVIDENCE: superpowers:test-driven-development — hurt: added irrelevant test churn.' >> "$VERIFY"
 HURT_AUDIT="$TEST_TMPDIR/hurt-audit.json"
 assert_ok "catalog-use-audit-explicit-hurt" bash -c '"$1" use-audit "$2" "$3" "$4" "$5" "$6" > "$7"' _ "$CATALOG" "$KIT" ui-lane "$VERIFY" ui "$LEDGER" "$HURT_AUDIT"
-assert_eq "catalog-use-audit-keeps-hurt" "superpowers:test-driven-development" "$(jq -r '.hurt[0].id' "$HURT_AUDIT")"
-assert_eq "catalog-use-audit-records-hurt" "hurt" "$(jq -r 'select(.skill == "superpowers:test-driven-development") | .outcome' "$LEDGER" | tail -1)"
+assert_eq "catalog-use-audit-v2-never-infers-hurt" "0" "$(jq '.hurt | length' "$HURT_AUDIT")"
 
 finish

@@ -243,35 +243,35 @@
       "id": "c35",
       "text": "Verified promotion is transactional with runner-owned durable state and reports failure truthfully",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c36",
       "text": "Health recovery distinguishes active high-effort turns from genuinely wedged or dead workers",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c37",
       "text": "All worktrees append to one canonical monotonic worker history without merge conflicts",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c38",
       "text": "Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c39",
       "text": "A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -660,41 +660,41 @@
           "id": "m14.1",
           "text": "Make promotion and reporting transactional when the runner has updated durable base state",
           "weight": 50,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 14,
+          "evidence": "post-5566152 ledger/receipt transactional promotion, unrelated-dirt refusal, and failure-truth reproductions passed"
         },
         {
           "id": "m14.2",
           "text": "Replace false terminal-turn wedge detection with process-aware liveness evidence",
           "weight": 48,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 14,
+          "evidence": "quiet active turns and dead-pane recovery reproduction passed"
         },
         {
           "id": "m14.3",
           "text": "Route worker capsules messages and acknowledgements through one canonical ledger",
           "weight": 46,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 14,
+          "evidence": "canonical cross-worktree worker ledger reproduction passed"
         },
         {
           "id": "m14.4",
           "text": "Deliver selected skills by resolved trusted path and audit actual builder use",
           "weight": 44,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 14,
+          "evidence": "trusted selected-skill delivery and actual-use audit passed"
         },
         {
           "id": "m14.5",
           "text": "Certify cycle-14 promotion recovery concurrency skill delivery parity and live lifecycle",
           "weight": 42,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 14,
+          "evidence": "terminal gate passed on bdd2b5f: 1,866/0 suite, ShellCheck, parity, installers, GO and NO-GO rehearsal"
         }
       ]
     }
@@ -1315,7 +1315,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle14-terminal",
-      "status": "fail",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

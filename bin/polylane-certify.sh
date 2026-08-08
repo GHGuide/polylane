@@ -56,6 +56,7 @@ focused() {
     test-workers.sh \
     test-refine.sh \
     test-cycle.sh
+  tests self-hosting-truth test-cycle-14-contract.sh
   tests install/parity test-skill-parity.sh
   command_layer ShellCheck shellcheck -S warning \
     "$ROOT/bin/polylane-run.sh" \

@@ -1254,6 +1254,16 @@ prime_hybrid_workers_dir() { printf '%s/docs/polylane/workers' "$PROJECT_ROOT"; 
 prime_hybrid_context_dir() { printf '%s/.polylane/context' "$PROJECT_ROOT"; }
 prime_hybrid_context_packet() { printf '%s/%s.md' "$(prime_hybrid_context_dir)" "$1"; }
 
+# Worker calls must use this runner's canonical project, never an inherited
+# launcher contract.  A lane may be invoked from a worktree beneath another
+# active run, and the worker helper deliberately rejects that mismatched pair.
+prime_hybrid_workers() {
+  local workers
+  workers=$(prime_hybrid_workers_dir)
+  POLYLANE_PROJECT_ROOT="$PROJECT_ROOT" POLYLANE_WORKERS_DIR="$workers" \
+    "$SCRIPT_DIR/polylane-workers.sh" "$@"
+}
+
 prime_hybrid_pane_exports() {
   local worktree="$1" worker harness workers packet
   prime_hybrid_enabled || return 0
@@ -1293,13 +1303,13 @@ prime_hybrid_subgoal() {
 prime_hybrid_register_worker() {
   local worker="$1" role="$2" existing version last_cycle current_role rc=0
   prime_hybrid_enabled || return 0
-  existing=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT_ROOT" "$worker" 2>/dev/null) || rc=$?
+  existing=$(prime_hybrid_workers show "$PROJECT_ROOT" "$worker" 2>/dev/null) || rc=$?
   if [ "$rc" = 0 ]; then
     version=$(printf '%s' "$existing" | jq -r '.version')
     last_cycle=$(printf '%s' "$existing" | jq -r '.last_cycle')
     current_role=$(printf '%s' "$existing" | jq -r '.role')
     [ "$last_cycle" -lt "${CYCLE:-0}" ] 2>/dev/null || return 0
-    "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" "$version" \
+    prime_hybrid_workers capsule "$PROJECT_ROOT" "$worker" "$version" \
       "$current_role" "$CYCLE" active "registered for run ${RUN_ID:-legacy}" \
       "read the canonical bounded context packet once" "prelaunch retained identity" >/dev/null
     return 0
@@ -1307,7 +1317,7 @@ prime_hybrid_register_worker() {
   # Exit 4 is the public API's explicit missing-identity result. Anything else
   # is a corrupt/unreadable canonical store and must fail the launch closed.
   [ "$rc" = 4 ] || return "$rc"
-  "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" 0 "$role" "$CYCLE" active \
+  prime_hybrid_workers capsule "$PROJECT_ROOT" "$worker" 0 "$role" "$CYCLE" active \
     "registered for run ${RUN_ID:-legacy}" "read the canonical bounded context packet once" \
     "prelaunch retained identity" >/dev/null
 }
@@ -1316,7 +1326,7 @@ prime_hybrid_import_relay() {
   prime_hybrid_enabled || return 0
   mkdir -p "$(dirname "$COORDINATION_FILE")"
   [ -e "$COORDINATION_FILE" ] || : > "$COORDINATION_FILE"
-  "$SCRIPT_DIR/polylane-workers.sh" import-relay "$PROJECT_ROOT" "$COORDINATION_FILE" "$CYCLE" >/dev/null
+  prime_hybrid_workers import-relay "$PROJECT_ROOT" "$COORDINATION_FILE" "$CYCLE" >/dev/null
 }
 
 prime_hybrid_validate_pending() {
@@ -1419,7 +1429,7 @@ prime_hybrid_record_completion() {
   prime_hybrid_enabled || return 0
   [ "${DRY_RUN:-0}" = "1" ] && return 0
   if [ "$worker" = "${INT_NAME:-}" ]; then verify='docs/verify-integration.md'; else verify="docs/verify-$worker.md"; fi
-  existing=$("$SCRIPT_DIR/polylane-workers.sh" show "$PROJECT_ROOT" "$worker") || return $?
+  existing=$(prime_hybrid_workers show "$PROJECT_ROOT" "$worker") || return $?
   version=$(printf '%s' "$existing" | jq -r '.version')
   last_cycle=$(printf '%s' "$existing" | jq -r '.last_cycle')
   status=$(printf '%s' "$existing" | jq -r '.status')
@@ -1428,7 +1438,7 @@ prime_hybrid_record_completion() {
     prime_hybrid_import_relay
     return 0
   fi
-  "$SCRIPT_DIR/polylane-workers.sh" capsule "$PROJECT_ROOT" "$worker" "$version" "$current_role" "$CYCLE" complete \
+  prime_hybrid_workers capsule "$PROJECT_ROOT" "$worker" "$version" "$current_role" "$CYCLE" complete \
     "completed run ${RUN_ID:-legacy}" "completion capsule from $verify" "$verify" >/dev/null
   prime_hybrid_import_relay
 }
@@ -2475,7 +2485,25 @@ lane_active_command() {
 lane_terminal_turn() {
   local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log"
   [ -f "$log" ] || return 1
-  tail -n 100 "$log" 2>/dev/null | grep -qE '"type":"item.completed".*"type":"agent_message"|"type":"error"|"status":"(failed|completed)"'
+  tail -n 100 "$log" 2>/dev/null | grep -qE '"type":"(turn\.completed|error)"|"type":"item.completed".*"type":"agent_message"'
+}
+
+# lane_live_wedge_checks NAME : bound a quiet live turn according to the
+# effective reasoning effort. A larger explicit env value may extend the bound
+# for slow hosts, but it never shortens a high-effort turn to the medium grace.
+lane_live_wedge_checks() {
+  local effort configured limit
+  effort=$(lane_effort_get "$1")
+  case "$effort" in
+    low) limit=12 ;;
+    high) limit=40 ;;
+    xhigh|ultra|max) limit=60 ;;
+    *) limit=20 ;;
+  esac
+  configured="${POLYLANE_LIVE_WEDGE_CHECKS:-0}"
+  case "$configured" in ''|*[!0-9]*) configured=0 ;; esac
+  [ "$configured" -gt "$limit" ] 2>/dev/null && limit="$configured"
+  printf '%s' "$limit"
 }
 
 # lane_durable_activity_hash NAME : source/evidence activity, deliberately not
@@ -2512,7 +2540,7 @@ pane_wedged() {
   wedge_hash_set "$name" "$h"; wedge_cnt_set "$name" "$cnt"
   limit="${POLYLANE_WEDGE_CHECKS:-4}"
   if pane_agent_live "$idx"; then
-    lane_terminal_turn "$name" || limit="${POLYLANE_LIVE_WEDGE_CHECKS:-20}"
+    lane_terminal_turn "$name" || limit=$(lane_live_wedge_checks "$name")
   fi
   [ "$cnt" -ge "$limit" ]
 }
@@ -3190,6 +3218,155 @@ assert_no_conflict() {
 # promote — on a verified engineering verdict, advance base to the integrator branch
 # ---------------------------------------------------------------------------
 
+# runner_owned_promotion_path PATH : explicit durable runner state that may be
+# committed before the verified integration branch is merged. Keep this list
+# narrow: user source, evidence, prompts, and reports never qualify.
+runner_owned_promotion_path() {
+  local path="$1" lane
+  case "$path" in
+    docs/polylane/max-state.json|docs/polylane/progress.md|\
+    docs/polylane/run-stats.json|docs/polylane/spend-ledger.jsonl|\
+    docs/polylane/efficiency-proof.md|\
+    docs/polylane/outcomes.jsonl|docs/polylane/hubs.txt|\
+    docs/polylane/harness/*.json|docs/polylane/harness/*.jsonl|\
+    docs/polylane/workers/history.jsonl|docs/polylane/workers/capsules/*.json)
+      return 0
+      ;;
+    # record_skill_use_evidence writes this append-only ledger before the
+    # integrator runs. It also writes one receipt for every current lane; do
+    # not accept arbitrary files below skill-use, only those exact receipts.
+    docs/polylane/skill-outcomes.jsonl)
+      return 0
+      ;;
+    docs/polylane/skill-use/*)
+      for lane in "${LANE_NAMES[@]}"; do
+        [ "$path" = "docs/polylane/skill-use/${RUN_ID:-legacy}/${lane}.json" ] && return 0
+      done
+      return 1
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+# Untracked runtime scratch is neither user work to commit nor durable state to
+# promote. Tracked edits at these paths still flow through the normal user-dirt
+# guard below, so a user cannot hide a tracked change in runner scratch.
+runner_runtime_untracked_path() {
+  local path="$1" name i
+  case "$path" in
+    .polylane/*|docs/polylane-report.md) return 0 ;;
+    docs/lane-logs/*.log) name="${path#docs/lane-logs/}"; name="${name%.log}" ;;
+    docs/status-*.md) name="${path#docs/status-}"; name="${name%.md}" ;;
+    *) return 1 ;;
+  esac
+  [ "$name" = "${INT_NAME:-}" ] && return 0
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "$name" = "${LANE_NAMES[$i]}" ] && return 0
+  done
+  return 1
+}
+
+promotion_add_owned_path() {
+  local path="$1" seen
+  for seen in "${PROMOTION_OWNED_PATHS[@]:-}"; do
+    [ "$seen" = "$path" ] && return 0
+  done
+  PROMOTION_OWNED_PATHS+=("$path")
+}
+
+promotion_require_owned_paths() {
+  local path kind="$1"
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    if runner_owned_promotion_path "$path"; then
+      promotion_add_owned_path "$path"
+    elif [ "$kind" = untracked ] && runner_runtime_untracked_path "$path"; then
+      :
+    else
+      echo "promote: refusing to stage unrelated user change: $path" >&2
+      return 1
+    fi
+  done
+}
+
+# prepare_promotion_base : pre-promotion runtime writes are durable evidence,
+# but they must not make the subsequent verified merge fail. Commit only the
+# explicit runner-owned allowlist; any other tracked or untracked change blocks
+# before the base ref can move.
+prepare_promotion_base() {
+  PROMOTION_OWNED_PATHS=()
+  promotion_require_owned_paths tracked < <(git -C "$REPO_ROOT" diff --name-only) || return 1
+  promotion_require_owned_paths tracked < <(git -C "$REPO_ROOT" diff --cached --name-only) || return 1
+  promotion_require_owned_paths untracked < <(git -C "$REPO_ROOT" ls-files --others --exclude-standard) || return 1
+  [ "${#PROMOTION_OWNED_PATHS[@]}" -gt 0 ] || return 0
+  run git -C "$REPO_ROOT" add -- "${PROMOTION_OWNED_PATHS[@]}" || return 1
+  run git -C "$REPO_ROOT" commit --only -m "polylane: record runner state before promotion" -- \
+    "${PROMOTION_OWNED_PATHS[@]}"
+}
+
+# candidate_state_conflict_is_safe PATH : during a verified promotion the base
+# runner may have persisted stale acceptance status after the integrator wrote
+# the final state. Accept the candidate only when immutable goal/check
+# definitions and the learning log are byte-semantically identical, and no
+# already-proven done/external/pass state regresses. This is intentionally not
+# a generic JSON merge.
+candidate_state_conflict_is_safe() {
+  local path="$1"
+  git -C "$REPO_ROOT" show ":2:$path" >/dev/null 2>&1 || return 1
+  git -C "$REPO_ROOT" show ":3:$path" >/dev/null 2>&1 || return 1
+  jq -e -n \
+    --slurpfile base <(git -C "$REPO_ROOT" show ":2:$path") \
+    --slurpfile candidate <(git -C "$REPO_ROOT" show ":3:$path") '
+    def structure:
+      {
+        ultimate,
+        criteria: ([.criteria[] | {id, text, weight}] | sort_by(.id)),
+        milestones: ([.milestones[] | {
+          id, text,
+          subgoals: ([.subgoals[] | {id, text, weight}] | sort_by(.id))
+        }] | sort_by(.id)),
+        accept: ([.accept[] | {
+          sid, cmd, tier, key: (.key // ""), deps: (.deps // [])
+        }] | sort_by(.sid, .tier, .key, .cmd))
+      };
+    ($base[0]) as $base_state | ($candidate[0]) as $candidate_state |
+    ($base_state | structure) == ($candidate_state | structure)
+    and ($base_state.log == $candidate_state.log)
+    and all($base_state.criteria[];
+      . as $b | any($candidate_state.criteria[];
+        .id == $b.id and
+        (if $b.status == "done" then .status == "done"
+         elif $b.status == "external" then .status == "external"
+         else true end)))
+    and all($base_state.milestones[].subgoals[];
+      . as $b | any($candidate_state.milestones[].subgoals[];
+        .id == $b.id and
+        (if $b.status == "done" then .status == "done"
+         elif $b.status == "external" then .status == "external"
+         else true end)))
+    and all($base_state.accept[];
+      . as $b | any($candidate_state.accept[];
+        .sid == $b.sid and .cmd == $b.cmd and .tier == $b.tier and
+        (.key // "") == ($b.key // "") and
+        (if $b.status == "pass" then .status == "pass" else true end)))
+  ' >/dev/null
+}
+
+# resolve_verified_state_conflict : resolve only the single monotonic state-file
+# conflict above. Every source, evidence, history, or multi-path conflict still
+# aborts through the ordinary transaction rollback.
+resolve_verified_state_conflict() {
+  local state_path="${STATE_FILE:-docs/polylane/max-state.json}" unmerged
+  case "$state_path" in "$REPO_ROOT"/*) state_path="${state_path#"$REPO_ROOT"/}" ;; esac
+  unmerged=$(git -C "$REPO_ROOT" diff --name-only --diff-filter=U)
+  [ "$unmerged" = "$state_path" ] || return 1
+  candidate_state_conflict_is_safe "$state_path" || return 1
+  git -C "$REPO_ROOT" checkout --theirs -- "$state_path" || return 1
+  git -C "$REPO_ROOT" add -- "$state_path" || return 1
+  git -C "$REPO_ROOT" commit -m "polylane: integrate verified lanes" || return 1
+  echo "promote: resolved monotonic verified state conflict at $state_path"
+}
+
 # promote_to_main : the integrator merges the lanes into its OWN branch and
 # verifies THERE — it never touches the base branch. So a NO-GO can't pollute
 # the base. On GO the runner fast-forwards the base ($BASE) to the integrator
@@ -3197,9 +3374,17 @@ assert_no_conflict() {
 # A fast-forward keeps history linear; if the base moved meanwhile, fall back to
 # a real merge. Runs on the base worktree ($REPO_ROOT), which is on $BASE.
 promote_to_main() {
+  PROMOTION_STATE=attempting
+  CLEANUP_STATE=retained
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would fast-forward $BASE to $INT_BRANCH after a verified engineering verdict"
+    PROMOTION_STATE=promoted
     return 0
+  fi
+  if ! prepare_promotion_base; then
+    PROMOTION_STATE=failed
+    echo "promote: base has unrelated user changes; nothing merged or cleaned." >&2
+    return 1
   fi
   local cur
   cur=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
@@ -3207,13 +3392,19 @@ promote_to_main() {
     echo "promote: base worktree is on '$cur', not '$BASE' — merging $INT_BRANCH into '$cur'" >&2
   fi
   if run git -C "$REPO_ROOT" merge --ff-only "$INT_BRANCH"; then
+    PROMOTION_STATE=promoted
     echo "promote: $BASE fast-forwarded to $INT_BRANCH (verified)"
   else
     echo "promote: $cur diverged from $INT_BRANCH — non-ff merge" >&2
-    run git -C "$REPO_ROOT" merge --no-ff -m "polylane: integrate verified lanes" "$INT_BRANCH" || {
-      echo "promote: merge FAILED — base left as-is, nothing deleted. Resolve manually." >&2
-      return 1
-    }
+    if ! run git -C "$REPO_ROOT" merge --no-ff -m "polylane: integrate verified lanes" "$INT_BRANCH"; then
+      if ! resolve_verified_state_conflict; then
+        git -C "$REPO_ROOT" merge --abort 2>/dev/null || true
+        PROMOTION_STATE=failed
+        echo "promote: merge FAILED — base restored, nothing merged or deleted. Resolve manually." >&2
+        return 1
+      fi
+    fi
+    PROMOTION_STATE=promoted
   fi
 }
 
@@ -3365,8 +3556,10 @@ cleanup() {
   run git -C "$REPO_ROOT" checkout -q -- .polylane || true
 
   if [ "$cleanup_rc" -eq 0 ]; then
+    CLEANUP_STATE=complete
     echo "Cleanup complete. Kept: docs/verify-*.md, docs/parallel-status.md, docs/polylane-report.md"
   else
+    CLEANUP_STATE=warning
     echo "cleanup: incomplete; verified merge is intact and the report will record this maintenance warning" >&2
   fi
   return "$cleanup_rc"
@@ -3441,17 +3634,18 @@ est_cost() { LC_ALL=C awk -v t="$1" -v p="$2" 'BEGIN{printf "%.2f", t * p / 1000
 # write_report VERDICT : write docs/polylane-report.md — a plain-language digest of
 # what happened + suggested next steps. Written on BOTH GO and NO-GO.
 report_open_items() {
-  local verdict="${1:-UNKNOWN}" i evidence
+  local i evidence promoted=0
   local evidence_paths=()
+  [ "${PROMOTION_STATE:-}" = promoted ] && promoted=1
   for i in "${!LANE_NAMES[@]}"; do
-    if [ "$verdict" = GO ] || [ "$verdict" = EXTERNAL-EVIDENCE-OPEN ]; then
+    if [ "$promoted" = 1 ]; then
       evidence="$REPO_ROOT/docs/verify-${LANE_NAMES[$i]}.md"
     else
       evidence="${LANE_WORKTREES[$i]:-}/docs/verify-${LANE_NAMES[$i]}.md"
     fi
     [ -f "$evidence" ] && evidence_paths+=("$evidence")
   done
-  if [ "$verdict" = GO ] || [ "$verdict" = EXTERNAL-EVIDENCE-OPEN ]; then
+  if [ "$promoted" = 1 ]; then
     evidence="$REPO_ROOT/docs/verify-integration.md"
   else
     evidence="${INT_WORKTREE:-}/docs/verify-integration.md"
@@ -3462,13 +3656,15 @@ report_open_items() {
 }
 
 write_report() {
-  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0 telemetry telemetry_tokens=""
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state
   # dry-run must never touch the tree — print the intent, write nothing.
   if [ "${DRY_RUN:-0}" = "1" ]; then
     printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
     return 0
   fi
   when=$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo "?")
+  promotion_state="${PROMOTION_STATE:-not-attempted}"
+  cleanup_state="${CLEANUP_STATE:-retained}"
   mkdir -p "$REPO_ROOT/docs" 2>/dev/null || true
   if [ -n "${STATE_FILE:-}" ] && [ -f "$STATE_FILE" ]; then
     subdone=$(jq '[.milestones[].subgoals[] | select(.status=="done")] | length' "$STATE_FILE" 2>/dev/null || echo 0)
@@ -3518,14 +3714,14 @@ write_report() {
     if [ -x "$SCRIPT_DIR/polylane-ledger.sh" ]; then
       "$SCRIPT_DIR/polylane-ledger.sh" record --file "$REPO_ROOT/docs/polylane/spend-ledger.jsonl" \
         --cycle "${CYCLE:-${POLYLANE_CYCLE:-0}}" --verdict "$verdict" --tokens "$_tokens_total" --cost "${_total:-0}" \
-        --subdone "$subdone" --subtotal "$subtotal" --nogo "$([ "$verdict" = GO ] || [ "$verdict" = EXTERNAL-EVIDENCE-OPEN ]; echo $?)" \
+        --subdone "$subdone" --subtotal "$subtotal" --nogo "$([ "$promotion_state" = promoted ]; echo $?)" \
         --lanes "${#LANE_NAMES[@]}" --wall "${SECONDS:-0}" >/dev/null 2>&1 || true
     fi
     echo
     echo "## Integrator verdict"
     echo
-    if [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
-      if [ -n "${CLEANUP_WARNING:-}" ]; then
+    if [ "$promotion_state" = promoted ]; then
+      if [ "$cleanup_state" != complete ] || [ -n "${CLEANUP_WARNING:-}" ]; then
         echo "**${verdict}** — verified work merged into \`${BASE}\`. Post-merge cleanup was incomplete: ${CLEANUP_WARNING}. The result is durable; retained runtime artifacts can be cleaned later."
       elif [ "$verdict" = "GO" ]; then
         echo "**GO** — all lanes merged into \`${BASE}\`; worktrees, merged branches, and scratch removed. Kept the \`docs/verify-*.md\` evidence."
@@ -3539,6 +3735,10 @@ write_report() {
         fi
         echo "Only physical/manual evidence remains open; continue routing any other autonomous subgoals."
       fi
+    elif [ "$promotion_state" = failed ]; then
+      echo "**${verdict}** — promotion did not complete. Nothing merged, nothing cleaned; the lane worktrees are retained for resolution and re-run."
+    elif [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
+      echo "**${verdict}** — integrator evidence is favorable, but promotion state is unknown. Nothing is claimed merged or cleaned; inspect the base and retained worktrees."
     else
       echo "**${verdict}** — integrator withheld GO. Nothing merged, nothing deleted; the lane worktrees are left intact so you can fix and re-run. See \`docs/verify-integration.md\`."
     fi
@@ -3550,7 +3750,7 @@ write_report() {
     echo
     echo "## Suggested next steps"
     echo
-    if [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
+    if [ "$promotion_state" = promoted ]; then
       echo "- Review the merged result, then \`git push\` to back it up."
     elif [ -n "${FAILED_LANES:-}" ]; then
       echo "- Lane(s) errored out and could not recover after retries: **${FAILED_LANES}**."
@@ -3625,11 +3825,14 @@ post_promote_resume_ready() {
 
 recover_post_promote_run() {
   VERDICT_RESULT="${POST_PROMOTE_VERDICT:?post-promote verdict missing}"
+  PROMOTION_STATE=promoted
+  CLEANUP_STATE=retained
   echo "== recover: verified run already promoted; completing cleanup + report =="
   prime_hybrid_record_builder_completions
   prime_hybrid_record_completion "$INT_NAME"
   capture_stats
   if ! cleanup; then
+    CLEANUP_STATE=warning
     CLEANUP_WARNING="some worktrees, branches, or scratch could not be removed"
     echo "Cleanup warning: $CLEANUP_WARNING. Continuing to the durable run report." >&2
   fi
@@ -3783,6 +3986,7 @@ main() {
     advanced_runtime record "${VERDICT_RESULT:-GO}"
     echo "== cleanup =="
     if ! cleanup; then
+      CLEANUP_STATE=warning
       CLEANUP_WARNING="some worktrees, branches, or scratch could not be removed"
       echo "Cleanup warning: $CLEANUP_WARNING. Continuing to the durable run report." >&2
     fi

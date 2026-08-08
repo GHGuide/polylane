@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090,SC2034 # sourced runner consumes fixture globals
 # write_report VERDICT — writes docs/polylane-report.md on BOTH GO and non-GO.
 # Frozen: report exists, carries the verdict line, and one lanes-table row per
 # lane. Runs against a tmpdir REPO_ROOT (non-git -> git-log fallback path).
@@ -20,6 +21,8 @@ PROJECT_ROOT="$TEST_TMPDIR"
 LANE_WORKTREES=("$TEST_TMPDIR/wt-alpha" "$TEST_TMPDIR/wt-beta")
 INT_WORKTREE="$TEST_TMPDIR/wt-integrator"
 FAILED_LANES=""
+PROMOTION_STATE=promoted
+CLEANUP_STATE=complete
 mkdir -p "$TEST_TMPDIR/docs"
 cat > "$TEST_TMPDIR/docs/verify-alpha.md" <<'EOF'
 ## Deferred
@@ -47,11 +50,36 @@ assert_contains "go-telemetry-tokens-unknown" "tokens=unknown" "$go"
 assert_eq "go-ledger-cycle" "7" "$(jq -r '.cycle' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
 assert_eq "go-ledger-tokens" "42000" "$(jq -r '.tokens' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
 
+# A favorable integrator verdict is evidence for attempting promotion, not
+# proof it happened. A failed transaction retains every runtime artifact and
+# the report must say so even when the candidate verdict was GO.
+PROMOTION_STATE=failed
+CLEANUP_STATE=retained
+write_report GO
+promotion_failed=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
+assert_contains "failed-promotion-report-does-not-claim-merge" "promotion did not complete" "$promotion_failed"
+assert_contains "failed-promotion-report-retains-worktrees" "Nothing merged, nothing cleaned" "$promotion_failed"
+if printf '%s' "$promotion_failed" | grep -qF -- "all lanes merged"; then fail "failed-promotion-report-no-false-success" "merge success was inferred from GO"; else pass "failed-promotion-report-no-false-success"; fi
+assert_eq "failed-promotion-ledger-is-nogo" "1" "$(jq -s '.[-1].nogo' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
+
+# Promotion and cleanup are separate observed states: a durable promotion with
+# incomplete cleanup must never claim the worktrees and scratch were removed.
+PROMOTION_STATE=promoted
+CLEANUP_STATE=warning
+CLEANUP_WARNING='worktree remove failed'
+write_report GO
+cleanup_warning=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
+assert_contains "cleanup-warning-report-is-observed" "Post-merge cleanup was incomplete" "$cleanup_warning"
+if printf '%s' "$cleanup_warning" | grep -qF -- "worktrees, merged branches, and scratch removed"; then fail "cleanup-warning-report-no-false-clean" "cleanup success was inferred"; else pass "cleanup-warning-report-no-false-clean"; fi
+CLEANUP_WARNING=""
+
 # --- NO-GO report ------------------------------------------------------------
 make_tmpdir
 REPO_ROOT="$TEST_TMPDIR"
 LANE_WORKTREES=("$TEST_TMPDIR/wt-alpha" "$TEST_TMPDIR/wt-beta")
 INT_WORKTREE="$TEST_TMPDIR/wt-integrator"
+PROMOTION_STATE=not-attempted
+CLEANUP_STATE=retained
 mkdir -p "$TEST_TMPDIR/wt-alpha/docs" "$TEST_TMPDIR/wt-beta/docs" "$TEST_TMPDIR/wt-integrator/docs" "$TEST_TMPDIR/docs"
 cat > "$TEST_TMPDIR/wt-alpha/docs/verify-alpha.md" <<'EOF'
 ## Deferred
@@ -92,6 +120,8 @@ if printf '%s' "$nogo" | grep -qF -- "shell output must not leak"; then fail "no
 make_tmpdir
 REPO_ROOT="$TEST_TMPDIR"
 FAILED_LANES="beta"
+PROMOTION_STATE=not-attempted
+CLEANUP_STATE=retained
 write_report HALTED
 halted=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
 assert_contains "halted-verdict-line" "**Outcome:** HALTED" "$halted"
