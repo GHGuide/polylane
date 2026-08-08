@@ -1,0 +1,57 @@
+{
+  "description": "Optional project-local Polylane lifecycle context and completion guard. Review and trust through Codex /hooks; this fragment never changes global configuration or permissions.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/bin/polylane-hooks.sh\" codex SessionStart --project \"$(git rev-parse --show-toplevel)\"",
+            "timeout": 5,
+            "additionalContextLimit": 1024,
+            "statusMessage": "Restoring bounded Polylane context"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/bin/polylane-hooks.sh\" codex PreCompact --project \"$(git rev-parse --show-toplevel)\"",
+            "timeout": 5,
+            "statusMessage": "Saving compact Polylane context"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/bin/polylane-hooks.sh\" codex PostCompact --project \"$(git rev-parse --show-toplevel)\"",
+            "timeout": 5,
+            "statusMessage": "Restoring compact Polylane context"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/bin/polylane-hooks.sh\" codex Stop --project \"$(git rev-parse --show-toplevel)\"",
+            "timeout": 5,
+            "statusMessage": "Checking current-run Polylane evidence"
+          }
+        ]
+      }
+    ]
+  }
+}

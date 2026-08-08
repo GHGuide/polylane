@@ -1,0 +1,36 @@
+{
+  "_comment": "Merge this optional fragment into <project>/.claude/settings.json. It is project-scoped and does not grant permissions, modify global settings, or replace the Polylane supervisor.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude SessionStart --project \"$CLAUDE_PROJECT_DIR\"" }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude PreCompact --project \"$CLAUDE_PROJECT_DIR\"" }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude PostCompact --project \"$CLAUDE_PROJECT_DIR\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude Stop --project \"$CLAUDE_PROJECT_DIR\"" }
+        ]
+      }
+    ]
+  }
+}

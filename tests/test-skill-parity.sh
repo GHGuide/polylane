@@ -58,5 +58,10 @@ both visual-asset-copy 'emoji-as-product-art|default-font sameness'
 both visual-champion-certification '>=10 varied prompts|70% creative/polish'
 both visual-accessibility-gate 'no accessibility regression'
 both visual-certification-record 'visual certification record|VISUAL-CERTIFICATION'
+both cycle13-model-policy 'model policy|effective model policy|intensity'
+both cycle13-skill-catalog 'catalog-index|metadata-only'
+both cycle13-prompt-compiler 'compiled launch|compiled prompt|cycle-13-integration'
+both cycle13-lifecycle-hooks 'lifecycle hooks|lifecycle.*hook|cycle-13-integration'
+both cycle13-certification 'polylane-certify\.sh'
 
 finish

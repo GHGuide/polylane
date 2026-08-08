@@ -50,6 +50,10 @@ EMPTY_CODEX_HOME="$TEST_TMPDIR/no-codex-cache"
 OUT_CODEX_FALLBACK=$(CODEX_HOME="$EMPTY_CODEX_HOME" "$MODELS" codex 2>&1)
 assert_eq "models-codex-current-fallback" "gpt-5.6-terra" "$OUT_CODEX_FALLBACK"
 
+# The resolver's published Codex family is ordered, not a Claude alias.
+OUT_CODEX_TIERS=$(CODEX_HOME="$EMPTY_CODEX_HOME" "$MODELS" codex --tiers 2>&1)
+assert_eq "models-codex-tier-order" $'gpt-5.6-luna\ngpt-5.6-terra\ngpt-5.6-sol' "$OUT_CODEX_TIERS"
+
 # --- probe branch (mock curl + real jq) --------------------------------------
 # The script only reaches the probe when both curl and jq exist; we shadow curl
 # with a mock but need real jq to parse the JSON, so skip-pass when jq is absent.

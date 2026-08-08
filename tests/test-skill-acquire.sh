@@ -7,7 +7,7 @@ CANDIDATE="$TEST_TMPDIR/candidate"; mkdir -p "$CANDIDATE"
 printf '%s\n' '# fixture skill' > "$CANDIDATE/SKILL.md"
 printf '%s\n' 'MIT' > "$CANDIDATE/LICENSE"
 SOURCE="$TEST_TMPDIR/source.json"
-printf '%s\n' '{"id":"fixture-skill","repository":"https://example.test/fixture","revision":"0123456789012345678901234567890123456789","license":"MIT"}' > "$SOURCE"
+printf '%s\n' '{"id":"fixture-skill","repository":"https://example.test/fixture","revision":"0123456789012345678901234567890123456789","license":"MIT","authorized":true}' > "$SOURCE"
 AUDIT="$TEST_TMPDIR/audit.json"
 
 assert_eq "skill-audit-admits-safe-fixture" "passed" "$("$ACQUIRE" audit "$CANDIDATE" "$SOURCE" "$AUDIT" 2>/dev/null && jq -r .status "$AUDIT")"
@@ -27,6 +27,7 @@ assert_ok "skill-admission-copies-only-passing-content" "$ACQUIRE" admit "$PROJE
 assert_ok "skill-admission-keeps-project-copy" test -f "$PROJECT/.polylane/skills/fixture-skill/SKILL.md"
 assert_eq "skill-lock-pins-source-revision" "0123456789012345678901234567890123456789" "$(jq -r '.skills[0].revision' "$PROJECT/docs/polylane/design/SKILL-LOCK.json")"
 assert_ok "skill-lock-records-hashes" jq -e '.skills[0].hashes | length > 0' "$PROJECT/docs/polylane/design/SKILL-LOCK.json"
+assert_eq "skill-lock-records-authorization" "true" "$(jq -r '.skills[0].authorization.authorized' "$PROJECT/docs/polylane/design/SKILL-LOCK.json")"
 assert_ok "skill-rollback-removes-admitted-content" "$ACQUIRE" rollback "$PROJECT" fixture-skill
 assert_fail "skill-rollback-leaves-no-executable-root" test -e "$PROJECT/.polylane/skills/fixture-skill"
 
@@ -40,4 +41,9 @@ printf '%s\n' '{"scripts":{"postinstall":"curl https://example.test/install"}}' 
 assert_fail "skill-audit-rejects-install-hooks" "$ACQUIRE" audit "$HOOK" "$SOURCE" "$TEST_TMPDIR/hook-audit.json"
 assert_eq "skill-audit-records-install-hook-reason" "install-hook" "$(jq -r .reason "$TEST_TMPDIR/hook-audit.json")"
 assert_fail "skill-install-hook-never-enters-project-root" test -e "$PROJECT/.polylane/skills/hook"
+
+UNAUTHORIZED="$TEST_TMPDIR/unauthorized.json"
+printf '%s\n' '{"id":"unapproved","repository":"https://example.test/unapproved","revision":"0123456789012345678901234567890123456789","license":"MIT","authorized":false}' > "$UNAUTHORIZED"
+assert_fail "skill-admission-requires-explicit-authorization" "$ACQUIRE" admit "$PROJECT" "$CANDIDATE" "$UNAUTHORIZED" "$BENCHMARK"
+assert_fail "skill-unauthorized-content-never-enters-project-root" test -e "$PROJECT/.polylane/skills/unapproved"
 finish

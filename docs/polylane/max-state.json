@@ -208,35 +208,35 @@
       "id": "c30",
       "text": "Manifest intensity and per-lane effort resolve correctly for Claude and Codex with role and safety clamps",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c31",
       "text": "Every builder receives an explainable relevant installed skill kit, and authorized missing skills pass quarantine, benchmark, pin, and rollback before use",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c32",
       "text": "Builder prompts are contradiction-free, deduplicated, goal-complete, and kept within a conservative measured context budget",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c33",
       "text": "Claude and Codex lifecycle guards restore compact context and prevent dishonest completion without weakening runtime supervision",
       "weight": 9,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c34",
       "text": "One named certification matrix proves discovery through next-cycle continuation, installs, runtime, integration, and learning",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -579,41 +579,41 @@
           "id": "m13.1",
           "text": "Make intensity, model, effort, role clamps, and cost policy agent-aware and mechanically authoritative",
           "weight": 40,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 13,
+          "evidence": "policy suite green; pre-launch resolution and clamps verified"
         },
         {
           "id": "m13.2",
           "text": "Make per-lane skill discovery metadata-indexed, evidence-ranked, explainable, safely acquirable, and invocation-proven",
           "weight": 39,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 13,
+          "evidence": "metadata catalog, selection, audit, safe admission, rollback verified"
         },
         {
           "id": "m13.3",
           "text": "Compile smaller contradiction-free builder prompts with conservative token truth and frozen comparative evaluation",
           "weight": 38,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 13,
+          "evidence": "compiled frozen prompts preserve contracts and deterministic budget truth"
         },
         {
           "id": "m13.4",
           "text": "Add portable lifecycle hooks for compact context restoration and honest completion across Claude and Codex",
           "weight": 37,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 13,
+          "evidence": "project-scoped Claude/Codex lifecycle parity verified; supervisor retained"
         },
         {
           "id": "m13.5",
           "text": "Certify every advertised subsystem and a vague-brief-to-next-cycle journey on both agent manifests",
           "weight": 36,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 13,
+          "evidence": "coordinator host gate: full terminal command exit 0; live GO ready=1 promoted=1 terminal_gates=1 cleaned=1 leaks=0; live NO-GO promoted=0 evidence=1 retained=1 bounded=1 cleaned=1"
         }
       ]
     }

@@ -27,6 +27,10 @@ assert_ok "install-codex-prime-harness" test -x "$REPO/.codex/skills/polylane/sc
 assert_ok "install-codex-retained-workers" test -x "$REPO/.codex/skills/polylane/scripts/polylane-workers.sh"
 assert_ok "install-codex-bounded-context" test -x "$REPO/.codex/skills/polylane/scripts/polylane-context.sh"
 assert_ok "install-codex-refinement" test -x "$REPO/.codex/skills/polylane/scripts/polylane-refine.sh"
+assert_ok "install-codex-certification" test -x "$REPO/.codex/skills/polylane/scripts/polylane-certify.sh"
+assert_ok "install-codex-skill-catalog" test -x "$REPO/.codex/skills/polylane/scripts/polylane-skill-catalog.sh"
+assert_ok "install-codex-lifecycle-helper" test -x "$REPO/.codex/skills/polylane/scripts/polylane-hooks.sh"
+assert_ok "install-codex-lifecycle-fragment" test -f "$REPO/.codex/skills/polylane/assets/hooks/codex-hooks.json"
 assert_ok "install-codex-skill-eval-corpus" test -f "$REPO/.codex/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 assert_ok "install-codex-skill-evals-runnable" \
   "$REPO/.codex/skills/polylane/scripts/polylane-skill-evolve.sh" validate \
@@ -49,6 +53,10 @@ assert_ok "install-claude-prime-harness" test -x "$REPO/.claude/skills/polylane/
 assert_ok "install-claude-retained-workers" test -x "$REPO/.claude/skills/polylane/bin/polylane-workers.sh"
 assert_ok "install-claude-bounded-context" test -x "$REPO/.claude/skills/polylane/bin/polylane-context.sh"
 assert_ok "install-claude-refinement" test -x "$REPO/.claude/skills/polylane/bin/polylane-refine.sh"
+assert_ok "install-claude-certification" test -x "$REPO/.claude/skills/polylane/bin/polylane-certify.sh"
+assert_ok "install-claude-skill-catalog" test -x "$REPO/.claude/skills/polylane/bin/polylane-skill-catalog.sh"
+assert_ok "install-claude-lifecycle-helper" test -x "$REPO/.claude/skills/polylane/bin/polylane-hooks.sh"
+assert_ok "install-claude-lifecycle-fragment" test -f "$REPO/.claude/skills/polylane/assets/hooks/claude-settings.json"
 assert_ok "install-claude-skill-eval-corpus" test -f "$REPO/.claude/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 assert_ok "install-claude-skill-evals-runnable" \
   "$REPO/.claude/skills/polylane/bin/polylane-skill-evolve.sh" validate \

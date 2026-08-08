@@ -230,6 +230,12 @@ scripts/polylane-scope.sh check-static .polylane/run.json
 One lane is correct when the work overlaps heavily. Never create idle lanes merely
 to appear parallel.
 
+Set manifest `intensity` and `available_models` for the selected agent family;
+the runner prints the effective model policy before any pane opens. A CLI model
+choice is final within the applicable role safety clamp, so never claim a prompt
+or prose override bypasses mechanical, security, hardest-lane, or integrator
+effort limits.
+
 ### 3. Arm every builder with skills
 
 Create `.polylane/lane-skills.json` in structured v2 form. Each builder receives:
@@ -253,6 +259,19 @@ For an actual UI gap, use the UI-only authorized automatic admission in
 `references/visual-intelligence.md`: discover, quarantine, audit, isolated
 benchmark, pinned project install, then arm. Rejected content never executes; a
 failed stage records why and uses the best installed kit.
+
+Before selecting that kit, build a metadata-only catalog and ask it for explained
+candidates; it never sends skill bodies to a builder:
+
+```bash
+scripts/polylane-scout.sh catalog-index .polylane/skill-catalog.json
+scripts/polylane-scout.sh catalog-recommend .polylane/skill-catalog.json .polylane/<lane>-spec.json docs/polylane/skill-outcomes.jsonl
+```
+
+Use only the selected ids in the prompt. The runner records explicit
+`SKILL-EVIDENCE` outcomes at close; details on catalog safety, compiled launch
+prompts, project-only lifecycle hooks, and `polylane-certify.sh` are in
+`references/cycle-13-integration.md`.
 
 ### 4. Generate strict Codex prompts
 

@@ -29,12 +29,23 @@ rehearse_promoted_tree_clean() {
 }
 
 rehearse() {
-  local want="${1:-go}" root sess nonce rc=0 report evidence stats promoted cleaned leaks=0 calls graph_witnesses retained=0 tree_clean=0 terminal_gates=0 ready=0
+  local want="${1:-go}" root tmux_root tmux_parent sess nonce rc=0 report evidence stats promoted cleaned leaks=0 calls graph_witnesses retained=0 tree_clean=0 terminal_gates=0 ready=0
+  # A rehearse run owns a fresh tmux server.  An inherited client socket or
+  # default server can belong to another host/session (for example a remote
+  # Codex parent) and makes even `tmux new-session` fail before the canary.
+  unset TMUX
   root=$(mktemp -d "${TMPDIR:-/tmp}/polylane-rehearse.XXXXXX")
   root=$(cd "$root" && pwd -P)
+  # tmux appends /tmux-<uid>/default, so keep this socket parent short enough
+  # for macOS's UNIX-domain socket length limit even when TMPDIR is long.
+  tmux_parent="${TMPDIR:-/tmp}"
+  tmux_parent=${tmux_parent%/}
+  tmux_root=$(mktemp -d "$tmux_parent/plr-tmux.XXXXXX")
+  TMUX_TMPDIR="$tmux_root"
+  export TMUX_TMPDIR
   sess="plrh-$$"; nonce="rh-$$-$(date +%s)"
   # shellcheck disable=SC2064 # expand root/session now
-  trap "tmux kill-session -t '$sess' 2>/dev/null || true; rm -rf '$root'" RETURN
+  trap "tmux kill-session -t '$sess' 2>/dev/null || true; rm -rf '$root' '$tmux_root'" RETURN
 
   (
     cd "$root"
@@ -55,9 +66,9 @@ rehearse() {
     CODEX_SKILLS_DIR="$root/skills" "$BIN/polylane-scout.sh" arm-role .polylane/lane-skills.json lane-a specific fixture-review fixture-check
     CODEX_SKILLS_DIR="$root/skills" "$BIN/polylane-scout.sh" arm-role .polylane/lane-skills.json lane-b predefined fixture-test fixture-debug
     CODEX_SKILLS_DIR="$root/skills" "$BIN/polylane-scout.sh" arm-role .polylane/lane-skills.json lane-b specific fixture-review fixture-check
-    printf '%s\n' 'ULTIMATE-GOAL: prove the unattended supervised lifecycle.' 'CURRENT-SUBGOAL: exercise the contract-v3 lifecycle.' "GOAL: CONTRACT-V3 nonce=$nonce lane=lane-a writes a/x." 'OWN: a/** and lane status evidence.' 'FORBIDDEN: b/**, main, and orchestration files.' 'PREDEFINED-SKILLS: fixture-test fixture-debug' 'LANE-SPECIFIC-SKILLS: fixture-review fixture-check' 'Read only the named kit once; do not enumerate or rediscover skills.' 'TEST-CADENCE: focused check before DONE.' 'DELEGATION: forbidden; no subagents or fan-out.' 'CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks.' 'EXTERNAL-EVIDENCE: none.' 'Verify owned output before DONE.' 'Supervisor owns lifecycle.' "Write docs/status-lane-a.md with STATUS: lane-a DONE run=$nonce." > .polylane/lanes/lane-a.txt
-    printf '%s\n' 'ULTIMATE-GOAL: prove the unattended supervised lifecycle.' 'CURRENT-SUBGOAL: exercise the contract-v3 lifecycle.' "GOAL: CONTRACT-V3 nonce=$nonce lane=lane-b writes b/y." 'OWN: b/** and lane status evidence.' 'FORBIDDEN: a/**, main, and orchestration files.' 'PREDEFINED-SKILLS: fixture-test fixture-debug' 'LANE-SPECIFIC-SKILLS: fixture-review fixture-check' 'Read only the named kit once; do not enumerate or rediscover skills.' 'TEST-CADENCE: focused check before DONE.' 'DELEGATION: forbidden; no subagents or fan-out.' 'CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks.' 'EXTERNAL-EVIDENCE: none.' 'Verify owned output before DONE.' 'Supervisor owns lifecycle.' "Write docs/status-lane-b.md with STATUS: lane-b DONE run=$nonce." > .polylane/lanes/lane-b.txt
-    printf '%s\n' 'ULTIMATE-GOAL: prove the unattended supervised lifecycle.' 'CURRENT-SUBGOAL: exercise the contract-v3 lifecycle.' "GOAL: CONTRACT-V3 nonce=$nonce integrator verifies the candidate or NO-GO." 'OWN: integrator branch and integration evidence.' 'FORBIDDEN: main and builder-owned paths before merge.' 'PREDEFINED-SKILLS: fixture-test fixture-debug' 'LANE-SPECIFIC-SKILLS: fixture-review fixture-check' 'Read only the named kit once; do not enumerate or rediscover skills.' 'TEST-CADENCE: focused acceptance then terminal acceptance.' 'DELEGATION: forbidden; no subagents or fan-out.' 'CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks.' 'EXTERNAL-EVIDENCE: none.' 'Supervisor owns lifecycle.' "Write docs/status-integrator.md with STATUS: integrator DONE run=$nonce." "End docs/verify-integration.md with POLYLANE-VERDICT: READY-FOR-HOST-GATE run=$nonce or POLYLANE-VERDICT: NO-GO run=$nonce." > .polylane/lanes/integrator.txt
+    printf '%s\n' 'ULTIMATE-GOAL: prove the unattended supervised lifecycle.' 'CURRENT-SUBGOAL: exercise the contract-v3 lifecycle.' "GOAL: CONTRACT-V3 nonce=$nonce lane=lane-a writes a/x." 'OWN: a/** and lane status evidence.' 'FORBIDDEN: b/**, main, and orchestration files.' 'PREDEFINED-SKILLS: fixture-test fixture-debug' 'LANE-SPECIFIC-SKILLS: fixture-review fixture-check' 'Read only the named kit once; do not enumerate or rediscover skills.' 'TEST-CADENCE: focused check before DONE.' 'DELEGATION: forbidden; no subagents or fan-out.' 'CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks.' 'EXTERNAL-EVIDENCE: none.' 'VERIFY: write owned status evidence with the exact current-run DONE marker.' 'Verify owned output before DONE.' 'Supervisor owns lifecycle.' "Write docs/status-lane-a.md with STATUS: lane-a DONE run=$nonce." > .polylane/lanes/lane-a.txt
+    printf '%s\n' 'ULTIMATE-GOAL: prove the unattended supervised lifecycle.' 'CURRENT-SUBGOAL: exercise the contract-v3 lifecycle.' "GOAL: CONTRACT-V3 nonce=$nonce lane=lane-b writes b/y." 'OWN: b/** and lane status evidence.' 'FORBIDDEN: a/**, main, and orchestration files.' 'PREDEFINED-SKILLS: fixture-test fixture-debug' 'LANE-SPECIFIC-SKILLS: fixture-review fixture-check' 'Read only the named kit once; do not enumerate or rediscover skills.' 'TEST-CADENCE: focused check before DONE.' 'DELEGATION: forbidden; no subagents or fan-out.' 'CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks.' 'EXTERNAL-EVIDENCE: none.' 'VERIFY: write owned status evidence with the exact current-run DONE marker.' 'Verify owned output before DONE.' 'Supervisor owns lifecycle.' "Write docs/status-lane-b.md with STATUS: lane-b DONE run=$nonce." > .polylane/lanes/lane-b.txt
+    printf '%s\n' 'ULTIMATE-GOAL: prove the unattended supervised lifecycle.' 'CURRENT-SUBGOAL: exercise the contract-v3 lifecycle.' "GOAL: CONTRACT-V3 nonce=$nonce integrator verifies the candidate or NO-GO." 'OWN: integrator branch and integration evidence.' 'FORBIDDEN: main and builder-owned paths before merge.' 'PREDEFINED-SKILLS: fixture-test fixture-debug' 'LANE-SPECIFIC-SKILLS: fixture-review fixture-check' 'Read only the named kit once; do not enumerate or rediscover skills.' 'TEST-CADENCE: focused acceptance then terminal acceptance.' 'DELEGATION: forbidden; no subagents or fan-out.' 'CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensive checks.' 'EXTERNAL-EVIDENCE: none.' 'VERIFY: write current-run integration evidence and one verdict sentinel.' 'Supervisor owns lifecycle.' "Write docs/status-integrator.md with STATUS: integrator DONE run=$nonce." "End docs/verify-integration.md with POLYLANE-VERDICT: READY-FOR-HOST-GATE run=$nonce or POLYLANE-VERDICT: NO-GO run=$nonce." > .polylane/lanes/integrator.txt
     printf '%s\n' seed > seed.txt
     git add -A; git commit -qm seed
   )
@@ -119,8 +130,8 @@ JSON
     if rehearse_promoted_tree_clean "$root"; then tree_clean=1; else rc=1; fi
     [ "$rc" = 0 ] && promoted=1 || promoted=0
     [ "$leaks" = 0 ] && [ "$tree_clean" = 1 ] && cleaned=1 || cleaned=0
-    tmux kill-session -t "$sess" 2>/dev/null || true; rm -rf "$root"; trap - RETURN
-    [ ! -e "$root" ] || { leaks=1; rc=1; }
+    tmux kill-session -t "$sess" 2>/dev/null || true; rm -rf "$root" "$tmux_root"; trap - RETURN
+    [ ! -e "$root" ] && [ ! -e "$tmux_root" ] || { leaks=1; rc=1; }
     echo "REHEARSE-GO contract-v3=1 ready=$ready promoted=$promoted terminal_gates=$terminal_gates cleaned=$cleaned leaks=$leaks"
   else
     [ -f "$evidence" ] && grep -q 'NO-GO' "$evidence" && ! git -C "$root" show main:a/x >/dev/null 2>&1 || rc=1
@@ -133,10 +144,10 @@ JSON
     fi
     [ "$rc" = 0 ] && evidence=1 || evidence=0
     [ "$calls" = 3 ] && bounded=1 || bounded=0
-    tmux kill-session -t "$sess" 2>/dev/null || true; rm -rf "$root"; trap - RETURN
-    [ ! -e "$root" ] || { leaks=1; rc=1; }
+    tmux kill-session -t "$sess" 2>/dev/null || true; rm -rf "$root" "$tmux_root"; trap - RETURN
+    [ ! -e "$root" ] && [ ! -e "$tmux_root" ] || { leaks=1; rc=1; }
     [ "$leaks" = 1 ] || rc=1
-    [ ! -e "$root" ] && cleaned=1 || cleaned=0
+    [ ! -e "$root" ] && [ ! -e "$tmux_root" ] && cleaned=1 || cleaned=0
     echo "REHEARSE-NOGO contract-v3=1 promoted=0 evidence=$evidence retained=$retained bounded=$bounded cleaned=$cleaned"
   fi
   return "$rc"

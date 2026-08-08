@@ -8,6 +8,14 @@ DOCTOR="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-doctor.sh"
 
 assert_contains "rehearse-doctor-reports-current-contract" "both contract-v3 cases passed" \
   "$(grep 'both contract-' "$DOCTOR" 2>/dev/null || true)"
+assert_eq "rehearse-fixture-has-verify-for-prompt-compiler" "3" \
+  "$(grep -c "'VERIFY:" "$RH" 2>/dev/null || true)"
+assert_contains "rehearse-isolates-inherited-tmux-client" "unset TMUX" \
+  "$(sed -n '/^rehearse()/,/^}/p' "$RH")"
+assert_contains "rehearse-uses-private-tmux-server-dir" 'TMUX_TMPDIR="$tmux_root"' \
+  "$(sed -n '/^rehearse()/,/^}/p' "$RH")"
+assert_contains "rehearse-keeps-tmux-socket-parent-short" 'plr-tmux.XXXXXX' \
+  "$(sed -n '/^rehearse()/,/^}/p' "$RH")"
 
 # The live fixture advances durable state before writing reports. Cleanup must
 # remove tracked and untracked current-run status markers without rejecting

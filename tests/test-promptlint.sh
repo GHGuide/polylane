@@ -10,6 +10,7 @@ make_tmpdir
 GOOD="$TEST_TMPDIR/good.txt"
 cat > "$GOOD" <<'P'
 ULTIMATE-GOAL: build the product from a brief to verified completion. CURRENT-SUBGOAL: prompt economy.
+GOAL: preserve every strict prompt contract.
 OWN: src/x. FORBIDDEN: everything else.
 DONE-SIGNAL: STATUS: x DONE run=<RUN_ID>. Write docs/verify-x.md with proof.
 PREDEFINED-SKILLS: engineering:debug
@@ -38,6 +39,11 @@ miss_test nonce      'run='
 miss_test verify     'verify'
 
 POLYLANE_STRICT_PROMPTS=1 assert_ok "lint-strict-good" lint_one "$GOOD" x
+cat >> "$GOOD" <<'P'
+GOAL: duplicate exact-once label.
+P
+POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-rejects-duplicate-exact-once-label" lint_one "$GOOD" x
+sed -i.bak '$d' "$GOOD"
 STRICT_BAD="$TEST_TMPDIR/strict-bad.txt"
 grep -v 'TEST-CADENCE' "$GOOD" > "$STRICT_BAD"
 POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-missing-cadence" lint_one "$STRICT_BAD" x

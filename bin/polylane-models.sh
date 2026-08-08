@@ -11,6 +11,7 @@
 # See .polylane/SCHEMA.md.
 #
 #   bin/polylane-models.sh          # one model id per line, exit 0
+#   bin/polylane-models.sh codex --tiers # supported tier order
 #   -h | --help                     # usage, exit 0
 
 set -uo pipefail
@@ -18,14 +19,16 @@ set -uo pipefail
 # Curated fallback — the models polylane tunes against, newest-family first.
 FALLBACK=(claude-fable-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5)
 CODEX_FALLBACK="gpt-5.6-terra"
+CODEX_TIERS=$'gpt-5.6-luna\ngpt-5.6-terra\ngpt-5.6-sol'
 
 usage() {
   cat <<'EOF'
 polylane-models.sh — print available Claude model ids, one per line.
 
 USAGE:
-  bin/polylane-models.sh [claude|codex]
+  bin/polylane-models.sh [claude|codex] [--tiers]
                                   print models for the selected agent
+  codex --tiers                   print supported Codex tiers in rank order
   -h, --help                      show this help and exit 0
 
 Probes https://api.anthropic.com/v1/models when ANTHROPIC_API_KEY is set and
@@ -50,9 +53,10 @@ codex_models() {
 }
 
 main() {
-  case "${1:-}" in
-    -h|--help) usage; exit 0 ;;
-    codex) codex_models; return 0 ;;
+  case "${1:-}:${2:-}" in
+    -h:*|--help:*) usage; exit 0 ;;
+    codex:--tiers) printf '%s\n' "$CODEX_TIERS"; return 0 ;;
+    codex:*) codex_models; return 0 ;;
   esac
 
   # No key or missing tooling → fallback.
