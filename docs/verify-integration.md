@@ -84,3 +84,5 @@ supervised lifecycle. A separate old-vs-new UI corpus with real rendered
 products and blind visual judges remains external product-quality evidence.
 
 POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c12-visual-20260808
+
+ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.
