@@ -60,6 +60,47 @@ assert_contains "runner-skill-receipt-is-durable" '"lane":"lane-a"' "$(git -C "$
 assert_contains "runner-spend-ledger-is-durable" '"cost":42' "$(git -C "$REPO_ROOT" show HEAD:docs/polylane/spend-ledger.jsonl)"
 assert_eq "runner-skill-evidence-clean-after-transaction" "" "$(git -C "$REPO_ROOT" status --porcelain)"
 
+# The runner and verified candidate may update the same durable state file.
+# A single conflict is auto-resolved only when frozen structure + learning log
+# match and the candidate monotonically advances stale status.
+promotion_fixture
+STATE_FILE=docs/polylane/max-state.json
+git -C "$REPO_ROOT" checkout -q "$INT_BRANCH"
+cat > "$REPO_ROOT/$STATE_FILE" <<'JSON'
+{"ultimate":"ship","criteria":[{"id":"c1","text":"works","weight":1,"status":"done","score":0}],"milestones":[{"id":"m1","text":"build","subgoals":[{"id":"s1","text":"ship","weight":1,"status":"done","cycle":14,"evidence":"verified"}]}],"accept":[{"sid":"s1","cmd":"test -f product.txt","tier":"terminal","status":"pass","deps":[],"fp":"","regressed_cycle":null}],"log":[{"cycle":14,"kind":"decision","text":"same learning"}]}
+JSON
+git -C "$REPO_ROOT" add "$STATE_FILE"
+git -C "$REPO_ROOT" commit -qm 'verified terminal state'
+git -C "$REPO_ROOT" checkout -q "$BASE"
+cat > "$REPO_ROOT/$STATE_FILE" <<'JSON'
+{"ultimate":"ship","criteria":[{"id":"c1","text":"works","weight":1,"status":"open","score":0}],"milestones":[{"id":"m1","text":"build","subgoals":[{"id":"s1","text":"ship","weight":1,"status":"open","cycle":null,"evidence":""}]}],"accept":[{"sid":"s1","cmd":"test -f product.txt","tier":"terminal","status":"fail","deps":[],"fp":"","regressed_cycle":null}],"log":[{"cycle":14,"kind":"decision","text":"same learning"}]}
+JSON
+promote_to_main; monotonic_state_rc=$?
+assert_eq "monotonic-state-conflict-promotes" "0" "$monotonic_state_rc"
+assert_eq "monotonic-state-takes-verified-criterion" "done" "$(jq -r '.criteria[] | select(.id == "c1") | .status' "$REPO_ROOT/$STATE_FILE")"
+assert_eq "monotonic-state-takes-verified-acceptance" "pass" "$(jq -r '.accept[] | select(.sid == "s1") | .status' "$REPO_ROOT/$STATE_FILE")"
+assert_eq "monotonic-state-preserves-learning" "same learning" "$(jq -r '.log[0].text' "$REPO_ROOT/$STATE_FILE")"
+assert_eq "monotonic-state-index-clean" "" "$(git -C "$REPO_ROOT" ls-files --unmerged)"
+
+# A candidate with a different durable learning log is not safe to select.
+promotion_fixture
+STATE_FILE=docs/polylane/max-state.json
+git -C "$REPO_ROOT" checkout -q "$INT_BRANCH"
+cat > "$REPO_ROOT/$STATE_FILE" <<'JSON'
+{"ultimate":"ship","criteria":[{"id":"c1","text":"works","weight":1,"status":"done","score":0}],"milestones":[{"id":"m1","text":"build","subgoals":[{"id":"s1","text":"ship","weight":1,"status":"done","cycle":14,"evidence":"verified"}]}],"accept":[{"sid":"s1","cmd":"test -f product.txt","tier":"terminal","status":"pass","deps":[],"fp":"","regressed_cycle":null}],"log":[{"cycle":14,"kind":"decision","text":"candidate learning"}]}
+JSON
+git -C "$REPO_ROOT" add "$STATE_FILE"
+git -C "$REPO_ROOT" commit -qm 'candidate divergent learning'
+git -C "$REPO_ROOT" checkout -q "$BASE"
+cat > "$REPO_ROOT/$STATE_FILE" <<'JSON'
+{"ultimate":"ship","criteria":[{"id":"c1","text":"works","weight":1,"status":"open","score":0}],"milestones":[{"id":"m1","text":"build","subgoals":[{"id":"s1","text":"ship","weight":1,"status":"open","cycle":null,"evidence":""}]}],"accept":[{"sid":"s1","cmd":"test -f product.txt","tier":"terminal","status":"fail","deps":[],"fp":"","regressed_cycle":null}],"log":[{"cycle":14,"kind":"decision","text":"base learning"}]}
+JSON
+promote_to_main; divergent_state_rc=$?
+assert_eq "divergent-state-conflict-blocks" "1" "$divergent_state_rc"
+assert_fail "divergent-state-does-not-merge-candidate" git -C "$REPO_ROOT" merge-base --is-ancestor "$INT_BRANCH" HEAD
+assert_eq "divergent-state-preserves-base-learning" "base learning" "$(jq -r '.log[0].text' "$REPO_ROOT/$STATE_FILE")"
+assert_eq "divergent-state-index-clean" "" "$(git -C "$REPO_ROOT" ls-files --unmerged)"
+
 # A user edit is not runner state. It blocks promotion before the base moves,
 # remains present and unstaged, and leaves the verified integration branch for
 # a later deliberate resolution.

@@ -3304,6 +3304,66 @@ prepare_promotion_base() {
     "${PROMOTION_OWNED_PATHS[@]}"
 }
 
+# candidate_state_conflict_is_safe PATH : during a verified promotion the base
+# runner may have persisted stale acceptance status after the integrator wrote
+# the final state. Accept the candidate only when immutable goal/check
+# definitions and the learning log are byte-semantically identical, and no
+# already-proven done/external/pass state regresses. This is intentionally not
+# a generic JSON merge.
+candidate_state_conflict_is_safe() {
+  local path="$1" base_json candidate_json
+  base_json=$(git -C "$REPO_ROOT" show ":2:$path" 2>/dev/null) || return 1
+  candidate_json=$(git -C "$REPO_ROOT" show ":3:$path" 2>/dev/null) || return 1
+  jq -e -n --argjson base "$base_json" --argjson candidate "$candidate_json" '
+    def structure:
+      {
+        ultimate,
+        criteria: ([.criteria[] | {id, text, weight}] | sort_by(.id)),
+        milestones: ([.milestones[] | {
+          id, text,
+          subgoals: ([.subgoals[] | {id, text, weight}] | sort_by(.id))
+        }] | sort_by(.id)),
+        accept: ([.accept[] | {
+          sid, cmd, tier, key: (.key // ""), deps: (.deps // [])
+        }] | sort_by(.sid, .tier, .key, .cmd))
+      };
+    ($base | structure) == ($candidate | structure)
+    and ($base.log == $candidate.log)
+    and all($base.criteria[];
+      . as $b | any($candidate.criteria[];
+        .id == $b.id and
+        (if $b.status == "done" then .status == "done"
+         elif $b.status == "external" then .status == "external"
+         else true end)))
+    and all($base.milestones[].subgoals[];
+      . as $b | any($candidate.milestones[].subgoals[];
+        .id == $b.id and
+        (if $b.status == "done" then .status == "done"
+         elif $b.status == "external" then .status == "external"
+         else true end)))
+    and all($base.accept[];
+      . as $b | any($candidate.accept[];
+        .sid == $b.sid and .cmd == $b.cmd and .tier == $b.tier and
+        (.key // "") == ($b.key // "") and
+        (if $b.status == "pass" then .status == "pass" else true end)))
+  ' >/dev/null
+}
+
+# resolve_verified_state_conflict : resolve only the single monotonic state-file
+# conflict above. Every source, evidence, history, or multi-path conflict still
+# aborts through the ordinary transaction rollback.
+resolve_verified_state_conflict() {
+  local state_path="${STATE_FILE:-docs/polylane/max-state.json}" unmerged
+  case "$state_path" in "$REPO_ROOT"/*) state_path="${state_path#"$REPO_ROOT"/}" ;; esac
+  unmerged=$(git -C "$REPO_ROOT" diff --name-only --diff-filter=U)
+  [ "$unmerged" = "$state_path" ] || return 1
+  candidate_state_conflict_is_safe "$state_path" || return 1
+  git -C "$REPO_ROOT" checkout --theirs -- "$state_path" || return 1
+  git -C "$REPO_ROOT" add -- "$state_path" || return 1
+  git -C "$REPO_ROOT" commit -m "polylane: integrate verified lanes" || return 1
+  echo "promote: resolved monotonic verified state conflict at $state_path"
+}
+
 # promote_to_main : the integrator merges the lanes into its OWN branch and
 # verifies THERE — it never touches the base branch. So a NO-GO can't pollute
 # the base. On GO the runner fast-forwards the base ($BASE) to the integrator
@@ -3333,12 +3393,14 @@ promote_to_main() {
     echo "promote: $BASE fast-forwarded to $INT_BRANCH (verified)"
   else
     echo "promote: $cur diverged from $INT_BRANCH — non-ff merge" >&2
-    run git -C "$REPO_ROOT" merge --no-ff -m "polylane: integrate verified lanes" "$INT_BRANCH" || {
-      git -C "$REPO_ROOT" merge --abort 2>/dev/null || true
-      PROMOTION_STATE=failed
-      echo "promote: merge FAILED — base restored, nothing merged or deleted. Resolve manually." >&2
-      return 1
-    }
+    if ! run git -C "$REPO_ROOT" merge --no-ff -m "polylane: integrate verified lanes" "$INT_BRANCH"; then
+      if ! resolve_verified_state_conflict; then
+        git -C "$REPO_ROOT" merge --abort 2>/dev/null || true
+        PROMOTION_STATE=failed
+        echo "promote: merge FAILED — base restored, nothing merged or deleted. Resolve manually." >&2
+        return 1
+      fi
+    fi
     PROMOTION_STATE=promoted
   fi
 }
