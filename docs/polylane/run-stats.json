@@ -1,232 +1,210 @@
 {
   "version": 1,
-  "run_id": "c14-self-hosting-truth-20260808",
-  "started_at": 1786211293,
-  "updated_at": 1786217718,
-  "wall_s": 6425,
+  "run_id": "c15-domain-general-20260808",
+  "started_at": 1786219912,
+  "updated_at": 1786220213,
+  "wall_s": 301,
   "lanes": {
-    "runner-truth": {
-      "launches": 1,
+    "domain-contract": {
+      "launches": 4,
       "restarts": 0
     },
-    "worker-ledger": {
-      "launches": 1,
-      "restarts": 2
-    },
-    "skill-delivery": {
-      "launches": 1,
+    "project-runtime": {
+      "launches": 2,
       "restarts": 0
-    },
-    "integrator": {
-      "launches": 1,
-      "restarts": 1
     }
   },
-  "supervisor_restarts": 8,
-  "terminal_gates": 1,
-  "tokens": 18863550,
-  "token_state": "known",
+  "supervisor_restarts": 13,
+  "terminal_gates": 0,
+  "tokens": null,
+  "token_state": "unknown",
   "usage_offsets": {
-    "runner-truth": 225329,
-    "worker-ledger": 720883,
-    "skill-delivery": 196594,
-    "integrator": 3628053
+    "domain-contract": 9767,
+    "project-runtime": 3450
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786211293
+      "at": 1786219912
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219917
+    },
+    {
+      "type": "initialized",
+      "at": 1786219917
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219922
+    },
+    {
+      "type": "initialized",
+      "at": 1786219922
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219927
+    },
+    {
+      "type": "initialized",
+      "at": 1786219927
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219932
+    },
+    {
+      "type": "initialized",
+      "at": 1786219932
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219937
+    },
+    {
+      "type": "initialized",
+      "at": 1786219938
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219942
+    },
+    {
+      "type": "initialized",
+      "at": 1786219943
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219948
+    },
+    {
+      "type": "initialized",
+      "at": 1786219948
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786219953
+    },
+    {
+      "type": "initialized",
+      "at": 1786219953
+    },
+    {
+      "type": "initialized",
+      "at": 1786220003
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786220013
+    },
+    {
+      "type": "initialized",
+      "at": 1786220013
+    },
+    {
+      "type": "initialized",
+      "at": 1786220072
     },
     {
       "type": "usage_capture",
-      "lane": "runner-truth",
-      "at": 1786211330,
+      "lane": "domain-contract",
+      "at": 1786220102,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "runner-truth",
-      "at": 1786211330
+      "lane": "domain-contract",
+      "at": 1786220102
     },
     {
       "type": "usage_capture",
-      "lane": "worker-ledger",
-      "at": 1786211330,
+      "lane": "project-runtime",
+      "at": 1786220102,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "worker-ledger",
-      "at": 1786211330
+      "lane": "project-runtime",
+      "at": 1786220102
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786220107
+    },
+    {
+      "type": "initialized",
+      "at": 1786220107
     },
     {
       "type": "usage_capture",
-      "lane": "skill-delivery",
-      "at": 1786211331,
+      "lane": "domain-contract",
+      "at": 1786220136,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "skill-delivery",
-      "at": 1786211331
+      "lane": "domain-contract",
+      "at": 1786220136
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786220142
+    },
+    {
+      "type": "initialized",
+      "at": 1786220142
     },
     {
       "type": "usage_capture",
-      "lane": "runner-truth",
-      "at": 1786211335,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "worker-ledger",
-      "at": 1786211335,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "skill-delivery",
-      "at": 1786211335,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786211335,
-      "added": 11048705
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786211338
-    },
-    {
-      "type": "initialized",
-      "at": 1786211338
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786211343
-    },
-    {
-      "type": "initialized",
-      "at": 1786211343
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786211348
-    },
-    {
-      "type": "initialized",
-      "at": 1786211348
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786211353
-    },
-    {
-      "type": "initialized",
-      "at": 1786211353
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786211358
-    },
-    {
-      "type": "initialized",
-      "at": 1786211359
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786211364
-    },
-    {
-      "type": "initialized",
-      "at": 1786211364
-    },
-    {
-      "type": "initialized",
-      "at": 1786211380
-    },
-    {
-      "type": "restarts",
-      "lane": "worker-ledger",
-      "at": 1786212103
-    },
-    {
-      "type": "restarts",
-      "lane": "worker-ledger",
-      "at": 1786212829
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786213479,
+      "lane": "domain-contract",
+      "at": 1786220171,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "integrator",
-      "at": 1786213479
+      "lane": "domain-contract",
+      "at": 1786220171
     },
     {
       "type": "usage_capture",
-      "lane": "runner-truth",
-      "at": 1786214746,
+      "lane": "project-runtime",
+      "at": 1786220171,
       "added": null
     },
     {
-      "type": "usage_capture",
-      "lane": "worker-ledger",
-      "at": 1786214746,
-      "added": 7814845
-    },
-    {
-      "type": "usage_capture",
-      "lane": "skill-delivery",
-      "at": 1786214746,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786214746,
-      "added": null
-    },
-    {
-      "type": "terminal_gate",
-      "at": 1786214746
+      "type": "launches",
+      "lane": "project-runtime",
+      "at": 1786220172
     },
     {
       "type": "supervisor_restart",
-      "at": 1786215040
+      "at": 1786220178
     },
     {
       "type": "initialized",
-      "at": 1786215040
-    },
-    {
-      "type": "restarts",
-      "lane": "integrator",
-      "at": 1786215098
+      "at": 1786220178
     },
     {
       "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786215098,
+      "lane": "domain-contract",
+      "at": 1786220207,
       "added": null
     },
     {
+      "type": "launches",
+      "lane": "domain-contract",
+      "at": 1786220207
+    },
+    {
       "type": "supervisor_restart",
-      "at": 1786215100
+      "at": 1786220213
     },
     {
       "type": "initialized",
-      "at": 1786215100
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786217718
+      "at": 1786220213
     }
   ]
 }

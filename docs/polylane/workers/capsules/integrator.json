@@ -1,1 +1,1 @@
-{"name":"integrator","role":"integrator","last_cycle":14,"version":6,"status":"complete","summary":"completed run c14-self-hosting-truth-20260808","context":"completion capsule from docs/verify-integration.md","evidence":"docs/verify-integration.md"}
+{"name":"integrator","role":"integrator","last_cycle":15,"version":7,"status":"active","summary":"registered for run c15-domain-general-20260808","context":"read the canonical bounded context packet once","evidence":"prelaunch retained identity"}

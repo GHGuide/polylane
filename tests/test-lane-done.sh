@@ -72,8 +72,16 @@ mkdir -p "$TEST_TMPDIR/runner-graph"
 ln -s "$TEST_TMPDIR/runner-graph" "$G/graphify-out"
 REPO_ROOT="$G" ORCHESTRATION_CONTRACT=2 RUN_ID=run-2
 assert_ok "done-v2-ignores-owned-graphify-symlink" lane_done "$G" alpha
+printf 'authoritative prompt\n' > "$TEST_TMPDIR/authoritative-prompt.txt"
+cp "$TEST_TMPDIR/authoritative-prompt.txt" "$G/.polylane-prompt.txt"
+LANE_NAMES=(alpha)
+LANE_PROMPTS=("$TEST_TMPDIR/authoritative-prompt.txt")
+assert_ok "done-v2-ignores-identical-runtime-prompt" lane_done "$G" alpha
+printf 'tampered\n' > "$G/.polylane-prompt.txt"
+assert_fail "done-v2-rejects-mutated-runtime-prompt" lane_done "$G" alpha
+cp "$TEST_TMPDIR/authoritative-prompt.txt" "$G/.polylane-prompt.txt"
 printf 'untracked\n' > "$G/real-untracked.txt"
 assert_fail "done-v2-other-untracked-still-blocks" lane_done "$G" alpha
-rm -f "$G/real-untracked.txt" "$G/graphify-out"
+rm -f "$G/real-untracked.txt" "$G/graphify-out" "$G/.polylane-prompt.txt"
 
 finish

@@ -14,3 +14,4 @@
 {"cycle":13,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c13-perfection-20260808"}
 {"cycle":14,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c14-self-hosting-truth-20260808"}
 {"cycle":14,"kind":"no-go","subject":"integrator","evidence":"integrator verdict NO-GO in run c14-self-hosting-truth-20260808"}
+{"cycle":15,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c15-domain-general-20260808"}

@@ -60,6 +60,20 @@ assert_contains "panecmd-sandbox-default" "--sandbox workspace-write" "$CMD"
 assert_contains "panecmd-no-multi-agent" "--disable multi_agent" "$CMD"
 assert_contains "panecmd-no-multi-agent-v2" "--disable multi_agent_v2" "$CMD"
 assert_contains "panecmd-no-fanout" "--disable enable_fanout" "$CMD"
+
+# A long-lived tmux server may not inherit macOS permission for the canonical
+# project path. The pane must consume a private worktree-local transport copy,
+# while ordinary unit fixtures with no real worktree retain the original path.
+make_tmpdir
+RUNTIME_PROMPT="$TEST_TMPDIR/runtime-prompt.txt"
+RUNTIME_WT="$TEST_TMPDIR/runtime-wt"
+mkdir -p "$RUNTIME_WT"
+git init -q -b main "$RUNTIME_WT"
+printf 'runtime prompt\n' > "$RUNTIME_PROMPT"
+CMD=$(pane_cmd "$RUNTIME_WT" gpt-5-codex "$RUNTIME_PROMPT" high)
+assert_contains "panecmd-stages-worktree-local-prompt" "< $RUNTIME_WT/.polylane-prompt.txt" "$CMD"
+assert_ok "panecmd-staged-prompt-identical" cmp "$RUNTIME_PROMPT" "$RUNTIME_WT/.polylane-prompt.txt"
+assert_eq "panecmd-staged-prompt-mode" "600" "$(stat -f '%Lp' "$RUNTIME_WT/.polylane-prompt.txt" 2>/dev/null || stat -c '%a' "$RUNTIME_WT/.polylane-prompt.txt")"
 REPO_ROOT='/tmp/canonical project' POLYLANE_COORDINATION_FILE='/tmp/canonical project/.polylane/coordination.jsonl'
 CMD=$(pane_cmd '/tmp/lane worktree' gpt-5-codex '/tmp/prompt;unsafe.txt' high)
 assert_contains "panecmd-canonical-project-env" "POLYLANE_PROJECT_ROOT=/tmp/canonical\\ project" "$CMD"
@@ -77,7 +91,6 @@ unset COORDINATION_PROJECT_ROOT COORDINATION_FILE POLYLANE_PROJECT_ROOT POLYLANE
 # Break caught: a linked-worktree Codex workspace-write command cannot commit
 # because its shared Git metadata is not writable. Read-only and explicit danger
 # modes must not receive this narrow write exception.
-make_tmpdir
 GIT_REPO="$TEST_TMPDIR/git repo"; GIT_WT="$TEST_TMPDIR/lane wt"
 git init -q -b main "$GIT_REPO"
 git -C "$GIT_REPO" config user.email test@example.com

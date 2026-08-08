@@ -2,9 +2,9 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 11,
-    "latest_cycle": 14,
-    "latest_evidence": "bounded packets built for run c14-self-hosting-truth-20260808",
+    "observation_count": 12,
+    "latest_cycle": 15,
+    "latest_evidence": "bounded packets built for run c15-domain-general-20260808",
     "required_action": "propose-or-decline"
   },
   {

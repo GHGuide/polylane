@@ -82,3 +82,6 @@
 {"event":"ack","id":"ack:integrator:message:69","recipient":"integrator","message_id":"message:69","seq":82,"at":"2026-08-08T18:33:06Z"}
 {"event":"ack","id":"ack:integrator:relay:/private/tmp/polylane-c13-host/.polylane/coordination.jsonl:2","recipient":"integrator","message_id":"relay:/private/tmp/polylane-c13-host/.polylane/coordination.jsonl:2","seq":83,"at":"2026-08-08T18:33:06Z"}
 {"event":"capsule","id":"capsule:integrator:6","worker":"integrator","version":6,"cycle":14,"seq":84,"at":"2026-08-08T18:45:46Z"}
+{"event":"capsule","id":"capsule:domain-contract:1","worker":"domain-contract","version":1,"cycle":15,"seq":85,"at":"2026-08-08T20:14:37Z"}
+{"event":"capsule","id":"capsule:project-runtime:1","worker":"project-runtime","version":1,"cycle":15,"seq":86,"at":"2026-08-08T20:14:37Z"}
+{"event":"capsule","id":"capsule:integrator:7","worker":"integrator","version":7,"cycle":15,"seq":87,"at":"2026-08-08T20:14:38Z"}

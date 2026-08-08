@@ -1587,8 +1587,9 @@ agent_procs() {
 
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" resume="${5:-}" pfx=""
-  local qwt qmodel qpf qeffort qproject qcoord qhybrid project_root coord_file tmpl add_dir
-  qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$pf"); qeffort=$(printf '%q' "${effort:-medium}")
+  local qwt qmodel qpf qeffort qproject qcoord qhybrid project_root coord_file tmpl add_dir runtime_pf
+  runtime_pf=$(stage_pane_prompt "$wt" "$pf") || return 1
+  qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$runtime_pf"); qeffort=$(printf '%q' "${effort:-medium}")
   # Every pane remains in its isolated worktree, while its live relay always
   # resolves under the canonical run project. These are shell-escaped env values,
   # never prompt text, so an untrusted prompt path cannot inject into the command.
@@ -1619,6 +1620,40 @@ pane_cmd() {
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
   printf 'export POLYLANE_PROJECT_ROOT=%s POLYLANE_COORDINATION_FILE=%s %s; cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
     "$qproject" "$qcoord" "$qhybrid" "$qwt" "$pfx" "$tmpl"
+}
+
+# pane_runtime_prompt_path WT : reserved worktree-local prompt path. A tmux
+# server can outlive the terminal process that created it and therefore lack
+# macOS TCC access to the canonical project (notably ~/Downloads). Feeding the
+# agent from its own worktree avoids that inherited host-permission seam.
+pane_runtime_prompt_path() { printf '%s/.polylane-prompt.txt' "$1"; }
+
+# stage_pane_prompt WT PROMPT : copy the compiled launch prompt beside the lane
+# before tmux reads it. Keep the canonical compiled copy authoritative; this is
+# a launch-only transport copy and is accepted by lane_done only while byte-for-
+# byte identical to the current canonical prompt.
+stage_pane_prompt() {
+  local wt="$1" pf="$2" dest rel=.polylane-prompt.txt
+  if [ "${DRY_RUN:-0}" = "1" ] || [ ! -d "$wt" ] || [ ! -f "$pf" ]; then
+    printf '%s' "$pf"
+    return 0
+  fi
+  case "$pf" in "$wt"/*) printf '%s' "$pf"; return 0 ;; esac
+  dest=$(pane_runtime_prompt_path "$wt")
+  git -C "$wt" ls-files --error-unmatch "$rel" >/dev/null 2>&1 && {
+    echo "polylane-run: reserved runtime prompt path is tracked: $dest" >&2
+    return 1
+  }
+  [ ! -L "$dest" ] || {
+    echo "polylane-run: reserved runtime prompt path is a symlink: $dest" >&2
+    return 1
+  }
+  cp "$pf" "$dest" || {
+    echo "polylane-run: cannot stage runtime prompt at $dest" >&2
+    return 1
+  }
+  chmod 600 "$dest" 2>/dev/null || true
+  printf '%s' "$dest"
 }
 
 # assert_prompt PATH NAME : fail loudly (before any pane opens) if a lane's prompt
@@ -1846,6 +1881,18 @@ lane_done() {
       if [ -n "$graph_link" ] && [ "$graph_link" = "$graph_owner" ]; then
         dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
       fi
+    fi
+    # The runner transports the current compiled prompt into the worktree so a
+    # long-lived tmux server does not need host permission for the canonical
+    # project path. Ignore only that exact regular file and only while it still
+    # matches the current authoritative prompt; any mutation remains dirty.
+    local runtime_prompt expected_prompt
+    runtime_prompt=$(pane_runtime_prompt_path "$wt")
+    expected_prompt=$(lane_prompt_get "$name")
+    if [ -f "$runtime_prompt" ] && [ ! -L "$runtime_prompt" ] &&
+       [ -n "$expected_prompt" ] && [ -f "$expected_prompt" ] &&
+       cmp -s "$runtime_prompt" "$expected_prompt"; then
+      dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? .polylane-prompt.txt"')
     fi
     [ -z "$dirty" ] || return 1
     git -C "$wt" cat-file -e "HEAD:$rel" 2>/dev/null || return 1
