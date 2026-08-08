@@ -81,4 +81,17 @@ PATH="$old_path"
 assert_contains "github-suggest-top-ranked" "high/skill" "$(printf '%s' "$suggestions" | head -1)"
 assert_contains "github-suggest-informational" "★20" "$suggestions"
 
+# Remote discovery remains inert until the acquisition gate admits project-local
+# copied content; only that admitted content can be armed for a lane.
+PROJECT="$TEST_TMPDIR/project"; CANDIDATE="$TEST_TMPDIR/acquire-candidate"
+mkdir -p "$PROJECT" "$CANDIDATE"
+printf '%s\n' '# admitted fixture' > "$CANDIDATE/SKILL.md"
+printf '%s\n' MIT > "$CANDIDATE/LICENSE"
+SOURCE="$TEST_TMPDIR/acquire-source.json"; BENCH="$TEST_TMPDIR/acquire-benchmark.json"
+printf '%s\n' '{"id":"admitted-skill","repository":"https://example.test/admitted","revision":"abcdefabcdefabcdefabcdefabcdefabcdefabcd","license":"MIT"}' > "$SOURCE"
+printf '%s\n' '{"fixture_id":"same","without_candidate":{"score":1,"accessibility":1},"with_candidate":{"score":2,"accessibility":1},"minimum_improvement":1}' > "$BENCH"
+assert_ok "scout-acquires-through-authorized-gate" "$SCOUT" acquire "$PROJECT" "$CANDIDATE" "$SOURCE" "$BENCH"
+assert_ok "scout-arms-only-admitted-project-skill" "$SCOUT" arm-admitted "$PROJECT" "$TEST_TMPDIR/admitted-kits.json" ui-lane specific admitted-skill
+assert_eq "scout-admitted-skill-is-armed" "admitted-skill" "$(armed_role "$TEST_TMPDIR/admitted-kits.json" ui-lane specific)"
+
 finish

@@ -11,6 +11,8 @@
 #   arm-role <file> <lane> <predefined|specific> <skill>...
 #   github <file> <lane> <repo-or-skill> <why> -> informational suggestion
 #   github-suggest <activity> [limit] -> read-only ranked GitHub candidates
+#   acquire <project> <candidate> <source.json> <benchmark.json> -> authorized admission
+#   arm-admitted <project> <file> <lane> <role> <skill> -> arm only a locked project skill
 #   armed <file> <lane>         -> print every executable skill in a lane's kit
 #   validate <file> <manifest>  -> require 1-2 selected installed skills per role
 #   lint <file> <lane> <prompt> -> exit 5 iff a baked skill is missing from the prompt
@@ -220,6 +222,32 @@ record_github() {
   ' "$f" > "$tmp" && mv "$tmp" "$f"
 }
 
+# acquire PROJECT CANDIDATE SOURCE BENCHMARK: discovery callers never receive a
+# runnable path; the acquisition helper decides whether an inert quarantine can
+# become project-local admitted content.
+acquire() {
+  local project="$1" candidate="$2" source="$3" benchmark="$4" helper
+  helper="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-skill-acquire.sh"
+  [ -x "$helper" ] || { echo "polylane-scout: acquisition helper missing" >&2; return 2; }
+  "$helper" admit "$project" "$candidate" "$source" "$benchmark"
+}
+
+# arm_admitted PROJECT FILE LANE ROLE SKILL: do not trust a mere directory;
+# require the durable lock's admitted status before temporarily resolving the
+# project-scoped copy as the selected kit member.
+arm_admitted() {
+  local project="$1" file="$2" lane="$3" role="$4" skill="$5" lock
+  lock="$project/docs/polylane/design/SKILL-LOCK.json"
+  case "$skill" in ''|*[!A-Za-z0-9._-]*) echo "polylane-scout: invalid admitted skill id" >&2; return 2 ;; esac
+  [ -f "$lock" ] && [ -f "$project/.polylane/skills/$skill/SKILL.md" ] || {
+    echo "polylane-scout: skill '$skill' is not project-admitted" >&2; return 2;
+  }
+  jq -e --arg skill "$skill" 'any(.skills[]?; .id == $skill and .status == "admitted")' "$lock" >/dev/null 2>&1 || {
+    echo "polylane-scout: skill '$skill' has no admitted lock evidence" >&2; return 2;
+  }
+  POLYLANE_SKILLS_DIRS="$project/.polylane/skills" arm_role "$file" "$lane" "$role" "$skill"
+}
+
 # github_suggest ACTIVITY [LIMIT] : informational discovery only. The output is
 # deliberately not written into executable roles; record a reviewed candidate with
 # `github` later. gh auth/network absence is explicit and never blocks builder work.
@@ -312,9 +340,11 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     armed-role) shift; armed_role "${1:?}" "${2:?}" "${3:?}" ;;
     github)    shift; record_github "${1:?}" "${2:?}" "${3:?}" "${4:?}" ;;
     github-suggest) shift; github_suggest "${1:?usage: github-suggest <activity> [limit]}" "${2:-5}" ;;
+    acquire) shift; acquire "${1:?}" "${2:?}" "${3:?}" "${4:?}" ;;
+    arm-admitted) shift; arm_admitted "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" ;;
     validate)  shift; validate_kits "${1:?}" "${2:?}" ;;
     armed)     shift; armed "${1:?}" "${2:?}" ;;
     lint)      shift; lint "${1:?}" "${2:?}" "${3:?}" ;;
-    *) echo "usage: polylane-scout.sh domain|suggest|installed|resolve|recommend|record-outcome|bake|arm-role|armed-role|github|github-suggest|validate|armed|lint ..." >&2; exit 2 ;;
+    *) echo "usage: polylane-scout.sh domain|suggest|installed|resolve|recommend|record-outcome|bake|arm-role|armed-role|github|github-suggest|acquire|arm-admitted|validate|armed|lint ..." >&2; exit 2 ;;
   esac
 fi
