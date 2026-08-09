@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-discovery.sh init <state> <brief> | next <state> [limit] | answer <state> <question-id> <recommended|deep|bold|custom> [text] | contradict <state> <answer-id> <answer-id> <reason> | resolve <state> <contradiction-id> <accept-left|accept-right|accept-both> [note] | summary <state> | lock <state> <docs-dir>" >&2
+  echo "usage: polylane-discovery.sh init <state> <brief> [kind] | next <state> [limit] | answer <state> <question-id> <recommended|deep|bold|custom> [text] | contradict <state> <answer-id> <answer-id> <reason> | resolve <state> <contradiction-id> <accept-left|accept-right|accept-both> [note] | summary <state> | lock <state> <docs-dir>" >&2
   exit 2
 }
 
@@ -23,10 +23,17 @@ write_state() {
 }
 
 cmd_init() {
-  local state="$1" brief="$2"
+  local state="$1" brief="$2" kind="${3:-}" domain domain_nodes
   [ -n "$brief" ] || { echo "discovery: brief must not be empty" >&2; return 1; }
   mkdir -p "$(dirname "$state")"
-  jq -n --arg brief "$brief" '
+  if [ -n "$kind" ]; then
+    domain="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-domain.sh"
+    [ -x "$domain" ] || { echo "discovery: domain runtime is unavailable" >&2; return 1; }
+    domain_nodes=$("$domain" questions "$kind" --json) || return 1
+  else
+    domain_nodes='[]'
+  fi
+  jq -n --arg brief "$brief" --arg kind "$kind" --argjson domain_nodes "$domain_nodes" '
     {version:"schema-v1", brief:$brief,
      nodes:[
        {id:"q-user", type:"question", impact:100, active:true, strategy_key:"audience",
@@ -39,6 +46,16 @@ cmd_init() {
         question:"What visible outcome would make the first release worthwhile?",
         options:{recommended:"A user completes the core task without help", deep:"A measurable reduction in time or mistakes", bold:"A new standard for how this work is done"}}
      ], answers:[], contradictions:[], strategy:{status:"open"}}
+    | if $kind == "" then . else
+        .domain = {kind:$kind, contract_version:"domain-runtime/v1"}
+        | .nodes += ($domain_nodes | map({
+            id:("q-domain-" + .id), type:"question", impact:.impact, active:true,
+            strategy_key:("domain-" + .id), domain_kind:$kind, question:.question,
+            options:(.paths | with_entries(.value = .value.answer)),
+            follow_ups:(.paths | with_entries(.value = .value.follow_up // null)),
+            stopping:.stopping
+          }))
+      end
   ' | write_state "$state"
 }
 
@@ -79,11 +96,19 @@ cmd_answer() {
   jq --arg id "$question_id" --arg kind "$kind" --arg text "$text" --arg child "$child" '
     . as $state |
     ($state.nodes[] | select(.id == $id)) as $node |
+    ($node.follow_ups[$kind] // null) as $follow |
     .answers += [{type:"answer", id:("a-" + $id), question_id:$id, kind:$kind, text:$text,
                   accepted:true, strategy_key:$node.strategy_key}] |
     if $kind == "deep" or $kind == "bold" then
       if any(.nodes[]; .id == $child) then
         .nodes |= map(if .id == $child then .active = true else . end)
+      elif $follow != null then
+        .nodes += [{id:$child, type:"question", parent:$id, impact:($node.impact - 10), active:true,
+                    strategy_key:("detail-" + $id), domain_kind:($node.domain_kind // null),
+                    question:$follow.question,
+                    options:($follow.paths | with_entries(.value = .value.answer)),
+                    follow_ups:($follow.paths | with_entries(.value = .value.follow_up // null)),
+                    stopping:($node.stopping // null)}]
       else
         .nodes += [{id:$child, type:"question", parent:$id, impact:($node.impact - 10), active:true,
                     strategy_key:("detail-" + $id),
@@ -175,7 +200,7 @@ cmd_lock() {
 
 main() {
   case "${1:-}" in
-    init) [ "$#" = 3 ] || usage; cmd_init "$2" "$3" ;;
+    init) [ "$#" = 3 ] || [ "$#" = 4 ] || usage; cmd_init "$2" "$3" "${4:-}" ;;
     next) [ "$#" -ge 2 ] && [ "$#" -le 3 ] || usage; cmd_next "$2" "${3:-3}" ;;
     answer) [ "$#" -ge 4 ] && [ "$#" -le 5 ] || usage; cmd_answer "$2" "$3" "$4" "${5:-}" ;;
     contradict) [ "$#" = 5 ] || usage; cmd_contradict "$2" "$3" "$4" "$5" ;;
