@@ -85,11 +85,23 @@ printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=run-2\n' > "$G/docs/verify-int
 assert_ok "done-v2-ready-restores-current-nonce" lane_done "$G" integrator
 
 # The runner-created graph link is an untracked helper, not unfinished lane work.
-# Any other untracked path remains a real dirty checkpoint and must still block DONE.
-mkdir -p "$TEST_TMPDIR/runner-graph"
-ln -s "$TEST_TMPDIR/runner-graph" "$G/graphify-out"
+# A recovery root may borrow it from another registered worktree in the exact
+# same Git common directory. A foreign-repo link and every other untracked path
+# remain real dirty checkpoints and must still block DONE.
+GRAPH_OWNER="$TEST_TMPDIR/graph-owner"
+git -C "$G" worktree add -q -b graph-owner "$GRAPH_OWNER"
+mkdir -p "$GRAPH_OWNER/graphify-out"
+ln -s "$GRAPH_OWNER/graphify-out" "$G/graphify-out"
 REPO_ROOT="$G" ORCHESTRATION_CONTRACT=2 RUN_ID=run-2
-assert_ok "done-v2-ignores-owned-graphify-symlink" lane_done "$G" alpha
+assert_ok "done-v2-ignores-same-repository-graphify-symlink" lane_done "$G" alpha
+rm -f "$G/graphify-out"
+FOREIGN_GRAPH="$TEST_TMPDIR/foreign-graph"
+git init -q -b main "$FOREIGN_GRAPH"
+mkdir -p "$FOREIGN_GRAPH/graphify-out"
+ln -s "$FOREIGN_GRAPH/graphify-out" "$G/graphify-out"
+assert_fail "done-v2-rejects-foreign-repository-graphify-symlink" lane_done "$G" alpha
+rm -f "$G/graphify-out"
+ln -s "$GRAPH_OWNER/graphify-out" "$G/graphify-out"
 printf 'authoritative prompt\n' > "$TEST_TMPDIR/authoritative-prompt.txt"
 cp "$TEST_TMPDIR/authoritative-prompt.txt" "$G/.polylane-prompt.txt"
 LANE_NAMES=(alpha)

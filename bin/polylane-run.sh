@@ -1337,6 +1337,35 @@ share_graph() {
   ln -s "$src" "$wt/graphify-out" 2>/dev/null || true   # best-effort; lanes have the Explore fallback
 }
 
+# shared_graph_link_owned WT : true only when WT/graphify-out resolves to a
+# real graph directory owned by ANOTHER worktree from WT's exact Git common
+# directory. Recovery roots may not have a local graph, so comparing only with
+# REPO_ROOT rejects the same sibling link that share_graph deliberately creates.
+# Enumerating the common-dir worktree registry also prevents a foreign-repo or
+# arbitrary filesystem link from being laundered as runner-owned scratch.
+shared_graph_link_owned() {
+  local wt="$1" link="$1/graphify-out" source common line candidate candidate_root candidate_graph wt_root
+  [ -L "$link" ] || return 1
+  source=$(cd "$link" 2>/dev/null && pwd -P) || return 1
+  wt_root=$(cd "$wt" 2>/dev/null && pwd -P) || return 1
+  common=$(git -C "$wt" rev-parse --git-common-dir 2>/dev/null) || return 1
+  case "$common" in /*) : ;; *) common="$wt/$common" ;; esac
+  common=$(cd "$common" 2>/dev/null && pwd -P) || return 1
+  while IFS= read -r line; do
+    case "$line" in
+      worktree\ *)
+        candidate="${line#worktree }"
+        candidate_root=$(cd "$candidate" 2>/dev/null && pwd -P) || continue
+        [ "$candidate_root" != "$wt_root" ] || continue
+        [ -d "$candidate_root/graphify-out" ] && [ ! -L "$candidate_root/graphify-out" ] || continue
+        candidate_graph=$(cd "$candidate_root/graphify-out" 2>/dev/null && pwd -P) || continue
+        [ "$source" = "$candidate_graph" ] && return 0
+        ;;
+    esac
+  done < <(git --git-dir="$common" worktree list --porcelain 2>/dev/null)
+  return 1
+}
+
 # clear_stale_markers WT NAME : a fresh worktree checks out BASE and thus inherits
 # ANY status/verify file committed on BASE by an earlier run — a stale "DONE" that
 # makes the poll return instantly, or a stale "GO" the gate would trust. Delete the
@@ -2105,15 +2134,10 @@ lane_done() {
     git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
     dirty=$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null) || return 1
     # `share_graph` creates exactly this untracked symlink in a lane. Accept it
-    # only when it resolves to this runner's canonical graph directory; every
-    # other dirty/untracked path remains a completion blocker.
-    if [ -L "$wt/graphify-out" ] && [ -d "${REPO_ROOT:-}/graphify-out" ]; then
-      local graph_link graph_owner
-      graph_link=$(cd "$wt/graphify-out" 2>/dev/null && pwd -P) || graph_link=""
-      graph_owner=$(cd "${REPO_ROOT:-}/graphify-out" 2>/dev/null && pwd -P) || graph_owner=""
-      if [ -n "$graph_link" ] && [ "$graph_link" = "$graph_owner" ]; then
-        dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
-      fi
+    # only when its source is a registered sibling worktree in the same Git
+    # common directory; every foreign/local dirty path remains a blocker.
+    if shared_graph_link_owned "$wt"; then
+      dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
     fi
     # The runner transports the current compiled prompt into the worktree so a
     # long-lived tmux server does not need host permission for the canonical
