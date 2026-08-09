@@ -378,6 +378,13 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c55",
+      "text": "Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -914,6 +921,20 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m19",
+      "text": "Cycle 19 — generic-project rehearsal recovery",
+      "subgoals": [
+        {
+          "id": "m19.1",
+          "text": "Guard optional domain-grade post-processing and prove both absent and requested paths",
+          "weight": 74,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1108,6 +1129,18 @@
       "kind": "decision",
       "text": "Cycle 18 local recovery and exact skill-delivery integration is ready for the single host gate.",
       "meta": "runtime 29/26/40/47/33/26/11; delivery 44/0; runner delivery 44/0; C16 29/0; parity 57/0; installers 50/0+39/0; terminal/rehearsal untouched"
+    },
+    {
+      "cycle": 18,
+      "kind": "learning",
+      "text": "The terminal suite passed, but the hermetic GO rehearsal stopped before its terminal gate because domain_grade_gate tried to stage absent optional-domain artifacts after ADVANCED reported not-requested.",
+      "meta": "REHEARSE-GO ready=0 promoted=0 terminal_gates=0 cleaned=0 leaks=1; fatal pathspec docs/polylane/domain-runtime/bundle.json"
+    },
+    {
+      "cycle": 19,
+      "kind": "decision",
+      "text": "Run one narrow Polylane recovery lane for optional-domain no-op semantics, then a fresh integrator and one fresh terminal certification.",
+      "meta": "Root cause confirmed by standalone POLYLANE_REHEARSE_DEBUG=1 reproduction; no speculative fixes."
     }
   ],
   "accept": [
@@ -1732,6 +1765,16 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle16-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m19.1",
+      "cmd": "bash tests/test-cycle-16-contract.sh",
+      "tier": "focused",
+      "key": "cycle19-domain-optional",
       "status": "unchecked",
       "deps": [],
       "fp": "",

@@ -6,14 +6,18 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 18: [plan](cycle-18-plan.md) · [skill suggestions](cycle-18-suggestions.md) ·
-[questions](cycle-18-questions.md) · [council](cycle-18-council.md) ·
-[digest](cycle-18-digest.md) · [integration verification](../verify-integration.md).
-This fresh recovery cycle repairs the walk-away defects exposed by Cycle 17: false startup
-input, DONE-lane relaunch, disk-pressure truth, missing exact selected-skill paths, and
-graphless recovery roots. Its focused and cross-contract evidence is reproduced on the
-merged source; `READY-FOR-HOST-GATE` leaves the one terminal matrix and rehearsal to the
-coordinator.
+Active cycle 19: [plan](cycle-19-plan.md) · [research](cycle-19-research.md) ·
+[skill suggestions](cycle-19-suggestions.md). This narrow recovery starts from the
+preserved Cycle 18 integrated tip and fixes the confirmed optional-domain post-grade
+boundary before one fresh host certification.
+
+Cycle 18 recovery history: [plan](cycle-18-plan.md) ·
+[skill suggestions](cycle-18-suggestions.md) · [questions](cycle-18-questions.md) ·
+[council](cycle-18-council.md) · [digest](cycle-18-digest.md) ·
+[integration verification](../verify-integration.md). Every builder, integration, and
+full-suite check passed, but the live GO rehearsal exposed an unconditional attempt to
+stage optional domain artifacts. Promotion was correctly withheld; Cycle 19 owns the
+fresh recovery rather than rewriting that terminal result.
 
 Cycle 17 recovery history: [plan](cycle-17-plan.md) ·
 [skill suggestions](cycle-17-suggestions.md) · [questions](cycle-17-questions.md) ·
