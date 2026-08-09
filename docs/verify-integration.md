@@ -191,3 +191,5 @@ The exact terminal-finality source and the accumulated Cycle 24–26 contracts a
 focused-green. The integrator does not convert runtime counters into GO and leaves
 the single frozen terminal boundary to the coordinator. The formal nonce-bound
 handoff verdict is added only in the final marker commit.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c26-terminal-finality-20260810-a1
