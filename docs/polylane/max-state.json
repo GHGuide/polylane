@@ -420,6 +420,20 @@
       "weight": 89,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c61",
+      "text": "Repair prompt admission preserves exact scalar contracts and any admission failure leaves current-run verdict, status, and branch tip untouched",
+      "weight": 96,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c62",
+      "text": "A terminal NO-GO or GO always writes one current-run report; the supervisor never revives completed evidence; a fresh certification has zero restarts and one terminal gate",
+      "weight": 95,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1052,6 +1066,36 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m23",
+      "text": "Transactional terminal finality",
+      "subgoals": [
+        {
+          "id": "m23.1",
+          "text": "Make integrator repair admission strict-scalar safe and transactional so a failed repair cannot mutate terminal evidence or HEAD",
+          "weight": 96,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m23.2",
+          "text": "Guarantee every terminal NO-GO publishes one fresh report and is never mistaken for a supervisor-recoverable crash",
+          "weight": 95,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m23.3",
+          "text": "Complete a fresh zero-restart one-gate certification and install the verified Claude and Codex skill variants",
+          "weight": 94,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1300,6 +1344,12 @@
       "kind": "attempt",
       "text": "fresh atomic-handoff certification from Cycle 24 integrated NO-GO tip",
       "meta": "run=c25-finality-20260810-a1; frozen zero-restart proof"
+    },
+    {
+      "cycle": 26,
+      "kind": "learning",
+      "text": "Cycle 25 proved a four-link failure chain: repairable-default routing, duplicate integrator repair scalars, pre-admission evidence mutation, and missing report caused a false supervisor revival.",
+      "meta": "source=live-c25-finality"
     }
   ],
   "accept": [
@@ -2280,6 +2330,55 @@
         "references/skill-evolution.md",
         "references/skill-scout.md",
         "references/visual-intelligence.md"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m23.1",
+      "cmd": "bash tests/test-verdict-repair.sh && bash tests/test-promptopt.sh && bash tests/test-runtime-recovery.sh",
+      "tier": "focused",
+      "key": "repair-transaction",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-verdict-repair.sh",
+        "tests/test-promptopt.sh",
+        "tests/test-runtime-recovery.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m23.2",
+      "cmd": "bash tests/test-write-report.sh && bash tests/test-supervisor.sh && bash tests/test-session-resume.sh && bash tests/test-clear-markers.sh",
+      "tier": "focused",
+      "key": "terminal-report",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "bin/polylane-supervisor.sh",
+        "tests/test-write-report.sh",
+        "tests/test-supervisor.sh",
+        "tests/test-session-resume.sh",
+        "tests/test-clear-markers.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m23.3",
+      "cmd": "bash tests/test-run-stats.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh",
+      "tier": "focused",
+      "key": "fresh-runtime",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "bin/polylane-supervisor.sh",
+        "bin/polylane-run-stats.sh",
+        "tests/test-run-stats.sh",
+        "tests/test-state.sh",
+        "tests/test-supervisor.sh"
       ],
       "fp": "",
       "regressed_cycle": null
