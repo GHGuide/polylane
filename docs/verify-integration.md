@@ -1,111 +1,112 @@
-# Cycle 20 integration verification — truthful failed-certification handoff
+# Cycle 21 integration verification — host gate pending
 
-Run: `c20-clean-cert-20260809-a1` on `lane/c20-integrator`.
+Run: `c21-final-cert-20260809-a1`
+Branch: `lane/c21-integrator`
 
-## Provenance and independent review
+## Exact-tip provenance and primary evidence
 
-The integrator accepted only the committed builder tip
-`716624affb45b6e8ba75945e0fb135ea229bd59a` after confirming its committed first line
-was `STATUS: restart-accounting-audit DONE run=c20-clean-cert-20260809-a1`. Its complete
-range from base `228570d` added only `docs/verify-restart-accounting.md` and
-`docs/status-restart-accounting-audit.md`, passed `git diff --check`, and was merged as
-`20aa4e1c82b85ab701b3172da1ea01e696786740` with that exact tip as second parent.
+The exact nonce-matched final-certification-audit tip was
+`88be5a4a0282e97c6bb6d15b282df2394f37ec29`.  Its range from the integrator
+base `f34602eaf2a0c2881473d863cdbb7a01e524625a` contains only the builder's
+two OWN paths:
 
-Commits `80849c5c54713a1c406b0b93a62193896a803f4a` and
-`e26c208b91c382ee07dda47ccca6d09fcfcc5ed6` were independently inspected. The former
-returns from `domain_grade_gate` before bundle/grade/evidence/Git mutation whenever
-`domain_runtime` is absent or disabled; the latter makes `lane_done` ignore only a graph
-symlink resolving to a real non-symlink graph directory owned by another registered
-worktree in the exact Git common directory. Current caller tracing found
-`domain_grade_gate` at the verifier gate and `shared_graph_link_owned` only at the
-clean-tree exception in `lane_done`. The required existing-graph queries for both
-changed helpers and callers returned stale fuzzy document nodes rather than source
-nodes; the graph was not rebuilt, and current source plus hermetic contracts were used
-instead.
+- `docs/verify-final-certification-audit.md`
+- `docs/status-final-certification-audit.md`
 
-The initial code review found no defect in those two Cycle 19 repairs. The live Cycle 20
-run then exposed two different orchestration seams outside that review boundary:
+The latter starts with `STATUS: final-certification-audit DONE
+run=c21-final-cert-20260809-a1`.  The exact tip was merged without source
+edits as `656d1e542048e0462edaf87a3494d91901c7b210`, whose second parent is
+that tip.
 
-1. The builder twice committed the exact current-run DONE line under
-   `docs/status-restart-accounting.md`, not the canonical
-   `docs/status-restart-accounting-audit.md`. It was following the frozen plan: both
-   Cycle 20 `own_globs` and its authored prompt explicitly named the shortened path.
-   The old runner correctly rejected that plan/observer mismatch but spent one health
-   restart before coordinator commit `716624a` performed the auditable rename. Final
-   canonical run stats prove one builder launch, one builder restart, one integrator
-   launch, one host-boundary entry, and pending cleanup.
-2. The canonical relay contained a coordinator request naming that confirmed seam, but
-   the authored integrator prompt said only to read the "canonical relay". The worker
-   instead read tracked `docs/parallel-status.md` and missed the live request. This was
-   a prompt-delivery failure even though the reference block described the relay
-   correctly.
+I independently inspected the preserved, read-only Cycle 20 sources.  The
+manifest's `restart-accounting-audit` `own_globs` and both preserved prompt
+forms name `docs/status-restart-accounting.md`; contract-v2's observer derives
+the canonical `docs/status-restart-accounting-audit.md` from the lane name.
+That is direct plan-to-observer mismatch evidence, not worker noncompliance.
+Neither preserved repository was modified.
 
-Coordinator commit `763fb00` closes both classes for the next process. Contract-v2
-health recovery now normalizes only one clean, committed, regular `docs/status-*.md`
-whose first line exactly matches the lane and current nonce; stale, foreign-lane,
-uncommitted, dirty, symlink, and ambiguous candidates remain rejected. Prompt
-compilation now injects the literal relay command and canonical DONE path into every
-builder and integrator prompt after optimization/skill delivery, and strict runtime
-lint requires each injected contract exactly once. The durable cleanup reference now
-also calls `docs/parallel-status.md` a post-cycle summary rather than a live log.
+## Independent repair review
 
-The final host rejection exposed a third truth seam. The old report blamed the
-integrator even though its verdict was READY, displayed an unknown Codex cost as `$0`,
-and wrote the failed gate certificate over a tracked proof in the completed integrator
-checkout. Commit `e1de56a` moves gate proofs to
-`docs/polylane/efficiency-proofs/<run>-gate.md`, exports that exact path and nonce into
-terminal acceptance, verifies proof run ids, attributes report failures to canonical
-host evidence, and reports unpriced totals as unavailable. The additional report,
-efficiency, verdict, acceptance, promotion, telemetry, recovery, compiler, and docs
-matrix passed 261/0 with whole-tree ShellCheck and diff hygiene.
+| Commit | Confirmed boundary | Focused evidence below |
+| --- | --- | --- |
+| `763fb00` | Runtime prompt injection adds the literal live relay and canonical DONE path after optimization; marker normalization permits only one clean, committed, regular, current-nonce candidate. | prompt, marker, and marker-contract tests |
+| `e1de56a` | Gate proof is host-canonical and nonce-checked; failed proof/reporting cannot dirty a READY integrator checkout or present unknown cost as zero. | efficiency and report tests |
+| `f58d3cb` | Preflight rejects shortened, broad, duplicate, and contradictory builder status contracts before worktrees or models launch. | scope, orchestration, and prompt-lint tests |
+| `dabd6f0` | `--help` is inert; `INT` and `TERM` stop the active child, release the lock through the exit trap, and exit. | supervisor test |
+| `864050d` | Target criteria must start open and are finalized only after final proof and cleanup telemetry complete. | acceptance and dry-run tests |
 
-Commit `f58d3cb` closes the planning root cause before launch. Contract-v2 preflight now
-requires every builder to own exactly `docs/status-<lane>.md`, rejects any second or
-broad glob capable of matching a status marker, and runtime prompt lint rejects a
-builder prompt that names a conflicting status path even after canonical injection.
-The scope/compiler/orchestration/skill/parity matrix passed 292/0, including explicit
-shortened, broad, duplicate, and contradictory-prompt cases.
+Code review found no correctness, security, performance, or maintainability defect in
+these repair seams.  The over-engineering review found no deletion candidate: `Lean
+already. Ship.`
 
-## Fresh merged-tree evidence
+## Graph and live-relay review
 
-Every command below ran once from this merged worktree through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`.
+The pre-refreshed graph was queried before source reads for `preflight_contract`,
+`normalize_lane_status_marker`, `compile_prompt`, `write_efficiency_proof`,
+`finalize_cycle_criteria`, and `supervisor_stop`, with callers.  It accurately narrowed
+the runner/supervisor locations and the cleanup-to-final-proof relationship.  It had no
+normalizer node and non-conventional/stale call direction for some other nodes, so
+current source and focused tests remain authoritative.  The graph was queried only; it
+was not rebuilt or modified.
 
-| Command | Observed result |
-| --- | --- |
-| `bash tests/test-lane-done.sh` | 27 pass, 0 fail; accepts the registered same-repository graph link, rejects a foreign repository, and keeps unrelated dirt blocking completion. |
-| `bash tests/test-share-graph.sh` | 11 pass, 0 fail; includes recovery sharing from the primary graph. |
-| `bash tests/test-cycle-16-contract.sh` | 35 pass, 0 fail; proves both requested bundle/grade/PASS persistence and the unrequested `not-requested` no-op with unchanged evidence, HEAD, and clean Git. |
-| `bash tests/test-verdict-repair.sh` | 40 pass, 0 fail; preserves the one-use READY host boundary and its failure paths. |
-| `bash tests/test-supervisor.sh` | 26 pass, 0 fail; includes session-loss recovery and bounded launch accounting. |
-| `bash tests/test-efficiency-canary.sh` | 14 pass, 0 fail; includes restart rejection and canonical-proof checks. |
+The canonical relay is
+`/Users/leonardo/Downloads/polylane-c21/.polylane/coordination.jsonl`.  It contained
+two coordinator requests: one for the audit lane and one addressed to integrator.  The
+integrator request was completed by the preserved-source inspection above.  There were
+no further requests addressed to integrator.
 
-Focused runtime total: 153 pass, 0 fail. Whole-tree `shellcheck -S warning bin/*.sh`,
-`bin/polylane-markers.sh check-docs references/`,
-`bin/polylane-seams.sh scan "$PWD"`, and `git diff --check` all exited 0. Skill parity
-passed 57/0; installers passed 50/0; fresh installs passed 39/0.
+## Fresh focused contract matrix
 
-After the two live seams were reproduced, the coordinator added a red-first recovery
-and prompt-delivery matrix. The marker test failed 6 assertions before implementation;
-the Cycle 13 compiler contract failed 6 assertions before injection. The repaired
-12-file runtime/prompt/parity matrix then passed 381/0, including marker normalization
-17/0, lane completion 27/0, runtime recovery 14/0, Cycle 13 contract 50/0, prompt
-compiler 16/0, prompt lint 22/0, selected-skill delivery 44/0, agent adapter 49/0,
-prime-hybrid integration 57/0, skill parity 57/0, and supervisor 26/0. Documentation
-truth passed 25/0; whole-tree ShellCheck, marker-doc consistency, and diff hygiene
-exited 0. The full terminal suite and doctor rehearsal were deliberately not consumed
-inside a run that had already exceeded its zero-restart budget.
+Each command ran once through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --` at merged source
+fingerprint `4237424793:8655`.
 
-## State, boundary, and limitations
+| Contract | Command | Result |
+| --- | --- | --- |
+| Supervisor stop/help | `bash tests/test-supervisor.sh` | 32 pass, 0 fail |
+| Host criterion | `bash tests/test-contract-acceptance.sh` | 19 pass, 0 fail |
+| Dry-run criterion preservation | `bash tests/test-dryrun-pure.sh` | 8 pass, 0 fail |
+| Status scope | `bash tests/test-scope.sh` | 19 pass, 0 fail |
+| Preflight orchestration | `bash tests/test-orchestration-contract.sh` | 14 pass, 0 fail |
+| Compiled prompt | `bash tests/test-prompt-compiler.sh` | 16 pass, 0 fail |
+| Strict prompt lint | `bash tests/test-promptlint.sh` | 24 pass, 0 fail |
+| Nonce marker repair | `bash tests/test-status-marker-normalization.sh` | 17 pass, 0 fail |
+| Marker contract | `bash tests/test-marker-contract.sh` | 9 pass, 0 fail |
+| Graph sharing | `bash tests/test-share-graph.sh` | 11 pass, 0 fail |
+| Efficiency proof | `bash tests/test-efficiency-canary.sh` | 23 pass, 0 fail |
+| Host report truth | `bash tests/test-write-report.sh` | 38 pass, 0 fail |
 
-The focused `m20.1` acceptance remains local evidence only. Cycle 20 cannot certify
-`m20.1`, `m18.3`, or `c56`: its one recorded restart exceeds the configured zero-restart
-budget. The runner preserved NO-GO after one host-boundary entry; its efficiency failure
-correctly skipped the full terminal acceptance command. A fresh Cycle 21 process must
-load `f58d3cb` and establish exactly two launches, zero restarts, one host boundary,
-one full terminal acceptance, complete cleanup, and both rehearsal outcomes. No live external
-action occurred; approval-bound receipts remain simulations and trading remains
-research/backtest/paper-only. The pre-existing untracked `.polylane-prompt.txt` and
-`graphify-out/` were retained as runner-owned helpers.
+Focused total: 230 pass, 0 fail.
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c20-clean-cert-20260809-a1
+## Static, documentation, and handoff boundary
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Changed runner/supervisor ShellCheck | `shellcheck -S warning bin/polylane-run.sh bin/polylane-supervisor.sh` | exit 0 |
+| Marker-document consistency | `bin/polylane-markers.sh check-docs references/` | exit 0 |
+| Documentation truth | `bash tests/test-docs-truth.sh` | 25 pass, 0 fail |
+| Seam scan | `bin/polylane-seams.sh scan "$PWD"` | exit 0 |
+| Diff hygiene (after one draft whitespace repair) | `git diff --check` | exit 0 |
+| Skill parity | `bash tests/test-skill-parity.sh` | 57 pass, 0 fail |
+
+The initial diff-hygiene check caught one trailing space in this new document.  It was
+removed without source changes and the fresh cached recheck passed.
+No full suite, installer, doctor rehearsal, deployment, push, publication, purchase,
+live action, or trading execution is part of this lane.
+
+All target subgoals (`m16.4`, `m17.3`, `m18.3`, and `m20.1`) and `c56` remain open.
+The coordinator alone owns the single frozen terminal boundary, host acceptance,
+criterion finalization, promotion, and cleanup proof.  This evidence does not claim
+terminal GO.
+
+SKILL-EVIDENCE: graphify — helped: located the narrow runner/supervisor review points; its missing normalizer node prevented false caller-coverage claims.
+
+SKILL-EVIDENCE: polylane — helped: kept the relay, evidence, open-state, and coordinator-bound terminal-gate distinctions explicit.
+
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: required fresh cached command output and counted results before this handoff.
+
+SKILL-EVIDENCE: engineering:code-review — helped: applied separate correctness, security, performance, and maintainability checks to all five repair seams.
+
+SKILL-EVIDENCE: ponytail:ponytail-review — helped: checked the repair range for speculative abstraction or removable complexity; no cut was identified.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c21-final-cert-20260809-a1

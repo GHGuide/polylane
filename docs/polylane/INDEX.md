@@ -7,11 +7,16 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
 Cycle 21 active certification: [plan](cycle-21-plan.md) ·
-[research](cycle-21-research.md) · [skill suggestions](cycle-21-suggestions.md).
-It starts from `864050d`, targets every remaining autonomous integration subgoal,
-and reserves `c56` for the coordinator-owned final proof. The acceptance metadata
-deduplicates the identical Cycle 17/18 focused command and the identical Cycle 16/18
-terminal command, so each expensive command runs once at its boundary.
+[research](cycle-21-research.md) · [council](cycle-21-council.md) ·
+[digest](cycle-21-digest.md) · [questions](cycle-21-questions.md) ·
+[integration verification](../verify-integration.md) · [skill suggestions](cycle-21-suggestions.md).
+It starts from `864050d`, targets every remaining autonomous integration subgoal, and
+reserves `c56` for the coordinator-owned final proof.  The exact evidence-only audit tip
+was merged as `656d1e5`; focused integration evidence is recorded, but all targets and
+`c56` remain open until the sole terminal host gate, cleanup proof, and promotion.
+The acceptance metadata deduplicates the identical Cycle 17/18 focused command and the
+identical Cycle 16/18 terminal command, so each expensive command runs once at its
+boundary.
 
 Cycle 20 certification: [plan](cycle-20-plan.md) ·
 [research](cycle-20-research.md) · [skill suggestions](cycle-20-suggestions.md) ·
@@ -88,6 +93,6 @@ Earlier digests: [c1](cycle-1-digest.md) · [c2](cycle-2-digest.md) ·
 [c6](cycle-6-digest.md) · [c7](cycle-7-digest.md) · [c8](cycle-8-digest.md) ·
 [c9](cycle-9-digest.md) · [c10](cycle-10-digest.md).
 
-Post-goal packet: [original 30 suggestions](next-suggestions.md). Every independent
-autonomous criterion is complete. Cycle 12's rendered ten-product visual comparison
-remains external and is the only unfinished evidence in the frozen goal tree.
+Post-goal packet: [original 30 suggestions](next-suggestions.md).  Prior durable work is
+preserved, while Cycle 21's four autonomous integration targets and `c56` remain open.
+Cycle 12's rendered ten-product visual comparison remains external.

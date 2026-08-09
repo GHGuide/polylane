@@ -1,18 +1,15 @@
-# Cycle 20 integration status
+# Cycle 21 integration status
 
-Run: `c20-clean-cert-20260809-a1` · branch: `lane/c20-integrator` · merged builder
-tip: `716624affb45b6e8ba75945e0fb135ea229bd59a` via `20aa4e1c`.
+Run: `c21-final-cert-20260809-a1` · branch: `lane/c21-integrator` · exact merged audit
+tip: `88be5a4a0282e97c6bb6d15b282df2394f37ec29` via `656d1e542048e0462edaf87a3494d91901c7b210`.
 
-| Lane | Exact tip | Integration state | Independently reproduced evidence |
-| --- | --- | --- | --- |
-| restart accounting audit | `716624a` | nonce-matched evidence-only tip merged; range added only its verification and status documents | Cycle 19 restart attribution retained; no production surface changed |
-| integrator | `f58d3cb` | the planning root cause plus three live orchestration/reporting seams were reproduced and repaired; READY was rejected by the host efficiency proof, not by the integrator | original focused matrix 153/0; runtime/prompt/parity 381/0; host-proof/report matrix 261/0; scope/prompt/preflight matrix 292/0; docs truth 25/0; ShellCheck clean |
+| Lane | Integrated evidence | Boundary retained |
+| --- | --- | --- |
+| final-certification-audit | Its exact three-commit range changed only `docs/verify-final-certification-audit.md` and `docs/status-final-certification-audit.md`; it records the preserved Cycle 20 plan/observer mismatch and 100/0 prescribed checks. | Evidence-only; no production source or acceptance state changed. |
+| integrator | Five repair commits received source review and a focused 230/0 contract matrix. | Coordinator owns terminal acceptance, cleanup proof, promotion, and finalization. |
 
-Canonical run stats prove one builder restart, two launches, one host-boundary entry,
-zero full terminal acceptance runs, 4,424,983 known tokens, and retained cleanup. Commits
-`763fb00`, `e1de56a`, and `f58d3cb` add marker/relay recovery, canonical nonce-scoped host
-proofs, truthful report attribution, and prelaunch rejection of noncanonical status
-contracts. Cycle 21 owns the untouched terminal full-suite and
-hermetic GO plus NO-GO rehearsal outcomes that can decide `m20.1`, `m18.3`, and `c56`.
-No live external action occurred; approval hashes remain mandatory and trading remains
-research/backtest/paper-only. This file is a durable post-cycle summary, never live IPC.
+The Cycle 20 manifest and preserved prompt both assign the shortened marker; contract-v2
+derives the longer canonical marker, confirming a frozen plan/observer mismatch.  All
+Cycle 21 targets (`m16.4`, `m17.3`, `m18.3`, `m20.1`) and `c56` remain open.  No external
+action occurred; approval hashes remain mandatory and trading remains research/backtest/
+paper-only.  This document is post-cycle evidence only, never live IPC.

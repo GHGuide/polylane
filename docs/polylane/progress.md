@@ -2,7 +2,7 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 20
+## Cycle 21
 
 subgoals: 51/56 done · criteria: 54/56 done · 93%
 
@@ -80,7 +80,7 @@ subgoals: 51/56 done · criteria: 54/56 done · 93%
 - `c53` [done] — A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog
 - `c54` [done] — Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph
 - `c55` [done] — Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence
-- `c56` [open] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion
+- `c56` [open] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion; coordinator-owned finalization remains pending
 
 ## Acceptance checks
 
