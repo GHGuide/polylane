@@ -62,10 +62,11 @@ trap 'tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true; tmux kill-sessio
 # Tags are authoritative; cwd is migration-only for fully untagged panes.
 polylane_tmux_configure "$RUN_ONE" ensure
 tmux new-session -d -s "$IDENTITY_SESSION" -c /tmp 'sleep 30'
+tmux set-option -t "$IDENTITY_SESSION" @polylane_run_id session-owner
 tmux split-window -d -t "$IDENTITY_SESSION:0" -c "$LEGACY_PROJECT" 'sleep 30'
 polylane_tmux_tag_pane "$IDENTITY_SESSION" 0 "$RUN_ONE" atomic "$PROJECT_ROOT"
 assert_eq "tmux-find-tag-survives-cwd-drift" "0" "$(polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$PROJECT_ROOT")"
-assert_ok "tmux-find-allows-fully-untagged-legacy-cwd" polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$LEGACY_PROJECT"
+assert_ok "tmux-find-allows-fully-untagged-legacy-cwd-under-tagged-session" polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$LEGACY_PROJECT"
 
 # Any identity metadata disables cwd adoption. Partial, wrong-run, and
 # wrong-worktree tags must all fail closed instead of impersonating this run.

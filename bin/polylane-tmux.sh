@@ -90,9 +90,15 @@ polylane_tmux_find_pane() {
   local session="${1:-}" run_id="${2:-}" worktree="${3:-}" canonical idx pane_path tagged_run tagged_lane tagged_worktree legacy_idx="" conflict=0
   [ -n "$session" ] || return 2
   canonical=$(polylane_tmux_canonical_path "$worktree") || return 1
-  while IFS='|' read -r idx pane_path tagged_run tagged_lane tagged_worktree; do
+  while IFS='|' read -r idx pane_path; do
     [ -n "$idx" ] || continue
     pane_path=$(polylane_tmux_canonical_path "$pane_path" 2>/dev/null || true)
+    # tmux format expansion falls back from an absent pane option to a session
+    # option with the same name. Query the pane option namespace directly so a
+    # tagged session does not make a fully untagged legacy pane look partial.
+    tagged_run=$(tmux show-options -p -v -t "$session:0.$idx" @polylane_run_id 2>/dev/null || true)
+    tagged_lane=$(tmux show-options -p -v -t "$session:0.$idx" @polylane_lane 2>/dev/null || true)
+    tagged_worktree=$(tmux show-options -p -v -t "$session:0.$idx" @polylane_worktree 2>/dev/null || true)
     if [ -n "$tagged_run$tagged_lane$tagged_worktree" ]; then
       if [ -n "$tagged_run" ] && [ -n "$tagged_lane" ] && [ -n "$tagged_worktree" ] && \
         [ "$tagged_run" = "$run_id" ] && [ "$tagged_worktree" = "$canonical" ]; then
@@ -103,7 +109,7 @@ polylane_tmux_find_pane() {
       continue
     fi
     [ "$pane_path" = "$canonical" ] && legacy_idx="$idx"
-  done < <(tmux list-panes -t "$session:0" -F '#{pane_index}|#{pane_current_path}|#{@polylane_run_id}|#{@polylane_lane}|#{@polylane_worktree}' 2>/dev/null || true)
+  done < <(tmux list-panes -t "$session:0" -F '#{pane_index}|#{pane_current_path}' 2>/dev/null || true)
   [ "$conflict" = 0 ] && [ -n "$legacy_idx" ] && { printf '%s' "$legacy_idx"; return 0; }
   return 1
 }

@@ -1,14 +1,10 @@
-# Cycle 24 council — context-hardening host boundary
+# Cycle 24 council — truthful NO-GO
 
-The council accepts the three exact merged tips plus the integrator's independent
-349/0 focused matrix as a READY candidate. Pane identity is nonce/worktree-bound,
-worker context is run-scoped with explicit legacy compatibility, Graphify stays
-query-only, and manifest `custom` no longer implies a preset remap.
+The council rejects promotion for run `c24-context-hardening-20260810-a1`.
+Canonical stats record two context-hygiene restarts, one supervisor restart, zero
+terminal gates, and pending cleanup. The frozen plan makes any restart NO-GO.
 
-This bootstrap run began before those launcher changes and therefore retains the live
-red evidence: partial pane tags and an unscoped inbox exposing Cycle 15 imports. The
-merged contracts, not the bootstrap process, are the host candidate. The coordinator
-alone owns the one fresh-process terminal gate, promotion, and cleanup.
-
-No external evidence or action is authorized for this engineering verdict. The
-ten-product visual corpus remains separately external.
+The exact builder tips are preserved, and the integrator repaired the newly exposed
+tmux session-option inheritance seam with a red/green real-tmux regression. A fresh
+cycle must also enforce commit-all-owned-files handoff and prevent reflexion from
+duplicating strict scalar prompt contracts before any host gate is eligible.

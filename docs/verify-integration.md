@@ -1,4 +1,4 @@
-# Cycle 24 integration verification — host gate pending
+# Cycle 24 integration verification — NO-GO
 
 Run: `c24-context-hardening-20260810-a1`
 Branch: `lane/c24-integrator`
@@ -10,126 +10,125 @@ SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claud
 
 SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
 
-Both files were read exactly once before review or verification. The bounded context
-packet was also read exactly once. No Graphify skill file was read or invoked, and the
-shared graph was not rebuilt.
+Both selected files and the bounded context packet were each read exactly once. No
+Graphify skill file was read or invoked, and the shared graph was not rebuilt.
 
 ## Exact-tip provenance
 
-The three current asserted builder tips were merged without conflict or rewritten
-ownership:
+The three current asserted builder tips were merged without conflict:
 
-| Lane | Asserted tip | Integration merge | Owned result |
-| --- | --- | --- | --- |
-| `pane-identity` | `3a99b106b6075fd58a2cb7dd41db3adb89032e17` | `ebe5c3326b9662c7b2e3b9a58dc0d2d8e290e272` | shared tmux identity, state/supervisor observers, focused tests, evidence |
-| `context-hygiene` | `7eadd5fba104013719f5325494ebaa1f3a8c12dc` | `f948218b4c84f7281cd1980ac6c901e9b7a99934` | scoped worker API, exact prompt syntax, query-only Graphify policy, focused tests, evidence |
-| `runner-wire` | `f8540bd3d7b7cf2b7059a7bfa18fd448e0ad94b8` | `63c11fdef204e34e7ad7ad603dbe83fc636c24e3` | runner/model-policy wiring, liveness repair, focused tests, evidence |
+| Lane | Asserted tip | Integration merge |
+| --- | --- | --- |
+| `pane-identity` | `3a99b106b6075fd58a2cb7dd41db3adb89032e17` | `ebe5c3326b9662c7b2e3b9a58dc0d2d8e290e272` |
+| `context-hygiene` | `7eadd5fba104013719f5325494ebaa1f3a8c12dc` | `f948218b4c84f7281cd1980ac6c901e9b7a99934` |
+| `runner-wire` | `f8540bd3d7b7cf2b7059a7bfa18fd448e0ad94b8` | `63c11fdef204e34e7ad7ad603dbe83fc636c24e3` |
 
-`git merge-base --is-ancestor` returned success for every asserted tip at the merged
-head. The three builder ranges are disjoint at their frozen OWN boundaries. The only
-integrator code-adjacent changes are two missing edge-case assertions in
-`tests/test-tmux-runtime.sh` and `tests/test-skill-delivery.sh`; production source was
-not rewritten after merging.
+`git merge-base --is-ancestor` succeeded for every asserted tip. The original builder
+ranges stayed within their frozen OWN boundaries. Integrator changes add missing
+identity/navigation assertions and repair one cross-lane tmux lookup seam discovered
+from canonical live evidence.
 
-## Independent code review
+## Independent review and focused contracts
 
 The merged diff was reviewed for correctness, security, performance, maintainability,
 shell portability, and error propagation.
 
-- `polylane_tmux_find_pane` canonicalizes the target, accepts only a complete matching
-  nonce/worktree identity, and permits cwd fallback only for a fully untagged pane. A
-  partial identity or conflicting same-worktree identity suppresses fallback. Pane tags
-  are written before state, usage, or transcript work on fresh builder, adopted builder,
-  recreated builder, fresh integrator, and adopted integrator paths.
+- Pane tags are written before dependent state, usage, or transcript work on fresh,
+  adopted, recreated, and integrator paths. Complete matching pane-local tags survive
+  cwd drift; partial, wrong-run, and wrong-worktree tags fail closed; a truly untagged
+  pane retains legacy cwd adoption.
 - Worker run IDs use the existing name grammar plus a 128-byte bound. Message, relay,
-  acknowledgement, inbox, and resume-packet paths share the scope. An absent scope
-  deliberately preserves the historical all-history API.
-- Prime-hybrid host calls and pane exports both carry `POLYLANE_WORKER_RUN_ID`. The
-  preflight and prompt linter require the exact fixed-string inbox command and reject
-  reversed arguments.
-- `graphify` and `graphify-auto` are rejected before selected records are armed or
-  compiled. Block E still mandates direct `graphify-out/q.py` queries.
-- Manifest `custom` validates baked model IDs, availability, and effort without preset
-  remap. An explicit CLI preset remains the remap operation and takes precedence.
-- The runner liveness helpers restore ordinary local word splitting, so an inherited
-  manifest-reader `IFS=|` cannot collapse the agent process list.
+  acknowledgement, inbox, and resume-packet paths share the optional scope, while an
+  unscoped caller retains the historical API.
+- Prime-hybrid host calls and pane exports carry `POLYLANE_WORKER_RUN_ID`; preflight
+  and lint require the exact fixed-string inbox command and reject reversed arguments.
+- `graphify` and `graphify-auto` are rejected before arming or compilation while Block
+  E retains direct `graphify-out/q.py` queries.
+- Manifest `custom` validates baked model IDs, availability, and effort without remap;
+  an explicit CLI preset still remaps and wins. Liveness helpers restore local ordinary
+  word splitting after inherited `IFS=|`.
 
-No correctness, security, performance, portability, or maintainability defect was
-found. Review did find two evidence omissions: the pane test did not exercise
-partial/wrong tag rejection, and the delivery test named only `graphify`. The
-integrator added assertions for partial, wrong-run, wrong-worktree, and
-`graphify-auto` rejection. They passed in the one combined focused run.
+The initial combined focused command ran once through the integrator cache and passed
+349/349 across 14 files. Changed-script ShellCheck also passed once. Its retained test
+log is `.polylane/check-cache/integrator/1095121181-634.output`.
 
-## Frozen graph and transcript context evidence
+Independent review added coverage for partial, wrong-run, wrong-worktree, and
+`graphify-auto` rejection. The later live relay then exposed a distinct tmux semantic:
+`#{@polylane_run_id}` inherits a session option when the pane has no local option, so
+the merged finder could mistake a fully untagged legacy pane for a partially tagged
+pane. Live reproduction showed:
 
-Before targeted source reads, the existing helper was queried directly for the worker
-inbox, runner compile/load/launch/adopt surfaces, tmux identity files, and model-policy
-surface. The frozen shell graph located `inbox_json`, `compile_prompt`, `load_manifest`,
-`launch_panes`, `adopt_existing_session`, and `adopt_integrator`; it had no shell call
-edges, so direct source review remained authoritative.
+- `tmux show-options -p -v ... @polylane_run_id` -> `invalid option`;
+- `tmux display-message ... '#{@polylane_run_id}'` -> the session nonce.
 
-Captured builder scrollback shows direct helper queries in all three panes:
+The new real-tmux regression first failed exactly `13 pass, 1 fail`. The finder was
+then changed to list only pane index/cwd and query all three identity keys with
+pane-scoped `show-options -p -v`, which has no session fallback. The affected cached
+green matrix passed 65/65 (`test-tmux-runtime` 14, `test-state` 19,
+`test-supervisor` 32), and changed-helper ShellCheck exited 0. This local repair is
+required source for the next cycle but cannot erase this run's restart history.
 
-- pane identity queried `pane_for_worktree`, `polylane_tmux_configure`, and observer
-  discovery symbols;
-- context hygiene queried `inbox_json`, `compile_selected`, and `lint_one`;
-- runner wire queried `launch_panes`, both adoption paths, `recreate_lane_pane`,
+## Canonical transcript and context evidence
+
+Before targeted source reads, the frozen helper was queried directly for worker inbox,
+prompt/model policy, tmux identity, and all runner launch/adopt/recreate surfaces. The
+graph had no useful shell call edges, so direct source review remained authoritative.
+
+The canonical logs are outside the runtime snapshot at
+`/Users/leonardo/Downloads/polylane-c24/docs/lane-logs/*.log`. Command-field inspection
+shows direct `q.py` queries in every builder:
+
+- pane identity: `pane_for_worktree`, `polylane_tmux_configure`, `discover_session`;
+- context hygiene: `inbox_json`, `compile_selected`, `lint_one`;
+- runner wire: `launch_panes`, both adoption paths, `recreate_lane_pane`,
   `run_integrator`, and `prime_hybrid_pane_exports`.
 
-A command-pattern audit of each builder transcript found zero reads of any
-`graphify/SKILL.md` or `graphify-auto/SKILL.md`. The live bootstrap panes have only the
-session-level run tag and blank lane/worktree tags because this run began with the
-pre-fix launcher; that is the observed red baseline, not evidence attributed to the
-merged runner.
+The canonical command audit found zero reads of `graphify/SKILL.md` or
+`graphify-auto/SKILL.md`.
 
-At lane start, the exact durable-inbox command returned three unacknowledged Cycle 15
-relay imports. This bootstrap process did not export the new worker run scope, so the
-result reproduces the documented stale-context defect. The messages were recognized as
-historical and were neither followed nor acknowledged. The integrated focused test
-creates old-run, new-run, and unscoped events: a `new-run` caller sees only its two
-events, rejects an old acknowledgement, and the unscoped legacy caller retains all
-five historical events. A fresh host run is required to certify the merged export in a
-new process.
+At lane start, the exact inbox command returned three Cycle 15 imports because this
+bootstrap process did not export the new run scope. They were identified as historical,
+not followed, and not acknowledged. The integrated scope test proves that a `new-run`
+caller sees only its two matching events, rejects an old acknowledgement, and an
+unscoped legacy caller retains all five historical events. Only a fresh process can
+certify the new export in live use.
 
-## Focused verification
+## Canonical runtime truth
 
-The combined command ran once through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`. The retained log is
-`.polylane/check-cache/integrator/1095121181-634.output`.
+`/Users/leonardo/Downloads/polylane-c24/docs/polylane/run-stats.json` is decisive:
 
-| Test | Result |
-| --- | --- |
-| `test-tmux-runtime.sh` | 14 pass, 0 fail |
-| `test-state.sh` | 19 pass, 0 fail |
-| `test-supervisor.sh` | 32 pass, 0 fail |
-| `test-worker-run-scope.sh` | 13 pass, 0 fail |
-| `test-workers.sh` | 47 pass, 0 fail |
-| `test-worker-canonical-state.sh` | 23 pass, 0 fail |
-| `test-promptlint.sh` | 25 pass, 0 fail |
-| `test-skill-delivery.sh` | 47 pass, 0 fail |
-| `test-promptopt.sh` | 9 pass, 0 fail |
-| `test-model-policy.sh` | 17 pass, 0 fail |
-| `test-prime-hybrid-integration.sh` | 60 pass, 0 fail |
-| `test-session-resume.sh` | 8 pass, 0 fail |
-| `test-runtime-recovery.sh` | 15 pass, 0 fail |
-| `test-intensity.sh` | 20 pass, 0 fail |
+- `context-hygiene`: 1 launch, **2 restarts**;
+- `supervisor_restarts`: **1**;
+- all other lanes: 1 launch, 0 lane restarts;
+- `terminal_gates`: 0;
+- `cleanup`: `pending`.
 
-Focused total: **349 pass, 0 fail across 14 files**.
+The canonical runner log records dead-pane retries at lines 550 and 814, then a
+reflexion attempt at line 995. Line 996 rejects duplicate strict `DELEGATION` scalar
+values. The first restarts followed a builder handoff that did not mechanically require
+committing every owned file; the marker was therefore not a valid contract-v2 handoff.
+The plan states that any restart is NO-GO. Focused code health cannot override this
+nonce-bound runtime evidence.
 
-Changed-script ShellCheck ran once through the same cache for the nine changed scripts
-and exited 0. `git diff --check` exited 0 after evidence writing. The refinement queue
-returned `[]`, so no propose-or-decline action was eligible.
+## Exact repairs and next gate
 
-## Boundary and verdict
+Cycle 24 ends NO-GO. A fresh hardening cycle must:
 
-This lane did not run the full suite, whole-tree ShellCheck, skill parity, either
-installer, doctor, live rehearsal, push, deployment, publication, purchase, or live
-action. No external evidence is required for this engineering verdict; the existing
-ten-product visual corpus remains separate and cannot affect it. The coordinator owns
-the sole fresh-process host gate and any later promotion or cleanup.
+1. Compile an explicit builder instruction to commit every owned changed/new file
+   before the DONE marker, with a prompt contract regression.
+2. Make reflexion prompt augmentation replace/dedupe strict scalar contracts rather
+   than append a second `DELEGATION` value, with a red/green promptopt regression.
+3. Start from the pane-local option repair in this integrator branch and certify a new
+   process with zero lane restarts, zero supervisor restarts, scoped live inbox output,
+   one coordinator-owned terminal gate, and complete cleanup.
 
-SKILL-EVIDENCE: engineering:code-review — helped: the structured correctness and edge-case review found two missing assertions, confirmed fail-closed behavior, and avoided an unnecessary production seam rewrite.
+This lane did not run the full suite, whole-tree ShellCheck, parity, either installer,
+doctor, live rehearsal, push, deployment, publication, purchase, or live action. No
+external evidence is required; the ten-product visual corpus remains separate. The
+refinement queue returned `[]`, so no propose-or-decline action was eligible.
 
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: the READY decision is tied to one fresh 349/0 cached matrix, one clean changed-script ShellCheck, exact-tip ancestry, and transcript evidence rather than builder claims.
+SKILL-EVIDENCE: engineering:code-review — helped: the structured review found missing edge assertions and, when canonical live evidence arrived, isolated session-option inheritance as a real cross-lane correctness seam.
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c24-context-hardening-20260810-a1
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: canonical restart evidence overrode the earlier green focused matrix, forced withdrawal of READY, and tied the pane repair to red/green verification.
+
+POLYLANE-VERDICT: NO-GO run=c24-context-hardening-20260810-a1

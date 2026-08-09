@@ -1,10 +1,11 @@
-# Cycle 24 digest — integration candidate
+# Cycle 24 digest — NO-GO
 
-The integrator merged the exact pane-identity, context-hygiene, and runner-wire tips
-without conflict. Independent review added only missing edge-case assertions, then the
-combined focused matrix passed 349/349 and changed-script ShellCheck exited cleanly.
-Builder transcripts show direct `q.py` queries and zero Graphify skill reads.
+The exact pane-identity, context-hygiene, and runner-wire tips merged cleanly, and the
+initial focused matrix passed 349/349. Canonical live evidence then overruled that local
+signal: context hygiene restarted twice, the supervisor restarted once, and no terminal
+gate ran. The runner log ties recovery to an incomplete commit handoff and a reflexion
+prompt rejected for duplicate `DELEGATION` scalars.
 
-The result is READY for one coordinator-owned host gate. The full suite, whole-tree
-ShellCheck, parity, installs, live GO/NO-GO rehearsal, promotion, and cleanup have not
-run in this lane and are not claimed here.
+The integrator also reproduced and repaired tmux session-option inheritance in the
+pane finder; its affected matrix is 65/65 and ShellCheck is clean. The run remains
+NO-GO. A fresh cycle owns the two prompt repairs and zero-restart certification.
