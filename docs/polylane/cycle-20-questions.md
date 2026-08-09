@@ -1,6 +1,13 @@
 # Cycle 20 questions
 
-No material emergent question arose during this evidence-only integration. The stale
-graph coverage was documented and bounded by current source and fixture evidence; the
-only remaining decision is the frozen coordinator terminal boundary, so there is no new
-question to route as **Recommended**, **Go deeper next round**, or **Defer**.
+The live run answered one material design question without needing user authority.
+
+- **Recommended:** Should Polylane salvage a worker that committed the exact current-run
+  DONE line under one wrong `docs/status-*.md` filename? Yes, but only through the
+  deterministic single-candidate rename implemented in `763fb00`; this saves an entire
+  model restart without weakening nonce, Git, or clean-tree trust.
+- **Go deeper next round:** Exercise the compiled relay command and marker normalizer in
+  a fresh real run, then add adversarial cases only if that execution exposes a new
+  boundary. The terminal criterion is zero restarts, not more speculative mechanisms.
+- **Defer:** Do not generalize recovery into arbitrary filename/content repair. Multiple,
+  stale, dirty, symlinked, foreign-lane, or uncommitted candidates must continue to stop.

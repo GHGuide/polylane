@@ -10,10 +10,12 @@ Cycle 20 certification: [plan](cycle-20-plan.md) ·
 [research](cycle-20-research.md) · [skill suggestions](cycle-20-suggestions.md) ·
 [council](cycle-20-council.md) · [digest](cycle-20-digest.md) ·
 [questions](cycle-20-questions.md) · [Cycle 19 terminal outcome](cycle-19-outcome.md).
-The nonce-matched evidence-only audit tip is merged and the integrator independently
-reproduced the six recovery contracts plus static, parity, marker, seam, and installer
-evidence. The focused `m20.1` acceptance is passed; `m18.3` and `c56` remain open for
-the coordinator's one untouched process-start terminal gate and both rehearsal outcomes.
+The live run recorded one builder restart after an exact DONE line landed under the
+wrong status filename, and the integrator missed a canonical relay request because its
+compiled prompt did not contain the literal relay command. Commit `763fb00` repairs both
+seams with red-first tests and a 381/0 runtime/prompt/parity matrix. Cycle 20 remains a
+truthful NO-GO; `m20.1`, `m18.3`, and `c56` stay open for Cycle 21's untouched
+zero-restart terminal gate and both rehearsal outcomes.
 
 Cycle 19 recovery: [plan](cycle-19-plan.md) · [research](cycle-19-research.md) ·
 [skill suggestions](cycle-19-suggestions.md) · [questions](cycle-19-questions.md) ·

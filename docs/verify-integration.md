@@ -1,4 +1,4 @@
-# Cycle 20 integration verification — clean process-start handoff
+# Cycle 20 integration verification — truthful failed-certification handoff
 
 Run: `c20-clean-cert-20260809-a1` on `lane/c20-integrator`.
 
@@ -23,10 +23,29 @@ changed helpers and callers returned stale fuzzy document nodes rather than sour
 nodes; the graph was not rebuilt, and current source plus hermetic contracts were used
 instead.
 
-Correctness/security/performance review found no confirmed defect or integration seam.
-The optional guard preserves requested-grade behavior and acts before durable effects;
-the ownership predicate rejects foreign links and every other untracked path. Ponytail
-review: Lean already. Ship.
+The initial code review found no defect in those two Cycle 19 repairs. The live Cycle 20
+run then exposed two different orchestration seams outside that review boundary:
+
+1. The builder twice committed the exact current-run DONE line under
+   `docs/status-restart-accounting.md`, not the canonical
+   `docs/status-restart-accounting-audit.md`. The old runner correctly rejected the
+   near-miss but spent one health restart before coordinator commit `716624a` performed
+   the auditable rename. Canonical run stats now prove one builder launch, one builder
+   restart, one integrator launch, zero terminal gates, and pending cleanup.
+2. The canonical relay contained a coordinator request naming that confirmed seam, but
+   the authored integrator prompt said only to read the "canonical relay". The worker
+   instead read tracked `docs/parallel-status.md` and missed the live request. This was
+   a prompt-delivery failure even though the reference block described the relay
+   correctly.
+
+Coordinator commit `763fb00` closes both classes for the next process. Contract-v2
+health recovery now normalizes only one clean, committed, regular `docs/status-*.md`
+whose first line exactly matches the lane and current nonce; stale, foreign-lane,
+uncommitted, dirty, symlink, and ambiguous candidates remain rejected. Prompt
+compilation now injects the literal relay command and canonical DONE path into every
+builder and integrator prompt after optimization/skill delivery, and strict runtime
+lint requires each injected contract exactly once. The durable cleanup reference now
+also calls `docs/parallel-status.md` a post-cycle summary rather than a live log.
 
 ## Fresh merged-tree evidence
 
@@ -47,16 +66,26 @@ Focused runtime total: 153 pass, 0 fail. Whole-tree `shellcheck -S warning bin/*
 `bin/polylane-seams.sh scan "$PWD"`, and `git diff --check` all exited 0. Skill parity
 passed 57/0; installers passed 50/0; fresh installs passed 39/0.
 
+After the two live seams were reproduced, the coordinator added a red-first recovery
+and prompt-delivery matrix. The marker test failed 6 assertions before implementation;
+the Cycle 13 compiler contract failed 6 assertions before injection. The repaired
+12-file runtime/prompt/parity matrix then passed 381/0, including marker normalization
+17/0, lane completion 27/0, runtime recovery 14/0, Cycle 13 contract 50/0, prompt
+compiler 16/0, prompt lint 22/0, selected-skill delivery 44/0, agent adapter 49/0,
+prime-hybrid integration 57/0, skill parity 57/0, and supervisor 26/0. Documentation
+truth passed 25/0; whole-tree ShellCheck, marker-doc consistency, and diff hygiene
+exited 0. The full terminal suite and doctor rehearsal were deliberately not consumed
+inside a run that had already exceeded its zero-restart budget.
+
 ## State, boundary, and limitations
 
-The focused `m20.1` acceptance is marked pass only from the six reproduced contracts.
-`m20.1` itself, `m18.3`, and `c56` remain open: no outer process-start run, terminal
-full suite, or hermetic GO/NO-GO rehearsal was executed here. The coordinator alone
-must establish exactly two launches, zero restarts, one terminal gate, complete cleanup,
-and both rehearsal outcomes. No live external action occurred; approval-bound receipts
-remain simulations and trading remains research/backtest/paper-only. The pre-existing
-untracked `.polylane-prompt.txt` and `graphify-out/` were retained, so this certification
-attests the committed merge and its focused evidence rather than claiming an empty local
-scratch directory.
+The focused `m20.1` acceptance remains local evidence only. Cycle 20 cannot certify
+`m20.1`, `m18.3`, or `c56`: its one recorded restart exceeds the configured zero-restart
+budget. The runner must preserve that NO-GO without spending the terminal gate. A fresh
+Cycle 21 process must load `763fb00` and establish exactly two launches, zero restarts,
+one terminal gate, complete cleanup, and both rehearsal outcomes. No live external
+action occurred; approval-bound receipts remain simulations and trading remains
+research/backtest/paper-only. The pre-existing untracked `.polylane-prompt.txt` and
+`graphify-out/` were retained as runner-owned helpers.
 
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c20-clean-cert-20260809-a1
