@@ -38,3 +38,7 @@
 
 {"lane":"project-runtime","domain":"test","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /private/tmp/polylane-c15-worktrees/project-runtime/docs/verify-project-runtime.md"}
 
+{"lane":"terminal-fixture-audit","domain":"report","skill":"superpowers:systematic-debugging","outcome":"helped","why":" required a"}
+
+{"lane":"terminal-fixture-audit","domain":"report","skill":"superpowers:verification-before-completion","outcome":"helped","why":" kept the"}
+

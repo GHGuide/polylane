@@ -1740,7 +1740,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle16-terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1810,7 +1810,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle16-terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
