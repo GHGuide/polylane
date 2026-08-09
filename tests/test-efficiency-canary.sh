@@ -94,6 +94,22 @@ CYCLE=21
 ORCHESTRATION_CONTRACT=2
 POLYLANE_TEST_ENV_LOG="$ENV_LOG"
 export POLYLANE_TEST_ENV_LOG
+
+# The cheap READY precheck runs before the host has created this run's gate
+# proof.  It must not leak a nonce without its matching proof: doing so makes a
+# nested efficiency canary compare the new nonce against an inherited/default
+# proof and reject otherwise-green work.
+SAVED_EFFICIENCY_GATE_PROOF="$EFFICIENCY_GATE_PROOF"
+EFFICIENCY_GATE_PROOF=
+RUN_ID=pre-gate-run
+: > "$ENV_LOG"
+assert_ok "efficiency-focused-precheck-runs-without-proof-context" contract_focused_acceptance_gate
+assert_eq "efficiency-focused-precheck-exports-no-half-context" \
+  "||$STATE_FILE check-accept --cycle 21 --targets s1 --focused" "$(cat "$ENV_LOG")"
+
+EFFICIENCY_GATE_PROOF="$SAVED_EFFICIENCY_GATE_PROOF"
+RUN_ID=eff-1
+: > "$ENV_LOG"
 assert_ok "efficiency-acceptance-inherits-host-proof" contract_acceptance_gate GO 1
 assert_eq "efficiency-acceptance-exports-proof-twice" "2" "$(grep -cF "${EFFICIENCY_GATE_PROOF}|eff-1|" "$ENV_LOG")"
 SCRIPT_DIR="$REAL_SCRIPT_DIR"

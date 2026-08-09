@@ -3393,8 +3393,10 @@ contract_focused_acceptance_gate() {
   (
     cd "$INT_WORKTREE"
     export REPO="$PWD" REPO_ROOT="$PWD"
-    export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
-    export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+    # This precheck runs before write_efficiency_proof gate.  Keep the proof
+    # path and nonce atomic: exporting only the new nonce makes nested canaries
+    # validate an inherited/default proof against the wrong run.
+    unset POLYLANE_EFFICIENCY_PROOF POLYLANE_EXPECTED_RUN_ID
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
       --cycle "$CYCLE" --targets "$targets" --focused
   ) || { report_acceptance_failures; return 1; }
