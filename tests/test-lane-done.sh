@@ -66,6 +66,24 @@ assert_fail "done-v2-rejects-dirty-checkpoint" lane_done "$G" alpha
 (cd "$G" && git add docs/verify-alpha.md && git commit -qm evidence)
 assert_ok "done-v2-accepts-final-clean-checkpoint" lane_done "$G" alpha
 
+# A current, committed READY handoff completes only the integrator's local turn;
+# it does not self-authorize GO. This breaks the circular wait where a prompt
+# defers STATUS:DONE until the host gate, while the host gate waits for DONE.
+INT_NAME=integrator
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=run-2\n' > "$G/docs/verify-integration.md"
+assert_fail "done-v2-ready-rejects-uncommitted-evidence" lane_done "$G" integrator
+(cd "$G" && git add docs/verify-integration.md && git commit -qm ready)
+assert_ok "done-v2-ready-accepts-committed-integrator-handoff" lane_done "$G" integrator
+printf 'POLYLANE-VERDICT: NO-GO run=run-2\n' > "$G/docs/verify-integration.md"
+(cd "$G" && git add docs/verify-integration.md && git commit -qm no-go)
+assert_fail "done-v2-ready-rejects-no-go" lane_done "$G" integrator
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=stale-run\n' > "$G/docs/verify-integration.md"
+(cd "$G" && git add docs/verify-integration.md && git commit -qm stale-ready)
+assert_fail "done-v2-ready-rejects-stale-nonce" lane_done "$G" integrator
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=run-2\n' > "$G/docs/verify-integration.md"
+(cd "$G" && git add docs/verify-integration.md && git commit -qm current-ready)
+assert_ok "done-v2-ready-restores-current-nonce" lane_done "$G" integrator
+
 # The runner-created graph link is an untracked helper, not unfinished lane work.
 # Any other untracked path remains a real dirty checkpoint and must still block DONE.
 mkdir -p "$TEST_TMPDIR/runner-graph"

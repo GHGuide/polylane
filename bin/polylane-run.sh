@@ -2041,16 +2041,34 @@ launch_panes() {
 # closes the marker-before-commit race where the runner could merge an older tip
 # while the live agent was still staging its evidence.
 lane_done() {
-  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" rel="docs/status-$2.md" dirty
-  [ -f "$f" ] || return 1
-  # `|| true`: read returns non-zero at EOF-before-newline but STILL populates $first,
-  # so a marker written without a trailing newline (markers.sh done emits none) is read
-  # correctly instead of reading as not-done forever. Empty file -> first="" -> != DONE.
-  IFS= read -r first < "$f" || true
-  if [ -n "${RUN_ID:-}" ]; then
-    [ "$first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
-  else
-    [ "$first" = "STATUS: $name DONE" ] || return 1
+  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" rel="docs/status-$2.md" dirty completion="status"
+  if [ ! -f "$f" ]; then
+    # A contract-v2 integrator may truthfully finish its local branch while the
+    # coordinator-owned terminal gate is still pending. READY is not GO, but it
+    # is a complete handoff: requiring a DONE marker that a prompt defers until
+    # host GO creates a circular wait (host gate waits for DONE; DONE waits for
+    # host GO). Accept only the current nonce-bound READY evidence, then apply
+    # the same clean, committed checkpoint checks as an ordinary DONE marker.
+    f="$wt/docs/verify-integration.md"
+    rel="docs/verify-integration.md"
+    if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null &&
+       [ "$name" = "${INT_NAME:-}" ] && [ -f "$f" ] && [ ! -L "$f" ] &&
+       [ "$(parse_verdict "$f")" = "READY-FOR-HOST-GATE" ]; then
+      completion="ready"
+    else
+      return 1
+    fi
+  fi
+  if [ "$completion" = "status" ]; then
+    # `|| true`: read returns non-zero at EOF-before-newline but STILL populates $first,
+    # so a marker written without a trailing newline (markers.sh done emits none) is read
+    # correctly instead of reading as not-done forever. Empty file -> first="" -> != DONE.
+    IFS= read -r first < "$f" || true
+    if [ -n "${RUN_ID:-}" ]; then
+      [ "$first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
+    else
+      [ "$first" = "STATUS: $name DONE" ] || return 1
+    fi
   fi
   if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
     git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
@@ -2080,6 +2098,7 @@ lane_done() {
     fi
     [ -z "$dirty" ] || return 1
     git -C "$wt" cat-file -e "HEAD:$rel" 2>/dev/null || return 1
+    [ "$completion" = "ready" ] && return 0
     IFS= read -r head_first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
     if [ -n "${RUN_ID:-}" ]; then
       [ "$head_first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1

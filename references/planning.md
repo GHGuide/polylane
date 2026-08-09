@@ -136,6 +136,7 @@ The integrator prompt also requires:
 
 - merge current lane branch tips into its own branch, never base;
 - scope checks and seam scan; when only coordinator-owned terminal checks remain, commit `READY-FOR-HOST-GATE run=<RUN_ID>` instead of rerunning the terminal suite;
+- its committed DONE marker denotes a finished local integrator handoff, not host GO, and must never be conditioned on the later coordinator gate;
 - repair every autonomous issue it can;
 - exactly one current-nonce sentinel:
   `GO`, `READY-FOR-HOST-GATE`, `EXTERNAL-EVIDENCE-OPEN`, or `NO-GO`;
