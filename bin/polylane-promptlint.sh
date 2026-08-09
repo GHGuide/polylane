@@ -44,6 +44,7 @@ lint_one() {
     grep -qF "STATUS: $lane DONE run=" "$f" || miss="$miss runtime-done-marker"
     runtime_finalize_contract "$f" "$role" || miss="$miss runtime-finalize-contract"
     runtime_exact_once "$f" || miss="$miss duplicate-runtime-contract"
+    grep -qiE 'polylane-refine\.sh[^[:alnum:]_-]+propose-or-decline' "$f" && miss="$miss fictional-refine-subcommand"
     if [ "$role" = builder ]; then
       builder_status_paths_canonical "$f" "$lane" || miss="$miss conflicting-status-path"
     fi
@@ -52,7 +53,9 @@ lint_one() {
     grep -q 'POLYLANE_CONTEXT_PACKET' "$f" || miss="$miss prime-hybrid-context-packet"
     grep -qF '"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"' "$f" || miss="$miss prime-hybrid-exact-inbox-command"
     if [ "$role" = integrator ]; then
-      grep -qiE 'propose[- ]or[- ]decline' "$f" || miss="$miss prime-hybrid-refinement-decision"
+      grep -qF '"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"' "$f" || miss="$miss prime-hybrid-refinement-queue"
+      grep -qF 'exactly one real `propose` or `decline`' "$f" || miss="$miss prime-hybrid-refinement-decision"
+      grep -qF '`propose-or-decline` is NOT a subcommand' "$f" || miss="$miss prime-hybrid-refinement-not-subcommand"
     fi
   fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi

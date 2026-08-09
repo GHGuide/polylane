@@ -32,6 +32,8 @@ WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [J done checklist]
 [K POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.]
 
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored, commit it, and exit immediately. Integrator final handoff: write its current-run status and integrator verdict, force-add ignored handoff files, commit them, and exit immediately. For prime-hybrid refinements, first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
+
 DELEGATION: forbidden — this tmux CLI is the sole agent for the lane; do not spawn subagents or fan-out.
 CHECK-CACHE: use bin/polylane-check.sh "$PWD/.polylane/check-cache/<lane>" -- <command>; reuse unchanged pass/fail results.
 

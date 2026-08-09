@@ -15,11 +15,20 @@ for f in references/prompt-blocks.md references/lane-template.md references/plan
   assert_contains "handoff-contract-ordered-$f" "$ordered" "$body"
   assert_contains "handoff-contract-exit-$f" "immediately exit" "$body"
   assert_contains "handoff-contract-scoped-add-$f" "git add <your files>" "$body"
+  assert_contains "handoff-contract-builder-form-$f" "Builder final handoff:" "$body"
+  assert_contains "handoff-contract-integrator-form-$f" "Integrator final handoff:" "$body"
 done
 
 assert_contains "handoff-contract-refinement-queue" \
   '"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"' \
   "$(cat "$ROOT/references/prompt-blocks.md")"
+for f in references/prompt-blocks.md references/lane-template.md references/planning.md SKILL.md codex/SKILL.md; do
+  body=$(cat "$ROOT/$f")
+  assert_contains "handoff-contract-refinement-executable-$f" \
+    'then exactly one real `propose` or `decline`' "$body"
+  assert_contains "handoff-contract-refinement-not-subcommand-$f" \
+    '`propose-or-decline` is NOT a subcommand' "$body"
+done
 if rg -n 'polylane-refine\.sh propose-or-decline' \
   "$ROOT/SKILL.md" "$ROOT/codex/SKILL.md" "$ROOT/references"; then
   fail "handoff-contract-no-fictional-refine-subcommand" "advertised prompt invokes propose-or-decline"

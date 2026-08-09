@@ -178,6 +178,11 @@ exactly one real `propose` or `decline` per eligible item; `propose-or-decline` 
 a subcommand. Global skill changes remain proposals
 to `scripts/polylane-skill-evolve.sh`, never edits to the active skill.
 
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored,
+commit it, and exit immediately. Integrator final handoff: write its current-run
+status and integrator verdict, force-add ignored handoff files, commit them, and exit
+immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
+
 Use `orchestration_contract: 2`; validate scope and prompts. A contract-v2 manifest
 uses Codex-only model IDs and defaults `codex_profile` to `lean`. Run doctor and the
 supervisor, then surface only the actual watch command, `tmux attach -t <session>`.

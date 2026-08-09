@@ -61,14 +61,14 @@ cp "$GOOD" "$RUNTIME_GOOD"
 cat >> "$RUNTIME_GOOD" <<'P'
 POLYLANE-RUNTIME-RELAY: run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; docs/parallel-status.md is post-cycle evidence only, never the live relay.
 POLYLANE-RUNTIME-DONE: write only docs/status-x.md; first line exactly `STATUS: x DONE run=run-1`.
-POLYLANE-RUNTIME-FINALIZE: after the final relay and durable inbox read, handle all addressed autonomous work, run focused verification, scope-stage every owned changed or new file with `git add <your files>`, commit implementation and evidence, verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`, then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 P
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_ok \
   "lint-runtime-builder-canonical-status-path" lint_one "$RUNTIME_GOOD" x false builder
 grep -v 'POLYLANE-RUNTIME-FINALIZE:' "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-no-finalize.txt"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
   "lint-runtime-requires-finalize-contract" lint_one "$TEST_TMPDIR/runtime-no-finalize.txt" x false builder
-sed 's/run focused verification, scope-stage every owned changed or new file/scope-stage every owned changed or new file, run focused verification/' \
+sed 's/run focused verification; scope-stage every owned changed or new file/scope-stage every owned changed or new file; run focused verification/' \
   "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-reordered-finalize.txt"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
   "lint-runtime-rejects-reordered-finalize-contract" lint_one "$TEST_TMPDIR/runtime-reordered-finalize.txt" x false builder
@@ -76,6 +76,9 @@ cp "$RUNTIME_GOOD" "$TEST_TMPDIR/runtime-wrong-status.txt"
 printf '%s\n' 'Also write docs/status-short.md before completion.' >> "$TEST_TMPDIR/runtime-wrong-status.txt"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
   "lint-runtime-builder-rejects-conflicting-status-path" lint_one "$TEST_TMPDIR/runtime-wrong-status.txt" x false builder
+printf '%s\n' 'Run "$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" propose-or-decline "$POLYLANE_HARNESS_DIR".' >> "$RUNTIME_GOOD"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
+  "lint-runtime-rejects-fictional-refine-subcommand" lint_one "$RUNTIME_GOOD" x false builder
 
 # the message names what's missing
 out=$(lint_one "$TEST_TMPDIR/nonce.txt" nonce 2>&1 || true)
@@ -103,7 +106,7 @@ Read POLYLANE_CONTEXT_PACKET exactly once. Use the durable inbox through
 P
   cp "$TEST_TMPDIR/.polylane/lanes/prime.txt" "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt"
   cat >> "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt" <<'P'
-For every eligible refinement queue item, propose-or-decline it before DONE.
+Run "$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR", then exactly one real `propose` or `decline` for every eligible refinement queue item; `propose-or-decline` is NOT a subcommand.
 P
   cat > "$TEST_TMPDIR/.polylane/prime.json" <<'JSON'
 {"base":"main","prime_hybrid":true,"lanes":[{"name":"prime","prompt_file":".polylane/lanes/prime.txt"}],"integrator":{"name":"prime-integrator","prompt_file":".polylane/lanes/prime-integrator.txt"}}
@@ -115,7 +118,7 @@ JSON
   grep -v 'durable inbox' "$TEST_TMPDIR/.polylane/lanes/prime.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-missing.txt"
   sed 's#prime.txt#prime-missing.txt#' "$TEST_TMPDIR/.polylane/prime.json" > "$TEST_TMPDIR/.polylane/prime-missing.json"
   assert_fail "lint-prime-hybrid-requires-inbox" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-missing.json"
-  grep -v 'propose-or-decline' "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-integrator-missing.txt"
+  grep -v 'exactly one real' "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-integrator-missing.txt"
   sed 's#prime-integrator.txt#prime-integrator-missing.txt#' "$TEST_TMPDIR/.polylane/prime.json" > "$TEST_TMPDIR/.polylane/prime-integrator-missing.json"
   assert_fail "lint-prime-hybrid-requires-integrator-refinement-decision" \
     "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-integrator-missing.json"
