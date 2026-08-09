@@ -93,7 +93,7 @@ checkpoint_iteration() {
   state=$(state_json "$run"); now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   completed=$(printf '%s' "$state" | jq -c --arg fault "$fault" '(.completed_faults + [$fault] | unique)')
   state=$(printf '%s' "$state" | jq --arg at "$now" --argjson iteration "$iteration" --argjson completed "$completed" \
-    '.status="running" | .iteration=$iteration | .last_checkpoint_at=$at | .completed_faults=$completed | .steady_state={expected:"isolated-fixture-ready",restored:true,last_result:"restored"} | .recovery.last_result="restored" | .recovery.last_seconds=0')
+    '.status="running" | .iteration=$iteration | .last_checkpoint_at=$at | .completed_faults=$completed | .steady_state={expected:"isolated-fixture-ready",restored:true,last_result:"restored"} | .recovery.attempts=1 | .recovery.last_result="restored" | .recovery.last_seconds=0')
   write_state "$run" "$state"; event "$run" checkpoint "$(jq -cn --argjson iteration "$iteration" --arg fault "$fault" '{iteration:$iteration,fault:$fault,steady_state:"restored"}')"
 }
 
