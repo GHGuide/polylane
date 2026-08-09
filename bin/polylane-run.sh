@@ -244,6 +244,7 @@ domain_grade_gate() {
   printf '%s\n' "$output"
   [ "$rc" -eq 0 ] || return "$rc"
   [ "${DRY_RUN:-0}" = "1" ] && return 0
+  jq -e '.domain_runtime? | type == "object" and ((.enabled // true) == true)' "$MANIFEST" >/dev/null 2>&1 || return 0
   bundle=$(jq -r '.domain_runtime.bundle // "docs/polylane/domain-runtime/bundle.json"' "$MANIFEST")
   grade=$(jq -r '.domain_runtime.grade // "docs/polylane/domain-runtime/grade.json"' "$MANIFEST")
   case "$bundle:$grade" in docs/polylane/domain-runtime/*:docs/polylane/domain-runtime/*) ;; *)

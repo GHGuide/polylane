@@ -80,6 +80,40 @@ INT_WORKTREE="$PROJECT"
 if domain_grade_gate >/dev/null 2>&1; then pass "cycle16-runner-commits-profile-grade-before-promotion"; else fail "cycle16-runner-commits-profile-grade-before-promotion" "domain grade gate failed"; fi
 assert_ok "cycle16-domain-evidence-is-tracked" git -C "$PROJECT" ls-files --error-unmatch docs/polylane/domain-runtime/bundle.json docs/polylane/domain-runtime/grade.json
 assert_ok "cycle16-domain-result-enters-integrator-evidence" grep -q '^DOMAIN-GRADER: PASS' "$PROJECT/docs/verify-integration.md"
+
+# A generic project does not opt into domain grading. The advanced helper owns
+# that optionality, and the runner must leave its result and repository state
+# untouched rather than treating a successful skip as durable grade evidence.
+GENERIC_PROJECT="$TEST_TMPDIR/generic-project"
+mkdir -p "$GENERIC_PROJECT/.polylane" "$GENERIC_PROJECT/docs/polylane"
+cat > "$GENERIC_PROJECT/.polylane/run.json" <<'JSON'
+{"base":"main","run_id":"c16-generic","cycle":16,"prompt_token_budget":4000,"available_models":["gpt-5.6-luna"],"lanes":[{"name":"builder","model":"gpt-5.6-luna","effort":"medium","own_globs":["artifacts/**"]}]}
+JSON
+printf 'POLYLANE-VERDICT: GO run=c16-generic\n' > "$GENERIC_PROJECT/docs/verify-integration.md"
+git init -q -b main "$GENERIC_PROJECT"
+git -C "$GENERIC_PROJECT" config user.email test@example.com
+git -C "$GENERIC_PROJECT" config user.name test
+git -C "$GENERIC_PROJECT" add . && git -C "$GENERIC_PROJECT" commit -qm generic-base
+GENERIC_HEAD=$(git -C "$GENERIC_PROJECT" rev-parse HEAD)
+MANIFEST="$GENERIC_PROJECT/.polylane/run.json"
+INT_WORKTREE="$GENERIC_PROJECT"
+GENERIC_OUTPUT=""
+if GENERIC_OUTPUT=$(domain_grade_gate); then
+  pass "cycle16-runner-skips-unrequested-domain-grade"
+else
+  fail "cycle16-runner-skips-unrequested-domain-grade" "domain grade gate failed"
+fi
+assert_contains "cycle16-runner-preserves-not-requested-domain-result" \
+  "ADVANCED: domain-grader=not-requested" "$GENERIC_OUTPUT"
+assert_ok "cycle16-runner-skips-domain-bundle-and-grade-files" \
+  test ! -e "$GENERIC_PROJECT/docs/polylane/domain-runtime/bundle.json" -a ! -e "$GENERIC_PROJECT/docs/polylane/domain-runtime/grade.json"
+assert_eq "cycle16-runner-keeps-generic-integration-evidence" \
+  "POLYLANE-VERDICT: GO run=c16-generic" "$(cat "$GENERIC_PROJECT/docs/verify-integration.md")"
+assert_eq "cycle16-runner-skips-domain-grade-commit" "$GENERIC_HEAD" "$(git -C "$GENERIC_PROJECT" rev-parse HEAD)"
+assert_ok "cycle16-runner-leaves-generic-repository-clean" git -C "$GENERIC_PROJECT" diff --quiet
+
+MANIFEST="$PROJECT/.polylane/run.json"
+INT_WORKTREE="$PROJECT"
 if economy_plan_gate >/dev/null 2>&1; then pass "cycle16-economy-applies-measured-available-model"; else fail "cycle16-economy-applies-measured-available-model" "plan gate failed"; fi
 assert_eq "cycle16-economy-model-updated" gpt-5.6-luna "${LANE_MODELS[0]}"
 assert_ok "cycle16-economy-recommendation-log-is-durable" jq -e '.safe_to_apply and .applied' "$PROJECT/docs/polylane/economy-recommendations/c16-test.jsonl"
