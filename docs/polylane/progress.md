@@ -3,8 +3,9 @@
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
 Cycle 25 integration note: exact-tip atomic completion and context hardening remain
-NO-GO despite 599 green focused checks and clean changed-script ShellCheck. Canonical
-evidence records one handoff restart; the terminal gate was correctly left untouched.
+NO-GO despite 602 green focused checks and clean changed-script ShellCheck. Canonical
+evidence records handoff, integrator, and supervisor restarts; the terminal gate was
+correctly left untouched.
 No durable goal or criterion state changed, so the mechanically generated Cycle 23
 totals below remain authoritative. A fresh nonce must certify the repaired source with
 zero restarts.

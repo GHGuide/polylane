@@ -685,16 +685,16 @@ compile_prompt() {
   fi
   # Selected kits are added only after ordinary normalization. The optimizer
   # owns the injected-record format; this runner forwards the single typed
-  # lane-skill kit that preflight already validated, never a SKILL.md path.
-  if [ "$role" = builder ]; then
-    selected=$(mktemp "$dir/.${name}.selected.XXXXXX") || { rm -f "$tmp"; return 1; }
-    if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile-selected "$tmp" "$LANE_SKILLS_FILE" "$name" "$selected"; then
-      rm -f "$tmp" "$selected"
-      echo "PROMPT-COMPILE: $name selected-kit compilation failed" >&2
-      return 1
-    fi
-    mv "$selected" "$tmp"
+  # lane-skill kit that preflight already validated, never a discovered path.
+  # Integrators have selected records too and must receive the exact same
+  # path-bearing contract as builders.
+  selected=$(mktemp "$dir/.${name}.selected.XXXXXX") || { rm -f "$tmp"; return 1; }
+  if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile-selected "$tmp" "$LANE_SKILLS_FILE" "$name" "$selected"; then
+    rm -f "$tmp" "$selected"
+    echo "PROMPT-COMPILE: $name selected-kit compilation failed" >&2
+    return 1
   fi
+  mv "$selected" "$tmp"
   runtime=$(mktemp "$dir/.${name}.runtime.XXXXXX") || { rm -f "$tmp"; return 1; }
   if ! inject_runtime_prompt_contract "$tmp" "$name" "$runtime"; then
     rm -f "$tmp" "$runtime"

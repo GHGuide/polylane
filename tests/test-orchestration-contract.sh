@@ -59,6 +59,8 @@ KIT="$P/.polylane/lane-skills.json"
 SCOUT="$(dirname "$RUNNER")/polylane-scout.sh"
 "$SCOUT" arm-role "$KIT" builder predefined testing-strategy debug
 "$SCOUT" arm-role "$KIT" builder specific computer-use accessibility-review
+"$SCOUT" arm-role "$KIT" integrator predefined testing-strategy debug
+"$SCOUT" arm-role "$KIT" integrator specific computer-use accessibility-review
 
 MANIFEST="$P/.polylane/run.json"
 cat > "$MANIFEST" <<JSON
@@ -90,6 +92,15 @@ JSON
 MANIFEST="$MANIFEST"
 load_manifest
 assert_ok "contract-valid-before-launch" preflight_contract
+if prepare_compiled_prompts >/dev/null 2>&1; then
+  pass "contract-compiles-selected-kits-for-every-role"
+else
+  fail "contract-compiles-selected-kits-for-every-role" "expected rc 0, got $?"
+fi
+assert_eq "contract-builder-receives-selected-records" "4" \
+  "$(grep -c '^SELECTED-SKILL:' "${LANE_PROMPTS[0]}")"
+assert_eq "contract-integrator-receives-selected-records" "4" \
+  "$(grep -c '^SELECTED-SKILL:' "$INT_PROMPT")"
 
 jq '.target_criteria=["missing"]' "$MANIFEST" > "$P/.polylane/bad-target-criterion.json"
 MANIFEST="$P/.polylane/bad-target-criterion.json"; load_manifest
