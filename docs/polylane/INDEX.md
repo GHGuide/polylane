@@ -11,7 +11,7 @@ Active cycle 19: [plan](cycle-19-plan.md) · [research](cycle-19-research.md) ·
 preserved Cycle 18 integrated tip and fixes the confirmed optional-domain post-grade
 boundary before one fresh host certification.
 
-Cycle 18 recovery history: [plan](cycle-18-plan.md) ·
+Cycle 18 recovery history: [plan](cycle-18-plan.md) · [research](cycle-18-research.md) ·
 [skill suggestions](cycle-18-suggestions.md) · [questions](cycle-18-questions.md) ·
 [council](cycle-18-council.md) · [digest](cycle-18-digest.md) ·
 [integration verification](../verify-integration.md). Every builder, integration, and
