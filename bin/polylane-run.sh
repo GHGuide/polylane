@@ -3678,7 +3678,7 @@ finalize_cycle_state() {
   # this guard a preview stamps the target subgoals done in state_file — and every
   # later REAL launch then dies at "target must be open" (bit a real marathon launch).
   if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "+ (dry-run) would stamp target subgoals/criteria done + regenerate progress/route"
+    echo "+ (dry-run) would stamp target subgoals done after promotion"
     return 0
   fi
   targets=$(jq -r '.target_subgoals[]' "$MANIFEST")
