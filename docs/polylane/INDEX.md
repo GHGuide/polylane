@@ -9,11 +9,14 @@ State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it 
 Cycle 20 certification: [plan](cycle-20-plan.md) ·
 [research](cycle-20-research.md) · [skill suggestions](cycle-20-suggestions.md) ·
 [council](cycle-20-council.md) · [digest](cycle-20-digest.md) ·
-[questions](cycle-20-questions.md) · [Cycle 19 terminal outcome](cycle-19-outcome.md).
+[questions](cycle-20-questions.md) · [Cycle 20 outcome](cycle-20-outcome.md) ·
+[Cycle 19 terminal outcome](cycle-19-outcome.md).
 The live run recorded one builder restart after an exact DONE line landed under the
 wrong status filename, and the integrator missed a canonical relay request because its
 compiled prompt did not contain the literal relay command. Commit `763fb00` repairs both
-seams with red-first tests and a 381/0 runtime/prompt/parity matrix. Cycle 20 remains a
+seams with red-first tests and a 381/0 runtime/prompt/parity matrix. Its host rejection
+then exposed dirty gate evidence and false report attribution; `e1de56a` fixes both with
+a 261/0 matrix and nonce-verifies the canonical proof. Cycle 20 remains a
 truthful NO-GO; `m20.1`, `m18.3`, and `c56` stay open for Cycle 21's untouched
 zero-restart terminal gate and both rehearsal outcomes.
 

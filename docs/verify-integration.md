@@ -30,8 +30,8 @@ run then exposed two different orchestration seams outside that review boundary:
    `docs/status-restart-accounting.md`, not the canonical
    `docs/status-restart-accounting-audit.md`. The old runner correctly rejected the
    near-miss but spent one health restart before coordinator commit `716624a` performed
-   the auditable rename. Canonical run stats now prove one builder launch, one builder
-   restart, one integrator launch, zero terminal gates, and pending cleanup.
+   the auditable rename. Final canonical run stats prove one builder launch, one builder
+   restart, one integrator launch, one host-boundary entry, and pending cleanup.
 2. The canonical relay contained a coordinator request naming that confirmed seam, but
    the authored integrator prompt said only to read the "canonical relay". The worker
    instead read tracked `docs/parallel-status.md` and missed the live request. This was
@@ -46,6 +46,16 @@ compilation now injects the literal relay command and canonical DONE path into e
 builder and integrator prompt after optimization/skill delivery, and strict runtime
 lint requires each injected contract exactly once. The durable cleanup reference now
 also calls `docs/parallel-status.md` a post-cycle summary rather than a live log.
+
+The final host rejection exposed a third truth seam. The old report blamed the
+integrator even though its verdict was READY, displayed an unknown Codex cost as `$0`,
+and wrote the failed gate certificate over a tracked proof in the completed integrator
+checkout. Commit `e1de56a` moves gate proofs to
+`docs/polylane/efficiency-proofs/<run>-gate.md`, exports that exact path and nonce into
+terminal acceptance, verifies proof run ids, attributes report failures to canonical
+host evidence, and reports unpriced totals as unavailable. The additional report,
+efficiency, verdict, acceptance, promotion, telemetry, recovery, compiler, and docs
+matrix passed 261/0 with whole-tree ShellCheck and diff hygiene.
 
 ## Fresh merged-tree evidence
 
@@ -81,9 +91,10 @@ inside a run that had already exceeded its zero-restart budget.
 
 The focused `m20.1` acceptance remains local evidence only. Cycle 20 cannot certify
 `m20.1`, `m18.3`, or `c56`: its one recorded restart exceeds the configured zero-restart
-budget. The runner must preserve that NO-GO without spending the terminal gate. A fresh
-Cycle 21 process must load `763fb00` and establish exactly two launches, zero restarts,
-one terminal gate, complete cleanup, and both rehearsal outcomes. No live external
+budget. The runner preserved NO-GO after one host-boundary entry; its efficiency failure
+correctly skipped the full terminal acceptance command. A fresh Cycle 21 process must
+load `e1de56a` and establish exactly two launches, zero restarts, one host boundary,
+one full terminal acceptance, complete cleanup, and both rehearsal outcomes. No live external
 action occurred; approval-bound receipts remain simulations and trading remains
 research/backtest/paper-only. The pre-existing untracked `.polylane-prompt.txt` and
 `graphify-out/` were retained as runner-owned helpers.

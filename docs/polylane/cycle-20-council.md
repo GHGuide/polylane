@@ -5,8 +5,10 @@
 Stop Cycle 20 at the efficiency boundary and preserve its one-restart NO-GO. Its live
 failure was useful evidence: the worker's exact DONE line was committed under one wrong
 status filename, and the integrator missed a canonical relay request because the
-compiled prompt did not mechanically name the command. Accept commit `763fb00` and its
-red-first tests as the repair tip, but do not reinterpret the run as clean. Keep
+compiled prompt did not mechanically name the command. The final host boundary also
+proved that gate evidence dirtied the completed checkout and the report blamed the
+wrong actor. Accept commits `763fb00` and `e1de56a` plus their red-first tests as the
+repair tip, but do not reinterpret the run as clean. Keep
 `m20.1`, `m18.3`, and `c56` open until a fresh process loads the repair and proves zero
 restarts, two launches, one terminal gate, cleanup, and both rehearsal outcomes.
 
@@ -18,6 +20,8 @@ restarts, two launches, one terminal gate, cleanup, and both rehearsal outcomes.
   current-lane/current-nonce candidate; every broader repair remains a rejection.
 - Require compiler-injected live-relay and DONE-path contracts after prompt optimization
   for both providers and every role; never infer live state from `docs/parallel-status.md`.
+- Keep host-gate proofs in canonical nonce-scoped evidence, export that exact proof and
+  run id into terminal acceptance, and attribute NO-GO to the gate that actually failed.
 - Treat the existing graph as an aid only: both changed-helper caller queries returned
   stale fuzzy documentation rather than source nodes, so current commits and hermetic
   contracts remain the proof.
@@ -26,7 +30,7 @@ restarts, two launches, one terminal gate, cleanup, and both rehearsal outcomes.
 
 ## Verdict posture
 
-The existing nonce-bound `READY-FOR-HOST-GATE` marker only lets the old runner reach its
-host-owned efficiency check. That check must reject Cycle 20 before consuming terminal
-verification because its restart count is already one. Cycle 21, not this run, owns the
-single untouched terminal command that can close `m18.3` and `c56`.
+The nonce-bound `READY-FOR-HOST-GATE` marker let the old runner enter its host-owned
+boundary exactly once. The restart-efficiency proof rejected Cycle 20 before the full
+terminal acceptance command ran. Cycle 21, not this run, owns the single untouched full
+terminal command that can close `m18.3` and `c56`.

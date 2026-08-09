@@ -7,7 +7,8 @@ The live run answered one material design question without needing user authorit
   deterministic single-candidate rename implemented in `763fb00`; this saves an entire
   model restart without weakening nonce, Git, or clean-tree trust.
 - **Go deeper next round:** Exercise the compiled relay command and marker normalizer in
-  a fresh real run, then add adversarial cases only if that execution exposes a new
-  boundary. The terminal criterion is zero restarts, not more speculative mechanisms.
+  a fresh real run together with the nonce-scoped host proof and corrected report, then
+  add adversarial cases only if that execution exposes a new boundary. The terminal
+  criterion is zero restarts, not more speculative mechanisms.
 - **Defer:** Do not generalize recovery into arbitrary filename/content repair. Multiple,
   stale, dirty, symlinked, foreign-lane, or uncommitted candidates must continue to stop.
