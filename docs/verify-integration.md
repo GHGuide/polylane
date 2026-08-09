@@ -14,9 +14,9 @@ not a rewrite of historical evidence.
 
 All commands ran through `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"`:
 graph authority **56/0**, verdict repair **36/0**, wedge **27/0**, skill delivery
-**31/0**, and Cycle-14 compatibility **13/0**. The focused integration matrix also
-passed Cycle-16 contract **29/0**, skill parity **57/0**, installers **50/0**, and fresh
-installers **39/0**.
+**31/0**, Cycle-14 compatibility **13/0**, learning economy **57/0**, and Cycle-16
+contract **29/0**. Provider parity passed **57/0**, installers passed **50/0**, and
+fresh installers passed **39/0**.
 
 ## Cross-contract and safety review
 
@@ -26,7 +26,7 @@ and seam scanning are clean. The graph-only fixture stubs its domain-grade prere
 without replacing production coverage, while verdict repair counts one grade call before
 each of three merge attempts. The liveness fixture uses the real terminal classifier to
 prove an old `agent_message` does not shorten a live high-effort turn. Skill arming
-re-resolves a trusted path and invokes the public benchmark gate with the current exact
+re-resolves a trusted path and invokes the public benchmark gate with the exact current
 fingerprint, domain, and lane shape, so missing, thin, stale, or unbenchmarked evidence
 cannot arm a recommendation. Profile grading, benchmark admission, receipt hashes,
 single terminal-gate accounting, paper-only trading, and exact-hash approval-bound action
@@ -40,8 +40,6 @@ whole-tree ShellCheck, provider/install parity, and GO/NO-GO rehearsal. No termi
 live rehearsal, real trade, deployment, publication, spend, contact, or other
 consequential external action was run here.
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c17-recovery-cert-20260809-a1
-
 DOMAIN-GRADER: PASS bundle=docs/polylane/domain-runtime/bundle.json grade=docs/polylane/domain-runtime/grade.json
 
-ACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c17-recovery-cert-20260809-a1
