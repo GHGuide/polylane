@@ -2,15 +2,15 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 22
+## Cycle 23
 
 subgoals: 51/56 done · criteria: 54/56 done · 93%
 
 **Route:** `CONTINUE m20.1  Audit restart attribution and complete one zero-restart process-start certification`
 
-Cycle 22 integration evidence is a nonce-bound `READY-FOR-HOST-GATE` candidate after
-the exact audit merge and scoped checks.  It does not complete a subgoal or criterion:
-the coordinator-owned terminal boundary remains the only authority for those changes.
+Cycle 23 integration evidence records the exact terminal-fixture-audit merge and a
+focused 225/0 repair matrix.  It does not complete a subgoal or criterion: the
+coordinator-owned terminal boundary remains the only authority for those changes.
 
 ## Open autonomous work
 
@@ -84,7 +84,7 @@ the coordinator-owned terminal boundary remains the only authority for those cha
 - `c53` [done] — A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog
 - `c54` [done] — Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph
 - `c55` [done] — Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence
-- `c56` [open] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion; Cycle 23 coordinator-owned finalization is planned
+- `c56` [open] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion; Cycle 23 coordinator-owned finalization remains pending
 
 ## Acceptance checks
 

@@ -7,13 +7,16 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
 Cycle 23 active certification: [plan](cycle-23-plan.md) ·
-[research](cycle-23-research.md) · [questions](cycle-23-questions.md) ·
-[skill suggestions](cycle-23-suggestions.md).
+[research](cycle-23-research.md) · [council](cycle-23-council.md) ·
+[digest](cycle-23-digest.md) · [questions](cycle-23-questions.md) ·
+[terminal-fixture audit](../verify-terminal-fixture-audit.md) ·
+[integration verification](../verify-integration.md) · [skill suggestions](cycle-23-suggestions.md).
 It starts from repaired tip `23572df` with a new clone, process, nonce, scratch tree,
 tmux server, worktrees, graph ledger, and host proof path.  The evidence-only builder
-audits both terminal-fixture repairs; the integrator may hand off READY, but only the
-coordinator may consume the single terminal gate, promote, clean up, and close the four
-remaining autonomous targets plus `c56`.
+audits both terminal-fixture repairs, and the integrator has merged that exact audit tip
+and recorded a focused 225/0 repair matrix.  Only the coordinator may consume the single
+terminal gate, promote, clean up, and close the four remaining autonomous targets plus
+`c56`.
 
 Cycle 22 certification: [plan](cycle-22-plan.md) ·
 [research](cycle-22-research.md) · [council](cycle-22-council.md) ·
