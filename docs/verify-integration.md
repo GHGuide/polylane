@@ -153,3 +153,5 @@ integrator launch with zero lane/supervisor restarts, and then hands the untouch
 single terminal acceptance to the coordinator. No external evidence is needed.
 
 DEFERRED: fresh zero-restart host certification and coordinator-owned cleanup.
+
+POLYLANE-VERDICT: NO-GO run=c25-finality-20260810-a1
