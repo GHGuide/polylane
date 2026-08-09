@@ -851,7 +851,7 @@
           "weight": 62,
           "status": "done",
           "cycle": 17,
-          "evidence": "Fresh cached focused gates passed: graph authority 56/0, verdict repair 36/0, and wedge 27/0; domain-gate call-count and stale-progress live-turn assertions were reviewed."
+          "evidence": "Reproduced c17-recovery-cert-20260809-a1: graph authority 56/0, verdict repair 36/0, wedge 27/0; each merge attempt invokes domain_grade_gate and an old agent_message retains high-effort live-turn grace."
         },
         {
           "id": "m17.2",
@@ -859,7 +859,7 @@
           "weight": 60,
           "status": "done",
           "cycle": 17,
-          "evidence": "Fresh cached focused gates passed: skill delivery 31/0 and Cycle-14 contract 13/0; trusted benchmark gate revalidates exact fingerprint, domain, and lane shape."
+          "evidence": "Reproduced c17-recovery-cert-20260809-a1: skill delivery 31/0 and Cycle-14 contract 13/0; arming revalidates exact trusted fingerprint, domain, and lane shape through the public benchmark gate."
         },
         {
           "id": "m17.3",
@@ -1034,6 +1034,12 @@
       "kind": "decision",
       "text": "Integrated both Cycle 17 recovery tips and completed focused plus cross-contract evidence; only the coordinator terminal matrix remains.",
       "meta": "gate 56/0+36/0+27/0; skill 31/0+13/0; C16 29/0; parity 57/0; installers 50/0+39/0; ShellCheck/markers/seams clean"
+    },
+    {
+      "cycle": 17,
+      "kind": "decision",
+      "text": "Independent recovery integration reproduced focused and Cycle-16 cross-contract evidence; leave the single terminal matrix to the coordinator.",
+      "meta": "gate 56/0+36/0+27/0; skill 31/0+13/0; learning 57/0; C16 29/0; parity 57/0; installers 50/0+39/0; ShellCheck/markers/diff/seams clean"
     }
   ],
   "accept": [

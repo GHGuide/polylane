@@ -2,10 +2,10 @@
 
 ## Decision
 
-Accept the two narrow compatibility repairs as locally verified: `c51` and `c52`, and
-their focused subgoals `m17.1` and `m17.2`, are complete from fresh cached evidence.
-The council does not declare Cycle 16 or Cycle 17 complete; `m16.4` and `m17.3` remain
-at the single coordinator-owned terminal boundary.
+Accept the two narrow compatibility repairs as locally verified: `c51`, `c52`, `m17.1`,
+and `m17.2` are complete only from independent cached reproduction. The council does not
+declare Cycle 16 or Cycle 17 complete; `m16.4` and `m17.3` remain at the single
+coordinator-owned terminal boundary.
 
 ## Safety rulings
 
@@ -22,6 +22,6 @@ at the single coordinator-owned terminal boundary.
 ## Verdict posture
 
 `READY-FOR-HOST-GATE` is warranted only as a handoff for run
-`c17-recovery-cert-20260809-a1`. The coordinator runs one full terminal matrix; a
-failure stays NO-GO and does not authorize a retry that would violate single-gate
+`c17-recovery-cert-20260809-a1`. The coordinator runs one fresh terminal matrix; a
+failure records NO-GO and does not authorize a retry that would violate single-gate
 accounting.
