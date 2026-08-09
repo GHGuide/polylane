@@ -12,6 +12,7 @@
 #   record <lane> <sig> <model> <verdict>      append one lane outcome
 #   predict <manifest>                         RISK <lane> <pct> <hub-reason>; exit 5 over threshold
 #   tune <sig>                                 cheapest model that historically cleared this shape
+#   accepted validate|record <ledger> <receipt> accepted evidence bridge (legacy commands unchanged)
 #   hub add <path> | hub list                  manage the hub-file registry
 # Pure bash-3.2 + jq; main-guarded.
 set -euo pipefail
@@ -110,13 +111,29 @@ hub() {
   esac
 }
 
+# Accepted receipts live in the explicit evidence ledger, separate from the
+# compact legacy shape history.  Keeping this bridge additive preserves callers
+# of record/predict/tune while making acceptance a mechanical precondition.
+accepted() {
+  local helper
+  helper="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-optimize.sh"
+  case "${1:-}" in
+    validate) [ "$#" = 2 ] || { echo "usage: polylane-outcomes.sh accepted validate <receipt>" >&2; return 2; }
+              bash "$helper" validate "$2" ;;
+    record) [ "$#" = 3 ] || { echo "usage: polylane-outcomes.sh accepted record <ledger> <receipt>" >&2; return 2; }
+            bash "$helper" record "$2" "$3" ;;
+    *) echo "usage: polylane-outcomes.sh accepted validate <receipt> | accepted record <ledger> <receipt>" >&2; return 2 ;;
+  esac
+}
+
 if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
   case "${1:-}" in
     record)  shift; record "$@" ;;
     predict) shift; predict "$@" ;;
     tune)    shift; tune "$@" ;;
     hub)     shift; hub "$@" ;;
+    accepted) shift; accepted "$@" ;;
     signature) shift; signature "$@" ;;
-    *) echo "usage: polylane-outcomes.sh record <lane> <sig> <model> <verdict> | predict <manifest> | tune <sig> | hub add|list" >&2; exit 2 ;;
+    *) echo "usage: polylane-outcomes.sh record <lane> <sig> <model> <verdict> | predict <manifest> | tune <sig> | hub add|list | accepted validate|record" >&2; exit 2 ;;
   esac
 fi
