@@ -1,0 +1,20 @@
+{
+  "schema": "polylane-domain-trial/v1",
+  "id": "trading-sp500-window",
+  "domain": "trading",
+  "title": "Chronological S&P 500 window",
+  "task": "Produce a leakage-safe research note from the supplied chronological observations.",
+  "expected_verdict": "pass",
+  "adapter": "offline-trading-snapshot",
+  "grading": {"checks": ["chronological_no_leakage", "source_checksum", "costs_disclosed"]},
+  "source": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500",
+    "query": {"series_id": "SP500", "observation_start": "2024-01-02", "observation_end": "2024-01-08", "sort": "ascending"},
+    "retrieval_timestamp": "2026-08-09T00:00:00Z",
+    "content_checksum": "c47262fa2fa06d69ae49a596f73ada617a3c28dbe54019658b07a81b50671910",
+    "license_terms_note": "FRED requests attribution to the source; this compact extract is retained for reproducibility, not redistribution of a proprietary feed.",
+    "schema_version_or_vintage": "FRED SP500 daily observations; revised values are not refreshed into this golden snapshot",
+    "transformations": ["selected five chronological rows", "preserved source order", "no return, model, or future feature was derived"],
+    "raw": "raw/trading-sp500-window.csv"
+  }
+}

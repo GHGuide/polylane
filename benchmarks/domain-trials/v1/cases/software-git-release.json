@@ -1,0 +1,20 @@
+{
+  "schema": "polylane-domain-trial/v1",
+  "id": "software-git-release",
+  "domain": "software",
+  "title": "Git release-note evidence",
+  "task": "Produce a release-validation plan grounded in the supplied upstream release-note excerpt.",
+  "expected_verdict": "pass",
+  "adapter": "offline-release-note-snapshot",
+  "grading": {"checks": ["upstream_source_named", "testable_plan", "source_checksum"]},
+  "source": {
+    "url": "https://raw.githubusercontent.com/git/git/v2.45.0/Documentation/RelNotes/2.45.0.txt",
+    "query": {"tag": "v2.45.0", "path": "Documentation/RelNotes/2.45.0.txt"},
+    "retrieval_timestamp": "2026-08-09T00:00:00Z",
+    "content_checksum": "be27894b04f6b69ed93530c5bd6c8bd5c10fe89cd086d58db34afe3c0314f2f2",
+    "license_terms_note": "Git is distributed under GPL-2.0; this short identifying extract is kept with its source URL.",
+    "schema_version_or_vintage": "Git v2.45.0 release notes",
+    "transformations": ["retained title and opening release statement only"],
+    "raw": "raw/software-git-release.txt"
+  }
+}

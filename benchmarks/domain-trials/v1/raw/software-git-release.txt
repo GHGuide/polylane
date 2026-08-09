@@ -1,0 +1,4 @@
+Git v2.45 Release Notes
+=======================
+
+Git 2.45 is the first release in the 2.45 series.
