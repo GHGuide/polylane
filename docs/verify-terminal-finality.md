@@ -15,8 +15,8 @@
 
 The initial cached red run of `test-promptopt.sh` rejected the repair prompt with
 `duplicated exact-once label` and counted both scalar labels twice. The final
-cached focused set is green: 391 assertions across promptopt (22), verdict repair
-(50), supervisor (34), write report (41), efficiency (25), graph authority (56),
+cached focused set is green: 395 assertions across promptopt (22), verdict repair
+(50), supervisor (34), write report (45), efficiency (25), graph authority (56),
 skill parity (59), runtime recovery (15), session resume (8), clear markers (5),
 run stats (1), state (19), contract acceptance (19), parse verdict (23), and
 orchestration contract (14).
@@ -39,6 +39,10 @@ orchestration contract (14).
   failure remains reportless and recoverable. Supervisor terminality requires both
   freshness and `**Run:**` for the current nonce, while a current fresh NO-GO ends
   after one launch.
+- Once a NO-GO is established, its report is attempted before optional salvage or
+  runtime learning; failures of those optional actions cannot recreate a reportless
+  terminal exit. A graph halt bookkeeping failure still reports that established
+  NO-GO and returns recoverably.
 
 ## Compatibility boundaries
 

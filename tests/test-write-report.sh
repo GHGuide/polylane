@@ -166,4 +166,18 @@ report_completed_terminal NO-GO; second_report_rc=$?
 assert_eq "terminal-report-second-call-is-idempotent" "0" "$second_report_rc"
 assert_eq "terminal-report-attempted-exactly-once" "1" "$REPORT_CALLS"
 
+# Once NO-GO is established, optional learning failures cannot preempt its one
+# fresh report.  A graph bookkeeping failure still gets the same truthful report.
+TERMINAL_REPORT_ATTEMPTED=0; REPORT_CALLS=0
+graph_authority_no_go() { return 0; }
+advanced_runtime() { return 1; }
+publish_established_no_go; established_nogo_rc=$?
+assert_eq "established-nogo-reports-before-optional-learning" "0" "$established_nogo_rc"
+assert_eq "established-nogo-optional-failure-still-reports" "1" "$REPORT_CALLS"
+TERMINAL_REPORT_ATTEMPTED=0; REPORT_CALLS=0
+graph_authority_no_go() { return 1; }
+publish_established_no_go; graph_nogo_rc=$?
+assert_eq "established-nogo-graph-failure-remains-recoverable" "1" "$graph_nogo_rc"
+assert_eq "established-nogo-graph-failure-still-reports" "1" "$REPORT_CALLS"
+
 finish

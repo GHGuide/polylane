@@ -384,7 +384,7 @@ safe_rm() {
   local p="$1" root="${REPO_ROOT:-}"
   if [ -z "$root" ]; then
     echo "safe_rm REFUSED (no REPO_ROOT set): $p" >&2
-    exit 1
+    return 1
   fi
   case "$p" in
     "$root"/*) run rm -rf "$p" ;;
@@ -4429,6 +4429,15 @@ report_completed_terminal() {
   echo "Report written: $REPO_ROOT/docs/polylane-report.md"
 }
 
+# publish_established_no_go : after the verifier has exhausted its repair route,
+# reporting is durable terminal work; optional learning must not preempt it.
+publish_established_no_go() {
+  graph_authority_no_go || { report_completed_terminal NO-GO; return 1; }
+  report_completed_terminal NO-GO || return 1
+  advanced_runtime salvage || true
+  advanced_runtime record NO-GO || true
+}
+
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
@@ -4603,10 +4612,10 @@ main() {
     if visual_quality_requested; then
       if ! visual_quality_gate; then
         graph_visual_quality_halt || { report_completed_terminal NO-GO || true; exit 1; }
-        advanced_runtime salvage
-        advanced_runtime record NO-GO
-        echo "Halt: visual quality failed after two targeted repairs. Nothing merged." >&2
         report_completed_terminal NO-GO || true
+        advanced_runtime salvage || true
+        advanced_runtime record NO-GO || true
+        echo "Halt: visual quality failed after two targeted repairs. Nothing merged." >&2
         exit 1
       fi
       graph_authority_record_ready_node visual-quality succeeded "${VISUAL_QUALITY_ATTEMPT:-0}" visual-quality-passed || exit 1
@@ -4614,10 +4623,10 @@ main() {
     if quality_judges_requested; then
       if ! quality_judge_gate; then
         graph_quality_halt || { report_completed_terminal NO-GO || true; exit 1; }
-        advanced_runtime salvage
-        advanced_runtime record NO-GO
-        echo "Halt: quality judges failed after one bounded repair. Nothing merged." >&2
         report_completed_terminal NO-GO || true
+        advanced_runtime salvage || true
+        advanced_runtime record NO-GO || true
+        echo "Halt: quality judges failed after one bounded repair. Nothing merged." >&2
         exit 1
       fi
       graph_authority_record_ready_node judges succeeded "${QUALITY_JUDGE_ATTEMPT:-0}" judges-passed || exit 1
@@ -4656,9 +4665,7 @@ main() {
       run git -C "$REPO_ROOT" push
     fi
   else
-    graph_authority_no_go || { report_completed_terminal NO-GO || true; exit 1; }
-    advanced_runtime salvage
-    advanced_runtime record NO-GO
+    publish_established_no_go || exit 1
   fi
 
   echo "== report =="
