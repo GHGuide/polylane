@@ -1684,7 +1684,18 @@ pane_cmd() {
 # server can outlive the terminal process that created it and therefore lack
 # macOS TCC access to the canonical project (notably ~/Downloads). Feeding the
 # agent from its own worktree avoids that inherited host-permission seam.
-pane_runtime_prompt_path() { printf '%s/.polylane-prompt.txt' "$1"; }
+pane_runtime_prompt_path() {
+  local wt="$1"
+  # The pane changes directory to WT before the agent opens this file. Keep the
+  # transport path absolute even when the manifest stores a project-relative
+  # worktree, or the shell resolves `.polylane/worktrees/x/.polylane-prompt.txt`
+  # beneath that same directory and silently doubles the prefix.
+  case "$wt" in
+    /*) : ;;
+    *) wt="${PROJECT_ROOT:-$(pwd)}/$wt" ;;
+  esac
+  printf '%s/.polylane-prompt.txt' "$wt"
+}
 
 # stage_pane_prompt WT PROMPT : copy the compiled launch prompt beside the lane
 # before tmux reads it. Keep the canonical compiled copy authoritative; this is
@@ -1696,8 +1707,9 @@ stage_pane_prompt() {
     printf '%s' "$pf"
     return 0
   fi
-  case "$pf" in "$wt"/*) printf '%s' "$pf"; return 0 ;; esac
   dest=$(pane_runtime_prompt_path "$wt")
+  [ "$pf" = "$dest" ] && { printf '%s' "$dest"; return 0; }
+  case "$pf" in "$wt"/*) printf '%s' "$pf"; return 0 ;; esac
   git -C "$wt" ls-files --error-unmatch "$rel" >/dev/null 2>&1 && {
     echo "polylane-run: reserved runtime prompt path is tracked: $dest" >&2
     return 1

@@ -74,6 +74,20 @@ CMD=$(pane_cmd "$RUNTIME_WT" gpt-5-codex "$RUNTIME_PROMPT" high)
 assert_contains "panecmd-stages-worktree-local-prompt" "< $RUNTIME_WT/.polylane-prompt.txt" "$CMD"
 assert_ok "panecmd-staged-prompt-identical" cmp "$RUNTIME_PROMPT" "$RUNTIME_WT/.polylane-prompt.txt"
 assert_eq "panecmd-staged-prompt-mode" "600" "$(stat -f '%Lp' "$RUNTIME_WT/.polylane-prompt.txt" 2>/dev/null || stat -c '%a' "$RUNTIME_WT/.polylane-prompt.txt")"
+# A manifest may keep its worktree path project-relative. The pane changes into
+# that worktree before opening the staged prompt, so the transport path itself
+# must be absolute; otherwise the shell doubles the relative prefix and every
+# agent exits before reading its prompt.
+REL_ROOT="$TEST_TMPDIR/relative-root"
+REL_WT="$REL_ROOT/.polylane/worktrees/lane"
+mkdir -p "$REL_WT"
+git init -q -b main "$REL_WT"
+REL_CMD=$(cd "$REL_ROOT" && PROJECT_ROOT="$REL_ROOT" REPO_ROOT="$REL_ROOT" PRIME_HYBRID=0 \
+  pane_cmd ".polylane/worktrees/lane" gpt-5-codex "$RUNTIME_PROMPT" high)
+assert_contains "panecmd-relative-worktree-uses-absolute-staged-prompt" \
+  "< $REL_WT/.polylane-prompt.txt" "$REL_CMD"
+assert_ok "panecmd-relative-worktree-staged-prompt-identical" \
+  cmp "$RUNTIME_PROMPT" "$REL_WT/.polylane-prompt.txt"
 REPO_ROOT='/tmp/canonical project' POLYLANE_COORDINATION_FILE='/tmp/canonical project/.polylane/coordination.jsonl'
 CMD=$(pane_cmd '/tmp/lane worktree' gpt-5-codex '/tmp/prompt;unsafe.txt' high)
 assert_contains "panecmd-canonical-project-env" "POLYLANE_PROJECT_ROOT=/tmp/canonical\\ project" "$CMD"
