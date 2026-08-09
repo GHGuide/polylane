@@ -2,16 +2,18 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 16
+## Cycle 17
 
-subgoals: 46/48 done · criteria: 49/50 done · 96%
+subgoals: 48/51 done · criteria: 51/52 done · 96%
 
-**Route:** `HOST-GATE-PENDING m16.4=terminal suite + rehearsal; external=[m12.4: rendered blind visual corpus]`
+**Route:** `HOST-GATE-PENDING m16.4/m17.3=one fresh coordinator terminal matrix; external=[m12.4: rendered blind visual corpus]`
 
-## Open autonomous work
+## Coordinator-bound terminal work
 
-- `m16.4` — local focused acceptance is recorded; the coordinator-owned terminal suite,
-  ShellCheck, provider/install checks, and GO/NO-GO rehearsal remain the completion gate.
+- `m16.4` — local focused acceptance is recorded; the coordinator alone runs the fresh
+  terminal suite, whole-tree ShellCheck, provider/install checks, and GO/NO-GO rehearsal.
+- `m17.3` — record the recovery certification only after that one host decision; it is
+  intentionally not completed from local simulations or cached focused evidence.
 
 ## External/user evidence
 
@@ -63,10 +65,22 @@ subgoals: 46/48 done · criteria: 49/50 done · 96%
 - `c38` [done] — Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use
 - `c39` [done] — A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run
 - `c40` [done] — Polylane discovers, plans, executes, and verifies software, trading/research, operations, and content/data projects without forcing app vocabulary or unsafe real-world claims
+- `c41` [done] — Real cross-domain trials use public-source snapshots plus optional live canaries, not only synthetic fixtures
+- `c42` [done] — Domain adapters declare capabilities, dependencies, provenance, side effects, and deterministic offline fallbacks
+- `c43` [done] — Profile-aware graders verify domain validity, including temporal leakage and overfitting for trading research
+- `c44` [done] — Outcome memory learns only from accepted evidence and recommends changes with sample and confidence guards
+- `c45` [done] — Skill suggestions are lane-specific, benchmarked before admission, explainable, and safe by default
+- `c46` [done] — A resumable accelerated soak and fault harness proves long-run recovery and supports a real 6-to-24-hour mode
+- `c47` [done] — Economy policy optimizes verified progress per token and minute across model, effort, lane count, and context
+- `c48` [done] — Discovery uses domain-specific question trees with deeper follow-ups and measurable stopping conditions
+- `c49` [done] — Final deliverables are profile-specific, complete, provenance-bearing, and decision-ready
+- `c50` [done] — Every consequential external action has a deterministic impact preview, simulation receipt, and explicit approval boundary
+- `c51` [done] — Pre-verdict gates remain hermetic in unit tests and live high-effort workers are never restarted from stale progress messages
+- `c52` [done] — Selected skills can be armed only from reproducible fingerprint-matched benchmark evidence while legacy delivery tests remain truthful
 
 ## Acceptance checks
 
-- Total: 53
-- Pass: 53
+- Total: 61
+- Pass: 60
 - Fail: 0
-- Unchecked: 0
+- Unchecked: 1 (`m16.4` coordinator terminal matrix)

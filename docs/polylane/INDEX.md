@@ -6,13 +6,18 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 16: [plan](cycle-16-plan.md) · [research](cycle-16-research.md) ·
-[skill suggestions](cycle-16-suggestions.md) · [questions](cycle-16-questions.md) ·
+Active cycle 17: [plan](cycle-17-plan.md) · [skill suggestions](cycle-17-suggestions.md) ·
+[questions](cycle-17-questions.md) · [council](cycle-17-council.md) ·
+[digest](cycle-17-digest.md). The verified gate-contract and skill-contract recovery
+tips coexist with fresh focused, Cycle-16 contract, parity, installer, static, marker,
+and seam evidence. Exactly one coordinator-owned terminal matrix remains; no local
+simulation is reported as that host result.
+
+Cycle 16 recovery history: [plan](cycle-16-plan.md) · [questions](cycle-16-questions.md) ·
 [council](cycle-16-council.md) · [digest](cycle-16-digest.md) ·
-[integration](cycle-16-integration.md). Local focused evidence is reproduced; the
-coordinator terminal gate remains pending. Target: make every supported domain executable,
-provenance-bearing, profile-graded, outcome-learning, economy-aware, and long-run tested
-while preserving explicit external-action approval boundaries.
+[integration](cycle-16-integration.md). Its 2,088-check terminal run correctly ended
+**NO-GO** on nine compatibility failures. That history remains intact; Cycle 17 is a
+fresh nonce-bound recovery certification, not a rewrite of the failed evidence.
 
 Closed cycle 15: [plan](cycle-15-plan.md) · [research](cycle-15-research.md) ·
 [integration](cycle-15-integration.md) · [skill suggestions](cycle-15-suggestions.md).
