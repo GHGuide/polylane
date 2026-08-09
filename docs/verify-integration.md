@@ -45,8 +45,7 @@ evidence remains authoritative for shell semantics and historical truth.  The
 graph was not rebuilt or modified.
 
 The canonical coordination relay returned no requests or claims at the start
-of this lane.  The final relay and unacknowledged-inbox review are recorded
-immediately before the handoff sentinel.
+of this lane.
 
 ## Focused changed-contract matrix
 
@@ -91,6 +90,20 @@ All four target subgoals (`m16.4`, `m17.3`, `m18.3`, and `m20.1`) and `c56`
 remain open.  Only the coordinator may consume the sole frozen terminal command,
 evaluate host evidence, promote, clean up, and finalize any target or criterion.
 
+## Final canonical relay review
+
+Immediately before this sentinel, the canonical `pending` command again returned
+`{"requests":[],"claims":{}}`.  The prescribed command
+`bin/polylane-workers.sh inbox integrator --unacknowledged` was run from the
+canonical project context and returned `invalid worker name: --unacknowledged`:
+the current canonical script requires its explicit `PROJECT RECIPIENT` arguments
+and has no `--unacknowledged` option.  Its supported equivalent,
+`bin/polylane-workers.sh inbox "$POLYLANE_PROJECT_ROOT" integrator`, returned
+three unacknowledged relay imports, all historical Cycle 15 messages.  None belongs
+to this run, so no acknowledgement was written and no current-run request remains
+to resolve.  The argument-contract mismatch is recorded here as a limitation; no
+speculative source change was made.
+
 SKILL-EVIDENCE: superpowers:verification-before-completion — helped: required
 current cache-backed commands and observed counts before any handoff claim.
 
@@ -103,3 +116,5 @@ for speculative complexity and found no removable abstraction or dependency.
 
 SKILL-EVIDENCE: graphify — helped: located the acceptance, rehearsal, status, and
 recovery call paths before direct source inspection without rebuilding the graph.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c23-terminal-cert-20260809-a1
