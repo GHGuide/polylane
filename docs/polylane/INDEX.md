@@ -6,6 +6,14 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 22 active certification: [plan](cycle-22-plan.md) ·
+[research](cycle-22-research.md) · [skill suggestions](cycle-22-suggestions.md) ·
+[questions](cycle-22-questions.md).
+It starts from repaired integrated tip `870bce6` with a new process and nonce.  One
+evidence-only audit lane plus one integrator must reach a clean READY handoff with two
+launches and zero restarts; only the coordinator may consume the single terminal gate,
+promote, clean up, write final proof, and close the four autonomous targets plus `c56`.
+
 Cycle 21 certification: [plan](cycle-21-plan.md) ·
 [research](cycle-21-research.md) · [council](cycle-21-council.md) ·
 [digest](cycle-21-digest.md) · [questions](cycle-21-questions.md) ·
