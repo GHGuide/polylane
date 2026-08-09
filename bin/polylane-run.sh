@@ -389,6 +389,10 @@ safe_rm() {
 
 # disk_free_gb DIR : whole GB free on the volume holding DIR (empty if unreadable).
 disk_free_gb() {
+  if [ -n "${POLYLANE_DISK_PROBE:-}" ] && [ -x "$POLYLANE_DISK_PROBE" ]; then
+    "$POLYLANE_DISK_PROBE" "${1:-.}" 2>/dev/null | sed -n '1p'
+    return
+  fi
   df -Pk "${1:-.}" 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}'
 }
 
@@ -631,7 +635,7 @@ prompt_budget_check() {
 # The authored prompt remains immutable. A compiled copy may remove only
 # byte-identical ordinary prose after the frozen contracts are compared again.
 compile_prompt() {
-  local source="$1" name="$2" role="$3" dir tmp compiled metrics prime
+  local source="$1" name="$2" role="$3" dir tmp selected compiled metrics prime kit
   case "$name" in ''|*[!A-Za-z0-9._-]*) die "unsafe prompt lane name '$name'" ;; esac
   [ -s "$source" ] || { echo "PROMPT-COMPILE: $name source is missing or empty" >&2; return 1; }
   dir="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}"
@@ -647,6 +651,20 @@ compile_prompt() {
     rm -f "$tmp"
     echo "PROMPT-COMPILE: $name lost a frozen contract" >&2
     return 1
+  fi
+  # Selected kits are added only after ordinary normalization.  The optimizer
+  # owns the injected-record format; this runner only forwards each exact path.
+  if [ "$role" = builder ]; then
+    while IFS= read -r kit; do
+      [ -n "$kit" ] || continue
+      selected=$(mktemp "$dir/.${name}.selected.XXXXXX") || { rm -f "$tmp"; return 1; }
+      if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile-selected "$tmp" "$kit" "$name" "$selected"; then
+        rm -f "$tmp" "$selected"
+        echo "PROMPT-COMPILE: $name selected-kit compilation failed" >&2
+        return 1
+      fi
+      mv "$selected" "$tmp"
+    done < <(awk -F ' \| ' '/^SELECTED-SKILL: / {print $2}' "$source")
   fi
   mv "$tmp" "$compiled"
   prime=false
@@ -1299,10 +1317,24 @@ add_worktree() {
 # contract: the orchestrator refreshes ONCE per cycle before launch; lanes only
 # query (their prompts no longer run /graphify-auto).
 share_graph() {
-  local wt="$1" src="$REPO_ROOT/graphify-out"
+  local wt="$1" src="$REPO_ROOT/graphify-out" common line candidate
   [ "${DRY_RUN:-0}" = "1" ] && { [ -d "$src" ] && echo "+ (dry-run) would symlink graphify-out into $wt"; return 0; }
-  [ -d "$src" ] || return 0                      # no graph in this project — nothing to share
-  [ -e "$wt/graphify-out" ] && return 0          # already there (resumed/reused worktree)
+  # A recovery root is often a graphless Git worktree.  Search only sibling
+  # worktrees from its exact common Git directory; never borrow another repo.
+  if [ ! -d "$src" ]; then
+    common=$(git -C "$REPO_ROOT" rev-parse --git-common-dir 2>/dev/null) || return 0
+    case "$common" in /*) : ;; *) common="$REPO_ROOT/$common" ;; esac
+    while IFS= read -r line; do
+      case "$line" in
+        worktree\ *) candidate="${line#worktree }"
+                    [ "$candidate" = "$wt" ] && continue
+                    [ -d "$candidate/graphify-out" ] && { src="$candidate/graphify-out"; break; }
+                    ;;
+      esac
+    done < <(git --git-dir="$common" worktree list --porcelain 2>/dev/null)
+  fi
+  [ -d "$src" ] || return 0                      # no graph in this repository — nothing to share
+  { [ -e "$wt/graphify-out" ] || [ -L "$wt/graphify-out" ]; } && return 0
   ln -s "$src" "$wt/graphify-out" 2>/dev/null || true   # best-effort; lanes have the Explore fallback
 }
 
@@ -2281,12 +2313,13 @@ startup_check() {
     idx=$(pane_index_for "$name")
     [ "$idx" -ge 0 ] 2>/dev/null || continue
     txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
-    if printf '%s' "$txt" | grep -qiE 'Do you trust the files in this (folder|directory)|Trust this (folder|workspace)'; then
+    if printf '%s' "$txt" | grep -qiE 'Do you trust the files in this (folder|directory)|Trust this (folder|workspace)' \
+      && printf '%s\n' "$txt" | grep -qiE '^[[:space:]❯>]*1\.[[:space:]]*(Yes|Trust|Proceed|Allow)'; then
       # option 1 = "Yes, proceed" — our own worktree, always trusted
       tmux send-keys -t "$TMUX_SESSION:0.$idx" '1' 2>/dev/null
       tmux send-keys -t "$TMUX_SESSION:0.$idx" Enter 2>/dev/null
       echo "startup: lane '$name' — answered folder-trust dialog"
-    elif printf '%s' "$txt" | grep -qiE 'Press Enter to continue|to get started'; then
+    elif printf '%s\n' "$txt" | grep -qiE '^[[:space:]]*(Welcome!?[[:space:]]+)?(Press Enter to continue|Press return to continue|Press Enter to get started)[[:space:]]*$'; then
       tmux send-keys -t "$TMUX_SESSION:0.$idx" Enter 2>/dev/null
       echo "startup: lane '$name' — cleared an onboarding banner"
     fi
@@ -3237,6 +3270,24 @@ contract_ready_verdict() {
   fi
 }
 
+# Host gates are runner-owned.  Never annotate a completed integrator checkout:
+# that would dirty its committed READY/DONE handoff and relaunch finished work on
+# resume.  The canonical root receives one atomic, run-scoped failure record.
+host_gate_failure() {
+  local detail="$1" dir f tmp when
+  disk_guard || return 1
+  dir="$REPO_ROOT/docs/polylane/host-gate-failures"
+  mkdir -p "$dir" || return 1
+  f="$dir/${RUN_ID:-legacy}.md"
+  tmp=$(mktemp "$dir/.${RUN_ID:-legacy}.XXXXXX") || return 1
+  when=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo '?')
+  {
+    printf '# Host gate failure\n\n'
+    printf 'run=%s\nwhen=%s\n\n%s\n' "${RUN_ID:-legacy}" "$when" "$detail"
+  } > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
+}
+
 # merge_gate : returns 0 for verified engineering outcomes. External evidence is a
 # routing state, not a reason to discard verified code or end the autonomous loop.
 merge_gate() {
@@ -3255,23 +3306,23 @@ merge_gate() {
     # boundary it is currently entering. Pass the count into acceptance so the
     # same READY boundary is never counted twice.
     if ! contract_focused_acceptance_gate; then
-      printf '\nACCEPTANCE-GATE: focused checks failed before the terminal boundary; repair and hand off again.\n' >> "$f"
+      host_gate_failure "focused checks failed before the terminal boundary; repair and hand off again" || true
       v="NO-GO"; VERDICT_REPAIRABLE="YES"
     else
       if ! host_verdict=$(contract_ready_verdict); then
-        printf '\nACCEPTANCE-GATE: could not resolve the honest post-gate routing state.\n' >> "$f"
+        host_gate_failure "could not resolve the honest post-gate routing state" || true
         v="NO-GO"; VERDICT_REPAIRABLE="YES"
       else
         run_stats terminal-gate
         if ! write_efficiency_proof gate; then
-          printf '\nACCEPTANCE-GATE: efficiency proof failed; terminal gate is exhausted for this run.\n' >> "$f"
+          host_gate_failure "efficiency proof failed; terminal gate is exhausted for this run" || true
           v="NO-GO"; VERDICT_REPAIRABLE="NO"
         elif contract_acceptance_gate "$host_verdict" 1; then
           v="$host_verdict"
         else
           # The coordinator owns one terminal attempt. A model repair cannot make
           # that same attempt unused; it would only add a restart and a second gate.
-          printf '\nACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.\n' >> "$f"
+          host_gate_failure "frozen checks failed; terminal gate is exhausted for this run" || true
           v="NO-GO"; VERDICT_REPAIRABLE="NO"
         fi
       fi
@@ -3954,7 +4005,7 @@ report_open_items() {
 }
 
 write_report() {
-  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" tmp i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state
   # dry-run must never touch the tree — print the intent, write nothing.
   if [ "${DRY_RUN:-0}" = "1" ]; then
     printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
@@ -3963,7 +4014,9 @@ write_report() {
   when=$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo "?")
   promotion_state="${PROMOTION_STATE:-not-attempted}"
   cleanup_state="${CLEANUP_STATE:-retained}"
-  mkdir -p "$REPO_ROOT/docs" 2>/dev/null || true
+  disk_guard || { echo "write_report: disk headroom is below the safety floor" >&2; return 1; }
+  mkdir -p "$REPO_ROOT/docs" || return 1
+  tmp=$(mktemp "$REPO_ROOT/docs/.polylane-report.XXXXXX") || return 1
   if [ -n "${STATE_FILE:-}" ] && [ -f "$STATE_FILE" ]; then
     subdone=$(jq '[.milestones[].subgoals[] | select(.status=="done")] | length' "$STATE_FILE" 2>/dev/null || echo 0)
     subtotal=$(jq '[.milestones[].subgoals[]] | length' "$STATE_FILE" 2>/dev/null || echo 0)
@@ -4070,7 +4123,13 @@ write_report() {
     else
       echo "- No open items were flagged by the lanes."
     fi
-  } > "$f" 2>/dev/null || echo "write_report: could not write $f" >&2
+  } > "$tmp" || { rm -f "$tmp"; echo "write_report: could not write $f" >&2; return 1; }
+  if [ "${POLYLANE_TEST_REPORT_WRITE_FAIL:-0}" = 1 ]; then
+    rm -f "$tmp"
+    echo "write_report: simulated write failure" >&2
+    return 1
+  fi
+  mv "$tmp" "$f" || { rm -f "$tmp"; echo "write_report: could not publish $f" >&2; return 1; }
   return 0
 }
 
@@ -4138,8 +4197,7 @@ recover_post_promote_run() {
     echo "== push: current branch =="
     run git -C "$REPO_ROOT" push
   fi
-  write_report "$VERDICT_RESULT" || true
-  echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+  write_report "$VERDICT_RESULT" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
 }
 
 main() {
@@ -4207,9 +4265,8 @@ main() {
     echo "Halt: lane(s) failed after retries: ${FAILED_LANES:-?}. Not integrating." >&2
     notify_event halt "lane(s) failed after retries: ${FAILED_LANES:-?}"
     capture_stats
-    write_report "HALTED" || true
+    write_report "HALTED" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     advanced_runtime record HALTED
-    echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
 
@@ -4231,9 +4288,8 @@ main() {
     echo "Halt: integrator failed after retries. Nothing merged." >&2
     notify_event halt "integrator failed after retries — nothing merged"
     capture_stats
-    write_report "HALTED" || true
+    write_report "HALTED" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     advanced_runtime record HALTED
-    echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
   graph_authority_record_ready_node integrator succeeded 0 integrator-done || exit 1
@@ -4279,8 +4335,11 @@ main() {
     graph_authority_require promote "promote verified integration" || exit 1
     echo "== promote: base -> integrator branch (verified outcome) =="
     if ! promote_to_main; then
-      write_report "${VERDICT_RESULT:-GO}" || true
-      echo "Promote failed — base intact, worktrees kept. See report." >&2
+      if write_report "${VERDICT_RESULT:-GO}"; then
+        echo "Promote failed — base intact, worktrees kept. See report." >&2
+      else
+        echo "Promote failed — base intact, worktrees kept; the report could not be written." >&2
+      fi
       exit 1
     fi
     graph_authority_record_ready_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
@@ -4306,8 +4365,7 @@ main() {
   fi
 
   echo "== report =="
-  write_report "${VERDICT_RESULT:-UNKNOWN}" || true
-  echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+  write_report "${VERDICT_RESULT:-UNKNOWN}" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
   [ "${VERDICT_RESULT:-}" = "GO" ] || [ "${VERDICT_RESULT:-}" = "EXTERNAL-EVIDENCE-OPEN" ] || exit 1
 }
 

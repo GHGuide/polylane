@@ -46,4 +46,24 @@ WT2="$TEST_TMPDIR/wt-b"
 ( cd "$R2" && add_worktree "$WT2" lane/b ) >/dev/null 2>&1
 assert_ok "no-graph-no-link" test '!' -e "$WT2/graphify-out"
 
+# A recovery root can be graphless itself while sharing Git ownership with a
+# primary worktree that holds the graph.  It may link only that same repository.
+R3="$TEST_TMPDIR/repo3"
+mkdir -p "$R3"; ( cd "$R3"; git init -q -b main .; git config user.email t@t; git config user.name t
+  echo 'graphify-out/' > .gitignore; echo s>f; git add -A; git commit -qm s
+  mkdir -p graphify-out; echo '{"nodes":["primary"]}' > graphify-out/graph.json
+) >/dev/null 2>&1
+RECOVERY="$TEST_TMPDIR/recovery"
+( cd "$R3" && git worktree add -q -b recovery "$RECOVERY" main )
+REPO_ROOT="$RECOVERY"
+RECOVERY_CHILD="$TEST_TMPDIR/recovery-child"; mkdir -p "$RECOVERY_CHILD"
+share_graph "$RECOVERY_CHILD"
+assert_ok "recovery-shares-primary-graph" test -L "$RECOVERY_CHILD/graphify-out"
+assert_contains "recovery-graph-is-primary" "primary" "$(cat "$RECOVERY_CHILD/graphify-out/graph.json")"
+EXISTING_CHILD="$TEST_TMPDIR/recovery-existing"; mkdir -p "$EXISTING_CHILD/graphify-out"
+printf 'owned locally\n' > "$EXISTING_CHILD/graphify-out/keep"
+share_graph "$EXISTING_CHILD"
+assert_ok "share-never-overwrites-existing-path" test -f "$EXISTING_CHILD/graphify-out/keep"
+assert_fail "share-existing-path-not-replaced-by-link" test -L "$EXISTING_CHILD/graphify-out"
+
 finish

@@ -129,4 +129,14 @@ assert_contains "halted-failed-row"   "| beta | claude-haiku-4-5 | lane/beta | F
 assert_contains "halted-retry-hint"   "could not recover after retries: **beta**" "$halted"
 FAILED_LANES=""
 
+# ENOSPC/failing output must not tear or replace a prior truthful report, and
+# callers need a non-zero result to avoid announcing a report that was not made.
+printf 'OLD VALID REPORT\n' > "$TEST_TMPDIR/docs/polylane-report.md"
+POLYLANE_TEST_REPORT_WRITE_FAIL=1
+write_report HALTED >/dev/null 2>&1
+report_fail_rc=$?
+unset POLYLANE_TEST_REPORT_WRITE_FAIL
+assert_eq "report-write-fail-returns-nonzero" "1" "$report_fail_rc"
+assert_eq "report-write-fail-preserves-old-report" "OLD VALID REPORT" "$(cat "$TEST_TMPDIR/docs/polylane-report.md")"
+
 finish

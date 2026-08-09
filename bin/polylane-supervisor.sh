@@ -70,6 +70,21 @@ record_supervisor_restart() {
   "$SCRIPT_DIR/polylane-run-stats.sh" supervisor-restart --file "$RUN_STATS"
 }
 
+supervisor_disk_free_gb() {
+  if [ -n "${POLYLANE_DISK_PROBE:-}" ] && [ -x "$POLYLANE_DISK_PROBE" ]; then
+    "$POLYLANE_DISK_PROBE" "$PROJECT_ROOT" 2>/dev/null | sed -n '1p'
+  else
+    df -Pk "$PROJECT_ROOT" 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}'
+  fi
+}
+
+supervisor_disk_ready() {
+  local floor="${POLYLANE_MIN_DISK_GB:-2}" free
+  free=$(supervisor_disk_free_gb)
+  [ -n "$free" ] || return 0
+  [ "$free" -ge "$floor" ] 2>/dev/null
+}
+
 # report_fresh : 0 iff the run report exists and was written AFTER we started —
 # a stale report from a previous cycle must not read as "this run finished"
 # (a stale report file fooled finish-detection in a real run).
@@ -170,6 +185,11 @@ supervisor_main() {
   case " $* " in *" --yes "*) args_line="$*" ;; *) args_line="--yes${*:+ $*}" ;; esac
 
   while :; do
+    while ! supervisor_disk_ready; do
+      sup_log "disk headroom low — waiting before launch (floor=${POLYLANE_MIN_DISK_GB:-2}GB); restart budget unchanged"
+      heartbeat disk-wait "$restarts"
+      sleep "${POLYLANE_SUP_DISK_BACKOFF:-30}"
+    done
     if [ "$restarts" -gt 0 ]; then
       record_supervisor_restart || sup_log "could not record supervisor restart telemetry"
     fi
