@@ -1,0 +1,42 @@
+{
+  "checks": [
+    {
+      "detail": "five provenance fields present",
+      "name": "profile-provenance",
+      "passed": true
+    },
+    {
+      "detail": "matches profile",
+      "name": "bundle-provenance",
+      "passed": true
+    },
+    {
+      "detail": "versioned manifest",
+      "name": "bundle-shape",
+      "passed": true
+    },
+    {
+      "detail": "all declared paths match checksums",
+      "name": "declared-deliverables",
+      "passed": true
+    },
+    {
+      "detail": "declared",
+      "name": "declared-artifacts",
+      "passed": true
+    },
+    {
+      "detail": "declared",
+      "name": "declared-evidence",
+      "passed": true
+    },
+    {
+      "detail": "declared",
+      "name": "risk-action-policy",
+      "passed": true
+    }
+  ],
+  "kind": "mixed",
+  "verdict": "PASS",
+  "version": "domain-runtime/grade-v1"
+}
