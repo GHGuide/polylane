@@ -632,11 +632,31 @@ prompt_budget_check() {
     }
 }
 
+# inject_runtime_prompt_contract INPUT NAME OUTPUT : add the runner-owned facts
+# that an authored/optimized prompt cannot safely infer. This is intentionally
+# applied AFTER semantic optimization and selected-skill delivery: it gives every
+# provider and role the exact live relay command and canonical DONE path, even if
+# a hand-authored prompt merely says "read coordination" or names a near-miss
+# marker. The source prompt remains immutable.
+inject_runtime_prompt_contract() {
+  local input="$1" name="$2" output="$3" marker
+  if [ -n "${RUN_ID:-}" ]; then
+    marker="STATUS: $name DONE run=$RUN_ID"
+  else
+    marker="STATUS: $name DONE"
+  fi
+  {
+    cat "$input"
+    printf '\nPOLYLANE-RUNTIME-RELAY: at start and immediately before completion run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; handle requests addressed to %s. docs/parallel-status.md is post-cycle evidence only, never the live relay.\n' "$name"
+    printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
+  } > "$output"
+}
+
 # compile_prompt SOURCE NAME ROLE : produce the launch-only normalized prompt.
 # The authored prompt remains immutable. A compiled copy may remove only
 # byte-identical ordinary prose after the frozen contracts are compared again.
 compile_prompt() {
-  local source="$1" name="$2" role="$3" dir tmp selected compiled metrics prime
+  local source="$1" name="$2" role="$3" dir tmp selected runtime compiled metrics prime
   case "$name" in ''|*[!A-Za-z0-9._-]*) die "unsafe prompt lane name '$name'" ;; esac
   [ -s "$source" ] || { echo "PROMPT-COMPILE: $name source is missing or empty" >&2; return 1; }
   dir="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}"
@@ -665,10 +685,17 @@ compile_prompt() {
     fi
     mv "$selected" "$tmp"
   fi
+  runtime=$(mktemp "$dir/.${name}.runtime.XXXXXX") || { rm -f "$tmp"; return 1; }
+  if ! inject_runtime_prompt_contract "$tmp" "$name" "$runtime"; then
+    rm -f "$tmp" "$runtime"
+    echo "PROMPT-COMPILE: $name runtime-contract injection failed" >&2
+    return 1
+  fi
+  mv "$runtime" "$tmp"
   mv "$tmp" "$compiled"
   prime=false
   prime_hybrid_enabled && prime=true
-  POLYLANE_STRICT_PROMPTS=1 "$SCRIPT_DIR/polylane-promptlint.sh" \
+  POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 "$SCRIPT_DIR/polylane-promptlint.sh" \
     lint "$compiled" "$name" "$prime" "$role" || {
       echo "PROMPT-COMPILE: $name failed strict generated-prompt lint" >&2
       return 1
@@ -2164,6 +2191,59 @@ lane_done() {
   return 0
 }
 
+# normalize_status_marker WORKTREE NAME : repair one narrow, mechanically safe
+# lane-output mistake before spending a restart. Contract-v2 only. The canonical
+# marker must be absent and HEAD must contain exactly one regular status file
+# whose first line is the exact lane + current-run DONE line. The whole tracked
+# tree must be clean and the only tolerated untracked paths are runner-owned
+# helpers already accepted by lane_done. The repair is an auditable rename-only
+# commit; stale, foreign, dirty, uncommitted, symlink, and ambiguous candidates
+# all remain hard failures.
+normalize_status_marker() {
+  local wt="$1" name="$2" canonical="docs/status-$2.md" expected rel first
+  local candidate="" count=0 dirty runtime_prompt="" expected_prompt=""
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  [ -n "${RUN_ID:-}" ] || return 1
+  case "$name" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac
+  [ ! -e "$wt/$canonical" ] && [ ! -L "$wt/$canonical" ] || return 1
+  git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  expected="STATUS: $name DONE run=$RUN_ID"
+
+  dirty=$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null) || return 1
+  if shared_graph_link_owned "$wt"; then
+    dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
+  fi
+  if declare -p LANE_NAMES >/dev/null 2>&1; then
+    runtime_prompt=$(pane_runtime_prompt_path "$wt")
+    expected_prompt=$(lane_prompt_get "$name")
+    if [ -f "$runtime_prompt" ] && [ ! -L "$runtime_prompt" ] &&
+       [ -n "$expected_prompt" ] && [ -f "$expected_prompt" ] &&
+       cmp -s "$runtime_prompt" "$expected_prompt"; then
+      dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? .polylane-prompt.txt"')
+    fi
+  fi
+  [ -z "$dirty" ] || return 1
+
+  while IFS= read -r rel; do
+    case "$rel" in docs/status-*.md) : ;; *) continue ;; esac
+    [ "$rel" != "$canonical" ] || continue
+    [ -f "$wt/$rel" ] && [ ! -L "$wt/$rel" ] || continue
+    git -C "$wt" diff --quiet HEAD -- "$rel" || continue
+    IFS= read -r first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
+    [ "$first" = "$expected" ] || continue
+    candidate="$rel"
+    count=$((count + 1))
+  done < <(git -C "$wt" ls-tree -r --name-only HEAD -- docs 2>/dev/null)
+  [ "$count" -eq 1 ] || return 1
+
+  git -C "$wt" mv -- "$candidate" "$canonical" || return 1
+  if ! git -C "$wt" commit -q -m "polylane: normalize status marker for $name"; then
+    git -C "$wt" mv -- "$canonical" "$candidate" >/dev/null 2>&1 || true
+    return 1
+  fi
+  lane_done "$wt" "$name"
+}
+
 # --- health-check + auto-retry (transient API/network errors) ----------------
 # A lane that hits a 500 / overloaded / network error stops WITHOUT writing its
 # DONE file, so a plain DONE-poll would hang forever. Every POLYLANE_HEALTH_INTERVAL
@@ -2985,6 +3065,10 @@ health_check() {
     # (claude exited without DONE — amnesia), or is WEDGED (alive but frozen).
     if ! pane_exists "$idx"; then
       why="a missing mapped pane"
+      if normalize_status_marker "$wt" "$name"; then
+        echo "health: lane '$name' committed DONE under one wrong status filename — normalized before restart"
+        continue
+      fi
       n=$(retry_get "$name"); n=$((n + 1))
       if [ "$n" -le "$max" ] && recreate_lane_pane "$name" "$wt"; then
         retry_set "$name" "$n"
@@ -3001,6 +3085,15 @@ health_check() {
     elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-4} * ${POLYLANE_HEALTH_INTERVAL:-15} ))s)"
     else continue
     fi
+    case "$why" in
+      *wedged*) : ;;
+      *)
+        if normalize_status_marker "$wt" "$name"; then
+          echo "health: lane '$name' committed DONE under one wrong status filename — normalized before restart"
+          continue
+        fi
+        ;;
+    esac
     n=$(retry_get "$name"); n=$((n + 1))
     if [ "$n" -le "$max" ]; then
       echo "health: lane '$name' — $why — retry $n/$max, respawning pane $idx"
@@ -3032,6 +3125,10 @@ verify_seeds() {
     name="${LANE_NAMES[$i]}"
     lane_done "${LANE_WORKTREES[$i]}" "$name" && continue
     if pane_dead "${LANE_PANE_IDX[$i]}"; then
+      if normalize_status_marker "${LANE_WORKTREES[$i]}" "$name"; then
+        echo "launch: lane '$name' committed DONE under one wrong status filename — normalized before startup restart"
+        continue
+      fi
       echo "launch: lane '$name' process exited during startup — restarting"
       respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}" 0
     fi

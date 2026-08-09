@@ -80,6 +80,13 @@ else
   fail "skill-scout-ledger-path" "skill-scout reference must use the executable JSONL ledger path consistently"
 fi
 
+MERGE_DOC="$REPO/references/merge-and-cleanup.md"
+if grep -qF '`docs/parallel-status.md` — the durable post-cycle coordination summary, not the live relay.' "$MERGE_DOC"; then
+  pass "parallel-status-post-cycle-only"
+else
+  fail "parallel-status-post-cycle-only" "merge/cleanup docs must not call parallel-status the live coordination log"
+fi
+
 # The canonical contract example declares a Codex agent, so every advertised
 # model in that example must be a Codex model. A Claude id here gets copied into
 # generated manifests even when the probe itself is correctly agent-aware.

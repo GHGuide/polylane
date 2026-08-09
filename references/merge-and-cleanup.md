@@ -62,7 +62,7 @@ Then it clears its own scratch:
 The runner KEEPS, always:
 
 - `docs/verify-*.md` — the per-lane proof files. These are the audit trail of what each lane verified; they are NOT scratch.
-- `docs/parallel-status.md` — the coordination log.
+- `docs/parallel-status.md` — the durable post-cycle coordination summary, not the live relay.
 - `docs/polylane-report.md` — the end-of-run digest (step 6).
 - `docs/lane-logs/` — per-lane pane logs, when present.
 
