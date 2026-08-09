@@ -1,120 +1,135 @@
-# Cycle 23 integration verification — host gate pending
+# Cycle 24 integration verification — host gate pending
 
-Run: `c23-terminal-cert-20260809-a1`
-Branch: `lane/c23-integrator`
+Run: `c24-context-hardening-20260810-a1`
+Branch: `lane/c24-integrator`
+Frozen base: `843102ac1e7562921b560dd7bb15b5d6abd01cc6`
 
-## Exact-tip provenance and independent repair review
+## Selected-skill receipts
 
-The current nonce-matched terminal-fixture-audit tip is
-`edc8a1f494616903fa43452067b60964b38f18e8`.  Its complete range from frozen
-Cycle 23 base `3140ba33f4b9bc942353e3a65f72ef8ed8000bde` changes exactly its
-two OWN files:
+SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
 
-- `docs/verify-terminal-fixture-audit.md`
-- `docs/status-terminal-fixture-audit.md`
+SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
 
-The second file begins exactly `STATUS: terminal-fixture-audit DONE
-run=c23-terminal-cert-20260809-a1`.  The integrator merged that exact tip without
-a seam resolution as `e767948d180abd18dd609213d1013cbc6dd3544b`; its first
-parent is the frozen base and its second parent is the asserted audit tip.
+Both files were read exactly once before review or verification. The bounded context
+packet was also read exactly once. No Graphify skill file was read or invoked, and the
+shared graph was not rebuilt.
 
-Repair commit `23572df7defc3b9e5327ce9fe0a76db7e2abe08c` was independently
-inspected against its parent.  It is already an ancestor of the Cycle 23 base;
-the current repair files are unchanged from it.  The recovery fixture clears
-only inherited `POLYLANE_MAX_RETRIES` before sourcing the runner, preserving the
-runner's documented default of three retries inside the child test while the
-Cycle 14 wrapper deliberately supplies the terminal's zero-retry policy.  The
-rehearsal fixture gives `lane-a` and `lane-b` exactly one matching canonical
-status-marker ownership path each.  `check_status_markers()` still rejects broad,
-shortened, duplicate, or otherwise non-canonical ownership.
+## Exact-tip provenance
 
-Code review found no correctness, security, performance, or maintainability
-defect in either repair seam.  The dedicated over-engineering review found no
-cut candidate: `Lean already. Ship.`
+The three current asserted builder tips were merged without conflict or rewritten
+ownership:
 
-## Graph and relay review
+| Lane | Asserted tip | Integration merge | Owned result |
+| --- | --- | --- | --- |
+| `pane-identity` | `3a99b106b6075fd58a2cb7dd41db3adb89032e17` | `ebe5c3326b9662c7b2e3b9a58dc0d2d8e290e272` | shared tmux identity, state/supervisor observers, focused tests, evidence |
+| `context-hygiene` | `7eadd5fba104013719f5325494ebaa1f3a8c12dc` | `f948218b4c84f7281cd1980ac6c901e9b7a99934` | scoped worker API, exact prompt syntax, query-only Graphify policy, focused tests, evidence |
+| `runner-wire` | `f8540bd3d7b7cf2b7059a7bfa18fd448e0ad94b8` | `63c11fdef204e34e7ad7ad603dbe83fc636c24e3` | runner/model-policy wiring, liveness repair, focused tests, evidence |
 
-Before broad source reads, the existing read-only graph was queried for
-`contract_focused_acceptance_gate`, `write_efficiency_proof`, `rehearse`,
-`check_status_markers`, and runner recovery functions with callers.  It located
-the acceptance and proof flow in `bin/polylane-run.sh`, `rehearse()` at
-`bin/polylane-rehearse.sh:L44`, status checking at
-`bin/polylane-scope.sh:L78`, and the promotion/recovery ownership helpers.  The
-graph was useful for narrowing the call paths; direct commit, source, and test
-evidence remains authoritative for shell semantics and historical truth.  The
-graph was not rebuilt or modified.
+`git merge-base --is-ancestor` returned success for every asserted tip at the merged
+head. The three builder ranges are disjoint at their frozen OWN boundaries. The only
+integrator code-adjacent changes are two missing edge-case assertions in
+`tests/test-tmux-runtime.sh` and `tests/test-skill-delivery.sh`; production source was
+not rewritten after merging.
 
-The canonical coordination relay returned no requests or claims at the start
-of this lane.
+## Independent code review
 
-## Focused changed-contract matrix
+The merged diff was reviewed for correctness, security, performance, maintainability,
+shell portability, and error propagation.
 
-Every command below was invoked through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --` at source
-fingerprint `4053066722:5960`; cache entries are retained as the exact execution
-receipts.
+- `polylane_tmux_find_pane` canonicalizes the target, accepts only a complete matching
+  nonce/worktree identity, and permits cwd fallback only for a fully untagged pane. A
+  partial identity or conflicting same-worktree identity suppresses fallback. Pane tags
+  are written before state, usage, or transcript work on fresh builder, adopted builder,
+  recreated builder, fresh integrator, and adopted integrator paths.
+- Worker run IDs use the existing name grammar plus a 128-byte bound. Message, relay,
+  acknowledgement, inbox, and resume-packet paths share the scope. An absent scope
+  deliberately preserves the historical all-history API.
+- Prime-hybrid host calls and pane exports both carry `POLYLANE_WORKER_RUN_ID`. The
+  preflight and prompt linter require the exact fixed-string inbox command and reject
+  reversed arguments.
+- `graphify` and `graphify-auto` are rejected before selected records are armed or
+  compiled. Block E still mandates direct `graphify-out/q.py` queries.
+- Manifest `custom` validates baked model IDs, availability, and effort without preset
+  remap. An explicit CLI preset remains the remap operation and takes precedence.
+- The runner liveness helpers restore ordinary local word splitting, so an inherited
+  manifest-reader `IFS=|` cannot collapse the agent process list.
 
-| Contract | Command | Result |
-| --- | --- | --- |
-| Hermetic recovery | `env POLYLANE_MAX_RETRIES=0 bash tests/test-runtime-recovery.sh` | 14 pass, 0 fail |
-| Cycle 14 wrapper | `bash tests/test-cycle-14-contract.sh` | 13 pass, 0 fail |
-| Rehearsal-static ownership | `bash tests/test-rehearse.sh` | 14 pass, 0 fail |
-| Static scope and marker ownership | `bash tests/test-scope.sh` | 19 pass, 0 fail |
-| Orchestration contract | `bash tests/test-orchestration-contract.sh` | 14 pass, 0 fail |
-| Efficiency proof boundary | `bash tests/test-efficiency-canary.sh` | 25 pass, 0 fail |
-| Focused acceptance | `bash tests/test-contract-acceptance.sh` | 19 pass, 0 fail |
-| READY verdict boundary | `bash tests/test-verdict-repair.sh` | 40 pass, 0 fail |
-| Supervisor | `bash tests/test-supervisor.sh` | 32 pass, 0 fail |
-| Cycle 16 contracts | `bash tests/test-cycle-16-contract.sh` | 35 pass, 0 fail |
+No correctness, security, performance, portability, or maintainability defect was
+found. Review did find two evidence omissions: the pane test did not exercise
+partial/wrong tag rejection, and the delivery test named only `graphify`. The
+integrator added assertions for partial, wrong-run, wrong-worktree, and
+`graphify-auto` rejection. They passed in the one combined focused run.
 
-Focused total: 225 pass, 0 fail.
+## Frozen graph and transcript context evidence
 
-## Static/documentation matrix and limits
+Before targeted source reads, the existing helper was queried directly for the worker
+inbox, runner compile/load/launch/adopt surfaces, tmux identity files, and model-policy
+surface. The frozen shell graph located `inbox_json`, `compile_prompt`, `load_manifest`,
+`launch_panes`, `adopt_existing_session`, and `adopt_integrator`; it had no shell call
+edges, so direct source review remained authoritative.
 
-| Check | Command | Result |
-| --- | --- | --- |
-| Repaired-fixture ShellCheck only | `shellcheck -S warning bin/polylane-rehearse.sh tests/test-runtime-recovery.sh tests/test-cycle-14-contract.sh tests/test-rehearse.sh` | exit 0 |
-| Marker-document consistency | `bash bin/polylane-markers.sh check-docs references/` | exit 0 |
-| Documentation truth | `bash tests/test-docs-truth.sh` | 25 pass, 0 fail |
-| Integrated-tree seam scan | `bash bin/polylane-seams.sh scan "$PWD"` | exit 0 |
-| Skill parity | `bash tests/test-skill-parity.sh` | 57 pass, 0 fail |
-| Diff hygiene | `git diff --check` | exit 0 after one trailing-whitespace repair |
+Captured builder scrollback shows direct helper queries in all three panes:
 
-The first five commands used the required cache at source fingerprint
-`2449967166:18158`; `git diff --check` is a fast direct hygiene check.  This lane
-did not run the full suite, whole-tree ShellCheck, installers, or the live doctor
-rehearsal.  No install, push, deployment, publication, purchase, live action, or
-trading execution is authorized; trading remains research/backtest/paper-only.
+- pane identity queried `pane_for_worktree`, `polylane_tmux_configure`, and observer
+  discovery symbols;
+- context hygiene queried `inbox_json`, `compile_selected`, and `lint_one`;
+- runner wire queried `launch_panes`, both adoption paths, `recreate_lane_pane`,
+  `run_integrator`, and `prime_hybrid_pane_exports`.
 
-All four target subgoals (`m16.4`, `m17.3`, `m18.3`, and `m20.1`) and `c56`
-remain open.  Only the coordinator may consume the sole frozen terminal command,
-evaluate host evidence, promote, clean up, and finalize any target or criterion.
+A command-pattern audit of each builder transcript found zero reads of any
+`graphify/SKILL.md` or `graphify-auto/SKILL.md`. The live bootstrap panes have only the
+session-level run tag and blank lane/worktree tags because this run began with the
+pre-fix launcher; that is the observed red baseline, not evidence attributed to the
+merged runner.
 
-## Final canonical relay review
+At lane start, the exact durable-inbox command returned three unacknowledged Cycle 15
+relay imports. This bootstrap process did not export the new worker run scope, so the
+result reproduces the documented stale-context defect. The messages were recognized as
+historical and were neither followed nor acknowledged. The integrated focused test
+creates old-run, new-run, and unscoped events: a `new-run` caller sees only its two
+events, rejects an old acknowledgement, and the unscoped legacy caller retains all
+five historical events. A fresh host run is required to certify the merged export in a
+new process.
 
-Immediately before this sentinel, the canonical `pending` command again returned
-`{"requests":[],"claims":{}}`.  The prescribed command
-`bin/polylane-workers.sh inbox integrator --unacknowledged` was run from the
-canonical project context and returned `invalid worker name: --unacknowledged`:
-the current canonical script requires its explicit `PROJECT RECIPIENT` arguments
-and has no `--unacknowledged` option.  Its supported equivalent,
-`bin/polylane-workers.sh inbox "$POLYLANE_PROJECT_ROOT" integrator`, returned
-three unacknowledged relay imports, all historical Cycle 15 messages.  None belongs
-to this run, so no acknowledgement was written and no current-run request remains
-to resolve.  The argument-contract mismatch is recorded here as a limitation; no
-speculative source change was made.
+## Focused verification
 
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: required
-current cache-backed commands and observed counts before any handoff claim.
+The combined command ran once through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`. The retained log is
+`.polylane/check-cache/integrator/1095121181-634.output`.
 
-SKILL-EVIDENCE: engineering:code-review — helped: separated a direct
-correctness/security/performance/maintainability review of both repair seams from
-test results.
+| Test | Result |
+| --- | --- |
+| `test-tmux-runtime.sh` | 14 pass, 0 fail |
+| `test-state.sh` | 19 pass, 0 fail |
+| `test-supervisor.sh` | 32 pass, 0 fail |
+| `test-worker-run-scope.sh` | 13 pass, 0 fail |
+| `test-workers.sh` | 47 pass, 0 fail |
+| `test-worker-canonical-state.sh` | 23 pass, 0 fail |
+| `test-promptlint.sh` | 25 pass, 0 fail |
+| `test-skill-delivery.sh` | 47 pass, 0 fail |
+| `test-promptopt.sh` | 9 pass, 0 fail |
+| `test-model-policy.sh` | 17 pass, 0 fail |
+| `test-prime-hybrid-integration.sh` | 60 pass, 0 fail |
+| `test-session-resume.sh` | 8 pass, 0 fail |
+| `test-runtime-recovery.sh` | 15 pass, 0 fail |
+| `test-intensity.sh` | 20 pass, 0 fail |
 
-SKILL-EVIDENCE: ponytail:ponytail-review — helped: checked the two-fixture diff
-for speculative complexity and found no removable abstraction or dependency.
+Focused total: **349 pass, 0 fail across 14 files**.
 
-SKILL-EVIDENCE: graphify — helped: located the acceptance, rehearsal, status, and
-recovery call paths before direct source inspection without rebuilding the graph.
+Changed-script ShellCheck ran once through the same cache for the nine changed scripts
+and exited 0. `git diff --check` exited 0 after evidence writing. The refinement queue
+returned `[]`, so no propose-or-decline action was eligible.
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c23-terminal-cert-20260809-a1
+## Boundary and verdict
+
+This lane did not run the full suite, whole-tree ShellCheck, skill parity, either
+installer, doctor, live rehearsal, push, deployment, publication, purchase, or live
+action. No external evidence is required for this engineering verdict; the existing
+ten-product visual corpus remains separate and cannot affect it. The coordinator owns
+the sole fresh-process host gate and any later promotion or cleanup.
+
+SKILL-EVIDENCE: engineering:code-review — helped: the structured correctness and edge-case review found two missing assertions, confirmed fail-closed behavior, and avoided an unnecessary production seam rewrite.
+
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: the READY decision is tied to one fresh 349/0 cached matrix, one clean changed-script ShellCheck, exact-tip ancestry, and transcript evidence rather than builder claims.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c24-context-hardening-20260810-a1

@@ -143,6 +143,7 @@ mv "$KIT.clean" "$KIT"
 jq '(.lanes.builder.selected.specific[0].id) = "graphify"' "$KIT" > "$KIT.graphify" && mv "$KIT.graphify" "$KIT"
 assert_fail "delivery-rejects-graphify-as-selected-builder-skill" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED"
 assert_ok "delivery-restores-graphify-fixture" env POLYLANE_SKILLS_DIRS="$ROOT" "$SCOUT" arm-role "$KIT" builder specific ui:visual-regression
+assert_fail "delivery-rejects-graphify-auto-as-selected-builder-skill" env POLYLANE_SKILLS_DIRS="$ROOT" "$SCOUT" arm-role "$KIT" builder specific graphify-auto
 
 jq '(.lanes.builder.selected.specific) += [
   (.lanes.builder.selected.specific[0] | .id = "extra:one" | .path = "/trusted/one/SKILL.md"),

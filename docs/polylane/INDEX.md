@@ -6,6 +6,14 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 24 integration candidate: [plan](cycle-24-plan.md) ·
+[research](cycle-24-research.md) · [skill suggestions](cycle-24-suggestions.md) ·
+[council](cycle-24-council.md) · [digest](cycle-24-digest.md) ·
+[questions](cycle-24-questions.md) · [integration verification](../verify-integration.md).
+The exact three builder tips are merged and the 349/0 focused matrix is READY for the
+coordinator's sole fresh-process host gate. Full-suite, parity, install, rehearsal,
+promotion, and cleanup results are intentionally not claimed yet.
+
 Cycle 23 completed certification: [plan](cycle-23-plan.md) ·
 [research](cycle-23-research.md) · [council](cycle-23-council.md) ·
 [digest](cycle-23-digest.md) · [questions](cycle-23-questions.md) ·

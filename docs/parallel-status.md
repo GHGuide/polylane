@@ -1,16 +1,15 @@
-# Cycle 23 integration status
+# Cycle 24 integration status
 
-Run: `c23-terminal-cert-20260809-a1` · branch: `lane/c23-integrator` · exact merged
-audit tip: `edc8a1f494616903fa43452067b60964b38f18e8` via
-`e767948d180abd18dd609213d1013cbc6dd3544b`.
+Run: `c24-context-hardening-20260810-a1` · branch: `lane/c24-integrator` · frozen
+base: `843102ac1e7562921b560dd7bb15b5d6abd01cc6`.
 
-| Lane | Integrated evidence | Boundary retained |
+| Lane | Exact tip | Integrated evidence |
 | --- | --- | --- |
-| terminal-fixture-audit | Its complete base-to-tip range changed only `docs/verify-terminal-fixture-audit.md` and `docs/status-terminal-fixture-audit.md`; it independently reconstructs both fixture repairs. | Evidence-only; no production source or acceptance state changed. |
-| integrator | Merged the exact audit tip and independently reviewed `23572df`; focused contracts total 225/0, with scoped static/docs/parity evidence recorded in `verify-integration.md`. | Coordinator owns the one frozen terminal command, acceptance, cleanup proof, promotion, and finalization. |
+| pane-identity | `3a99b106b6075fd58a2cb7dd41db3adb89032e17` | nonce/worktree tags survive cwd drift; partial, wrong-run, and wrong-worktree tags fail closed; untagged legacy adoption remains |
+| context-hygiene | `7eadd5fba104013719f5325494ebaa1f3a8c12dc` | fresh scopes isolate inbox history; legacy callers retain history; exact inbox syntax and query-only Graphify policy are enforced |
+| runner-wire | `f8540bd3d7b7cf2b7059a7bfa18fd448e0ad94b8` | all launch/adopt/recreate/integrator paths tag panes; worker scope is exported; manifest `custom` preserves baked policy |
+| integrator | current branch | exact-tip ancestry, independent review, transcript audit, 349/0 focused checks, and changed-script ShellCheck support READY |
 
-The recovery fixture blocks inherited zero-retry policy, while the rehearsal manifest
-owns every canonical status marker exactly once.  All Cycle 23 targets (`m16.4`,
-`m17.3`, `m18.3`, `m20.1`) and `c56` remain open.  No external action occurred;
-approval hashes remain mandatory and trading remains research/backtest/paper-only.  This
-document is post-cycle evidence only, never live IPC.
+The coordinator alone owns the full suite, whole-tree ShellCheck, parity, installs,
+live rehearsal, promotion, and cleanup. This file is post-cycle evidence, never live
+IPC. The pre-existing ten-product visual corpus remains separate external evidence.

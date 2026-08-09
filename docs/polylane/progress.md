@@ -2,6 +2,11 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
+Cycle 24 integration note: exact-tip context hardening is locally READY after 349/0
+focused checks, but no durable goal or criterion state changes until the coordinator's
+fresh-process host gate. The mechanically generated Cycle 23 totals below therefore
+remain authoritative.
+
 ## Cycle 23
 
 subgoals: 55/56 done · criteria: 55/56 done · 98%
