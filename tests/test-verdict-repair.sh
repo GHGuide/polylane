@@ -131,6 +131,28 @@ assert_eq "ready-host-gate-failure-runs-once" "1" "$HOST_GATES"
 assert_eq "ready-host-gate-failure-proves-once" "1" "$EFFICIENCY_PROOFS"
 assert_eq "ready-host-gate-failure-stops-repair" "NO" "$VERDICT_REPAIRABLE"
 
+# Host gate diagnostics belong to canonical host state, never the completed
+# integrator checkout.  A committed current READY handoff must remain clean and
+# continue to satisfy lane_done on resume after a terminal host failure.
+HOST_ROOT="$TEST_TMPDIR/host-root"; HOST_INT="$HOST_ROOT/integrator"
+mkdir -p "$HOST_INT/docs"; (
+  cd "$HOST_INT"; git init -q -b main; git config user.email t@t; git config user.name t
+  printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > docs/verify-integration.md
+  git add docs/verify-integration.md; git commit -qm ready
+)
+REPO_ROOT="$HOST_ROOT"; INT_WORKTREE="$HOST_INT"; INT_NAME=integrator
+ORCHESTRATION_CONTRACT=2
+HOST_GATES=0; EFFICIENCY_PROOFS=0; TERMINAL_EVENTS=0
+contract_focused_acceptance_gate() { return 0; }
+contract_ready_verdict() { printf 'GO'; }
+write_efficiency_proof() { return 0; }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 1; }
+merge_gate >/dev/null 2>&1; host_clean_rc=$?
+assert_eq "host-failure-is-no-go" "1" "$host_clean_rc"
+assert_eq "host-failure-keeps-integrator-clean" "" "$(git -C "$HOST_INT" status --porcelain)"
+assert_ok "host-failure-ready-still-resumable" lane_done "$HOST_INT" integrator
+assert_ok "host-failure-recorded-canonically" test -f "$HOST_ROOT/docs/polylane/host-gate-failures/host-gate-run.md"
+
 HOST_GATES=0
 EFFICIENCY_PROOFS=0
 TERMINAL_EVENTS=0

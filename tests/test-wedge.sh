@@ -84,6 +84,18 @@ FAKE_PANE_TXT='✻ Ideating… (2m · thinking)'
 startup_check "a:$TEST_TMPDIR/wt" >/dev/null
 assert_eq "working-pane-untouched" "" "$(cat "$KEYLOG")"
 
+# Transcript/prose may quote the trust question, but only a live numbered
+# affirmative menu is actionable.  Never type into a worker from a mention.
+: > "$KEYLOG"
+FAKE_PANE_TXT='I cannot proceed until "Do you trust the files in this folder?" is answered.'
+startup_check "a:$TEST_TMPDIR/wt" >/dev/null
+assert_eq "trust-prose-without-option-untouched" "" "$(cat "$KEYLOG")"
+
+: > "$KEYLOG"
+FAKE_PANE_TXT='Welcome to the guide: Press Enter to continue reading the example below.'
+startup_check "a:$TEST_TMPDIR/wt" >/dev/null
+assert_eq "banner-prose-without-live-banner-untouched" "" "$(cat "$KEYLOG")"
+
 # a DONE lane is never touched even if a dialog shows
 printf 'STATUS: a DONE\n' > "$TEST_TMPDIR/wt/docs/status-a.md"
 : > "$KEYLOG"
