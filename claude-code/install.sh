@@ -30,8 +30,15 @@ test -x "$DEST/bin/polylane-context.sh" || { echo "install: bounded context help
 test -x "$DEST/bin/polylane-refine.sh" || { echo "install: refinement helper missing" >&2; exit 1; }
 test -x "$DEST/bin/polylane-certify.sh" || { echo "install: certification helper missing" >&2; exit 1; }
 test -x "$DEST/bin/polylane-skill-catalog.sh" || { echo "install: metadata skill catalog missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-domain.sh" || { echo "install: domain adapter/grader missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-action-preview.sh" || { echo "install: action preview helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-optimize.sh" || { echo "install: accepted-outcome optimizer missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-skill-benchmark.sh" || { echo "install: skill benchmark helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-domain-trials.sh" || { echo "install: domain trials helper missing" >&2; exit 1; }
+test -x "$DEST/bin/polylane-soak.sh" || { echo "install: soak helper missing" >&2; exit 1; }
 test -x "$DEST/bin/polylane-hooks.sh" || { echo "install: lifecycle hook helper missing" >&2; exit 1; }
 test -s "$DEST/references/cycle-13-integration.md" || { echo "install: cycle 13 integration reference missing" >&2; exit 1; }
+test -s "$DEST/references/evidence-driven-domain-autonomy.md" || { echo "install: domain autonomy reference missing" >&2; exit 1; }
 test -s "$DEST/assets/hooks/claude-settings.json" || { echo "install: Claude lifecycle fragment missing" >&2; exit 1; }
 
 echo "installed Claude Code skill -> $DEST"

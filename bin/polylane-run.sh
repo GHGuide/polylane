@@ -171,6 +171,95 @@ advanced_runtime() {
   "$helper" "$action" "$MANIFEST" "$@"
 }
 
+# Empirical tuning is deliberately a pre-launch, builder-only policy.  It never
+# invents a model, changes topology/context after planning, or weakens a role
+# clamp.  A measured model/effort recommendation can be applied; every other
+# recommendation remains a visible plan-gate handoff for the next planner.
+outcome_learning_requested() {
+  jq -e '.outcome_learning? | type == "object" and ((.enabled // true) == true)' "$MANIFEST" >/dev/null 2>&1
+}
+
+economy_log_recommendation() { # LANE REPORT APPLIED
+  local lane="$1" report="$2" applied="$3" dir out tmp
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  dir="$PROJECT_ROOT/docs/polylane/economy-recommendations"
+  out="$dir/${RUN_ID:-legacy}.jsonl"
+  mkdir -p "$dir" || return 1
+  tmp=$(mktemp "$dir/.${RUN_ID:-legacy}.XXXXXX") || return 1
+  jq -c --arg lane "$lane" --argjson applied "$applied" \
+    '. + {lane:$lane,applied:$applied}' <<<"$report" > "$tmp" || { rm -f "$tmp"; return 1; }
+  sed -n '1p' "$tmp" >> "$out"
+  rm -f "$tmp"
+}
+
+economy_plan_gate() {
+  local i lane report changed model effort applied lane_count="${#LANE_NAMES[@]}" context="${PROMPT_TOKEN_BUDGET:-8000}"
+  outcome_learning_requested || return 0
+  for i in "${!LANE_NAMES[@]}"; do
+    lane="${LANE_NAMES[$i]}"
+    report=$(advanced_runtime economy-plan "$lane" "${LANE_MODELS[$i]}" "${LANE_EFFORTS[$i]:-medium}" \
+      "${LANE_ROLES[$i]:-builder}" "$lane_count" "$context") || return 1
+    printf 'ECONOMY-PLAN: lane=%s %s\n' "$lane" "$report"
+    applied=false
+    if jq -e '.safe_to_apply == true and (.changed_fields | length == 1)' <<<"$report" >/dev/null 2>&1; then
+      changed=$(jq -r '.changed_fields[0]' <<<"$report")
+      model=$(jq -r '.recommendation.model // empty' <<<"$report")
+      effort=$(jq -r '.recommendation.effort // empty' <<<"$report")
+      case "$changed" in
+        model)
+          if [ -n "$model" ] && model_available "$model"; then
+            LANE_MODELS[i]="$model"
+            # shellcheck disable=SC2034 # consumed by emit_effective_model_policy
+            LANE_POLICY_SOURCES[i]='empirical accepted-outcome recommendation'
+            applied=true
+          fi
+          ;;
+        effort)
+          if model_policy_effort_valid "$effort"; then
+            LANE_EFFORTS[i]="$effort"
+            # shellcheck disable=SC2034 # consumed by emit_effective_model_policy
+            LANE_POLICY_SOURCES[i]='empirical accepted-outcome recommendation'
+            applied=true
+          fi
+          ;;
+        lane_count|context_tokens)
+          # Planning owns lane topology and prompt scope; changing either here
+          # after scope validation would invalidate isolation and prompt proof.
+          applied=false
+          ;;
+      esac
+    fi
+    economy_log_recommendation "$lane" "$report" "$applied" || return 1
+    if [ "$applied" = true ]; then
+      echo "ECONOMY-PLAN: applied lane=$lane changed=$(jq -r '.changed_fields[0]' <<<"$report")"
+    else
+      echo "ECONOMY-PLAN: preserved lane=$lane reason=$(jq -r '.reason' <<<"$report")"
+    fi
+  done
+}
+
+domain_grade_gate() {
+  local output rc=0 bundle grade evidence
+  output=$(advanced_runtime domain-grade "$INT_WORKTREE" 2>&1) || rc=$?
+  printf '%s\n' "$output"
+  [ "$rc" -eq 0 ] || return "$rc"
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  bundle=$(jq -r '.domain_runtime.bundle // "docs/polylane/domain-runtime/bundle.json"' "$MANIFEST")
+  grade=$(jq -r '.domain_runtime.grade // "docs/polylane/domain-runtime/grade.json"' "$MANIFEST")
+  case "$bundle:$grade" in docs/polylane/domain-runtime/*:docs/polylane/domain-runtime/*) ;; *)
+    echo 'DOMAIN-GRADER: unsafe durable evidence path' >&2; return 1 ;;
+  esac
+  evidence="$INT_WORKTREE/docs/verify-integration.md"
+  [ -f "$evidence" ] || { echo 'DOMAIN-GRADER: integration evidence is missing' >&2; return 1; }
+  grep -F "DOMAIN-GRADER: PASS bundle=$bundle grade=$grade" "$evidence" >/dev/null 2>&1 ||
+    printf '\nDOMAIN-GRADER: PASS bundle=%s grade=%s\n' "$bundle" "$grade" >> "$evidence"
+  git -C "$INT_WORKTREE" add -- "$bundle" "$grade" docs/verify-integration.md || return 1
+  if ! git -C "$INT_WORKTREE" diff --cached --quiet -- "$bundle" "$grade" docs/verify-integration.md; then
+    git -C "$INT_WORKTREE" commit --only -m 'polylane: record profile bundle grade' -- \
+      "$bundle" "$grade" docs/verify-integration.md || return 1
+  fi
+}
+
 quality_judges_requested() {
   jq -e '.quality_judges | type == "array" and length > 0' "$MANIFEST" >/dev/null 2>&1
 }
@@ -3329,7 +3418,7 @@ gate_with_repairs() {
   local attempt=0 max="${POLYLANE_INTEGRATOR_REPAIRS:-3}"
   while :; do
     graph_authority_require verifier "run verifier gate attempt $attempt" || return 1
-    if merge_gate; then
+    if domain_grade_gate && merge_gate; then
       return 0
     fi
     graph_authority_record_ready_node verifier failed "$attempt" verifier-failed || return 1
@@ -3400,11 +3489,16 @@ assert_no_conflict() {
 # narrow: user source, evidence, prompts, and reports never qualify.
 runner_owned_promotion_path() {
   local path="$1" lane
+  if [ "$path" = "docs/polylane/outcome-receipts/${RUN_ID:-legacy}.json" ] ||
+     [ "$path" = "docs/polylane/economy-recommendations/${RUN_ID:-legacy}.jsonl" ]; then
+    return 0
+  fi
   case "$path" in
     docs/polylane/max-state.json|docs/polylane/progress.md|\
     docs/polylane/run-stats.json|docs/polylane/spend-ledger.jsonl|\
     docs/polylane/efficiency-proof.md|\
     docs/polylane/outcomes.jsonl|docs/polylane/hubs.txt|\
+    docs/polylane/accepted-outcomes.jsonl|\
     docs/polylane/harness/*.json|docs/polylane/harness/*.jsonl|\
     docs/polylane/workers/history.jsonl|docs/polylane/workers/capsules/*.json)
       return 0
@@ -4038,6 +4132,7 @@ main() {
   fi
   preflight_agent
   apply_overrides   # policy resolves BEFORE any worktree/pane exists
+  economy_plan_gate || exit 1
   emit_effective_model_policy
   preflight_contract
   prime_hybrid_prepare || exit 1
@@ -4163,6 +4258,7 @@ main() {
     fi
     graph_authority_record_ready_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     finalize_cycle_state
+    advanced_runtime accepted-receipt "${RUN_ID:-legacy}" "$CYCLE" "${VERDICT_RESULT:-GO}" || exit 1
     graph_authority_require complete "complete verified run" || exit 1
     graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     advanced_runtime record "${VERDICT_RESULT:-GO}"

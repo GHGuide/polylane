@@ -282,6 +282,9 @@ arm_recommendation() {
   [ -f "$recommendation" ] || { echo "polylane-scout: recommendation file is missing" >&2; return 2; }
   candidate=$(jq -c --arg id "$id" '(.candidates // [])[] | select(.id == $id)' "$recommendation" | head -n 1)
   [ -n "$candidate" ] || { echo "polylane-scout: recommendation does not select '$id'" >&2; return 2; }
+  jq -e '.status == "recommended" and .safe_to_apply == true' <<<"$candidate" >/dev/null || {
+    echo "polylane-scout: candidate is not benchmark-recommended and safe to apply" >&2; return 2;
+  }
   jq -e '(.id | type == "string") and (.path | type == "string") and (.reason | type == "string" and length > 0) and (.source | type == "string") and (.fingerprint | type == "string")' <<<"$candidate" >/dev/null || {
     echo "polylane-scout: recommendation lacks typed selected-skill metadata" >&2; return 2;
   }

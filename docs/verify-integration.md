@@ -1,74 +1,76 @@
-# Cycle 15 integration verification
+# Cycle 16 integration verification
 
-Run: `c15-domain-general-20260808` · integrator branch: `lane/c15-integrator`.
+Run: `c16-evidence-autonomy-20260809-a1`  
+Branch: `lane/c16-integrator`
 
-## Merged evidence and seam repairs
+## Exact merged inputs
 
-Merged `faa7f4d` (domain contract) and `85dc6a6` (project runtime), then inspected
-their diffs and lane verification records. Integration repaired three seams:
+- `lane/c16-domain-runtime` at `c929c99`
+- `lane/c16-learning-economy` at `a1c7622`
+- `lane/c16-trials-soak` at `3449e63`
 
-- Made `tests/test-project-generality.sh` executable so the prescribed direct focused command is runnable.
-- Added `polylane-project.sh gate <PROJECT_PROFILE.md> <profile.json>` so the durable review record and machine profile must agree before goal decomposition or lane carving.
-- Restored the required literal Codex manifest identity (`"agent": "codex"`) and made the profile-record, machine-form, gate, route, and trading-safety promises parity-tested in both entrypoints.
-- Restored the concise skill entrypoints' complete visual-intelligence contract after
-  the full matrix exposed six dropped obligations: safe candidate admission, automatic
-  council selection, product-specific visual/copy direction, blind comparison, bounded
-  repair, and certification.
+All three tips are ancestors of this branch. Their status and verification documents,
+the bounded context packet (read once), and the canonical relay history were reviewed.
+The one Cycle-16 inbox message was acknowledged through `polylane-workers.sh` and its
+required scout admission seam is covered by the fresh contract test.
 
-The actual cycle profile passes:
+## Reproduced local evidence
 
-```bash
-bin/polylane-project.sh gate docs/polylane/PROJECT_PROFILE.md docs/polylane/PROJECT_PROFILE.json
-# project profile gate valid: kind=mixed
-```
-
-## Focused current-run matrix
-
-```bash
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- tests/test-project-generality.sh
-# 1..35; PASS
+```text
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-domain-runtime.sh
+PASS 75/0
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-learning-economy.sh
+PASS 56/0
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-domain-trials.sh
+PASS 15/0
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-soak.sh
+PASS 21/0
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-cycle-16-contract.sh
+PASS 28/0
+bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-agent-adapter.sh
+PASS 49/0
 bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-skill-parity.sh
-# 48 pass, 0 fail
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-visual-loop-integration.sh
-# 28 pass, 0 fail
+PASS 57/0
 bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-installers.sh
-# 34 pass, 0 fail
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bin/polylane-markers.sh check-docs references/
-# PASS
+PASS 50/0
+shellcheck -S warning bin/*.sh
+PASS no warnings
+bin/polylane-seams.sh scan "$PWD"
+PASS no seam output
+bin/polylane-markers.sh check-docs references/
+PASS no marker output
+bin/polylane-project.sh validate docs/polylane/PROJECT_PROFILE.json
+PASS kind=mixed
 ```
 
-The corpus validates and creates non-overlapping owned artifact lanes for all seven
-profiles: software app, trading strategy research, literature review, incident-response
-playbook, content campaign, dataset-quality pipeline, and mixed/custom work. The custom
-fixture explicitly accepts an unlisted industry when it supplies deliverables and evidence.
-The adversarial trading mutation to `"execution":"autonomous-live"` is rejected with
-`trading profiles cannot declare autonomous live execution`; the fixture defaults to
-research/backtest/data-quality/peer-review evidence and an approval-required manual action.
+`tests/test-cycle-16-contract.sh` exercises successful and failing profile grades,
+path traversal refusal, material/non-material post-cycle discovery, unbenchmarked scout
+arming refusal, measured economy application, unknown telemetry receipt truth, runner
+commit of the final grade before promotion, and both provider semantics. It is behavioral
+coverage, not a documentation grep substitute.
 
-Provider parity is **48/0**. Fresh copied-checkout installation is **34/0**: the Codex
-package contains its standalone skill and all shared helpers, the Claude package contains
-its separate skill and helpers, and the installed runner checksums match. No dedicated
-skill validator is present under `bin/` or `tests/`; marker validation covered the linked
-progressive-disclosure references.
+## Package truth and risks
 
-## Terminal boundary
+Codex and Claude installers each copy their own entrypoint plus the same Bash helper and
+reference package. The fresh installer check proved the seven new helpers and the domain
+autonomy reference in both packages; the existing shared-core checksum still matches.
+No provider packages were combined.
 
-The integrator has finished all source and focused repairs. The outer runner now owns
-the single frozen terminal acceptance:
+The remaining bounded risks are operator-owned: a real 6/12/24-hour soak, an explicitly
+requested read-only live canary, and any consequential action require their own evidence.
+`SKIP` is not `PASS`; unknown telemetry is not optimizer input; and trading remains
+paper-only. The historical external visual corpus `m12.4`/`c28` was left unchanged.
+
+## Host-only terminal gate
+
+Run once in the coordinator after this commit, not in this sandbox:
 
 ```bash
-bash tests/run.sh && shellcheck -S warning bin/*.sh
+POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && \
+shellcheck -S warning bin/*.sh && \
+bash tests/test-skill-parity.sh && \
+bash tests/test-installers.sh && \
+POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
 ```
 
-The suite contains **101 test files**; ShellCheck covers **52** `bin/*.sh` scripts.
-This handoff is deliberately not a GO claim: the runner must record the authoritative
-`m15.1` terminal result before promotion.
-
-## External boundary
-
-No live trade, spending, publication, production deployment, third-party message, or
-manual/physical action was performed. The pre-existing `m12.4`/`c28` ten-product rendered
-old-vs-new blind visual corpus remains the only external evidence item. It is not a pass
-for cycle 15 or a claim that the visual work was completed.
-
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c15-domain-general-20260808
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c16-evidence-autonomy-20260809-a1

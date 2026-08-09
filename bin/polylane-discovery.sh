@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-discovery.sh init <state> <brief> [kind] | next <state> [limit] | answer <state> <question-id> <recommended|deep|bold|custom> [text] | contradict <state> <answer-id> <answer-id> <reason> | resolve <state> <contradiction-id> <accept-left|accept-right|accept-both> [note] | summary <state> | lock <state> <docs-dir>" >&2
+  echo "usage: polylane-discovery.sh init <state> <brief> [kind] | next <state> [limit] | answer <state> <question-id> <recommended|deep|bold|custom> [text] | after-cycle <state> <none|deliverables|evidence|risk|next-focus> [question] | contradict <state> <answer-id> <answer-id> <reason> | resolve <state> <contradiction-id> <accept-left|accept-right|accept-both> [note] | summary <state> | lock <state> <docs-dir>" >&2
   exit 2
 }
 
@@ -120,6 +120,35 @@ cmd_answer() {
   mv "$tmp" "$state"
 }
 
+# after-cycle makes the materiality decision explicit.  A completed cycle keeps
+# moving without another interview unless a new answer can change the named
+# planning boundary; this prevents generic "anything else?" loops from blocking
+# autonomous work while preserving a durable reason when a question is warranted.
+cmd_after_cycle() {
+  local state="$1" reason="$2" question="${3:-}" count id domain tmp
+  need_state "$state"
+  case "$reason" in none)
+    [ -z "$question" ] || { echo "discovery: no question is allowed for non-material review" >&2; return 1; }
+    printf 'DISCOVERY: continue-autonomously reason=no-material-change\n'
+    return 0
+    ;;
+  deliverables|evidence|risk|next-focus) ;;
+  *) echo "discovery: after-cycle reason must be none, deliverables, evidence, risk, or next-focus" >&2; return 1 ;;
+  esac
+  [ -n "$question" ] || { echo "discovery: material after-cycle review requires a question" >&2; return 1; }
+  count=$(jq '.nodes | length' "$state")
+  id="q-emergent-$reason-$count"
+  domain=$(jq -r '.domain.kind // "custom"' "$state")
+  tmp=$(mktemp "${state}.tmp.XXXXXX") || return 1
+  jq --arg id "$id" --arg reason "$reason" --arg question "$question" --arg domain "$domain" '
+    .nodes += [{id:$id,type:"question",impact:95,active:true,strategy_key:("emergent-" + $reason),
+      domain_kind:$domain,question:$question,
+      options:{recommended:"Use the current evidence to make the smallest safe decision",deep:("Go deeper on " + $domain + " evidence and boundary"),bold:"Challenge the current plan without widening authority",custom:"Provide a specific answer"},
+      stopping:{deliverable_change:($reason=="deliverables"),evidence_change:($reason=="evidence"),risk_change:($reason=="risk"),next_focus_change:($reason=="next-focus"),stop_when:"continue autonomously when no material boundary changes"}}]
+  ' "$state" > "$tmp" && mv "$tmp" "$state"
+  printf 'DISCOVERY: emergent-question=%s reason=%s\n' "$id" "$reason"
+}
+
 strategy_packet() {
   jq -r '
     "Strategy packet\n" +
@@ -203,6 +232,7 @@ main() {
     init) [ "$#" = 3 ] || [ "$#" = 4 ] || usage; cmd_init "$2" "$3" "${4:-}" ;;
     next) [ "$#" -ge 2 ] && [ "$#" -le 3 ] || usage; cmd_next "$2" "${3:-3}" ;;
     answer) [ "$#" -ge 4 ] && [ "$#" -le 5 ] || usage; cmd_answer "$2" "$3" "$4" "${5:-}" ;;
+    after-cycle) [ "$#" -ge 3 ] && [ "$#" -le 4 ] || usage; cmd_after_cycle "$2" "$3" "${4:-}" ;;
     contradict) [ "$#" = 5 ] || usage; cmd_contradict "$2" "$3" "$4" "$5" ;;
     resolve) [ "$#" -ge 4 ] && [ "$#" -le 5 ] || usage; cmd_resolve "$2" "$3" "$4" "${5:-}" ;;
     summary) [ "$#" = 2 ] || usage; cmd_summary "$2" ;;

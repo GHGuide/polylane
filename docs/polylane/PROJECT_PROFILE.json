@@ -16,5 +16,19 @@
   ],
   "evidence_modes": ["project-generality-suite", "real-domain-trials", "profile-aware-graders", "learning-economy-suite", "fault-soak", "provider-parity", "installer-smoke", "full-suite", "shellcheck"],
   "risk_tier": "medium",
-  "external_action_policy": { "mode": "not-needed", "actions": [] }
+  "external_action_policy": { "mode": "not-needed", "actions": [] },
+  "domain_runtime": {
+    "provenance": {
+      "source_id": "polylane-cycle-16-local-repository",
+      "input_hash": "cycle-16-integration-source",
+      "collected_at": "2026-08-09T00:00:00Z",
+      "method": "deterministic-local-integration",
+      "fixture_or_public": "fixture"
+    },
+    "checks": {
+      "declared_artifacts": true,
+      "declared_evidence_modes": true,
+      "risk_action_policy": true
+    }
+  }
 }

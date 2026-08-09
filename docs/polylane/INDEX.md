@@ -7,7 +7,9 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
 Active cycle 16: [plan](cycle-16-plan.md) · [research](cycle-16-research.md) ·
-[skill suggestions](cycle-16-suggestions.md). Target: make every supported domain
+[skill suggestions](cycle-16-suggestions.md) · [questions](cycle-16-questions.md) ·
+[council](cycle-16-council.md) · [digest](cycle-16-digest.md) ·
+[integration](cycle-16-integration.md). Target: make every supported domain
 executable, provenance-bearing, profile-graded, outcome-learning, economy-aware, and
 long-run tested while preserving explicit external-action approval boundaries.
 

@@ -70,11 +70,37 @@ EOF
 }
 
 cmd_questions() {
-  local kind="$1" format="text"
+  local kind="$1" format="text" out
   [ "${2:-}" = "--json" ] && format="json"
-  questions_json "$kind" > /tmp/polylane-domain-questions.$$
-  if [ "$format" = "json" ]; then cat /tmp/polylane-domain-questions.$$; else jq -r '.[] | "[\(.id)] \(.question)"' /tmp/polylane-domain-questions.$$; fi
-  rm -f /tmp/polylane-domain-questions.$$
+  out=$(mktemp "${TMPDIR:-/tmp}/polylane-domain-questions.XXXXXX") || die "cannot create question output"
+  trap 'rm -f "$out"' RETURN
+  questions_json "$kind" > "$out"
+  if [ "$format" = "json" ]; then cat "$out"; else jq -r '.[] | "[\(.id)] \(.question)"' "$out"; fi
+  rm -f "$out"
+  trap - RETURN
+}
+
+# Profile deliverables are relative to the declared artifact root.  Do not let a
+# profile turn a checksum bundle into a read of a sibling checkout, a parent, or
+# a symlinked file outside the evidence root.
+safe_relative_path() {
+  local path="$1" part old_ifs
+  case "$path" in ''|/*|*'//'*) return 1 ;; esac
+  old_ifs=$IFS; IFS=/
+  for part in $path; do
+    [ -n "$part" ] && [ "$part" != . ] && [ "$part" != .. ] || { IFS=$old_ifs; return 1; }
+  done
+  IFS=$old_ifs
+}
+
+artifact_file() { # ROOT RELATIVE_PATH -> canonical regular file within ROOT
+  local root="$1" path="$2" target parent
+  safe_relative_path "$path" || die "declared deliverable path is unsafe: $path"
+  target="$root/$path"
+  [ -f "$target" ] && [ ! -L "$target" ] || die "declared deliverable is missing or symlinked: $path"
+  parent=$(cd "$(dirname "$target")" && pwd -P) || die "cannot resolve deliverable parent: $path"
+  case "$parent" in "$root"|"$root"/*) ;; *) die "declared deliverable escapes artifact root: $path" ;; esac
+  printf '%s/%s\n' "$parent" "$(basename "$target")"
 }
 
 project_validate() {
@@ -95,7 +121,7 @@ require_provenance() {
 }
 
 cmd_bundle() {
-  local profile="$1" artifact_root="$2" output="$3" root entries tmp provenance
+  local profile="$1" artifact_root="$2" output="$3" root entries tmp provenance path file
   project_validate "$profile"
   require_provenance "$profile" || die "profile is missing required provenance"
   [ -d "$artifact_root" ] || die "artifact root does not exist: $artifact_root"
@@ -104,8 +130,8 @@ cmd_bundle() {
   tmp=$(mktemp "${output}.tmp.XXXXXX")
   trap 'rm -f "$entries" "$tmp"' RETURN
   while IFS= read -r path; do
-    [ -f "$root/$path" ] || die "declared deliverable is missing: $path"
-    jq -cn --arg path "$path" --arg checksum "$(cksum "$root/$path" | awk '{print $1 ":" $2}')" \
+    file=$(artifact_file "$root" "$path")
+    jq -cn --arg path "$path" --arg checksum "$(cksum "$file" | awk '{print $1 ":" $2}')" \
       '{path:$path, checksum:$checksum}' >> "$entries"
   done <<EOF
 $(jq -r '.deliverables[].path' "$profile")
@@ -158,7 +184,7 @@ grade_domain_checks() {
 }
 
 cmd_grade() {
-  local profile="$1" bundle="$2" checks kind root path checksum expected actual result
+  local profile="$1" bundle="$2" checks kind root path checksum expected actual result file
   project_validate "$profile"
   [ -f "$bundle" ] || die "bundle does not exist: $bundle"
   jq empty "$bundle" >/dev/null 2>&1 || die "bundle is not valid JSON: $bundle"
@@ -174,7 +200,8 @@ cmd_grade() {
     while IFS= read -r path; do
       expected=$(jq -r --arg path "$path" '.entries[]? | select(.path == $path) | .checksum' "$bundle" | head -n 1)
       checksum=""
-      [ -f "$root/$path" ] && checksum=$(cksum "$root/$path" | awk '{print $1 ":" $2}')
+      file=$(artifact_file "$root" "$path" 2>/dev/null || true)
+      [ -n "$file" ] && checksum=$(cksum "$file" | awk '{print $1 ":" $2}')
       [ -n "$expected" ] && [ "$expected" = "$checksum" ] || actual=false
     done <<EOF
 $(jq -r '.deliverables[].path' "$profile")
