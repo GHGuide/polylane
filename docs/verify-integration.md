@@ -100,7 +100,7 @@ certify the new export in live use.
 - `context-hygiene`: 1 launch, **2 restarts**;
 - `supervisor_restarts`: **1**;
 - all other lanes: 1 launch, 0 lane restarts;
-- `terminal_gates`: 0;
+- `terminal_gates`: 1;
 - `cleanup`: `pending`.
 
 The canonical runner log records dead-pane retries at lines 550 and 814, then a
@@ -108,7 +108,9 @@ reflexion attempt at line 995. Line 996 rejects duplicate strict `DELEGATION` sc
 values. The first restarts followed a builder handoff that did not mechanically require
 committing every owned file; the marker was therefore not a valid contract-v2 handoff.
 The plan states that any restart is NO-GO. Focused code health cannot override this
-nonce-bound runtime evidence.
+nonce-bound runtime evidence. The coordinator subsequently consumed the sole terminal
+gate. Its efficiency proof failed with `restarts=3>0`; the host-gate failure records
+that the gate is exhausted, nothing was merged or deleted, and cleanup remains pending.
 
 ## Exact repairs and next gate
 
@@ -120,7 +122,7 @@ Cycle 24 ends NO-GO. A fresh hardening cycle must:
    than append a second `DELEGATION` value, with a red/green promptopt regression.
 3. Start from the pane-local option repair in this integrator branch and certify a new
    process with zero lane restarts, zero supervisor restarts, scoped live inbox output,
-   one coordinator-owned terminal gate, and complete cleanup.
+   one new-run coordinator-owned terminal gate, and complete cleanup.
 
 This lane did not run the full suite, whole-tree ShellCheck, parity, either installer,
 doctor, live rehearsal, push, deployment, publication, purchase, or live action. No

@@ -4,8 +4,9 @@ Generated mechanically from `max-state.json`. Conversation summaries are not aut
 
 Cycle 24 integration note: exact-tip context hardening remains NO-GO despite green
 focused checks because canonical evidence records two lane restarts and one supervisor
-restart before any terminal gate. No durable goal or criterion state changed; the
-mechanically generated Cycle 23 totals below remain authoritative.
+restart. The sole terminal gate rejected the efficiency proof and is exhausted. No
+durable goal or criterion state changed; the mechanically generated Cycle 23 totals
+below remain authoritative.
 
 ## Cycle 23
 

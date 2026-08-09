@@ -11,9 +11,9 @@ Cycle 24 NO-GO evidence: [plan](cycle-24-plan.md) ·
 [council](cycle-24-council.md) · [digest](cycle-24-digest.md) ·
 [questions](cycle-24-questions.md) · [integration verification](../verify-integration.md).
 The exact tips merged and focused contracts are green, but two context-hygiene restarts
-plus one supervisor restart force NO-GO before any terminal gate. The integrator fixed
-pane-option inheritance; a fresh cycle owns prompt handoff/reflexion repairs and
-zero-restart certification.
+plus one supervisor restart forced the sole terminal gate to reject its efficiency
+proof. The exhausted run is NO-GO. The integrator fixed pane-option inheritance; a
+fresh cycle owns prompt handoff/reflexion repairs and zero-restart certification.
 
 Cycle 23 completed certification: [plan](cycle-23-plan.md) ·
 [research](cycle-23-research.md) · [council](cycle-23-council.md) ·

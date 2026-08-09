@@ -10,7 +10,8 @@ base: `843102ac1e7562921b560dd7bb15b5d6abd01cc6`.
 | runner-wire | `f8540bd3d7b7cf2b7059a7bfa18fd448e0ad94b8` | merged run-scope, tagging, liveness, and custom-policy wiring |
 | integrator | current branch | repaired the pane-option seam; canonical runtime evidence still forces NO-GO |
 
-Canonical stats: context-hygiene restarts=2, supervisor restarts=1, terminal gates=0,
-cleanup=pending. Next cycle must repair commit-all-owned-files prompt handoff and
-reflexion scalar deduplication, then certify a fresh zero-restart run. This file is
-post-cycle evidence only, never live IPC.
+Canonical stats: context-hygiene restarts=2, supervisor restarts=1, terminal gates=1,
+cleanup=pending. The sole gate rejected the efficiency proof (`restarts=3>0`) and is
+exhausted. Next cycle must repair commit-all-owned-files prompt handoff and reflexion
+scalar deduplication, then certify a fresh zero-restart run. This file is post-cycle
+evidence only, never live IPC.
