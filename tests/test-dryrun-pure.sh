@@ -40,7 +40,7 @@ printf 'plan\n' > "$R/.polylane/cycle-plan.md"
 cat > "$R/.polylane/run.json" <<EOF
 {"base":"main","run_id":"r1","cycle":1,"orchestration_contract":2,"session":"plt","agent":"claude",
  "state_file":"docs/polylane/max-state.json","lane_skills_file":".polylane/lane-skills.json",
- "cycle_plan_file":".polylane/cycle-plan.md","target_subgoals":["t1"],
+ "cycle_plan_file":".polylane/cycle-plan.md","target_subgoals":["t1"],"target_criteria":["c1"],
  "quality_judges":["judge-a"],
  "integrator":{"name":"i","model":"m","effort":"x","branch":"l/i","worktree":"$R/wt-i","prompt_file":".polylane/lanes/i.txt"},
  "lanes":[{"name":"a","model":"m","effort":"h","branch":"l/a","worktree":"$R/wt-a","prompt_file":".polylane/lanes/a.txt","own_globs":["a/**"],"target_subgoals":["t1"]}]}
@@ -54,6 +54,7 @@ after=$(jq -S . "$ST")
 assert_eq "dryrun-state-unchanged" "$before" "$after"
 # and the target is still open (the exact corruption that bit)
 assert_contains "dryrun-target-still-open" '"status": "open"' "$(jq -S '.milestones[].subgoals[] | select(.id=="t1")' "$ST")"
+assert_eq "dryrun-target-criterion-still-open" "open" "$(jq -r '.criteria[] | select(.id=="c1") | .status' "$ST")"
 # Dry-run is a preview: judges cannot inspect missing dry-run worktrees, and no
 # advanced-runtime outcome ledger may be created or record a false NO-GO.
 if grep -q 'polylane-judges.sh' "$DRYOUT"; then fail "dryrun-no-quality-judge" "judge helper executed during preview"; else pass "dryrun-no-quality-judge"; fi

@@ -68,6 +68,7 @@ cat > "$MANIFEST" <<JSON
   "lane_skills_file": ".polylane/lane-skills.json",
   "cycle_plan_file": "docs/polylane/cycle-1-plan.md",
   "target_subgoals": ["s1"],
+  "target_criteria": ["c1"],
   "base": "main",
   "agent": "codex",
   "integrator": {
@@ -87,6 +88,11 @@ JSON
 MANIFEST="$MANIFEST"
 load_manifest
 assert_ok "contract-valid-before-launch" preflight_contract
+
+jq '.target_criteria=["missing"]' "$MANIFEST" > "$P/.polylane/bad-target-criterion.json"
+MANIFEST="$P/.polylane/bad-target-criterion.json"; load_manifest
+assert_rc "contract-rejects-unknown-target-criterion" 2 preflight_contract
+MANIFEST="$P/.polylane/run.json"; load_manifest
 
 jq '(.lanes[0].own_globs)=["src/**","docs/status-short.md"]' "$MANIFEST" > "$P/.polylane/bad-status-scope.json"
 MANIFEST="$P/.polylane/bad-status-scope.json"; load_manifest

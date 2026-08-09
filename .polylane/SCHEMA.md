@@ -18,6 +18,7 @@ lanes L2/L3/L4 depend on them.
   "lane_skills_file": ".polylane/lane-skills.json",
   "cycle_plan_file": "docs/polylane/cycle-7-plan.md",
   "target_subgoals": ["m2.3"],
+  "target_criteria": ["c7"],
   "base": "main",
   "session": "polylane-c7",
   "intensity": "balanced",
@@ -56,7 +57,7 @@ lanes L2/L3/L4 depend on them.
       "branch": "lane/api",
       "worktree": "../pl-api",
       "prompt_file": ".polylane/prompts/api.txt",
-      "own_globs": ["backend/api/**"],
+    "own_globs": ["backend/api/**", "docs/status-api.md"],
       "target_subgoals": ["m2.3"],
       "effort": "high"
     }
@@ -76,6 +77,7 @@ lanes L2/L3/L4 depend on them.
 | `lane_skills_file` | string | Structured skill kits. Every builder needs one or two predefined plus one or two lane-specific installed skills, with at most four unique. GitHub suggestions remain informational metadata. |
 | `cycle_plan_file` | string | Non-empty current executable cycle plan. |
 | `target_subgoals` | string[] | Open/doing frozen-acceptance subgoals executed by this run. The highest-priority `memory next` id must be included. |
+| `target_criteria` | string[] | *(optional)* Open criteria whose evidence exists only after this cycle's coordinator-owned host gate, verified promotion, cleanup, and final efficiency proof. They are validated before launch and stamped done only after those boundaries succeed; builders and integrators must not pre-close them. |
 | `base` | string | Branch each lane/integrator worktree is created from (e.g. `main`). |
 | `session` | string | *(optional, recommended)* Durable tmux session name. When absent, `POLYLANE_SESSION` wins; observers can discover upgraded active runs from tmux ownership tags, then fall back to `polylane`. Use only `A-Za-z0-9._-`. |
 | `agent` | string | *(optional, default `claude`)* Which agent CLI each pane launches: `claude` \| `codex`/`gpt` \| `aider`. Env `POLYLANE_AGENT` overrides this; `POLYLANE_AGENT_CMD` (a template with `{model}` and `{prompt}`) overrides both for any other CLI. The pipeline is agent-agnostic (file-based done-signal + verdict); only the launch command differs. For a non-claude agent, the manifest `model` ids and the prompt style must match that agent (see SKILL.md). |
@@ -100,7 +102,7 @@ Each **lane** object (and the **integrator** object) has:
 | `worktree` | string | Path of the lane's git worktree. Relative paths resolve from the repo root. |
 | `prompt_file` | string | File whose contents seed the lane's selected-agent pane. Read at pane runtime. |
 | `effort` | string | *(optional)* Reasoning effort for this lane: `low` \| `medium` \| `high` \| `xhigh` \| `max`. Surfaced to the pane as the `POLYLANE_EFFORT` env var and printed at launch. Absent → unset (no behavior change; the legacy pane command is reproduced byte-for-byte). |
-| `own_globs` | string[] | *(lanes only)* Files the lane owns. Contract v2 rejects empty or conservatively overlapping sets before launch. |
+| `own_globs` | string[] | *(lanes only)* Files the lane owns. Contract v2 rejects empty or conservatively overlapping sets before launch, and requires exactly the canonical `docs/status-<name>.md` marker path with no second/broad status glob. |
 | `target_subgoals` | string[] | *(lanes only, contract v2)* The run-level target ids assigned to this builder. Must be non-empty and a subset of the run-level list. |
 
 ---

@@ -50,6 +50,7 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
   "lane_skills_file": ".polylane/lane-skills.json",
   "cycle_plan_file": "docs/polylane/cycle-<N>-plan.md",
   "target_subgoals": ["<subgoal-id>"],
+  "target_criteria": ["<host-gate-proven-criterion-id>"],
   "base": "<base branch>",
   "session": "polylane-c<N>",
   "agent": "<claude|codex|aider>",
@@ -57,7 +58,7 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
   "available_models": ["<id>", "..."],
   "integrator": {"name":"<int>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<int-branch>","worktree":"<int-worktree>","prompt_file":".polylane/lanes/<int>.txt"},
   "lanes": [
-    {"name":"<lane>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>"],"target_subgoals":["<subgoal-id>"]}
+    {"name":"<lane>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>","docs/status-<lane>.md"],"target_subgoals":["<subgoal-id>"]}
   ]
 }
 ```

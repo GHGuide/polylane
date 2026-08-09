@@ -67,6 +67,11 @@ Initialize observable criteria and frozen acceptance before lanes start:
 "$MEM" "$STATE" add-accept m1.1 '<terminal certification>' --tier terminal
 ```
 
+If a criterion can only become true after the coordinator's terminal host gate, list
+its open id in the manifest's optional `target_criteria`; the runner closes it only
+after verified promotion, cleanup, and the final efficiency proof. Never let a builder
+or integrator pre-close host-owned evidence.
+
 Use executable checks where they fit, plus source provenance, review, measurement,
 or manual proof where that is credible. `external` is not `done`: preserve the exact
 blocker while independent work continues.

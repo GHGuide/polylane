@@ -161,6 +161,7 @@ bin/polylane-scout.sh lint .polylane/lane-skills.json <lane> .polylane/lanes/<la
   "lane_skills_file": ".polylane/lane-skills.json",
   "cycle_plan_file": "docs/polylane/cycle-3-plan.md",
   "target_subgoals": ["m2.1"],
+  "target_criteria": ["c-host-proof"],
   "base": "main",
   "session": "polylane-c3",
   "agent": "codex",
@@ -180,7 +181,7 @@ bin/polylane-scout.sh lint .polylane/lane-skills.json <lane> .polylane/lanes/<la
     "branch": "lane/feature",
     "worktree": "/absolute/scratch/feature",
     "prompt_file": ".polylane/lanes/feature.txt",
-    "own_globs": ["src/feature/**"],
+    "own_globs": ["src/feature/**", "docs/status-feature.md"],
     "target_subgoals": ["m2.1"]
   }]
 }

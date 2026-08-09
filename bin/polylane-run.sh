@@ -727,7 +727,7 @@ prepare_compiled_prompts() {
 # A --resume may also grandfather an already-materialized legacy Codex run so an
 # upgraded supervisor cannot strand work that was launched under contract v1.
 preflight_contract() {
-  local strict=0 lane prompt sid next next_id previous legacy_wt i
+  local strict=0 lane prompt sid cid next next_id previous legacy_wt i
   if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
     strict=1
   elif [ "$(agent_selected)" = "codex" ] || [ "$(agent_selected)" = "gpt" ] || [ "$(agent_selected)" = "openai" ]; then
@@ -774,6 +774,9 @@ preflight_contract() {
 
   jq -e '
     (.target_subgoals | type=="array" and length>0)
+    and ((.target_criteria // []) | type=="array")
+    and ((.target_criteria // []) | length == (unique | length))
+    and all((.target_criteria // [])[]; type=="string" and test("^[A-Za-z0-9._-]+$"))
     and all(.lanes[]; (.target_subgoals | type=="array" and length>0))
     and (([.lanes[].target_subgoals[]] | unique) -
          ([.target_subgoals[]] | unique) | length == 0)
@@ -832,6 +835,11 @@ preflight_contract() {
       and any((.accept // [])[]; .sid==$sid)
     ' "$STATE_FILE" >/dev/null ||
       die "target subgoal '$sid' must be open/doing with frozen acceptance registered"
+  done
+  for cid in $(jq -r '.target_criteria[]?' "$MANIFEST"); do
+    jq -e --arg cid "$cid" \
+      'any(.criteria[]; .id==$cid and .status=="open")' "$STATE_FILE" >/dev/null ||
+      die "target criterion '$cid' must be an open criterion proven by this cycle"
   done
   next=$("$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" next)
   next_id="${next%%  *}"
@@ -3664,19 +3672,36 @@ gate_with_repairs() {
 # goal-tree state and regenerate progress immediately so the next cycle never
 # starts from stale conversation memory.
 finalize_cycle_state() {
-  local sid targets route_text
+  local sid targets
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
   # DRY-RUN MUST NOT MUTATE DURABLE STATE: the stubbed gate returns GO, so without
   # this guard a preview stamps the target subgoals done in state_file — and every
   # later REAL launch then dies at "target must be open" (bit a real marathon launch).
   if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "+ (dry-run) would stamp target subgoals done + regenerate progress/route"
+    echo "+ (dry-run) would stamp target subgoals/criteria done + regenerate progress/route"
     return 0
   fi
   targets=$(jq -r '.target_subgoals[]' "$MANIFEST")
   for sid in $targets; do
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" set-status "$sid" "done" \
       "integrator ${VERDICT_RESULT:-GO}; promoted cycle $CYCLE" "$CYCLE"
+  done
+}
+
+# finalize_cycle_criteria : host-owned criteria become true only after cleanup
+# telemetry and the final efficiency proof pass. Keeping this separate prevents
+# a successful terminal suite followed by failed cleanup from pre-closing them.
+finalize_cycle_criteria() {
+  local cid criteria route_text
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would stamp target criteria done + regenerate progress/route"
+    return 0
+  fi
+  criteria=$(jq -r '.target_criteria[]?' "$MANIFEST")
+  for cid in $criteria; do
+    "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" set-status "$cid" "done" \
+      "host gate ${VERDICT_RESULT:-GO}; promoted cycle $CYCLE" "$CYCLE"
   done
   "$SCRIPT_DIR/polylane-cycle.sh" progress "$STATE_FILE" "$CYCLE" >/dev/null
   route_text=$("$SCRIPT_DIR/polylane-cycle.sh" route "$STATE_FILE" 2>&1 || true)
@@ -4038,7 +4063,11 @@ cleanup() {
 
   # The final certificate is generated while the manifest still exists and
   # after cleanup telemetry has reached its terminal state.
-  write_efficiency_proof final || cleanup_rc=1
+  if write_efficiency_proof final; then
+    finalize_cycle_criteria || cleanup_rc=1
+  else
+    cleanup_rc=1
+  fi
 
   safe_rm "$REPO_ROOT/.polylane" || cleanup_rc=1
   # .polylane/ is scratch EXCEPT git-tracked files (e.g. SCHEMA.md); restore those
@@ -4322,7 +4351,6 @@ post_promote_resume_ready() {
       'any(.milestones[].subgoals[]; .id==$sid and .status=="done")' \
       "$STATE_FILE" >/dev/null 2>&1 || return 1
   done
-
   dir=$(dirname "$MANIFEST")
   graph="$dir/graph.json"; events="$dir/events.jsonl"
   [ -s "$graph" ] && [ -f "$events" ] ||

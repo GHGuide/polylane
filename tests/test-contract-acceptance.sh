@@ -28,6 +28,7 @@ STATE_FILE="$P/docs/polylane/max-state.json"
 MEM="$(dirname "$RUNNER")/polylane-memory.sh"
 "$MEM" "$STATE_FILE" init goal >/dev/null
 "$MEM" "$STATE_FILE" add-criterion c1 works >/dev/null
+"$MEM" "$STATE_FILE" add-criterion c2 "host gate proves the cycle" >/dev/null
 "$MEM" "$STATE_FILE" add-milestone m1 build >/dev/null
 "$MEM" "$STATE_FILE" add-subgoal m1 s0 historical 1 >/dev/null
 "$MEM" "$STATE_FILE" add-subgoal m1 s1 target 10 >/dev/null
@@ -41,7 +42,7 @@ MEM="$(dirname "$RUNNER")/polylane-memory.sh"
 
 MANIFEST="$P/.polylane/run.json"
 cat > "$MANIFEST" <<'JSON'
-{"target_subgoals":["s1"]}
+{"target_subgoals":["s1"],"target_criteria":["c2"]}
 JSON
 ORCHESTRATION_CONTRACT=2
 CYCLE=1
@@ -71,7 +72,10 @@ assert_eq "accept-failing-terminal-gate-counted" "2" "$(wc -l < "$TERMINAL_LOG" 
 
 VERDICT_RESULT=EXTERNAL-EVIDENCE-OPEN
 out=$(finalize_cycle_state)
+assert_eq "accept-target-marked-done" "done" "$(jq -r '.milestones[].subgoals[] | select(.id=="s1") | .status' "$STATE_FILE")"
+assert_eq "accept-host-criterion-deferred-until-cleanup" "open" "$(jq -r '.criteria[] | select(.id=="c2") | .status' "$STATE_FILE")"
+out=$(finalize_cycle_criteria)
 assert_contains "accept-finalize-routes-needs-user" "NEEDS-USER" "$out"
-assert_eq "accept-target-marked-done" "done" "$(jq -r '.milestones[0].subgoals[0].status' "$STATE_FILE")"
+assert_eq "accept-target-criterion-marked-done" "done" "$(jq -r '.criteria[] | select(.id=="c2") | .status' "$STATE_FILE")"
 
 finish
