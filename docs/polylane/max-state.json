@@ -392,6 +392,13 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c57",
+      "text": "Live pane identity survives cwd drift, retained worker context cannot import stale-run instructions, and Graphify navigation avoids loading the full skill body into every builder",
+      "weight": 80,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -956,6 +963,36 @@
           "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
+    },
+    {
+      "id": "m21",
+      "text": "Cycle 24 — runtime identity and bounded builder context",
+      "subgoals": [
+        {
+          "id": "m21.1",
+          "text": "Replace cwd-only pane discovery with nonce-bound pane identity and prove observer, supervisor, resume, and recovery behavior",
+          "weight": 82,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m21.2",
+          "text": "Scope durable worker inbox events to the active run, enforce the exact inbox prompt contract, and make Graphify query infrastructure context-free",
+          "weight": 81,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m21.3",
+          "text": "Integrate all seams and complete a fresh zero-intervention terminal certification with live observability and transcript token evidence",
+          "weight": 80,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1186,6 +1223,12 @@
       "kind": "decision",
       "text": "Start a fresh process from the Cycle 19 integrated tip and require a zero-restart terminal certification.",
       "meta": "base=23cabdf; outer domain_runtime omitted; one evidence-only builder; coordinator owns full suite and GO+NO-GO rehearsal."
+    },
+    {
+      "cycle": 24,
+      "kind": "decision",
+      "text": "Run one fresh three-lane self-hosted cycle for pane identity, run-scoped context, and Graphify prompt efficiency.",
+      "meta": "Observed in Cycle 23: state reported no-pane for live workers; stale Cycle 15 inbox instructions reached the Cycle 23 integrator; graphify/SKILL.md added 37,063 bytes before direct q.py queries."
     }
   ],
   "accept": [
@@ -1832,6 +1875,64 @@
       "key": "cycle20-process-start",
       "status": "pass",
       "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.1",
+      "cmd": "bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh",
+      "tier": "focused",
+      "key": "pane-identity",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-tmux.sh",
+        "bin/polylane-state.sh",
+        "bin/polylane-supervisor.sh",
+        "bin/polylane-run.sh",
+        "tests/test-tmux-runtime.sh",
+        "tests/test-state.sh",
+        "tests/test-supervisor.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.2",
+      "cmd": "bash tests/test-workers.sh && bash tests/test-worker-canonical-state.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-promptlint.sh && bash tests/test-skill-delivery.sh && bash tests/test-promptopt.sh",
+      "tier": "focused",
+      "key": "bounded-context",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-workers.sh",
+        "bin/polylane-promptlint.sh",
+        "bin/polylane-promptopt.sh",
+        "bin/polylane-run.sh",
+        "references/prompt-blocks.md",
+        "references/skill-scout.md",
+        "references/skill-catalog.md",
+        "tests/test-workers.sh",
+        "tests/test-worker-canonical-state.sh",
+        "tests/test-prime-hybrid-integration.sh",
+        "tests/test-promptlint.sh",
+        "tests/test-skill-delivery.sh",
+        "tests/test-promptopt.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.3",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "terminal-cert",
+      "status": "unchecked",
+      "deps": [
+        "bin/*.sh",
+        "tests/test-*.sh",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "references/*.md"
+      ],
       "fp": "",
       "regressed_cycle": null
     }
