@@ -2,18 +2,19 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 17
+## Cycle 18
 
-subgoals: 48/51 done · criteria: 51/52 done · 96%
+subgoals: 48/54 done · criteria: 51/54 done · 91%
 
-**Route:** `HOST-GATE-PENDING m16.4/m17.3=one fresh coordinator terminal matrix; external=[m12.4: rendered blind visual corpus]`
+**Route:** `CONTINUE m18.1  Harden startup detection, committed-DONE resume, disk-pressure event/report writes, and supervisor recovery`
 
-## Coordinator-bound terminal work
+## Open autonomous work
 
-- `m16.4` — local focused acceptance is recorded; the coordinator alone runs the fresh
-  terminal suite, whole-tree ShellCheck, provider/install checks, and GO/NO-GO rehearsal.
-- `m17.3` — record the recovery certification only after that one host decision; it is
-  intentionally not completed from local simulations or cached focused evidence.
+- `m16.4` [open, w54] — Integrate both provider skills and certify all cycle-16 mechanisms end to end
+- `m17.3` [open, w58] — Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities
+- `m18.1` [open, w70] — Harden startup detection, committed-DONE resume, disk-pressure event/report writes, and supervisor recovery
+- `m18.2` [open, w68] — Compile exact benchmark-admitted selected skill paths and share canonical graph context into recovery roots
+- `m18.3` [open, w66] — Integrate Cycle 18 fixes and complete one clean terminal certification
 
 ## External/user evidence
 
@@ -77,10 +78,17 @@ subgoals: 48/51 done · criteria: 51/52 done · 96%
 - `c50` [done] — Every consequential external action has a deterministic impact preview, simulation receipt, and explicit approval boundary
 - `c51` [done] — Pre-verdict gates remain hermetic in unit tests and live high-effort workers are never restarted from stale progress messages
 - `c52` [done] — Selected skills can be armed only from reproducible fingerprint-matched benchmark evidence while legacy delivery tests remain truthful
+- `c53` [open] — A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog
+- `c54` [open] — Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph
 
 ## Acceptance checks
 
-- Total: 61
+- Total: 65
 - Pass: 60
 - Fail: 0
-- Unchecked: 1 (`m16.4` coordinator terminal matrix)
+- Unchecked: 5
+  - `m16.4` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
+  - `m18.1` [unchecked] — bash tests/test-wedge.sh && bash tests/test-lane-done.sh && bash tests/test-verdict-repair.sh && bash tests/test-graph-events.sh && bash tests/test-write-report.sh && bash tests/test-supervisor.sh
+  - `m18.2` [unchecked] — bash tests/test-skill-delivery.sh && bash tests/test-prompt-compiler.sh && bash tests/test-share-graph.sh
+  - `m18.3` [unchecked] — bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh
+  - `m18.3` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse

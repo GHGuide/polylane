@@ -6,12 +6,18 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 17: [plan](cycle-17-plan.md) · [skill suggestions](cycle-17-suggestions.md) ·
-[questions](cycle-17-questions.md) · [council](cycle-17-council.md) ·
-[digest](cycle-17-digest.md). The verified gate-contract and skill-contract recovery
-tips coexist with independently reproduced focused, Cycle-16 contract, parity,
-installer, static, marker, and seam evidence. Exactly one coordinator-owned terminal
-matrix remains; no local simulation is reported as that host result.
+Active cycle 18: [plan](cycle-18-plan.md) · [skill suggestions](cycle-18-suggestions.md).
+This fresh recovery cycle fixes the walk-away defects exposed by Cycle 17: false startup
+input, DONE-lane relaunch, disk-pressure truth, missing exact selected-skill paths, and
+graphless recovery roots. Builders run focused checks only; the coordinator owns the
+single terminal matrix.
+
+Cycle 17 recovery history: [plan](cycle-17-plan.md) ·
+[skill suggestions](cycle-17-suggestions.md) · [questions](cycle-17-questions.md) ·
+[council](cycle-17-council.md) · [digest](cycle-17-digest.md). Focused contracts passed,
+but the host gate was interrupted by ENOSPC and the resumed run exposed recovery seams.
+It remains truthful NO-GO evidence; a later isolated suite pass is diagnostic, not a
+retroactive promotion.
 
 Cycle 16 recovery history: [plan](cycle-16-plan.md) · [questions](cycle-16-questions.md) ·
 [council](cycle-16-council.md) · [digest](cycle-16-digest.md) ·

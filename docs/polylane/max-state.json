@@ -364,6 +364,20 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c53",
+      "text": "A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c54",
+      "text": "Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -870,6 +884,36 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m18",
+      "text": "Walk-away recovery truth, skill delivery, and final certification",
+      "subgoals": [
+        {
+          "id": "m18.1",
+          "text": "Harden startup detection, committed-DONE resume, disk-pressure event/report writes, and supervisor recovery",
+          "weight": 70,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m18.2",
+          "text": "Compile exact benchmark-admitted selected skill paths and share canonical graph context into recovery roots",
+          "weight": 68,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m18.3",
+          "text": "Integrate Cycle 18 fixes and complete one clean terminal certification",
+          "weight": 66,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1040,6 +1084,24 @@
       "kind": "decision",
       "text": "Independent recovery integration reproduced focused and Cycle-16 cross-contract evidence; leave the single terminal matrix to the coordinator.",
       "meta": "gate 56/0+36/0+27/0; skill 31/0+13/0; learning 57/0; C16 29/0; parity 57/0; installers 50/0+39/0; ShellCheck/markers/diff/seams clean"
+    },
+    {
+      "cycle": 18,
+      "kind": "attempt",
+      "text": "Cycle 17 terminal certification under disk exhaustion",
+      "meta": "First host gate lost writes at ENOSPC; resumed suite reached 2103/2104 with a transient supervisor failure; isolated rerun passed 2104/2104. Preserve NO-GO and repair recovery truth in a fresh run."
+    },
+    {
+      "cycle": 18,
+      "kind": "learning",
+      "text": "Selected skill names were compiled but exact selected paths were omitted",
+      "meta": "prepare_compiled_prompts called compile, never compile-selected; workers therefore reported installed selected skills unavailable and audits marked them unused."
+    },
+    {
+      "cycle": 18,
+      "kind": "learning",
+      "text": "Runner-owned host failure prose dirtied the completed integrator worktree",
+      "meta": "lane_done then failed clean-tree validation on resume, causing a committed DONE integrator to be adopted and respawned."
     }
   ],
   "accept": [
@@ -1625,6 +1687,46 @@
       "tier": "focused",
       "key": "recovery-integration",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.1",
+      "cmd": "bash tests/test-wedge.sh && bash tests/test-lane-done.sh && bash tests/test-verdict-repair.sh && bash tests/test-graph-events.sh && bash tests/test-write-report.sh && bash tests/test-supervisor.sh",
+      "tier": "focused",
+      "key": "cycle18-runtime",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.2",
+      "cmd": "bash tests/test-skill-delivery.sh && bash tests/test-prompt-compiler.sh && bash tests/test-share-graph.sh",
+      "tier": "focused",
+      "key": "cycle18-skill-context",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.3",
+      "cmd": "bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
+      "tier": "focused",
+      "key": "cycle18-integration",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.3",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "cycle16-terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
