@@ -399,6 +399,13 @@
       "weight": 80,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c58",
+      "text": "Manifest intensity custom preserves explicitly baked model and effort settings while a CLI intensity remains the only operation that remaps them",
+      "weight": 81,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -991,6 +998,14 @@
           "status": "open",
           "cycle": null,
           "evidence": ""
+        },
+        {
+          "id": "m21.4",
+          "text": "Make documented custom intensity metadata a true no-remap path and preserve explicit CLI preset behavior",
+          "weight": 83,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
         }
       ]
     }
@@ -1229,6 +1244,12 @@
       "kind": "decision",
       "text": "Run one fresh three-lane self-hosted cycle for pane identity, run-scoped context, and Graphify prompt efficiency.",
       "meta": "Observed in Cycle 23: state reported no-pane for live workers; stale Cycle 15 inbox instructions reached the Cycle 23 integrator; graphify/SKILL.md added 37,063 bytes before direct q.py queries."
+    },
+    {
+      "cycle": 24,
+      "kind": "learning",
+      "text": "The Cycle 24 dry-run rejected documented intensity custom before any tmux side effect.",
+      "meta": "Schema says custom is advisory metadata and only a CLI --intensity remaps; model policy currently treats manifest custom as a preset."
     }
   ],
   "accept": [
@@ -1932,6 +1953,22 @@
         "SKILL.md",
         "codex/SKILL.md",
         "references/*.md"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.4",
+      "cmd": "bash tests/test-model-policy.sh && bash tests/test-intensity.sh",
+      "tier": "focused",
+      "key": "custom-intensity",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-model-policy.sh",
+        "bin/polylane-run.sh",
+        "tests/test-model-policy.sh",
+        "tests/test-intensity.sh",
+        ".polylane/SCHEMA.md"
       ],
       "fp": "",
       "regressed_cycle": null

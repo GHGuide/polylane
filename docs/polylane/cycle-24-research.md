@@ -16,8 +16,12 @@ post-certification defects worth a fresh cycle rather than rewriting that result
    paths correctly. However, a builder first loaded the complete Graphify skill
    body (37,063 bytes) merely to issue those already-prompted queries. Graphify is
    navigation infrastructure here, not an executable per-lane skill.
+4. The first Cycle 24 dry-run rejected manifest `intensity: "custom"` before tmux
+   opened. The checked-in schema says `custom` is advisory metadata that preserves
+   baked lane model/effort choices; only an explicit CLI `--intensity` may remap.
 
 The selected design is mechanical: nonce-bound pane tags with an untagged legacy
 fallback, nonce-scoped worker events with legacy behavior only when no scope is
 provided, exact prompt lint for the inbox command, and a compile-time rejection of
-Graphify as a selected builder skill while retaining direct graph queries.
+Graphify as a selected builder skill while retaining direct graph queries, plus a
+true no-remap path for documented custom intensity metadata.

@@ -22,7 +22,8 @@ GitHub supply-chain surface.
 - **Selected — `superpowers:verification-before-completion`:** wire both APIs only
   after focused evidence and prove every launch/adopt/recreate boundary.
 - **Selected — `engineering:architecture`:** preserve one authority for pane identity
-  and one explicit nonce for worker continuity.
+  and one explicit nonce for worker continuity while separating advisory manifest
+  metadata from CLI remap operations.
 
 ## `integrator`
 
