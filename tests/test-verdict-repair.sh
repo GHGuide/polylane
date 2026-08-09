@@ -6,8 +6,10 @@
 
 # This unit exercises verdict-repair control flow, not the profile bundle
 # grader. Keep the newly-added pre-verdict gate hermetic so ambient project
-# manifests/evidence cannot short-circuit the mocked merge gate below.
-domain_grade_gate() { return 0; }
+# manifests/evidence cannot short-circuit the mocked merge gate below, while
+# counting calls so the production repair loop cannot silently bypass it.
+DOMAIN_GRADE_CALLS=0
+domain_grade_gate() { DOMAIN_GRADE_CALLS=$((DOMAIN_GRADE_CALLS + 1)); return 0; }
 
 make_tmpdir
 LOG="$TEST_TMPDIR/calls"
@@ -37,7 +39,9 @@ poll_done() { printf 'poll\n' >> "$LOG"; return 0; }
 capture_stats() { printf 'capture\n' >> "$LOG"; }
 
 POLYLANE_INTEGRATOR_REPAIRS=3
-assert_ok "repair-eventually-go" gate_with_repairs
+gate_with_repairs; repair_eventually_go_rc=$?
+assert_eq "repair-eventually-go" "0" "$repair_eventually_go_rc"
+assert_eq "repair-calls-domain-grader-before-each-merge" "3" "$DOMAIN_GRADE_CALLS"
 assert_eq "repair-two-waves" "2" "$(grep -c '^repair$' "$LOG")"
 assert_eq "repair-polls-each-wave" "2" "$(grep -c '^poll$' "$LOG")"
 assert_eq "repair-captures-each-wave" "2" "$(grep -c '^capture$' "$LOG")"
@@ -69,7 +73,8 @@ assert_eq "unrepairable-spawns-zero-repairs" "0" "$(wc -l < "$LOG" | tr -d ' ')"
 # only a passing result to GO. A failed terminal gate is immutable for this run:
 # retrying it would exceed the one-gate efficiency contract.
 . "$RUNNER"
-domain_grade_gate() { return 0; }
+DOMAIN_GRADE_CALLS=0
+domain_grade_gate() { DOMAIN_GRADE_CALLS=$((DOMAIN_GRADE_CALLS + 1)); return 0; }
 make_tmpdir
 INT_WORKTREE="$TEST_TMPDIR/int"; mkdir -p "$INT_WORKTREE/docs"
 MANIFEST="$TEST_TMPDIR/manifest.json"
