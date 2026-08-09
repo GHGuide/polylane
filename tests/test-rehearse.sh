@@ -16,6 +16,10 @@ assert_contains "rehearse-uses-private-tmux-server-dir" 'TMUX_TMPDIR="$tmux_root
   "$(sed -n '/^rehearse()/,/^}/p' "$RH")"
 assert_contains "rehearse-keeps-tmux-socket-parent-short" 'plr-tmux.XXXXXX' \
   "$(sed -n '/^rehearse()/,/^}/p' "$RH")"
+assert_contains "rehearse-lane-a-owns-canonical-status-marker" \
+  '"own_globs":["a/**","docs/status-lane-a.md"]' "$(cat "$RH")"
+assert_contains "rehearse-lane-b-owns-canonical-status-marker" \
+  '"own_globs":["b/**","docs/status-lane-b.md"]' "$(cat "$RH")"
 
 # Invocation counters, graph witnesses, the mock executable, and its run log
 # must live outside the Git worktree so successful runner cleanup cannot erase

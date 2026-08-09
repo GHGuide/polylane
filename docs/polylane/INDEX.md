@@ -6,15 +6,17 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Cycle 22 active certification: [plan](cycle-22-plan.md) ·
+Cycle 22 certification: [plan](cycle-22-plan.md) ·
 [research](cycle-22-research.md) · [council](cycle-22-council.md) ·
 [digest](cycle-22-digest.md) · [questions](cycle-22-questions.md) ·
-[integration verification](../verify-integration.md) · [skill suggestions](cycle-22-suggestions.md).
-It starts from repaired integrated tip `870bce6` with a new process and nonce.  The
-evidence-only audit tip `c4dab27` is merged, and the integrator has a clean scoped
-READY handoff after 151/0 focused checks.  Only the coordinator may consume the single
-terminal gate, promote, clean up, write final proof, and close the four autonomous
-targets plus `c56`.
+[integration verification](../verify-integration.md) · [skill suggestions](cycle-22-suggestions.md) ·
+[outcome](cycle-22-outcome.md).
+It used exactly two launches, zero restarts, and one terminal gate.  The host correctly
+withheld promotion after the full suite exposed a recovery fixture inheriting live
+zero-retry policy.  The exact diagnostic replay then found stale marker ownership in
+the rehearsal fixture.  Both seams have red-first repairs, and the 2,210-check suite,
+ShellCheck, parity, installers, and live GO/NO-GO rehearsal pass under the terminal
+environment.  Cycle 22 remains truthful NO-GO; Cycle 23 owns fresh certification.
 
 Cycle 21 certification: [plan](cycle-21-plan.md) ·
 [research](cycle-21-research.md) · [council](cycle-21-council.md) ·
@@ -105,5 +107,5 @@ Earlier digests: [c1](cycle-1-digest.md) · [c2](cycle-2-digest.md) ·
 
 Post-goal packet: [original 30 suggestions](next-suggestions.md).  Prior durable work is
 preserved, while the four autonomous integration targets and `c56` remain open for the
-fresh post-Cycle-21 certification.  Cycle 12's rendered ten-product visual comparison
+fresh post-Cycle-22 certification.  Cycle 12's rendered ten-product visual comparison
 remains external.

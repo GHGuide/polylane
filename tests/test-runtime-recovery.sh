@@ -2,6 +2,10 @@
 # shellcheck disable=SC1090,SC2034 # sourced runner consumes fixture globals
 # Missing mapped panes must be recreated before any launch/retry is counted.
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
+# This fixture verifies the runner's default three-attempt recovery contract.
+# A self-hosted terminal suite may inherit a stricter live-run policy; keep that
+# operator setting out of the unit fixture without changing the parent process.
+unset POLYLANE_MAX_RETRIES
 . "$RUNNER"
 
 make_tmpdir
