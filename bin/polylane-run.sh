@@ -2732,9 +2732,17 @@ lane_active_command() {
 }
 
 lane_terminal_turn() {
-  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log"
+  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log" last
   [ -f "$log" ] || return 1
-  tail -n 100 "$log" 2>/dev/null | grep -qE '"type":"(turn\.completed|error)"|"type":"item.completed".*"type":"agent_message"'
+  # Codex emits agent_message items as mid-turn progress, then may reason or
+  # launch more tools without painting the pane. Treating any recent message as
+  # terminal gave a live xhigh turn the short dead-pane window and caused false
+  # restarts. Only the latest turn-boundary event is authoritative; a newer
+  # turn.started also clears an older completion/error from an appended log.
+  last=$(tail -n 200 "$log" 2>/dev/null |
+    grep -E '"type":"(turn\.started|turn\.completed|turn\.failed|error)"' |
+    tail -n 1 || true)
+  printf '%s' "$last" | grep -qE '"type":"(turn\.completed|turn\.failed|error)"'
 }
 
 # lane_live_wedge_checks NAME : bound a quiet live turn according to the

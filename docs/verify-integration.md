@@ -93,3 +93,5 @@ is resumable operator certification, and action previews remain approval-bound
 simulations; trading remains paper research.
 
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c16-evidence-autonomy-20260809-a1
+
+ACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.

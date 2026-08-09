@@ -4,6 +4,11 @@
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 . "$RUNNER"
 
+# This unit exercises verdict-repair control flow, not the profile bundle
+# grader. Keep the newly-added pre-verdict gate hermetic so ambient project
+# manifests/evidence cannot short-circuit the mocked merge gate below.
+domain_grade_gate() { return 0; }
+
 make_tmpdir
 LOG="$TEST_TMPDIR/calls"
 : > "$LOG"
@@ -64,6 +69,7 @@ assert_eq "unrepairable-spawns-zero-repairs" "0" "$(wc -l < "$LOG" | tr -d ' ')"
 # only a passing result to GO. A failed terminal gate is immutable for this run:
 # retrying it would exceed the one-gate efficiency contract.
 . "$RUNNER"
+domain_grade_gate() { return 0; }
 make_tmpdir
 INT_WORKTREE="$TEST_TMPDIR/int"; mkdir -p "$INT_WORKTREE/docs"
 MANIFEST="$TEST_TMPDIR/manifest.json"
