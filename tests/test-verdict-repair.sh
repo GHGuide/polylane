@@ -68,6 +68,59 @@ assert_eq "unrepairable-host-gate-stops" "1" "$unrepairable_rc"
 assert_eq "unrepairable-gate-read-once" "1" "$MERGES"
 assert_eq "unrepairable-spawns-zero-repairs" "0" "$(wc -l < "$LOG" | tr -d ' ')"
 
+# Failed strict admission is a transaction boundary.  A replacement prompt must
+# be admitted before checkpointing, removing current-run evidence, changing the
+# live prompt/runtime settings, respawning a pane, or recording a restart.
+. "$RUNNER"
+make_tmpdir
+REPO_ROOT="$TEST_TMPDIR/root"; INT_WORKTREE="$TEST_TMPDIR/int"; INT_NAME=integrator
+mkdir -p "$REPO_ROOT/.polylane/lanes" "$INT_WORKTREE/docs"
+git -C "$INT_WORKTREE" init -q -b main
+git -C "$INT_WORKTREE" config user.email test@example.invalid
+git -C "$INT_WORKTREE" config user.name test
+printf 'status bytes\n' > "$INT_WORKTREE/docs/status-integrator.md"
+printf 'POLYLANE-VERDICT: NO-GO run=transaction-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
+git -C "$INT_WORKTREE" add docs && git -C "$INT_WORKTREE" commit -qm evidence
+INT_PROMPT="$TEST_TMPDIR/strict-integrator.md"
+cat > "$INT_PROMPT" <<'EOF'
+ULTIMATE-GOAL: transactional repair.
+CURRENT-SUBGOAL: preserve failed handoff.
+GOAL: admit strict replacement before mutation.
+OWN: bin/polylane-run.sh.
+FORBIDDEN: weakening checks.
+PREDEFINED-SKILLS: none.
+LANE-SPECIFIC-SKILLS: none.
+Read only the named kit once.
+TEST-CADENCE: focused.
+DELEGATION: forbidden.
+CHECK-CACHE: use cache.
+EXTERNAL-EVIDENCE: none.
+VERIFY: STATUS: transaction DONE run=transaction-run.
+EOF
+ORCHESTRATION_CONTRACT=2; DRY_RUN=0; RUN_ID=transaction-run; VERDICT_RESULT=NO-GO
+TX_LOG="$TEST_TMPDIR/transaction.log"
+checkpoint_lane() { printf 'checkpoint\n' >> "$TX_LOG"; git -C "$1" commit --allow-empty -qm checkpoint; }
+refresh_manifest_runtime_settings() { printf 'refresh\n' >> "$TX_LOG"; }
+retry_set() { printf 'retry\n' >> "$TX_LOG"; }
+wedge_hash_set() { :; }; wedge_cnt_set() { :; }; pane_cmd_for() { printf command; }
+repipe_pane_log() { printf 'repipe\n' >> "$TX_LOG"; }; notify_event() { :; }
+run_stats() { printf 'restart\n' >> "$TX_LOG"; }
+run() { printf 'pane\n' >> "$TX_LOG"; return 0; }
+# Simulate strict promptopt rejection after construction, before committing any
+# recovery mutation.  This is intentionally a direct admission failure, not a
+# malformed source fixture that would obscure transaction ordering.
+assert_prompt() { return 1; }
+HEAD_BEFORE=$(git -C "$INT_WORKTREE" rev-parse HEAD)
+STATUS_BEFORE=$(cksum "$INT_WORKTREE/docs/status-integrator.md")
+VERDICT_BEFORE=$(cksum "$INT_WORKTREE/docs/verify-integration.md")
+repair_integrator_verdict 1 >/dev/null 2>&1
+transaction_rc=$?
+assert_eq "repair-admission-failure-returns-nonzero" "1" "$transaction_rc"
+assert_eq "repair-admission-failure-preserves-head" "$HEAD_BEFORE" "$(git -C "$INT_WORKTREE" rev-parse HEAD)"
+assert_eq "repair-admission-failure-preserves-status-bytes" "$STATUS_BEFORE" "$(cksum "$INT_WORKTREE/docs/status-integrator.md")"
+assert_eq "repair-admission-failure-preserves-verdict-bytes" "$VERDICT_BEFORE" "$(cksum "$INT_WORKTREE/docs/verify-integration.md")"
+assert_eq "repair-admission-failure-keeps-pane-and-counters-unchanged" "" "$(cat "$TX_LOG" 2>/dev/null || true)"
+
 # READY-FOR-HOST-GATE is a nonce-bound candidate, not a self-authorized GO.
 # The outer merge gate runs the frozen coordinator checks once, then converts
 # only a passing result to GO. A failed terminal gate is immutable for this run:
@@ -189,6 +242,28 @@ assert_eq "ready-efficiency-proof-failure-is-not-go" "1" "$proof_fail_rc"
 assert_eq "ready-efficiency-proof-failure-skips-acceptance" "0" "$HOST_GATES"
 assert_eq "ready-efficiency-proof-failure-is-no-go" "NO-GO" "$VERDICT_RESULT"
 assert_eq "ready-efficiency-proof-failure-stops-repair" "NO" "$VERDICT_REPAIRABLE"
+
+# Immutable launch/restart history is runner-owned eligibility, so an observed
+# overage rejects READY before terminal-gate telemetry is incremented or the
+# expensive acceptance/proof boundary runs.
+printf '%s\n' '{"lanes":[],"efficiency_canary":{"expected_launches":1,"max_restarts":0}}' > "$MANIFEST"
+run_stats() {
+  if [ "${1:-}" = snapshot ]; then
+    printf '%s\n' '{"lanes":{"integrator":{"launches":1,"restarts":1}},"supervisor_restarts":0}'
+  else
+    [ "${1:-}" != terminal-gate ] || TERMINAL_EVENTS=$((TERMINAL_EVENTS + 1))
+  fi
+}
+HOST_GATES=0; EFFICIENCY_PROOFS=0; TERMINAL_EVENTS=0
+write_efficiency_proof() { EFFICIENCY_PROOFS=$((EFFICIENCY_PROOFS + 1)); return 0; }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
+merge_gate >/dev/null 2>&1; eligibility_rc=$?
+assert_eq "ready-runtime-overage-is-no-go" "1" "$eligibility_rc"
+assert_eq "ready-runtime-overage-consumes-zero-terminal-gates" "0" "$TERMINAL_EVENTS"
+assert_eq "ready-runtime-overage-skips-proof" "0" "$EFFICIENCY_PROOFS"
+assert_eq "ready-runtime-overage-skips-acceptance" "0" "$HOST_GATES"
+assert_eq "ready-runtime-overage-is-not-repairable" "NO" "$VERDICT_REPAIRABLE"
 unset RUN_ID
 
 finish

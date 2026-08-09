@@ -138,7 +138,7 @@ old-vs-new champion certification. Do not substitute a generic aesthetic.
 The integrator prompt also requires:
 
 - merge current lane branch tips into its own branch, never base;
-- scope checks and seam scan; when only coordinator-owned terminal checks remain, commit `READY-FOR-HOST-GATE run=<RUN_ID>` instead of rerunning the terminal suite;
+- scope checks and seam scan; when only coordinator-owned terminal checks remain, commit `READY-FOR-HOST-GATE run=<RUN_ID>` instead of rerunning the terminal suite; do not reinterpret launch/restart counters, because runner-owned eligibility decides whether terminal checks may start;
 - its committed DONE marker denotes a finished local integrator handoff, not host GO, and must never be conditioned on the later coordinator gate;
 - repair every autonomous issue it can;
 - exactly one current-nonce sentinel:

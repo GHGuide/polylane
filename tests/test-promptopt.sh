@@ -4,6 +4,7 @@
 
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 PROMPTOPT="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-promptopt.sh"
+. "$RUNNER"
 
 make_tmpdir
 PROMPT="$TEST_TMPDIR/valid.md"
@@ -37,6 +38,18 @@ grep -v '^TEST-CADENCE:' "$PROMPT" > "$MISSING"
 assert_fail "promptopt-check-rejects-missing-strict-block" "$PROMPTOPT" check "$MISSING"
 assert_fail "promptopt-check-rejects-over-budget" "$PROMPTOPT" check "$PROMPT" 1
 assert_fail "promptopt-check-rejects-over-byte-budget" env POLYLANE_PROMPT_BYTE_BUDGET=1 "$PROMPTOPT" check "$PROMPT" 500
+
+# A repair begins from a realistic strict integrator prompt.  Its addendum is
+# ordinary prose: every immutable scalar remains present exactly once so strict
+# prompt admission can occur before recovery changes any runtime state.
+REPO_ROOT="$TEST_TMPDIR"
+INT_NAME=integrator
+REPAIR=$(build_integrator_repair_prompt "$PROMPT" 1 NO-GO docs/verify-integration-attempt-1.md)
+printf '%s\n' "$REPAIR" > "$TEST_TMPDIR/repair.md"
+assert_ok "promptopt-repair-admits-strict-integrator-prompt" "$PROMPTOPT" check "$TEST_TMPDIR/repair.md"
+for scalar in ULTIMATE-GOAL CURRENT-SUBGOAL GOAL OWN FORBIDDEN PREDEFINED-SKILLS LANE-SPECIFIC-SKILLS TEST-CADENCE DELEGATION CHECK-CACHE EXTERNAL-EVIDENCE VERIFY; do
+  assert_eq "promptopt-repair-$scalar-exactly-once" "1" "$(grep -c "^$scalar:" "$TEST_TMPDIR/repair.md")"
+done
 
 make_tmpdir
 ROOT="$(cd "$(dirname "$RUNNER")/.." && pwd)"

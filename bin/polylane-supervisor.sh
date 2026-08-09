@@ -124,7 +124,8 @@ supervisor_disk_ready() {
 report_fresh() {
   [ -f "$REPORT" ] || return 1
   local mt; mt=$(stat -c %Y "$REPORT" 2>/dev/null || stat -f %m "$REPORT" 2>/dev/null || echo 0)
-  [ "$mt" -ge "$SUP_START" ]
+  [ "$mt" -ge "$SUP_START" ] || return 1
+  grep -qF -- "**Run:** $RUN_ID" "$REPORT"
 }
 
 report_outcome() {
