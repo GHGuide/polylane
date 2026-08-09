@@ -1,0 +1,20 @@
+{
+  "schema": "polylane-domain-trial/v1",
+  "id": "custom-rfc9110",
+  "domain": "custom-mixed",
+  "title": "Custom mixed workflow protocol evidence",
+  "task": "Plan a mixed software-and-operations deliverable from the supplied protocol identity without claiming live execution.",
+  "expected_verdict": "pass",
+  "adapter": "offline-protocol-snapshot",
+  "grading": {"checks": ["mixed_scope_explicit", "no_live_execution_claim", "source_checksum"]},
+  "source": {
+    "url": "https://www.rfc-editor.org/rfc/rfc9110",
+    "query": {"rfc": "9110", "section": "document metadata"},
+    "retrieval_timestamp": "2026-08-09T00:00:00Z",
+    "content_checksum": "1f76553e3389e8ce678f3432eea9f1c434cba0e1ab00ae6c1c5a5f235059636e",
+    "license_terms_note": "IETF RFC text is subject to IETF Trust legal provisions; this fixture stores only identifying metadata.",
+    "schema_version_or_vintage": "RFC 9110, June 2022",
+    "transformations": ["selected RFC number, title, publication month, and stream"],
+    "raw": "raw/custom-rfc9110.json"
+  }
+}

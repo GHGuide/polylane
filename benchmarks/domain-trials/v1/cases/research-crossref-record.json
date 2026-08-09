@@ -1,0 +1,20 @@
+{
+  "schema": "polylane-domain-trial/v1",
+  "id": "research-crossref-record",
+  "domain": "research",
+  "title": "Crossref bibliographic record",
+  "task": "Create a concise evidence note that cites the supplied bibliographic record without inventing study findings.",
+  "expected_verdict": "pass",
+  "adapter": "offline-bibliography-snapshot",
+  "grading": {"checks": ["bibliographic_fields_present", "source_checksum", "claim_scope_bounded"]},
+  "source": {
+    "url": "https://api.crossref.org/works/10.1038/nphys1170",
+    "query": {"filter": "doi:10.1038/nphys1170", "select": "DOI,type,title,published-print"},
+    "retrieval_timestamp": "2026-08-09T00:00:00Z",
+    "content_checksum": "9cfcd2621268f16031df9a6846be7a01fbebdb047f19b0f9015c4bc4674424d3",
+    "license_terms_note": "Crossref metadata is public metadata; consumers must follow Crossref REST API etiquette and preserve provenance.",
+    "schema_version_or_vintage": "Crossref REST works response; selected fields only",
+    "transformations": ["selected DOI, type, title, and print date", "serialized as a compact immutable JSON extract"],
+    "raw": "raw/research-crossref-record.json"
+  }
+}
