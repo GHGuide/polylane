@@ -350,6 +350,20 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c51",
+      "text": "Pre-verdict gates remain hermetic in unit tests and live high-effort workers are never restarted from stale progress messages",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c52",
+      "text": "Selected skills can be armed only from reproducible fingerprint-matched benchmark evidence while legacy delivery tests remain truthful",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -821,9 +835,39 @@
           "id": "m16.4",
           "text": "Integrate both provider skills and certify all cycle-16 mechanisms end to end",
           "weight": 54,
-          "status": "doing",
-          "cycle": 16,
-          "evidence": "Local focused, runner, and provider contract evidence is reproduced; terminal host suite and rehearsal remain unchecked"
+          "status": "open",
+          "cycle": 17,
+          "evidence": "Cycle 16 terminal gate found 9 compatibility failures; fresh Cycle 17 certification required"
+        }
+      ]
+    },
+    {
+      "id": "m17",
+      "text": "Cycle 16 recovery, compatibility, and terminal certification",
+      "subgoals": [
+        {
+          "id": "m17.1",
+          "text": "Repair graph and verdict gate test isolation plus live-turn liveness classification",
+          "weight": 62,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m17.2",
+          "text": "Align selected-skill delivery and Cycle 14 compatibility with benchmark-gated admission",
+          "weight": 60,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m17.3",
+          "text": "Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities",
+          "weight": 58,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
         }
       ]
     }
@@ -978,6 +1022,12 @@
       "kind": "decision",
       "text": "Focused cycle-16 contracts reproduced; terminal host gate remains the only completion boundary",
       "meta": "domain 76/0, economy 57/0, trials 15/0, soak 21/0, cross-contract 29/0"
+    },
+    {
+      "cycle": 17,
+      "kind": "learning",
+      "text": "Cycle 16 correctly halted after its single terminal gate exposed stale domain-gate mocks and benchmark-free skill-delivery fixtures; preserve the NO-GO evidence and repair in a fresh run.",
+      "meta": "2,088 checks passed; 9 failed in test-cycle-14-contract.sh, test-graph-authority.sh, and test-skill-delivery.sh."
     }
   ],
   "accept": [
@@ -1532,6 +1582,36 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle16-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m17.1",
+      "cmd": "bash tests/test-graph-authority.sh && bash tests/test-verdict-repair.sh && bash tests/test-wedge.sh",
+      "tier": "focused",
+      "key": "recovery-gates",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m17.2",
+      "cmd": "bash tests/test-skill-delivery.sh && bash tests/test-cycle-14-contract.sh",
+      "tier": "focused",
+      "key": "skill-admission-recovery",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m17.3",
+      "cmd": "bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
+      "tier": "focused",
+      "key": "recovery-integration",
       "status": "unchecked",
       "deps": [],
       "fp": "",
