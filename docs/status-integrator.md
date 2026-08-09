@@ -1,7 +1,7 @@
-STATUS: integrator DONE run=c21-final-cert-20260809-a1
+STATUS: integrator DONE run=c22-terminal-cert-20260809-a1
 
-The exact final-certification-audit tip was merged, the Cycle 20 plan-to-observer
-mismatch was independently verified from preserved primary sources, and focused/static
-integration evidence is committed in `docs/verify-integration.md`.  This is a
-READY-FOR-HOST-GATE handoff only: `m16.4`, `m17.3`, `m18.3`, `m20.1`, and `c56` remain
-open for the coordinator-owned terminal gate, cleanup proof, and finalization.
+Evidence is committed at `01f26417f3756fa8a9664b8cc080dbe452bc0c60`: exact audit-tip
+merge, independent `870bce6` proof-context review, 151/0 focused matrix, and scoped
+static/docs/parity checks.  This is a READY-FOR-HOST-GATE candidate only.  `m16.4`,
+`m17.3`, `m18.3`, `m20.1`, and `c56` remain open for the coordinator-owned frozen
+terminal command, host acceptance, promotion, cleanup proof, and finalization.
