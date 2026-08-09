@@ -33,7 +33,7 @@ cp "$(cd "$(dirname "$RUNNER")" && pwd)/polylane-tmux.sh" "$BIN/polylane-tmux.sh
 cat > "$BIN/polylane-run.sh" <<'FAKE'
 #!/usr/bin/env bash
 set -euo pipefail
-lane_done(){ return 1; }; pane_awaiting_approval(){ return 1; }
+lane_done(){ return 1; }; pane_awaiting_approval(){ [ "${POLYLANE_TEST_AWAITING:-0}" = 1 ]; }
 approval_is_critical(){ return 1; }; notify_event(){ :; }
 if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
   M="$1"; shift; D=$(cd "$(dirname "$M")" && pwd); ROOT=$(cd "$D/.." && pwd)
@@ -54,9 +54,10 @@ fi
 FAKE
 chmod +x "$BIN"/*.sh
 cat > "$PROJ/.polylane/run.json" <<EOF
-{"base":"main","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$PROJ/.polylane/wt/int","prompt_file":"p"},
+{"base":"main","run_id":"current-nonce","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$PROJ/.polylane/wt/int","prompt_file":"p"},
 "lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"$PROJ/.polylane/wt/a","prompt_file":"p","own_globs":["x"]}]}
 EOF
+mkdir -p "$PROJ/.polylane/wt/a" "$PROJ/.polylane/wt/int"
 
 reset_proj() {
   rm -f "$PROJ/.polylane/calls.log" "$PROJ/.polylane/crashed" \

@@ -22,9 +22,9 @@
 #             A HALTED report is recoverable runner failure and is resumed.
 #   halt    : restart cap exhausted -> notify halt, exit 1, worktrees intact.
 #
-# Panes are found by WORKTREE PATH, not remembered index, so the relay works
-# across restarts. `--check-once` runs a single watch tick with no launch (ops /
-# tests). bash-3.2 safe.
+# Panes are found by nonce-bound identity, not remembered index, so the relay
+# works across restarts and agent cwd drift. `--check-once` runs a single watch
+# tick with no launch (ops / tests). bash-3.2 safe.
 #
 # Env: POLYLANE_SESSION (tmux session), POLYLANE_SUP_INTERVAL, POLYLANE_SUP_MAX_RESTARTS.
 
@@ -132,14 +132,9 @@ report_outcome() {
   sed -n 's/.*\*\*Outcome:\*\*[[:space:]]*\([^[:space:]·]*\).*/\1/p' "$REPORT" | head -1
 }
 
-# pane_for_wt WT : print the pane index whose cwd is WT, else fail.
+# pane_for_wt WT : print the nonce-bound pane index for WT, else fail.
 pane_for_wt() {
-  local wt="$1" line
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    case "$line" in *"|$wt") printf '%s' "${line%%|*}"; return 0 ;; esac
-  done < <(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}' 2>/dev/null || true)
-  return 1
+  polylane_tmux_find_pane "$TMUX_SESSION" "$RUN_ID" "$1"
 }
 
 # drain_approvals : the runner-independent approval relay. For every unfinished

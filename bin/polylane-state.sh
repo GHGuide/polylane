@@ -22,9 +22,8 @@
 #   working            pane alive, agent process in the foreground
 #   no-pane            lane has no pane and no commits (not started / lost)
 #
-# Panes are discovered by WORKTREE PATH (pane_current_path), not by remembered
-# index — so state stays correct across runner restarts. Read-only: never sends
-# keys, never mutates. bash-3.2 safe.
+# Panes are discovered by nonce-bound pane identity, with cwd used only for
+# fully untagged legacy panes. Read-only: never sends keys, never mutates.
 
 set -euo pipefail
 
@@ -46,6 +45,8 @@ REPO_ROOT=$(git -C "$PROJECT_ROOT" rev-parse --show-toplevel 2>/dev/null || prin
 # agent_procs). It only runs main when executed directly, so sourcing is inert.
 # shellcheck source=polylane-run.sh
 . "$SCRIPT_DIR/polylane-run.sh"
+# shellcheck source=polylane-tmux.sh
+. "$SCRIPT_DIR/polylane-tmux.sh"
 
 BASE=$(jq -r '.base // "main"' "$MANIFEST")
 # per-run nonce: the sourced lane_done/parse_verdict trust markers only when run=
@@ -81,24 +82,12 @@ TMUX_SESSION=$(discover_session)
 tmux_session_active() { tmux has-session -t "$TMUX_SESSION" 2>/dev/null; }
 tmux_watch_command() { polylane_tmux_watch_command "$TMUX_SESSION"; }
 
-# --- pane discovery by worktree path (index-free, restart-proof) --------------
-PANE_LIST=$(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}|#{pane_current_command}' 2>/dev/null || true)
-
+# --- pane discovery by nonce-bound identity (index-free, restart-proof) -------
 pane_for_wt() { # -> "idx|cmd" or ""
-  local wt="$1" line idx rest pane_path cmd
-  [ ! -d "$wt" ] || wt=$(cd "$wt" 2>/dev/null && pwd -P)
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    idx="${line%%|*}"
-    rest="${line#*|}"
-    pane_path="${rest%%|*}"
-    cmd="${line##*|}"
-    [ ! -d "$pane_path" ] || pane_path=$(cd "$pane_path" 2>/dev/null && pwd -P)
-    [ "$pane_path" = "$wt" ] && { printf '%s|%s' "$idx" "$cmd"; return 0; }
-  done <<EOF
-$PANE_LIST
-EOF
-  return 1
+  local wt="$1" idx cmd
+  idx=$(polylane_tmux_find_pane "$TMUX_SESSION" "$RUN_ID" "$wt") || return 1
+  cmd=$(tmux display-message -p -t "$TMUX_SESSION:0.$idx" '#{pane_current_command}' 2>/dev/null || true)
+  printf '%s|%s' "$idx" "$cmd"
 }
 
 # --- per-lane status ----------------------------------------------------------
