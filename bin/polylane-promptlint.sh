@@ -49,8 +49,7 @@ lint_one() {
   fi
   if [ "$prime_hybrid" = true ]; then
     grep -q 'POLYLANE_CONTEXT_PACKET' "$f" || miss="$miss prime-hybrid-context-packet"
-    grep -qi 'durable inbox' "$f" || miss="$miss prime-hybrid-durable-inbox"
-    grep -qi 'polylane-workers.sh' "$f" || miss="$miss prime-hybrid-worker-api"
+    grep -qF '"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"' "$f" || miss="$miss prime-hybrid-exact-inbox-command"
     if [ "$role" = integrator ]; then
       grep -qiE 'propose[- ]or[- ]decline' "$f" || miss="$miss prime-hybrid-refinement-decision"
     fi

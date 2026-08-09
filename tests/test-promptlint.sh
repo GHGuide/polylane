@@ -91,7 +91,7 @@ JSON
   cp "$GOOD" "$TEST_TMPDIR/.polylane/lanes/prime.txt"
   cat >> "$TEST_TMPDIR/.polylane/lanes/prime.txt" <<'P'
 Read POLYLANE_CONTEXT_PACKET exactly once. Use the durable inbox through
-polylane-workers.sh for follow-ups.
+"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID" for follow-ups.
 P
   cp "$TEST_TMPDIR/.polylane/lanes/prime.txt" "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt"
   cat >> "$TEST_TMPDIR/.polylane/lanes/prime-integrator.txt" <<'P'
@@ -101,6 +101,9 @@ P
 {"base":"main","prime_hybrid":true,"lanes":[{"name":"prime","prompt_file":".polylane/lanes/prime.txt"}],"integrator":{"name":"prime-integrator","prompt_file":".polylane/lanes/prime-integrator.txt"}}
 JSON
   assert_ok "lint-prime-hybrid-continuity" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime.json"
+  sed 's#"\$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "\$POLYLANE_PROJECT_ROOT" "\$POLYLANE_WORKER_ID"#"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_WORKER_ID" "$POLYLANE_PROJECT_ROOT"#' "$TEST_TMPDIR/.polylane/lanes/prime.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-wrong-order.txt"
+  sed 's#prime.txt#prime-wrong-order.txt#' "$TEST_TMPDIR/.polylane/prime.json" > "$TEST_TMPDIR/.polylane/prime-wrong-order.json"
+  assert_fail "lint-prime-hybrid-requires-exact-inbox-command-order" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-wrong-order.json"
   grep -v 'durable inbox' "$TEST_TMPDIR/.polylane/lanes/prime.txt" > "$TEST_TMPDIR/.polylane/lanes/prime-missing.txt"
   sed 's#prime.txt#prime-missing.txt#' "$TEST_TMPDIR/.polylane/prime.json" > "$TEST_TMPDIR/.polylane/prime-missing.json"
   assert_fail "lint-prime-hybrid-requires-inbox" "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-missing.json"

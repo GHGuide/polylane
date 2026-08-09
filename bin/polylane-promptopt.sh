@@ -147,6 +147,9 @@ compile_selected() {
     echo "polylane-promptopt: conflicting immutable selected-skill record" >&2; return 5;
   }
   records=$(jq -c 'sort_by(.id, .path, .source, .fingerprint, .reason) | unique_by(.id, .path)' <<<"$inventory")
+  jq -e 'all(.[]; .id != "graphify" and .id != "graphify-auto")' <<<"$records" >/dev/null || {
+    echo "polylane-promptopt: graphify navigation infrastructure is query-only; remove graphify or graphify-auto from selected builder skills and use graphify-out/q.py directly" >&2; return 5;
+  }
   [ "$(jq 'length' <<<"$records")" -le 4 ] || { echo "polylane-promptopt: selected skill inventory exceeds four" >&2; return 5; }
   paths=$(jq -r '.[].path' <<<"$records")
   duplicate=$(printf '%s\n' "$paths" | LC_ALL=C sort | uniq -d)

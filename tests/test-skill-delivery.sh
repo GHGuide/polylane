@@ -140,6 +140,10 @@ jq '(.lanes.builder.selected.predefined[1].reason) = "conflicting duplicate reas
 assert_fail "delivery-rejects-conflicting-immutable-duplicate" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED"
 mv "$KIT.clean" "$KIT"
 
+jq '(.lanes.builder.selected.specific[0].id) = "graphify"' "$KIT" > "$KIT.graphify" && mv "$KIT.graphify" "$KIT"
+assert_fail "delivery-rejects-graphify-as-selected-builder-skill" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED"
+assert_ok "delivery-restores-graphify-fixture" env POLYLANE_SKILLS_DIRS="$ROOT" "$SCOUT" arm-role "$KIT" builder specific ui:visual-regression
+
 jq '(.lanes.builder.selected.specific) += [
   (.lanes.builder.selected.specific[0] | .id = "extra:one" | .path = "/trusted/one/SKILL.md"),
   (.lanes.builder.selected.specific[0] | .id = "extra:two" | .path = "/trusted/two/SKILL.md"),

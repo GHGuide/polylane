@@ -95,6 +95,14 @@ trusted_skill_source() {
 
 skill_fingerprint() { cksum "$1" | awk '{print $1 "-" $2}'; }
 
+reject_navigation_skill() {
+  case "$1" in
+    graphify|graphify-auto)
+      echo "polylane-scout: '$1' is navigation infrastructure, not an executable selected skill; query graphify-out/q.py directly" >&2
+      return 2 ;;
+  esac
+}
+
 # selected_record ID REASON: metadata only. It never reads a skill body.
 selected_record() {
   local id="$1" reason="$2" resolved path source fingerprint
@@ -259,12 +267,13 @@ write_armed_role() {
 # arm_role FILE LANE ROLE SKILL... : write a strict, role-separated kit. Builders
 # receive both a stable base kit and skills chosen specifically for their lane.
 arm_role() {
-  local f="$1" lane="$2" role="$3" arr selected
+  local f="$1" lane="$2" role="$3" arr selected skill
   shift 3
   case "$role" in predefined|specific) ;; *)
     echo "polylane-scout: role must be predefined or specific" >&2; return 2 ;;
   esac
   command -v jq >/dev/null 2>&1 || { echo "polylane-scout: jq required" >&2; return 2; }
+  for skill in "$@"; do reject_navigation_skill "$skill" || return $?; done
   arr=$(_installed_array "$@")
   selected=$(selected_array "$role" "$arr")
   [ "$(jq 'length' <<<"$selected")" -eq "$(jq 'length' <<<"$arr")" ] || {
@@ -281,6 +290,7 @@ arm_recommendation() {
   case "$role" in predefined|specific) ;; *) echo "polylane-scout: role must be predefined or specific" >&2; return 2 ;; esac
   [ -f "$recommendation" ] || { echo "polylane-scout: recommendation file is missing" >&2; return 2; }
   candidate=$(jq -c --arg id "$id" '(.candidates // [])[] | select(.id == $id)' "$recommendation" | head -n 1)
+  reject_navigation_skill "$id" || return $?
   [ -n "$candidate" ] || { echo "polylane-scout: recommendation does not select '$id'" >&2; return 2; }
   jq -e '.status == "recommended" and .safe_to_apply == true' <<<"$candidate" >/dev/null || {
     echo "polylane-scout: candidate is not benchmark-recommended and safe to apply" >&2; return 2;
@@ -427,6 +437,7 @@ migrate_kit() {
 validate_selected_record() {
   local record="$1" id path reason source fingerprint resolved actual_source
   id=$(jq -r '.id // empty' <<<"$record")
+  reject_navigation_skill "$id" || return $?
   path=$(jq -r '.path // empty' <<<"$record")
   reason=$(jq -r '.reason // empty' <<<"$record")
   source=$(jq -r '.source // empty' <<<"$record")

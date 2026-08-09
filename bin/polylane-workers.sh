@@ -147,6 +147,16 @@ valid_uint() {
   case "$1" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac
 }
 
+# A run scope is optional for standalone compatibility, but when the launcher
+# provides one it is an authority boundary rather than arbitrary JSON text.
+worker_run_id() {
+  local run_id="${POLYLANE_WORKER_RUN_ID:-}"
+  [ -z "$run_id" ] && { printf '\n'; return 0; }
+  valid_name "$run_id" || die 'POLYLANE_WORKER_RUN_ID must use only A-Za-z0-9._-'
+  require_bounded POLYLANE_WORKER_RUN_ID "$run_id" "$(limit_value POLYLANE_WORKER_RUN_ID_MAX_BYTES 128)"
+  printf '%s\n' "$run_id"
+}
+
 limit_value() {
   local value="${!1:-$2}"
   valid_uint "$value" && [ "$value" -gt 0 ] || die "invalid byte limit: $1"
@@ -243,65 +253,70 @@ capsule() {
 }
 
 send_message() {
-  local project="$1" from="$2" to="$3" cycle="$4" message="$5"
+  local project="$1" from="$2" to="$3" cycle="$4" message="$5" run_id
   local state history seq id payload line
   valid_name "$from" && valid_name "$to" || die 'invalid sender or recipient name'
   valid_uint "$cycle" || die 'cycle must be a non-negative integer'
   require_bounded message "$message" "$(limit_value POLYLANE_WORKER_MESSAGE_MAX_BYTES 4096)"
   reject_credential message "$message"
+  run_id=$(worker_run_id)
   project=$(canonical_project_path "$project"); state=$(state_for_write "$project")
   acquire_lock "$state"; trap 'release_lock' EXIT HUP INT TERM
   require_capsule "$state" "$from"; require_capsule "$state" "$to"
   history=$(history_path "$state")
   if [ -f "$history" ]; then seq=$(( $(wc -l < "$history") + 1 )); else seq=1; fi
   id="message:$seq"
-  payload=$(jq -cn --arg id "$id" --arg from "$from" --arg to "$to" --argjson cycle "$cycle" --arg message "$message" \
-    '{event:"message",id:$id,from:$from,to:$to,cycle:$cycle,message:$message}')
+  payload=$(jq -cn --arg id "$id" --arg from "$from" --arg to "$to" --argjson cycle "$cycle" --arg message "$message" --arg run_id "$run_id" \
+    '{event:"message",id:$id,from:$from,to:$to,cycle:$cycle,message:$message} + (if $run_id == "" then {} else {run_id:$run_id} end)')
   line=$(append_history "$state" "$payload")
   release_lock; trap - EXIT HUP INT TERM
-  printf '%s\n' "$line" | jq -c '{id,from,to,cycle,message,seq,at}'
+  printf '%s\n' "$line" | jq -c '{id,from,to,cycle,message,run_id,seq,at} | with_entries(select(.value != null))'
 }
 
 inbox_json() {
-  local project="$1" recipient="$2" state history
+  local project="$1" recipient="$2" state history run_id
   valid_name "$recipient" || die "invalid worker name: $recipient"
+  run_id=$(worker_run_id)
   project=$(canonical_project_path "$project"); state=$(state_for_read "$project")
   require_capsule "$state" "$recipient"
   history=$(history_path "$state")
   if [ ! -s "$history" ]; then printf '%s\n' '[]'; return 0; fi
-  jq -cs --arg recipient "$recipient" '
+  jq -cs --arg recipient "$recipient" --arg run_id "$run_id" '
     . as $events
-    | [$events[] | select(.event == "ack" and .recipient == $recipient) | .message_id] as $acks
+    | [$events[] | select(.event == "ack" and .recipient == $recipient and ($run_id == "" or .run_id == $run_id)) | .message_id] as $acks
     | [$events[]
        | select((.event == "message" and .to == $recipient) or
                 (.event == "relay-import" and .relay.event == "request" and .relay.to == $recipient))
+       | select($run_id == "" or .run_id == $run_id)
        | if .event == "message" then
-           {id,from,to,cycle,message,source:"durable"}
+           {id,from,to,cycle,message,run_id,source:"durable"}
          else
-           {id,from:.relay.lane,to:.relay.to,cycle,message:.relay.message,source:"relay",relay:.relay}
+           {id,from:.relay.lane,to:.relay.to,cycle,message:.relay.message,run_id,source:"relay",relay:.relay}
          end
        | select(.id as $id | ($acks | index($id) | not))]
   ' "$history"
 }
 
 ack_message() {
-  local project="$1" recipient="$2" message_id="$3" state history payload
+  local project="$1" recipient="$2" message_id="$3" state history payload run_id
   valid_name "$recipient" || die "invalid worker name: $recipient"
+  run_id=$(worker_run_id)
   project=$(canonical_project_path "$project"); state=$(state_for_write "$project")
   acquire_lock "$state"; trap 'release_lock' EXIT HUP INT TERM
   require_capsule "$state" "$recipient"; history=$(history_path "$state")
   [ -s "$history" ] || missing "message is absent for recipient: $recipient"
-  jq -se --arg recipient "$recipient" --arg id "$message_id" '
-    any(.[]; (.event == "message" and .to == $recipient and .id == $id) or
-              (.event == "relay-import" and .relay.event == "request" and .relay.to == $recipient and .id == $id))
+  jq -se --arg recipient "$recipient" --arg id "$message_id" --arg run_id "$run_id" '
+    any(.[]; (((.event == "message" and .to == $recipient and .id == $id) or
+               (.event == "relay-import" and .relay.event == "request" and .relay.to == $recipient and .id == $id))
+              and ($run_id == "" or .run_id == $run_id)))
   ' "$history" >/dev/null || missing "message is absent for recipient: $recipient"
-  if jq -se --arg recipient "$recipient" --arg id "$message_id" 'any(.[]; .event == "ack" and .recipient == $recipient and .message_id == $id)' "$history" >/dev/null; then
+  if jq -se --arg recipient "$recipient" --arg id "$message_id" --arg run_id "$run_id" 'any(.[]; .event == "ack" and .recipient == $recipient and .message_id == $id and ($run_id == "" or .run_id == $run_id))' "$history" >/dev/null; then
     release_lock; trap - EXIT HUP INT TERM
     jq -cn --arg recipient "$recipient" --arg id "$message_id" '{recipient:$recipient,message_id:$id,idempotent:true}'
     return 0
   fi
-  payload=$(jq -cn --arg id "ack:$recipient:$message_id" --arg recipient "$recipient" --arg message_id "$message_id" \
-    '{event:"ack",id:$id,recipient:$recipient,message_id:$message_id}')
+  payload=$(jq -cn --arg id "ack:$recipient:$message_id" --arg recipient "$recipient" --arg message_id "$message_id" --arg run_id "$run_id" \
+    '{event:"ack",id:$id,recipient:$recipient,message_id:$message_id} + (if $run_id == "" then {} else {run_id:$run_id} end)')
   append_history "$state" "$payload" >/dev/null
   release_lock; trap - EXIT HUP INT TERM
   jq -cn --arg recipient "$recipient" --arg id "$message_id" '{recipient:$recipient,message_id:$id,idempotent:false}'
@@ -316,8 +331,9 @@ canonical_relay_path() {
 }
 
 import_relay() {
-  local project="$1" relay="$2" cycle="$3" state source history relay_line relay_seq raw_size id payload imported=0
+  local project="$1" relay="$2" cycle="$3" state source history relay_line relay_seq raw_size id payload imported=0 run_id
   valid_uint "$cycle" || die 'cycle must be a non-negative integer'
+  run_id=$(worker_run_id)
   project=$(canonical_project_path "$project"); source=$(canonical_relay_path "$relay" "$project")
   jq -e -n 'all(inputs; type == "object" and (.event | type == "string") and (.seq | type == "number") and (.at | type == "string"))' "$source" >/dev/null || die 'relay is not valid public JSONL'
   state=$(state_for_write "$project")
@@ -332,8 +348,8 @@ import_relay() {
       continue
     fi
     id="relay:$source:$relay_seq"
-    payload=$(jq -cn --arg id "$id" --arg source "$source" --argjson relay_seq "$relay_seq" --argjson cycle "$cycle" --argjson relay "$relay_line" \
-      '{event:"relay-import",id:$id,relay_source:$source,relay_seq:$relay_seq,cycle:$cycle,relay:$relay}')
+    payload=$(jq -cn --arg id "$id" --arg source "$source" --argjson relay_seq "$relay_seq" --argjson cycle "$cycle" --argjson relay "$relay_line" --arg run_id "$run_id" \
+      '{event:"relay-import",id:$id,relay_source:$source,relay_seq:$relay_seq,cycle:$cycle,relay:$relay} + (if $run_id == "" then {} else {run_id:$run_id} end)')
     append_history "$state" "$payload" >/dev/null
     imported=$((imported + 1))
   done < "$source"

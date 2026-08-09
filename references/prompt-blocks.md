@@ -14,7 +14,7 @@ smallest outcome-learned kit; never pad a prompt with filler skills. Frozen deta
 Claude builder: read only the named kit once, in listed order.
 Codex builder: read only the named kit once, in listed order; follow these native prompt instructions directly.
 ```
-Do not require Claude slash commands in a Codex prompt. Do not browse, list, or search skill inventories after launch.
+Do not require Claude slash commands in a Codex prompt. Do not browse, list, or search skill inventories after launch. `graphify` and `graphify-auto` are navigation infrastructure, never selected builder-kit records: do not load either skill body in a lane.
 **Lanes do NOT run `/graphify-auto`** — the ORCHESTRATOR refreshes the graph once per
 cycle before launch, and the runner symlinks the parent's `graphify-out/` into every
 worktree (`share_graph`), so each lane already has the CURRENT graph read-only. A lane
@@ -85,10 +85,9 @@ missing artifact is external or NO-GO, never a prose-only pass.
 ## D.1 Prime hybrid continuity — only when manifest `prime_hybrid: true`
 ```
 The runner exported POLYLANE_HARNESS_DIR, POLYLANE_WORKERS_DIR,
-POLYLANE_WORKER_ID, and POLYLANE_CONTEXT_PACKET from canonical project state.
+POLYLANE_WORKER_ID, POLYLANE_WORKER_RUN_ID, and POLYLANE_CONTEXT_PACKET from canonical project state.
 Before work, read "$POLYLANE_CONTEXT_PACKET" exactly once. For follow-ups, use the
-durable inbox through "$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox
-"$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"; do not invent a worktree-local
+durable inbox through "$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"; do not invent a worktree-local
 memory file or edit the relay.
 
 Local refinements require repeated observed evidence and a declared bounded expected
@@ -104,7 +103,7 @@ installed skill.
 
 ## E. Graphify-first (navigation) — MANDATORY, blocking Step 1 when graphify-out/ exists
 ```
-STEP 1 (before ANY Read/Grep): build a map of your subsystem by QUERYING the graph with the helper — do NOT grep to discover where things are. The graph in graphify-out/ is a READ-ONLY symlink to the parent repo's, refreshed by the orchestrator this cycle — do NOT run /graphify-auto or rebuild it (you'd race the other lanes through the shared link):
+STEP 1 (before ANY Read/Grep): build a map of your subsystem by QUERYING the graph with the helper — do NOT grep to discover where things are. When `graphify-out/q.py` exists, these direct queries are mandatory; do not load the Graphify skill body. The graph in graphify-out/ is a READ-ONLY symlink to the parent repo's, refreshed by the orchestrator this cycle — do NOT run /graphify-auto or rebuild it (you'd race the other lanes through the shared link):
   python graphify-out/q.py <symbol>           # find nodes -> file:line + community
   python graphify-out/q.py callers <symbol>   # who points AT it
   python graphify-out/q.py uses <symbol>      # what it points to

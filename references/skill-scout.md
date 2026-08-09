@@ -6,6 +6,10 @@ Claude-installed skills. Skip only the integrator.
 
 Every selected kit supports the prompt's `ULTIMATE-GOAL` and exact `CURRENT-SUBGOAL`.
 
+`graphify` and `graphify-auto` are navigation infrastructure, not selectable execution
+skills. When `graphify-out/q.py` exists, a lane must query it directly before targeted
+reads; it must not load the Graphify skill body or arm either id in a selected kit.
+
 ## Required kit
 
 Every builder must have:
