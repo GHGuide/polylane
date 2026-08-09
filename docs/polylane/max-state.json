@@ -285,70 +285,70 @@
       "id": "c41",
       "text": "Real cross-domain trials use public-source snapshots plus optional live canaries, not only synthetic fixtures",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c42",
       "text": "Domain adapters declare capabilities, dependencies, provenance, side effects, and deterministic offline fallbacks",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c43",
       "text": "Profile-aware graders verify domain validity, including temporal leakage and overfitting for trading research",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c44",
       "text": "Outcome memory learns only from accepted evidence and recommends changes with sample and confidence guards",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c45",
       "text": "Skill suggestions are lane-specific, benchmarked before admission, explainable, and safe by default",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c46",
       "text": "A resumable accelerated soak and fault harness proves long-run recovery and supports a real 6-to-24-hour mode",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c47",
       "text": "Economy policy optimizes verified progress per token and minute across model, effort, lane count, and context",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c48",
       "text": "Discovery uses domain-specific question trees with deeper follow-ups and measurable stopping conditions",
       "weight": 9,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c49",
       "text": "Final deliverables are profile-specific, complete, provenance-bearing, and decision-ready",
       "weight": 9,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c50",
       "text": "Every consequential external action has a deterministic impact preview, simulation receipt, and explicit approval boundary",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -797,25 +797,25 @@
           "id": "m16.1",
           "text": "Implement domain adapters, profile-aware graders, domain question trees, deliverable contracts, and external-action preview",
           "weight": 60,
-          "status": "doing",
+          "status": "done",
           "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "evidence": "focused domain runtime contract passed 76/0; profile symlink and action receipt tampering fail closed"
         },
         {
           "id": "m16.2",
           "text": "Implement accepted-outcome learning, benchmark-gated skill recommendations, and empirical economy optimization",
           "weight": 58,
-          "status": "doing",
+          "status": "done",
           "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "evidence": "focused learning economy contract passed 57/0; benchmark duplicate admission is atomic"
         },
         {
           "id": "m16.3",
           "text": "Implement real cross-domain trials plus resumable accelerated and 6-to-24-hour soak fault testing",
           "weight": 56,
-          "status": "doing",
+          "status": "done",
           "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "evidence": "focused source-pinned trials 15/0 and accelerated/resumable soak 21/0 passed"
         },
         {
           "id": "m16.4",
@@ -823,7 +823,7 @@
           "weight": 54,
           "status": "doing",
           "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "evidence": "Local focused, runner, and provider contract evidence is reproduced; terminal host suite and rehearsal remain unchecked"
         }
       ]
     }
@@ -972,6 +972,12 @@
       "kind": "decision",
       "text": "Implement all ten requested improvements as executable, evidence-gated mechanisms across three isolated lanes and one independent integrator.",
       "meta": ""
+    },
+    {
+      "cycle": 16,
+      "kind": "decision",
+      "text": "Focused cycle-16 contracts reproduced; terminal host gate remains the only completion boundary",
+      "meta": "domain 76/0, economy 57/0, trials 15/0, soak 21/0, cross-contract 29/0"
     }
   ],
   "accept": [
@@ -1486,7 +1492,7 @@
       "cmd": "bash tests/test-domain-runtime.sh",
       "tier": "focused",
       "key": "domain-runtime",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1496,7 +1502,7 @@
       "cmd": "bash tests/test-learning-economy.sh",
       "tier": "focused",
       "key": "learning-economy",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1506,7 +1512,7 @@
       "cmd": "bash tests/test-domain-trials.sh && bash tests/test-soak.sh",
       "tier": "focused",
       "key": "trials-soak",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1516,7 +1522,7 @@
       "cmd": "bash tests/test-cycle-16-contract.sh",
       "tier": "focused",
       "key": "cycle16-contract",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

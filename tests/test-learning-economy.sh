@@ -115,6 +115,11 @@ for n in 1 2 3; do
   benchmark_receipt "$TEST_TMPDIR/bench-$n.json" "bench-$n" skill:lower-match "$FP_GOOD" 4 GO true accepted
   assert_ok "benchmark-records-good-$n" "$BENCH" record "$BENCH_LEDGER" "$TEST_TMPDIR/bench-$n.json"
 done
+benchmark_receipt "$TEST_TMPDIR/bench-race.json" bench-race skill:lower-match "$FP_GOOD" 4 GO true accepted
+"$BENCH" record "$BENCH_LEDGER" "$TEST_TMPDIR/bench-race.json" >/dev/null & race_one=$!
+"$BENCH" record "$BENCH_LEDGER" "$TEST_TMPDIR/bench-race.json" >/dev/null & race_two=$!
+wait "$race_one" && wait "$race_two"
+assert_eq "benchmark-concurrent-duplicate-is-idempotent" 1 "$(jq -s '[.[] | select(.receipt_id == "bench-race")] | length' "$BENCH_LEDGER")"
 benchmark_receipt "$TEST_TMPDIR/bench-fail.json" bench-fail skill:lexical "$FP_BAD" 9 NO-GO false accepted
 assert_ok "benchmark-records-failed-visible" "$BENCH" record "$BENCH_LEDGER" "$TEST_TMPDIR/bench-fail.json"
 

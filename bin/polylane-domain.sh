@@ -105,6 +105,7 @@ artifact_file() { # ROOT RELATIVE_PATH -> canonical regular file within ROOT
 
 project_validate() {
   local profile="$1" project
+  [ -f "$profile" ] && [ ! -L "$profile" ] || die "profile is missing or symlinked"
   project="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-project.sh"
   "$project" validate "$profile" >/dev/null
 }

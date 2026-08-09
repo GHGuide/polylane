@@ -52,6 +52,8 @@ assert_eq "bundle has immutable provenance and entries" "true" "$(jq -r '.versio
 assert_ok "trading grade accepts complete paper-only evidence" "$DOMAIN" grade "$FIXTURES/trading-profile.json" "$BUNDLE_TMP/bundle.json" --json
 assert_eq "trading grade emits PASS verdict" "PASS" "$("$DOMAIN" grade "$FIXTURES/trading-profile.json" "$BUNDLE_TMP/bundle.json" --json 2>/dev/null | jq -r '.verdict' || true)"
 assert_fail() { local name="$1"; shift; if "$@" >/dev/null 2>&1; then not_ok "$name"; else ok "$name"; fi; }
+ln -s "$FIXTURES/trading-profile.json" "$BUNDLE_TMP/profile-link.json"
+assert_fail "bundle rejects a symlinked profile" "$DOMAIN" bundle "$BUNDLE_TMP/profile-link.json" "$BUNDLE_TMP/artifacts" "$BUNDLE_TMP/linked.bundle.json"
 assert_fail "grader rejects missing trading provenance" "$DOMAIN" grade "$FIXTURES/trading-missing-provenance.json" "$BUNDLE_TMP/bundle.json" --json
 printf 'changed artifact\n' >> "$BUNDLE_TMP/artifacts/strategy.md"
 assert_fail "grader detects artifact tampering" "$DOMAIN" grade "$FIXTURES/trading-profile.json" "$BUNDLE_TMP/bundle.json" --json

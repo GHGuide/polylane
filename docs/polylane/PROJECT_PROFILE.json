@@ -10,9 +10,13 @@
     { "artifact": "document", "path": "references/project-types.md", "description": "Profile-specific routing and safety" },
     { "artifact": "source", "path": "tests/test-project-generality.sh", "description": "Cross-domain regression corpus" },
     { "artifact": "source", "path": "bin/polylane-domain.sh", "description": "Declarative domain adapters, graders, discovery, deliverables, and action previews" },
+    { "artifact": "source", "path": "bin/polylane-action-preview.sh", "description": "Receipt-bound consequential-action simulation helper with no execute path" },
     { "artifact": "source", "path": "bin/polylane-optimize.sh", "description": "Accepted-outcome economy and skill policy" },
+    { "artifact": "source", "path": "bin/polylane-skill-benchmark.sh", "description": "Fingerprint-bound lane benchmark admission gate" },
     { "artifact": "source", "path": "bin/polylane-domain-trials.sh", "description": "Real-source cross-domain certification runner" },
-    { "artifact": "source", "path": "bin/polylane-soak.sh", "description": "Resumable accelerated and wall-clock fault harness" }
+    { "artifact": "source", "path": "bin/polylane-soak.sh", "description": "Resumable accelerated and wall-clock fault harness" },
+    { "artifact": "source", "path": "tests/test-cycle-16-contract.sh", "description": "Cross-provider behavioral integration contract" },
+    { "artifact": "document", "path": "references/evidence-driven-domain-autonomy.md", "description": "Operator contract for domain evidence, soak, and action boundaries" }
   ],
   "evidence_modes": ["project-generality-suite", "real-domain-trials", "profile-aware-graders", "learning-economy-suite", "fault-soak", "provider-parity", "installer-smoke", "full-suite", "shellcheck"],
   "risk_tier": "medium",

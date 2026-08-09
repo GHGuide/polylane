@@ -9,9 +9,10 @@ State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it 
 Active cycle 16: [plan](cycle-16-plan.md) · [research](cycle-16-research.md) ·
 [skill suggestions](cycle-16-suggestions.md) · [questions](cycle-16-questions.md) ·
 [council](cycle-16-council.md) · [digest](cycle-16-digest.md) ·
-[integration](cycle-16-integration.md). Target: make every supported domain
-executable, provenance-bearing, profile-graded, outcome-learning, economy-aware, and
-long-run tested while preserving explicit external-action approval boundaries.
+[integration](cycle-16-integration.md). Local focused evidence is reproduced; the
+coordinator terminal gate remains pending. Target: make every supported domain executable,
+provenance-bearing, profile-graded, outcome-learning, economy-aware, and long-run tested
+while preserving explicit external-action approval boundaries.
 
 Closed cycle 15: [plan](cycle-15-plan.md) · [research](cycle-15-research.md) ·
 [integration](cycle-15-integration.md) · [skill suggestions](cycle-15-suggestions.md).

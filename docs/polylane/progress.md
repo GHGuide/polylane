@@ -2,15 +2,16 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 15
+## Cycle 16
 
-subgoals: 43/44 done · criteria: 39/40 done · 97%
+subgoals: 46/48 done · criteria: 49/50 done · 96%
 
-**Route:** `NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
+**Route:** `HOST-GATE-PENDING m16.4=terminal suite + rehearsal; external=[m12.4: rendered blind visual corpus]`
 
 ## Open autonomous work
 
-- None
+- `m16.4` — local focused acceptance is recorded; the coordinator-owned terminal suite,
+  ShellCheck, provider/install checks, and GO/NO-GO rehearsal remain the completion gate.
 
 ## External/user evidence
 

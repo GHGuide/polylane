@@ -62,11 +62,19 @@ domain_paths() { # MANIFEST ROOT -> sets DOMAIN_PROFILE/BUNDLE/GRADE/REGISTRATIO
 
 domain_helper() { printf '%s/polylane-domain.sh\n' "$SCRIPT_DIR"; }
 
+domain_profile_safe() { # ROOT PROFILE — regular, non-symlinked profile remains in project
+  local root="$1" profile="$2" parent
+  [ -f "$profile" ] && [ ! -L "$profile" ] || return 1
+  parent=$(cd "$(dirname "$profile")" && pwd -P) || return 1
+  case "$parent" in "$root"|"$root"/*) return 0 ;; *) return 1 ;; esac
+}
+
 domain_register() { # MANIFEST — pre-builder executable grader registration
   local manifest="$1" root helper kind tmp
   domain_requested "$manifest" || { printf 'ADVANCED: domain-grader=not-requested\n'; return 0; }
   root=$(project_root "$manifest") || return 1
   domain_paths "$manifest" "$root" || return $?
+  domain_profile_safe "$root" "$DOMAIN_PROFILE" || { echo 'ADVANCED: domain profile is missing, symlinked, or outside project' >&2; return 2; }
   helper=$(domain_helper)
   [ -x "$helper" ] || { echo 'ADVANCED: domain grader helper is missing' >&2; return 1; }
   "$SCRIPT_DIR/polylane-project.sh" validate "$DOMAIN_PROFILE" >/dev/null || return 1
@@ -89,6 +97,7 @@ domain_grade() { # MANIFEST INTEGRATION_WORKTREE — final bundle + profile-spec
   [ -d "$worktree" ] && [ ! -L "$worktree" ] || { echo 'ADVANCED: integration worktree is missing or symlinked' >&2; return 2; }
   root=$(cd "$worktree" && pwd -P) || return 1
   domain_paths "$manifest" "$root" || return $?
+  domain_profile_safe "$root" "$DOMAIN_PROFILE" || { echo 'ADVANCED: domain profile is missing, symlinked, or outside project' >&2; return 2; }
   helper=$(domain_helper)
   [ -x "$helper" ] || { echo 'ADVANCED: domain grader helper is missing' >&2; return 1; }
   mkdir -p "$(dirname "$DOMAIN_BUNDLE")" "$(dirname "$DOMAIN_GRADE")" || return 1
