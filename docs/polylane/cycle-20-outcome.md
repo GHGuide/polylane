@@ -20,4 +20,9 @@ the canonical host failure and never display an unknown cost as zero, while gate
 live under a nonce-scoped canonical host path and terminal acceptance verifies the exact
 run id without dirtying the READY worktree.
 
+Post-run inspection proved the worker had not invented the wrong path: the Cycle 20
+manifest and authored prompt both assigned it. Commit `f58d3cb` now rejects that
+plan/observer mismatch before worktrees or models launch and passed a 292/0 focused
+scope/prompt/orchestration/parity matrix.
+
 Cycle 20 remains failed evidence. It does not close `m20.1`, `m18.3`, or `c56`.

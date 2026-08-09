@@ -28,10 +28,12 @@ run then exposed two different orchestration seams outside that review boundary:
 
 1. The builder twice committed the exact current-run DONE line under
    `docs/status-restart-accounting.md`, not the canonical
-   `docs/status-restart-accounting-audit.md`. The old runner correctly rejected the
-   near-miss but spent one health restart before coordinator commit `716624a` performed
-   the auditable rename. Final canonical run stats prove one builder launch, one builder
-   restart, one integrator launch, one host-boundary entry, and pending cleanup.
+   `docs/status-restart-accounting-audit.md`. It was following the frozen plan: both
+   Cycle 20 `own_globs` and its authored prompt explicitly named the shortened path.
+   The old runner correctly rejected that plan/observer mismatch but spent one health
+   restart before coordinator commit `716624a` performed the auditable rename. Final
+   canonical run stats prove one builder launch, one builder restart, one integrator
+   launch, one host-boundary entry, and pending cleanup.
 2. The canonical relay contained a coordinator request naming that confirmed seam, but
    the authored integrator prompt said only to read the "canonical relay". The worker
    instead read tracked `docs/parallel-status.md` and missed the live request. This was
@@ -56,6 +58,13 @@ terminal acceptance, verifies proof run ids, attributes report failures to canon
 host evidence, and reports unpriced totals as unavailable. The additional report,
 efficiency, verdict, acceptance, promotion, telemetry, recovery, compiler, and docs
 matrix passed 261/0 with whole-tree ShellCheck and diff hygiene.
+
+Commit `f58d3cb` closes the planning root cause before launch. Contract-v2 preflight now
+requires every builder to own exactly `docs/status-<lane>.md`, rejects any second or
+broad glob capable of matching a status marker, and runtime prompt lint rejects a
+builder prompt that names a conflicting status path even after canonical injection.
+The scope/compiler/orchestration/skill/parity matrix passed 292/0, including explicit
+shortened, broad, duplicate, and contradictory-prompt cases.
 
 ## Fresh merged-tree evidence
 
@@ -93,7 +102,7 @@ The focused `m20.1` acceptance remains local evidence only. Cycle 20 cannot cert
 `m20.1`, `m18.3`, or `c56`: its one recorded restart exceeds the configured zero-restart
 budget. The runner preserved NO-GO after one host-boundary entry; its efficiency failure
 correctly skipped the full terminal acceptance command. A fresh Cycle 21 process must
-load `e1de56a` and establish exactly two launches, zero restarts, one host boundary,
+load `f58d3cb` and establish exactly two launches, zero restarts, one host boundary,
 one full terminal acceptance, complete cleanup, and both rehearsal outcomes. No live external
 action occurred; approval-bound receipts remain simulations and trading remains
 research/backtest/paper-only. The pre-existing untracked `.polylane-prompt.txt` and

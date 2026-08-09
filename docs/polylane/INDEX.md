@@ -16,7 +16,9 @@ wrong status filename, and the integrator missed a canonical relay request becau
 compiled prompt did not contain the literal relay command. Commit `763fb00` repairs both
 seams with red-first tests and a 381/0 runtime/prompt/parity matrix. Its host rejection
 then exposed dirty gate evidence and false report attribution; `e1de56a` fixes both with
-a 261/0 matrix and nonce-verifies the canonical proof. Cycle 20 remains a
+a 261/0 matrix and nonce-verifies the canonical proof. Post-run inspection showed the
+wrong marker path originated in the plan rather than the worker; `f58d3cb` now rejects
+that ownership or prompt mismatch prelaunch and passed a 292/0 matrix. Cycle 20 remains a
 truthful NO-GO; `m20.1`, `m18.3`, and `c56` stay open for Cycle 21's untouched
 zero-restart terminal gate and both rehearsal outcomes.
 

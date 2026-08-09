@@ -4,10 +4,11 @@
 
 Stop Cycle 20 at the efficiency boundary and preserve its one-restart NO-GO. Its live
 failure was useful evidence: the worker's exact DONE line was committed under one wrong
-status filename, and the integrator missed a canonical relay request because the
+status filename because the frozen plan assigned that filename, and the integrator
+missed a canonical relay request because the
 compiled prompt did not mechanically name the command. The final host boundary also
 proved that gate evidence dirtied the completed checkout and the report blamed the
-wrong actor. Accept commits `763fb00` and `e1de56a` plus their red-first tests as the
+wrong actor. Accept commits `763fb00`, `e1de56a`, and `f58d3cb` plus their red-first tests as the
 repair tip, but do not reinterpret the run as clean. Keep
 `m20.1`, `m18.3`, and `c56` open until a fresh process loads the repair and proves zero
 restarts, two launches, one terminal gate, cleanup, and both rehearsal outcomes.
@@ -18,6 +19,9 @@ restarts, two launches, one terminal gate, cleanup, and both rehearsal outcomes.
   ownership predicate, clean-tree checkpoint, approval hashes, and frozen acceptance.
 - Permit automatic marker normalization only for one clean, committed, regular
   current-lane/current-nonce candidate; every broader repair remains a rejection.
+- Require each builder plan to own exactly its canonical `docs/status-<lane>.md` marker;
+  reject shortened names, broad or duplicate status globs, and contradictory prompt
+  paths before creating worktrees or launching models.
 - Require compiler-injected live-relay and DONE-path contracts after prompt optimization
   for both providers and every role; never infer live state from `docs/parallel-status.md`.
 - Keep host-gate proofs in canonical nonce-scoped evidence, export that exact proof and
