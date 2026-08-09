@@ -70,6 +70,35 @@ check_static() {
   return $rc
 }
 
+# check_status_markers MANIFEST : every builder owns exactly its canonical DONE
+# marker, and no second/broad glob can match any docs/status-*.md path. A broad
+# docs glob silently authorizes a lane to overwrite another lane's completion
+# signal; a shortened explicit path makes the worker follow a contract the poll
+# can never observe. Both are free pre-launch plan errors.
+check_status_markers() {
+  local mf="$1" names lane canonical glob exact_count rc=0
+  command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
+  names=$(jq -r '.lanes[].name' "$mf")
+  for lane in $names; do
+    canonical="docs/status-$lane.md"
+    exact_count=0
+    while IFS= read -r glob; do
+      [ -n "$glob" ] || continue
+      if [ "$glob" = "$canonical" ]; then
+        exact_count=$((exact_count + 1))
+      elif _pair_overlap "$glob" 'docs/status-*.md'; then
+        echo "SCOPE-STATUS: lane '$lane' noncanonical glob '$glob' can own a status marker; only '$canonical' is allowed" >&2
+        rc=2
+      fi
+    done < <(_lane_globs "$mf" "$lane")
+    if [ "$exact_count" -ne 1 ]; then
+      echo "SCOPE-STATUS: lane '$lane' must own '$canonical' exactly once (found $exact_count)" >&2
+      rc=2
+    fi
+  done
+  return $rc
+}
+
 check_lane() {
   local mf="$1" lane="$2"; shift 2
   local globs p rc=0
@@ -83,7 +112,8 @@ check_lane() {
 if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
   case "${1:-}" in
     check-static) shift; check_static "$@" ;;
+    check-status) shift; check_status_markers "$@" ;;
     check-lane)   shift; check_lane   "$@" ;;
-    *) echo "usage: polylane-scope.sh check-static <manifest> | check-lane <manifest> <lane> <path>..." >&2; exit 2 ;;
+    *) echo "usage: polylane-scope.sh check-static <manifest> | check-status <manifest> | check-lane <manifest> <lane> <path>..." >&2; exit 2 ;;
   esac
 fi

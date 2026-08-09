@@ -43,6 +43,9 @@ lint_one() {
     grep -qF "POLYLANE-RUNTIME-DONE: write only docs/status-$lane.md;" "$f" || miss="$miss runtime-done-path"
     grep -qF "STATUS: $lane DONE run=" "$f" || miss="$miss runtime-done-marker"
     runtime_exact_once "$f" || miss="$miss duplicate-runtime-contract"
+    if [ "$role" = builder ]; then
+      builder_status_paths_canonical "$f" "$lane" || miss="$miss conflicting-status-path"
+    fi
   fi
   if [ "$prime_hybrid" = true ]; then
     grep -q 'POLYLANE_CONTEXT_PACKET' "$f" || miss="$miss prime-hybrid-context-packet"
@@ -54,6 +57,15 @@ lint_one() {
   fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi
   return 0
+}
+
+builder_status_paths_canonical() {
+  local f="$1" lane="$2" canonical="docs/status-$2.md" path paths
+  paths=$(grep -oE 'docs/status-[A-Za-z0-9._-]+\.md' "$f" 2>/dev/null | LC_ALL=C sort -u || true)
+  [ -n "$paths" ] || return 1
+  for path in $paths; do
+    [ "$path" = "$canonical" ] || return 1
+  done
 }
 
 runtime_exact_once() {

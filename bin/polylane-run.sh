@@ -782,6 +782,8 @@ preflight_contract() {
 
   "$SCRIPT_DIR/polylane-scope.sh" check-static "$MANIFEST" ||
     die "contract v2 scope isolation failed"
+  "$SCRIPT_DIR/polylane-scope.sh" check-status "$MANIFEST" ||
+    die "contract v2 status-marker ownership failed"
   POLYLANE_STRICT_PROMPTS=1 "$SCRIPT_DIR/polylane-promptlint.sh" lint-run "$MANIFEST" ||
     die "contract v2 prompt lint failed"
   "$SCRIPT_DIR/polylane-scout.sh" validate "$LANE_SKILLS_FILE" "$MANIFEST" ||

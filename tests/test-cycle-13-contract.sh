@@ -119,7 +119,7 @@ write_manifest() {
   "target_subgoals":["s1"],
   "base":"main",
   "integrator":{"name":"integrator","model":"$model","effort":"high","branch":"lane/integrator","worktree":"$P/.polylane/wt/integrator","prompt_file":".polylane/lanes/integrator.txt"},
-  "lanes":[{"name":"builder","role":"mechanical","model":"$model","effort":"high","branch":"lane/builder","worktree":"$P/.polylane/wt/builder","prompt_file":".polylane/lanes/builder.txt","own_globs":["src/**"],"target_subgoals":["s1"]}]
+  "lanes":[{"name":"builder","role":"mechanical","model":"$model","effort":"high","branch":"lane/builder","worktree":"$P/.polylane/wt/builder","prompt_file":".polylane/lanes/builder.txt","own_globs":["src/**","docs/status-builder.md"],"target_subgoals":["s1"]}]
 }
 JSON
 }

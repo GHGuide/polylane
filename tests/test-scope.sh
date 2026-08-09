@@ -40,4 +40,23 @@ cat > "$TEST_TMPDIR/xw.json" <<'JSON'
 JSON
 assert_fail "scope-static-cross-wildcard" "$SCOPE" check-static "$TEST_TMPDIR/xw.json"
 
+# Contract-v2 status ownership is exact: the lane must own its canonical marker,
+# and no second/broad glob may cover any status marker path.
+cat > "$TEST_TMPDIR/status-ok.json" <<'JSON'
+{"lanes":[{"name":"a","own_globs":["src/a/**","docs/status-a.md"]},{"name":"b","own_globs":["src/b/**","docs/status-b.md"]}]}
+JSON
+assert_ok "scope-status-canonical" "$SCOPE" check-status "$TEST_TMPDIR/status-ok.json"
+cat > "$TEST_TMPDIR/status-missing.json" <<'JSON'
+{"lanes":[{"name":"long-lane","own_globs":["src/**","docs/status-short.md"]}]}
+JSON
+assert_fail "scope-status-rejects-shortened-marker" "$SCOPE" check-status "$TEST_TMPDIR/status-missing.json"
+cat > "$TEST_TMPDIR/status-broad.json" <<'JSON'
+{"lanes":[{"name":"a","own_globs":["docs/status-a.md","docs/**"]}]}
+JSON
+assert_fail "scope-status-rejects-broad-second-owner" "$SCOPE" check-status "$TEST_TMPDIR/status-broad.json"
+cat > "$TEST_TMPDIR/status-duplicate.json" <<'JSON'
+{"lanes":[{"name":"a","own_globs":["docs/status-a.md","docs/status-a.md"]}]}
+JSON
+assert_fail "scope-status-rejects-duplicate-canonical" "$SCOPE" check-status "$TEST_TMPDIR/status-duplicate.json"
+
 finish
