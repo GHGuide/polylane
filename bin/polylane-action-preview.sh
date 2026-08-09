@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-action-preview.sh prepare <profile.json> <action-name> <payload.json> <receipt.json> | verify <receipt.json> | approve <receipt.json> <approval.json>" >&2
+  echo "usage: polylane-action-preview.sh prepare <profile.json> <action-name> <payload.json> <receipt.json> | verify <receipt.json> [payload.json] | approve <receipt.json> <approval.json>" >&2
   exit 2
 }
 
@@ -69,7 +69,7 @@ cmd_prepare() {
 }
 
 cmd_verify() {
-  local receipt="$1" expected actual tmp
+  local receipt="$1" payload="${2:-}" expected actual tmp
   [ -f "$receipt" ] || die "receipt does not exist: $receipt"
   jq empty "$receipt" >/dev/null 2>&1 || die "receipt is not valid JSON: $receipt"
   jq -e '
@@ -91,6 +91,12 @@ cmd_verify() {
   actual=$(jq -r '.receipt_id // empty' "$receipt")
   rm -f "$tmp"
   [ "$actual" = "$expected" ] || die "receipt identity does not match its exact preview"
+  if [ -n "$payload" ]; then
+    [ -f "$payload" ] || die "payload does not exist: $payload"
+    jq empty "$payload" >/dev/null 2>&1 || die "payload is not valid JSON: $payload"
+    [ "$(canonical_hash "$payload")" = "$(jq -r '.payload_hash' "$receipt")" ] ||
+      die "payload does not match the exact prepared receipt"
+  fi
   if jq -e '.approval? != null and (.approval.receipt_id != .receipt_id)' "$receipt" >/dev/null; then
     die "approval is not bound to this exact receipt"
   fi
@@ -115,7 +121,7 @@ main() {
   need_jq
   case "${1:-}" in
     prepare) [ "$#" = 5 ] || usage; cmd_prepare "$2" "$3" "$4" "$5" ;;
-    verify) [ "$#" = 2 ] || usage; cmd_verify "$2" ;;
+    verify) [ "$#" = 2 ] || [ "$#" = 3 ] || usage; cmd_verify "$2" "${3:-}" ;;
     approve) [ "$#" = 3 ] || usage; cmd_approve "$2" "$3" ;;
     *execute*|*live*) die "execute/live verbs are forbidden; this helper never performs actions" ;;
     *) usage ;;

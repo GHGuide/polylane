@@ -57,12 +57,15 @@ verbs, mismatched approvals, and altered receipts. It has no execution path.
 5. A final red assertion showed a typed deep answer generated the old generic question;
    it expected `What evidence would change this decision?`. It passed after discovery
    persisted the adapter follow-up rather than replacing it.
+6. A receipt verification with its original payload initially failed because `verify`
+   accepted only a receipt. It passed after optional payload verification compared the
+   canonical payload hash; the changed-payload negative case is now covered.
 
 ## Commands and results
 
 ```text
 bin/polylane-check.sh "$PWD/.polylane/check-cache/domain-runtime" -- bash tests/test-domain-runtime.sh
-# PASS: 73 focused checks
+# PASS: 75 focused checks
 
 bin/polylane-check.sh "$PWD/.polylane/check-cache/domain-runtime" -- bash tests/test-discovery-graph.sh
 # PASS: 25 checks
