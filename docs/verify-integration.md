@@ -71,3 +71,5 @@ this lane did not run `tests/run.sh` or either rehearsal. No external action occ
 approval hashes remain required and trading remains research/backtest/paper-only.
 
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c19-domain-gate-20260809-a1
+
+DOMAIN-GRADER: PASS bundle=docs/polylane/domain-runtime/bundle.json grade=docs/polylane/domain-runtime/grade.json
