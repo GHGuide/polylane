@@ -30,6 +30,24 @@
 
 set -euo pipefail
 
+supervisor_usage() {
+  cat <<'USAGE'
+polylane-supervisor.sh — crash-proof outer loop for polylane-run.sh
+
+USAGE:
+  bin/polylane-supervisor.sh <manifest.json> [runner-args...]
+  bin/polylane-supervisor.sh --help
+
+The supervisor adds --yes when absent, relays safe approvals, and resumes a runner
+that dies before writing a terminal report.
+USAGE
+}
+
+case "${1:-}" in
+  -h|--help) supervisor_usage; exit 0 ;;
+  '') supervisor_usage >&2; exit 2 ;;
+esac
+
 SUP_MANIFEST="${1:?usage: polylane-supervisor.sh <manifest.json> [runner-args...]}"
 shift || true
 
@@ -62,8 +80,23 @@ RUNNER_LOG="$MDIR/runner.log"
 SUP_LOCK="$MDIR/supervisor.lock"
 DECIDED=""            # lanes parked on a critical approval (notified once)
 SUP_START=$(date +%s)
+SUP_CHILD_PID=""
 
 sup_log() { printf '[supervisor %s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
+
+supervisor_stop() {
+  local sig="$1" code="$2"
+  trap - INT TERM
+  sup_log "received $sig — stopping the active runner and exiting"
+  if [ -n "$SUP_CHILD_PID" ] && kill -0 "$SUP_CHILD_PID" 2>/dev/null; then
+    case "$sig" in
+      INT)  kill -INT "$SUP_CHILD_PID" 2>/dev/null || true ;;
+      TERM) kill -TERM "$SUP_CHILD_PID" 2>/dev/null || true ;;
+    esac
+    wait "$SUP_CHILD_PID" 2>/dev/null || true
+  fi
+  exit "$code"
+}
 
 record_supervisor_restart() {
   [ -x "$SCRIPT_DIR/polylane-run-stats.sh" ] || return 0
@@ -180,7 +213,9 @@ release_lock() {
 supervisor_main() {
   local restarts=0 rc pid args_line outcome
   acquire_lock || return 1
-  trap release_lock EXIT INT TERM
+  trap release_lock EXIT
+  trap 'supervisor_stop INT 130' INT
+  trap 'supervisor_stop TERM 143' TERM
   # default --yes: the supervisor IS the unattended path; keep user args too.
   case " $* " in *" --yes "*) args_line="$*" ;; *) args_line="--yes${*:+ $*}" ;; esac
 
@@ -198,6 +233,7 @@ supervisor_main() {
     # shellcheck disable=SC2086  # args_line is intentionally word-split
     POLYLANE_SESSION="$TMUX_SESSION" "$SCRIPT_DIR/polylane-run.sh" "$SUP_MANIFEST" $args_line >> "$RUNNER_LOG" 2>&1 &
     pid=$!
+    SUP_CHILD_PID="$pid"
 
     while kill -0 "$pid" 2>/dev/null; do
       tick alive "$restarts"
@@ -205,6 +241,7 @@ supervisor_main() {
     done
     # a crashed child returns nonzero from `wait` — must NOT kill the supervisor
     rc=0; wait "$pid" 2>/dev/null || rc=$?
+    SUP_CHILD_PID=""
 
     if report_fresh; then
       outcome=$(report_outcome)
