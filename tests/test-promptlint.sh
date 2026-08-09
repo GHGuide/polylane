@@ -61,9 +61,17 @@ cp "$GOOD" "$RUNTIME_GOOD"
 cat >> "$RUNTIME_GOOD" <<'P'
 POLYLANE-RUNTIME-RELAY: run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; docs/parallel-status.md is post-cycle evidence only, never the live relay.
 POLYLANE-RUNTIME-DONE: write only docs/status-x.md; first line exactly `STATUS: x DONE run=run-1`.
+POLYLANE-RUNTIME-FINALIZE: after the final relay and durable inbox read, handle all addressed autonomous work, run focused verification, scope-stage every owned changed or new file with `git add <your files>`, commit implementation and evidence, verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`, then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 P
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_ok \
   "lint-runtime-builder-canonical-status-path" lint_one "$RUNTIME_GOOD" x false builder
+grep -v 'POLYLANE-RUNTIME-FINALIZE:' "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-no-finalize.txt"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
+  "lint-runtime-requires-finalize-contract" lint_one "$TEST_TMPDIR/runtime-no-finalize.txt" x false builder
+sed 's/run focused verification, scope-stage every owned changed or new file/scope-stage every owned changed or new file, run focused verification/' \
+  "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-reordered-finalize.txt"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
+  "lint-runtime-rejects-reordered-finalize-contract" lint_one "$TEST_TMPDIR/runtime-reordered-finalize.txt" x false builder
 cp "$RUNTIME_GOOD" "$TEST_TMPDIR/runtime-wrong-status.txt"
 printf '%s\n' 'Also write docs/status-short.md before completion.' >> "$TEST_TMPDIR/runtime-wrong-status.txt"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \

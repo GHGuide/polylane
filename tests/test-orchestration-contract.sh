@@ -33,6 +33,9 @@ CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensiv
 EXTERNAL-EVIDENCE: keep physical-only proof external; continue all autonomous work.
 VERIFY: run the focused contract checks before the DONE marker.
 Write docs/verify-builder.md. Finish STATUS: builder DONE run=run-1.
+POLYLANE-RUNTIME-RELAY: COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"; docs/parallel-status.md is post-cycle evidence only, never the live relay.
+POLYLANE-RUNTIME-DONE: write only docs/status-builder.md; first line exactly `STATUS: builder DONE run=run-1`.
+POLYLANE-RUNTIME-FINALIZE: after the final relay and durable inbox read, handle all addressed autonomous work, run focused verification, scope-stage every owned changed or new file with `git add <your files>`, commit implementation and evidence, verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`, then write the current-run status file, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 PROMPT
 cat > "$P/.polylane/lanes/integrator.txt" <<'PROMPT'
 ULTIMATE-GOAL: ship a complete, verified product.
@@ -49,6 +52,9 @@ EXTERNAL-EVIDENCE: keep physical-only proof external; continue autonomous work.
 VERIFY: run the focused contract checks before the verdict sentinel.
 Write docs/verify-integration.md ending POLYLANE-VERDICT: GO run=run-1.
 Finish STATUS: integrator DONE run=run-1.
+POLYLANE-RUNTIME-RELAY: COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"; docs/parallel-status.md is post-cycle evidence only, never the live relay.
+POLYLANE-RUNTIME-DONE: write only docs/status-integrator.md; first line exactly `STATUS: integrator DONE run=run-1`.
+POLYLANE-RUNTIME-FINALIZE: after the final relay and durable inbox read, handle all addressed autonomous work, run focused verification, scope-stage every owned changed or new file with `git add <your files>`, commit implementation and evidence, verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`, then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 PROMPT
 printf '# cycle plan\n' > "$P/docs/polylane/cycle-1-plan.md"
 printf '# index\n' > "$P/docs/polylane/INDEX.md"

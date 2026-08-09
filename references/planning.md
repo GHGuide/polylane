@@ -123,8 +123,9 @@ must match the selected CLI, but these agent-neutral blocks are mandatory:
   from `prompt-blocks.md` (read the bounded packet once; use the durable inbox for
   follow-ups; global prompt/skill ideas remain skill-evolution proposals);
 - `docs/verify-<lane>.md` evidence contract;
-- scoped staging/commits and no `git add -A`;
-- exact `STATUS: <lane> DONE run=<run_id>` first-line marker.
+- POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit;
+- exact `STATUS: <lane> DONE run=<run_id>` first-line marker, written last by that
+  finalization transaction.
 
 For a UI lane, additionally compose the visual block from
 `prompt-blocks.md`: literal goal and design lock, evidence-backed reference packet,
