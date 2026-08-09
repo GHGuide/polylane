@@ -1,75 +1,62 @@
-# Cycle 19 integration verification — optional domain gate recovery
+# Cycle 20 integration verification — clean process-start handoff
 
-Run: `c19-domain-gate-20260809-a1` on `lane/c19-integrator`.
+Run: `c20-clean-cert-20260809-a1` on `lane/c20-integrator`.
 
-## Provenance and review
+## Provenance and independent review
 
 The integrator accepted only the committed builder tip
-`af221ab2b69365e497be2278234488e91a8784a5`, after reading its committed first line
-`STATUS: optional-domain-gate DONE run=c19-domain-gate-20260809-a1`. Merge commit
-`e9eb4230db8eed397c86d2a0c80b60ffc13ba08b` has that tip as its second parent.
+`716624affb45b6e8ba75945e0fb135ea229bd59a` after confirming its committed first line
+was `STATUS: restart-accounting-audit DONE run=c20-clean-cert-20260809-a1`. Its complete
+range from base `228570d` added only `docs/verify-restart-accounting.md` and
+`docs/status-restart-accounting-audit.md`, passed `git diff --check`, and was merged as
+`20aa4e1c82b85ab701b3172da1ea01e696786740` with that exact tip as second parent.
 
-The required existing graph was queried first for `domain_grade_gate`, `domain_grade`,
-and callers. Its indexed C17-era documents did not contain the changed helper or its
-runtime caller, so this limitation was recorded and the current source was traced
-independently: `run_verifier_gate` is the sole production caller, and hermetic tests
-cover the other call sites. Correctness review found no issue: the guard runs only after
-the authoritative helper succeeds and before any evidence or Git mutation. Ponytail
-review: `Lean already. Ship.`
+Commits `80849c5c54713a1c406b0b93a62193896a803f4a` and
+`e26c208b91c382ee07dda47ccca6d09fcfcc5ed6` were independently inspected. The former
+returns from `domain_grade_gate` before bundle/grade/evidence/Git mutation whenever
+`domain_runtime` is absent or disabled; the latter makes `lane_done` ignore only a graph
+symlink resolving to a real non-symlink graph directory owned by another registered
+worktree in the exact Git common directory. Current caller tracing found
+`domain_grade_gate` at the verifier gate and `shared_graph_link_owned` only at the
+clean-tree exception in `lane_done`. The required existing-graph queries for both
+changed helpers and callers returned stale fuzzy document nodes rather than source
+nodes; the graph was not rebuilt, and current source plus hermetic contracts were used
+instead.
 
-## Fresh merged evidence
+Correctness/security/performance review found no confirmed defect or integration seam.
+The optional guard preserves requested-grade behavior and acts before durable effects;
+the ownership predicate rejects foreign links and every other untracked path. Ponytail
+review: Lean already. Ship.
 
-All commands below ran from the merged worktree through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"`.
+## Fresh merged-tree evidence
 
-- `bash tests/test-cycle-16-contract.sh` — 35 pass, 0 fail. The generic fixture emits
-  `ADVANCED: domain-grader=not-requested`, returns successfully, preserves its sole
-  integration-evidence line and `HEAD`, creates no bundle or grade, and remains clean.
-  The unchanged requested fixture commits the tracked bundle and grade and records
-  `DOMAIN-GRADER: PASS`.
-- `bash tests/test-verdict-repair.sh` — 40 pass, 0 fail; the domain gate still runs
-  before each merge attempt and the coordinator-owned READY host boundary remains
-  single-use.
-- `bash tests/test-skill-delivery.sh` — 44 pass, 0 fail; `bash
-  tests/test-prompt-compiler.sh` — 16 pass, 0 fail; and `bash
-  tests/test-cycle-13-contract.sh` — 44 pass, 0 fail, preserving exact selected-skill
-  delivery and the Cycle 13 runner contract.
-- Whole-tree `shellcheck -S warning bin/*.sh` was clean. `bash
-  tests/test-skill-parity.sh` passed 57/0, `bash tests/test-installers.sh` passed 50/0,
-  and `bash tests/test-install-fresh.sh` passed 39/0.
+Every command below ran once from this merged worktree through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`.
 
-## Live recovery seam and coordinator repair
+| Command | Observed result |
+| --- | --- |
+| `bash tests/test-lane-done.sh` | 27 pass, 0 fail; accepts the registered same-repository graph link, rejects a foreign repository, and keeps unrelated dirt blocking completion. |
+| `bash tests/test-share-graph.sh` | 11 pass, 0 fail; includes recovery sharing from the primary graph. |
+| `bash tests/test-cycle-16-contract.sh` | 35 pass, 0 fail; proves both requested bundle/grade/PASS persistence and the unrequested `not-requested` no-op with unchanged evidence, HEAD, and clean Git. |
+| `bash tests/test-verdict-repair.sh` | 40 pass, 0 fail; preserves the one-use READY host boundary and its failure paths. |
+| `bash tests/test-supervisor.sh` | 26 pass, 0 fail; includes session-loss recovery and bounded launch accounting. |
+| `bash tests/test-efficiency-canary.sh` | 14 pass, 0 fail; includes restart rejection and canonical-proof checks. |
 
-The real outer run then exposed a separate recovery-only contract gap. `share_graph`
-correctly linked this recovery root to the real `graphify-out` directory in another
-registered worktree from the same Git common directory, but `lane_done` trusted only a
-graph physically under the recovery root. It therefore rejected its own helper as dirty,
-respawned the already-committed builder once, and would have repeated that mistake for
-the integrator. The coordinator stopped the runner before a second respawn and repaired
-the ownership predicate rather than deleting or weakening clean-tree enforcement.
+Focused runtime total: 153 pass, 0 fail. Whole-tree `shellcheck -S warning bin/*.sh`,
+`bin/polylane-markers.sh check-docs references/`,
+`bin/polylane-seams.sh scan "$PWD"`, and `git diff --check` all exited 0. Skill parity
+passed 57/0; installers passed 50/0; fresh installs passed 39/0.
 
-`shared_graph_link_owned` now accepts only a real, non-symlink graph directory owned by
-another registered worktree in the exact same Git repository. A graph from a foreign
-repository or arbitrary filesystem path remains dirty. Fresh coordinator evidence:
+## State, boundary, and limitations
 
-- `bash tests/test-lane-done.sh` — 27 pass, 0 fail, including same-repository acceptance
-  and foreign-repository rejection.
-- `bash tests/test-share-graph.sh` — 11 pass, 0 fail.
-- `bash tests/test-cycle-13-contract.sh` — 44 pass, 0 fail; `bash
-  tests/test-cycle-16-contract.sh` — 35 pass, 0 fail; `bash
-  tests/test-verdict-repair.sh` — 40 pass, 0 fail.
-- `shellcheck -S warning bin/polylane-run.sh`, marker-doc consistency, seam scanning, and
-  `git diff --check` all passed.
+The focused `m20.1` acceptance is marked pass only from the six reproduced contracts.
+`m20.1` itself, `m18.3`, and `c56` remain open: no outer process-start run, terminal
+full suite, or hermetic GO/NO-GO rehearsal was executed here. The coordinator alone
+must establish exactly two launches, zero restarts, one terminal gate, complete cleanup,
+and both rehearsal outcomes. No live external action occurred; approval-bound receipts
+remain simulations and trading remains research/backtest/paper-only. The pre-existing
+untracked `.polylane-prompt.txt` and `graphify-out/` were retained, so this certification
+attests the committed merge and its focused evidence rather than claiming an empty local
+scratch directory.
 
-## Durable state and remaining boundary
-
-`m19.1`, its focused frozen acceptance, and `c55` are marked done only from the fresh
-35/0 reproduction. The live graph-link regression and its bounded repair are recorded
-against the still-open terminal certification. `m18.3` and both terminal acceptances remain unchecked. The
-coordinator alone owns one fresh terminal matrix and both GO/NO-GO rehearsal outcomes;
-this lane did not run `tests/run.sh` or either rehearsal. No external action occurred:
-approval hashes remain required and trading remains research/backtest/paper-only.
-
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c19-domain-gate-20260809-a1
-
-DOMAIN-GRADER: PASS bundle=docs/polylane/domain-runtime/bundle.json grade=docs/polylane/domain-runtime/grade.json
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c20-clean-cert-20260809-a1

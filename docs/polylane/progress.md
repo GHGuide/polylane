@@ -85,9 +85,8 @@ subgoals: 51/56 done · criteria: 54/56 done · 93%
 ## Acceptance checks
 
 - Total: 67
-- Pass: 64
+- Pass: 65
 - Fail: 0
-- Unchecked: 3
+- Unchecked: 2
   - `m16.4` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
   - `m18.3` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-  - `m20.1` [unchecked] — bash tests/test-lane-done.sh && bash tests/test-share-graph.sh && bash tests/test-cycle-16-contract.sh && bash tests/test-verdict-repair.sh && bash tests/test-supervisor.sh && bash tests/test-efficiency-canary.sh

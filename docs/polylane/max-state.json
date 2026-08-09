@@ -1830,7 +1830,7 @@
       "cmd": "bash tests/test-lane-done.sh && bash tests/test-share-graph.sh && bash tests/test-cycle-16-contract.sh && bash tests/test-verdict-repair.sh && bash tests/test-supervisor.sh && bash tests/test-efficiency-canary.sh",
       "tier": "focused",
       "key": "cycle20-process-start",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
