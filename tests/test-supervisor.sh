@@ -39,15 +39,15 @@ if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
   M="$1"; shift; D=$(cd "$(dirname "$M")" && pwd); ROOT=$(cd "$D/.." && pwd)
   echo "ARGS: $*" >> "$D/calls.log"
   case "$(cat "$D/mode")" in
-    crash-then-go) if [ -f "$D/crashed" ]; then echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0
+    crash-then-go) if [ -f "$D/crashed" ]; then printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0
                    else touch "$D/crashed"; exit 137; fi ;;
-    halted-then-go) if [ -f "$D/halted" ]; then echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0
-                    else touch "$D/halted"; echo '**Outcome:** HALTED' > "$ROOT/docs/polylane-report.md"; exit 1; fi ;;
-    external)      echo '**Outcome:** EXTERNAL-EVIDENCE-OPEN' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
-    nogo)          echo '**Outcome:** NO-GO' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
-    halted-needs-user) echo lane-a > "$D/needs-user"; echo '**Outcome:** HALTED' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
+    halted-then-go) if [ -f "$D/halted" ]; then printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0
+                    else touch "$D/halted"; printf '**Outcome:** HALTED\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1; fi ;;
+    external)      printf '**Outcome:** EXTERNAL-EVIDENCE-OPEN\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
+    nogo)          printf '**Outcome:** NO-GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
+    halted-needs-user) echo lane-a > "$D/needs-user"; printf '**Outcome:** HALTED\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
     slow-go)       trap 'echo term > "$D/child-term"; exit 143' TERM
-                   sleep 2; echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
+                   sleep 2; printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
     always-crash)  exit 137 ;;
   esac
 fi
@@ -105,6 +105,16 @@ POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervis
 rc=$?
 assert_eq "sup-nogo-rc1" "1" "$rc"
 assert_eq "sup-nogo-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+
+# A newly written report for another run is not this runner's terminal handoff.
+# It remains recoverable instead of suppressing the correct resume decision.
+reset_proj; echo always-crash > "$PROJ/.polylane/mode"
+printf '**Outcome:** NO-GO\n**Run:** stale-nonce\n' > "$PROJ/docs/polylane-report.md"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 POLYLANE_SUP_MAX_RESTARTS=0 \
+  "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-stale-run" 2>&1
+stale_rc=$?
+assert_eq "sup-stale-run-report-is-not-terminal" "1" "$stale_rc"
+assert_contains "sup-stale-run-report-revives" "without a report" "$(cat "$TEST_TMPDIR/out-stale-run")"
 
 # --- a durable no-progress blocker is not relaunched identically ----------------
 reset_proj; echo halted-needs-user > "$PROJ/.polylane/mode"

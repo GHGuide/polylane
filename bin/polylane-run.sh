@@ -471,7 +471,7 @@ preflight_basic() {
   fi
   if [ ! -f "$MANIFEST" ]; then
     echo "polylane-run: manifest not found: $MANIFEST" >&2
-    exit 1
+    return 1
   fi
   if ! jq empty "$MANIFEST" 2>/dev/null; then
     echo "polylane-run: manifest is not valid JSON: $MANIFEST" >&2
@@ -1938,10 +1938,10 @@ assert_prompt() {
     fi
     echo "polylane-run: prompt file MISSING/EMPTY for lane '$name': $pf" >&2
     echo "  the planner (/polylane) must emit it before launch — nothing to seed." >&2
-    exit 1
+    return 1
   fi
   if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
-    prompt_budget_check "$pf" "$name" || exit 1
+    prompt_budget_check "$pf" "$name" || return 1
   fi
 }
 
@@ -2117,7 +2117,7 @@ launch_panes() {
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
     lane_adopted "$i" && continue
-    assert_prompt "${LANE_PROMPTS[$i]}" "${LANE_NAMES[$i]}"
+    assert_prompt "${LANE_PROMPTS[$i]}" "${LANE_NAMES[$i]}" || return 1
   done
   for i in "${!LANE_NAMES[@]}"; do
     lane_resumed "$i" && continue
@@ -3453,6 +3453,31 @@ contract_ready_verdict() {
   fi
 }
 
+# terminal_efficiency_eligible : reject immutable runtime overages before the
+# expensive terminal boundary is counted.  Missing telemetry remains unknown and
+# therefore cannot be fabricated into a passing zero; only observed launch or
+# restart/supervisor violations are decisive here.  The full proof still runs at
+# the existing counted terminal boundary for eligible runs.
+terminal_efficiency_eligible() {
+  local telemetry expected launches max_restarts restarts
+  [ -n "${MANIFEST:-}" ] && [ -f "$MANIFEST" ] || return 0
+  jq -e '.efficiency_canary | type == "object"' "$MANIFEST" >/dev/null 2>&1 || return 0
+  telemetry=$(run_stats snapshot 2>/dev/null || true)
+  [ -n "$telemetry" ] && printf '%s\n' "$telemetry" | jq -e . >/dev/null 2>&1 || return 0
+  expected=$(jq -r '(.efficiency_canary.expected_launches // ((.lanes | length) + 1))' "$MANIFEST")
+  max_restarts=$(jq -r '(.efficiency_canary.max_restarts // 0)' "$MANIFEST")
+  launches=$(printf '%s\n' "$telemetry" | jq -r '[.lanes[]?.launches] | add // 0')
+  restarts=$(printf '%s\n' "$telemetry" | jq -r '(([.lanes[]?.restarts] | add // 0) + (.supervisor_restarts // 0))')
+  if [ "$launches" -gt "$expected" ] 2>/dev/null; then
+    printf 'launches=%s>%s' "$launches" "$expected"
+    return 1
+  fi
+  if [ "$restarts" -gt "$max_restarts" ] 2>/dev/null; then
+    printf 'restarts=%s>%s' "$restarts" "$max_restarts"
+    return 1
+  fi
+}
+
 # Host gates are runner-owned.  Never annotate a completed integrator checkout:
 # that would dirty its committed READY/DONE handoff and relaunch finished work on
 # resume.  The canonical root receives one atomic, run-scoped failure record.
@@ -3490,7 +3515,11 @@ merge_gate() {
     # Count before the efficiency certificate: that certificate grades the
     # boundary it is currently entering. Pass the count into acceptance so the
     # same READY boundary is never counted twice.
-    if ! contract_focused_acceptance_gate; then
+    local eligibility_failure=""
+    if ! eligibility_failure=$(terminal_efficiency_eligible); then
+      host_gate_failure "runtime efficiency eligibility failed before the terminal boundary: $eligibility_failure" || true
+      v="NO-GO"; VERDICT_REPAIRABLE="NO"
+    elif ! contract_focused_acceptance_gate; then
       host_gate_failure "focused checks failed before the terminal boundary; repair and hand off again" || true
       v="NO-GO"; VERDICT_REPAIRABLE="YES"
     else
@@ -3557,9 +3586,8 @@ build_integrator_repair_prompt() {
   printf 'Read %s, `%s`, and the lane verification files.\n' "$evidence" "$transcript"
   printf 'Fix every autonomous issue the preserved evidence names,\n'
   printf 're-run the focused failing checks first, then the full terminal gate once.\n'
-  printf 'DELEGATION: forbidden. Do not spawn subagents, collaboration agents, or fan-out.\n'
-  printf 'CHECK-CACHE: never rerun an expensive command on an unchanged source fingerprint;\n'
-  printf 'route it through polylane-check.sh and reuse its recorded result.\n'
+  printf 'Keep the existing delegation boundary unchanged; do not spawn subagents, collaboration agents, or fan-out.\n'
+  printf 'Reuse the existing check-cache contract: do not rerun an expensive command on an unchanged source fingerprint.\n'
   printf 'Do not weaken frozen acceptance checks, scope, or product decisions. Write a fresh\n'
   printf 'docs/verify-integration.md and finish with exactly one run-tagged POLYLANE-VERDICT.\n'
   printf 'Use EXTERNAL-EVIDENCE-OPEN only when engineering is verified and the remaining\n'
@@ -3595,7 +3623,7 @@ build_visual_repair_prompt() {
 # boundary evidence, clear only terminal markers, then immediately respawn the
 # same tmux Codex lane with the matching typed repair packet.
 repair_integrator_verdict() {
-  local attempt="$1" repair_kind="${2:-integration}" verdict="${VERDICT_RESULT:-UNKNOWN}" evidence archive prompt cmd
+  local attempt="$1" repair_kind="${2:-integration}" verdict="${VERDICT_RESULT:-UNKNOWN}" evidence archive prompt candidate cmd
   evidence="$INT_WORKTREE/docs/verify-integration.md"
   case "$repair_kind" in
     integration)
@@ -3616,22 +3644,31 @@ repair_integrator_verdict() {
     echo "+ (dry-run) would preserve $repair_kind evidence and respawn integrator repair $attempt"
     return 0
   fi
-  mkdir -p "$(dirname "$prompt")" "$INT_WORKTREE/docs"
-  [ -f "$evidence" ] && cp "$evidence" "$archive"
+  # Admission is the transaction's prepare phase.  Nothing in the current
+  # handoff or live runtime may change until the complete replacement prompt
+  # passes the same strict launch check as an initial lane prompt.
+  mkdir -p "$(dirname "$prompt")" || return 1
+  candidate="$prompt.prepare.$$"
   if [ "$repair_kind" = judge ]; then
     build_judge_repair_prompt "$INT_PROMPT" "$attempt" \
-      'docs/polylane/judges/judges.json' "docs/$(basename "$archive")" > "$prompt" || return 1
+      'docs/polylane/judges/judges.json' "docs/$(basename "$archive")" > "$candidate" || return 1
   elif [ "$repair_kind" = visual ]; then
     build_visual_repair_prompt "$INT_PROMPT" "$attempt" \
-      'docs/polylane/design/visual-verdict.json' > "$prompt" || return 1
+      'docs/polylane/design/visual-verdict.json' > "$candidate" || return 1
   else
     build_integrator_repair_prompt "$INT_PROMPT" "$attempt" "$verdict" \
-      "docs/$(basename "$archive")" > "$prompt" || return 1
+      "docs/$(basename "$archive")" > "$candidate" || return 1
   fi
+  if ! assert_prompt "$candidate" "$INT_NAME"; then
+    rm -f "$candidate"
+    return 1
+  fi
+  mv "$candidate" "$prompt" || { rm -f "$candidate"; return 1; }
+  mkdir -p "$INT_WORKTREE/docs" || return 1
+  [ -f "$evidence" ] && cp "$evidence" "$archive"
   checkpoint_lane "$INT_WORKTREE" "$INT_NAME"
   rm -f "$INT_WORKTREE/docs/status-$INT_NAME.md" "$evidence"
   INT_PROMPT="$prompt"
-  assert_prompt "$INT_PROMPT" "$INT_NAME"
   retry_set "$INT_NAME" 0
   wedge_hash_set "$INT_NAME" ""; wedge_cnt_set "$INT_NAME" 0
   refresh_manifest_runtime_settings
@@ -4259,7 +4296,7 @@ write_report() {
   {
     echo "# polylane run report"
     echo
-    echo "**Outcome:** ${verdict}  ·  **When:** ${when}  ·  **Base branch:** ${BASE}  ·  **Lanes:** ${#LANE_NAMES[@]}"
+    echo "**Outcome:** ${verdict}  ·  **Run:** ${RUN_ID:-legacy}  ·  **When:** ${when}  ·  **Base branch:** ${BASE}  ·  **Lanes:** ${#LANE_NAMES[@]}"
     echo
     echo "## Lanes"
     echo
@@ -4373,6 +4410,32 @@ write_report() {
   fi
   mv "$tmp" "$f" || { rm -f "$tmp"; echo "write_report: could not publish $f" >&2; return 1; }
   return 0
+}
+
+# report_completed_terminal : post-integrator terminal outcomes are observable
+# exactly once before returning.  This helper is deliberately never used for
+# preflight or unfinished-lane failures: those remain resumable crashes for the
+# supervisor rather than counterfeit completed reports.
+report_completed_terminal() {
+  local verdict="$1"
+  [ "${TERMINAL_REPORT_ATTEMPTED:-0}" = 0 ] || return 0
+  TERMINAL_REPORT_ATTEMPTED=1
+  VERDICT_RESULT="$verdict"
+  capture_stats || true
+  if ! write_report "$verdict"; then
+    echo "Terminal $verdict report could not be written; preserving recovery state." >&2
+    return 1
+  fi
+  echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+}
+
+# publish_established_no_go : after the verifier has exhausted its repair route,
+# reporting is durable terminal work; optional learning must not preempt it.
+publish_established_no_go() {
+  graph_authority_no_go || { report_completed_terminal NO-GO; return 1; }
+  report_completed_terminal NO-GO || return 1
+  advanced_runtime salvage || true
+  advanced_runtime record NO-GO || true
 }
 
 # ---------------------------------------------------------------------------
@@ -4533,24 +4596,25 @@ main() {
     advanced_runtime record HALTED
     exit 1
   fi
-  graph_authority_record_ready_node integrator succeeded 0 integrator-done || exit 1
+  graph_authority_record_ready_node integrator succeeded 0 integrator-done || { report_completed_terminal HALTED || true; exit 1; }
   prime_hybrid_record_completion "$INT_NAME" || exit 1
 
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time
-  graph_authority_reconcile_verifier_repair || exit 1
-  graph_authority_require verifier "run verifier gate" || exit 1
+  graph_authority_reconcile_verifier_repair || { report_completed_terminal HALTED || true; exit 1; }
+  graph_authority_require verifier "run verifier gate" || { report_completed_terminal HALTED || true; exit 1; }
   if gate_with_repairs; then
     if graph_authority_enabled; then
-      graph_authority_record_ready_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
+      graph_authority_record_ready_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
     else
       graph_shadow_record_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     fi
     if visual_quality_requested; then
       if ! visual_quality_gate; then
-        graph_visual_quality_halt || exit 1
-        advanced_runtime salvage
-        advanced_runtime record NO-GO
+        graph_visual_quality_halt || { report_completed_terminal NO-GO || true; exit 1; }
+        report_completed_terminal NO-GO || true
+        advanced_runtime salvage || true
+        advanced_runtime record NO-GO || true
         echo "Halt: visual quality failed after two targeted repairs. Nothing merged." >&2
         exit 1
       fi
@@ -4558,9 +4622,10 @@ main() {
     fi
     if quality_judges_requested; then
       if ! quality_judge_gate; then
-        graph_quality_halt || exit 1
-        advanced_runtime salvage
-        advanced_runtime record NO-GO
+        graph_quality_halt || { report_completed_terminal NO-GO || true; exit 1; }
+        report_completed_terminal NO-GO || true
+        advanced_runtime salvage || true
+        advanced_runtime record NO-GO || true
         echo "Halt: quality judges failed after one bounded repair. Nothing merged." >&2
         exit 1
       fi
@@ -4573,21 +4638,21 @@ main() {
     elif ! graph_authority_enabled; then
       graph_shadow_record_decision "${VERDICT_RESULT:-GO}" || exit 1
     fi
-    graph_authority_require promote "promote verified integration" || exit 1
+    graph_authority_require promote "promote verified integration" || { report_completed_terminal HALTED || true; exit 1; }
     echo "== promote: base -> integrator branch (verified outcome) =="
     if ! promote_to_main; then
-      if write_report "${VERDICT_RESULT:-GO}"; then
+      if report_completed_terminal HALTED; then
         echo "Promote failed — base intact, worktrees kept. See report." >&2
       else
         echo "Promote failed — base intact, worktrees kept; the report could not be written." >&2
       fi
       exit 1
     fi
-    graph_authority_record_ready_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
-    finalize_cycle_state
-    advanced_runtime accepted-receipt "${RUN_ID:-legacy}" "$CYCLE" "${VERDICT_RESULT:-GO}" || exit 1
-    graph_authority_require complete "complete verified run" || exit 1
-    graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
+    graph_authority_record_ready_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
+    finalize_cycle_state || { report_completed_terminal HALTED || true; exit 1; }
+    advanced_runtime accepted-receipt "${RUN_ID:-legacy}" "$CYCLE" "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
+    graph_authority_require complete "complete verified run" || { report_completed_terminal HALTED || true; exit 1; }
+    graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
     advanced_runtime record "${VERDICT_RESULT:-GO}"
     echo "== cleanup =="
     if ! cleanup; then
@@ -4600,13 +4665,11 @@ main() {
       run git -C "$REPO_ROOT" push
     fi
   else
-    graph_authority_no_go || exit 1
-    advanced_runtime salvage
-    advanced_runtime record NO-GO
+    publish_established_no_go || exit 1
   fi
 
   echo "== report =="
-  write_report "${VERDICT_RESULT:-UNKNOWN}" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+  report_completed_terminal "${VERDICT_RESULT:-UNKNOWN}"
   [ "${VERDICT_RESULT:-}" = "GO" ] || [ "${VERDICT_RESULT:-}" = "EXTERNAL-EVIDENCE-OPEN" ] || exit 1
 }
 

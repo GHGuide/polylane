@@ -186,8 +186,10 @@ immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.
 Use `orchestration_contract: 2`; validate scope and prompts. A contract-v2 manifest
 uses Codex-only model IDs and defaults `codex_profile` to `lean`. Run doctor and the
 supervisor, then surface only the actual watch command, `tmux attach -t <session>`.
-The integrator checks seams, profile evidence, focused failures, then terminal check
-at final certification and writes one nonce-bearing verdict. `NO-GO` names repairs;
+The integrator checks seams, profile evidence, and focused failures, then hands a
+source-green result to the coordinator as `READY-FOR-HOST-GATE` without reinterpreting
+launch or restart counters; runner-owned eligibility decides whether terminal checks start.
+It writes one nonce-bearing verdict. `NO-GO` names repairs;
 `EXTERNAL-EVIDENCE-OPEN` promotes verified repository work but never passes missing
 external proof.
 
