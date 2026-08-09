@@ -55,3 +55,5 @@ coordinator alone must still run the untouched terminal `tests/run.sh` matrix an
 GO/NO-GO rehearsal; the optional 6/12/24-hour soak is operator certification, not CI.
 
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c18-walkaway-truth-20260809-a1
+
+DOMAIN-GRADER: PASS bundle=docs/polylane/domain-runtime/bundle.json grade=docs/polylane/domain-runtime/grade.json
