@@ -434,6 +434,34 @@
       "weight": 95,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c63",
+      "text": "Empty integrator kits remain compatible while armed kits enforce immutable trusted records",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c64",
+      "text": "Runner-owned marker normalization cannot bypass or be broken by completed-branch scope",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c65",
+      "text": "A host-gate failure preserves enough bounded output to diagnose without rerunning the terminal suite",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c66",
+      "text": "A fresh process completes with two launches, zero restarts, one terminal gate, and green live rehearsals",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1096,6 +1124,44 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m24",
+      "text": "Repair terminal-gate contracts and certify them from a fresh process",
+      "subgoals": [
+        {
+          "id": "m24.1",
+          "text": "Make optional integrator skill kits no-op when empty and fully trusted when armed",
+          "weight": 10,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m24.2",
+          "text": "Make exact status-marker normalization compatible with strict lane scope",
+          "weight": 10,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m24.3",
+          "text": "Persist bounded exact acceptance-failure output in host evidence and reports",
+          "weight": 9,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m24.4",
+          "text": "Prove the repaired source in a fresh zero-restart one-gate terminal run",
+          "weight": 10,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1350,6 +1416,12 @@
       "kind": "learning",
       "text": "Cycle 25 proved a four-link failure chain: repairable-default routing, duplicate integrator repair scalars, pre-admission evidence mutation, and missing report caused a false supervisor revival.",
       "meta": "source=live-c25-finality"
+    },
+    {
+      "cycle": 27,
+      "kind": "attempt",
+      "text": "Repair the two Cycle 26 terminal-suite failures and retain exact host-gate output before fresh certification",
+      "meta": "source=d8b9417; cycle26=NO-GO; terminal_gate=1"
     }
   ],
   "accept": [
@@ -2379,6 +2451,57 @@
         "tests/test-run-stats.sh",
         "tests/test-state.sh",
         "tests/test-supervisor.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m24.1",
+      "cmd": "bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-scout.sh",
+        "bin/polylane-run.sh",
+        "tests/test-manifest-validation.sh",
+        "tests/test-cycle-13-contract.sh",
+        "tests/test-scout.sh",
+        "tests/test-orchestration-contract.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m24.2",
+      "cmd": "bash tests/test-status-marker-normalization.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-scope.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "bin/polylane-scope.sh",
+        "tests/test-status-marker-normalization.sh",
+        "tests/test-lane-done.sh",
+        "tests/test-lane-done-live.sh",
+        "tests/test-scope.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m24.3",
+      "cmd": "bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-write-report.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-memory.sh",
+        "bin/polylane-run.sh",
+        "tests/test-memory.sh",
+        "tests/test-contract-acceptance.sh",
+        "tests/test-verdict-repair.sh",
+        "tests/test-write-report.sh"
       ],
       "fp": "",
       "regressed_cycle": null
