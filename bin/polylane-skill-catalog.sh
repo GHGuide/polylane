@@ -165,7 +165,7 @@ recommend_catalog() {
     gate=$(jq -n --argjson c "$candidate" --arg domain "$domain" --arg shape "$shape" '{id:$c.id,fingerprint:$c.fingerprint,domain:$domain,lane_shape:$shape}')
     printf '%s\n' "$gate" > "$gate_file"
     gate=$(bash "$helper" gate "$benchmark" "$gate_file")
-    row=$(jq --argjson gate "$gate" '. + {status:$gate.status,safe_to_apply:$gate.safe_to_apply,samples:$gate.samples,confidence:$gate.confidence,benchmark_reason:$gate.reason}' <<<"$candidate")
+    row=$(jq --argjson gate "$gate" --arg domain "$domain" --arg shape "$shape" '. + {domain:$domain,lane_shape:$shape,status:$gate.status,safe_to_apply:$gate.safe_to_apply,samples:$gate.samples,confidence:$gate.confidence,benchmark_reason:$gate.reason}' <<<"$candidate")
     rows=$(jq --argjson row "$row" '. + [$row]' <<<"$rows")
   done < <(jq -c '.candidates[]' <<<"$base")
   rm -f "$gate_file"

@@ -5,6 +5,7 @@
 SCOUT="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-scout.sh"
 CATALOG="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-skill-catalog.sh"
 PROMPTOPT="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-promptopt.sh"
+BENCHMARK="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-skill-benchmark.sh"
 
 make_tmpdir
 ROOT="$TEST_TMPDIR/trusted-skills"
@@ -41,14 +42,33 @@ assert_ok "delivery-arms-trusted-predefined-record" env POLYLANE_SKILLS_DIRS="$R
 REC_PATH="$ROOT/ui/visual-regression/SKILL.md"
 REC_FP="$(cksum "$REC_PATH" | awk '{print $1 "-" $2}')"
 RECOMMEND="$TEST_TMPDIR/recommendation.json"
-jq -cn --arg path "$REC_PATH" --arg fingerprint "$REC_FP" '{candidates:[{id:"ui:visual-regression",path:$path,source:"trusted-root",fingerprint:$fingerprint,reason:"activities:capture screenshots — capability: browser state comparison"}]}' > "$RECOMMEND"
-assert_ok "delivery-arms-recommended-typed-record" env POLYLANE_SKILLS_DIRS="$ROOT" "$SCOUT" arm-recommendation "$KIT" builder specific "$RECOMMEND" ui:visual-regression
+BENCH_LEDGER="$TEST_TMPDIR/benchmark.jsonl"
+make_recommendation() {
+  local fingerprint="$1"
+  jq -cn --arg path "$REC_PATH" --arg fingerprint "$fingerprint" '{candidates:[{id:"ui:visual-regression",path:$path,source:"trusted-root",fingerprint:$fingerprint,domain:"ui",lane_shape:"builder",status:"recommended",safe_to_apply:true,reason:"activities:capture screenshots — capability: browser state comparison"}]}' > "$RECOMMEND"
+}
+record_receipt() {
+  local receipt="$TEST_TMPDIR/receipt-$1.json"
+  jq -cn --arg receipt_id "delivery-$1" --arg fingerprint "$REC_FP" '{schema:"polylane-skill-benchmark/v1",receipt_id:$receipt_id,lane_shape:"builder",domain:"ui",acceptance_status:"accepted",verdict:"GO",skill:{id:"ui:visual-regression",fingerprint:$fingerprint},quality_adjusted_delta:1,hard_checks:true,hurt:false,synthetic:true,synthetic_label:"deterministic delivery fixture"}' > "$receipt"
+  assert_ok "delivery-records-benchmark-receipt-$1" "$BENCHMARK" record "$BENCH_LEDGER" "$receipt"
+}
+make_recommendation "$REC_FP"
+record_receipt 1
+record_receipt 2
+assert_fail "delivery-rejects-thin-benchmark-evidence" env POLYLANE_SKILLS_DIRS="$ROOT" POLYLANE_SKILL_BENCHMARK_LEDGER="$BENCH_LEDGER" "$SCOUT" arm-recommendation "$KIT" builder specific "$RECOMMEND" ui:visual-regression
+record_receipt 3
+assert_ok "delivery-arms-recommended-typed-record" env POLYLANE_SKILLS_DIRS="$ROOT" POLYLANE_SKILL_BENCHMARK_LEDGER="$BENCH_LEDGER" "$SCOUT" arm-recommendation "$KIT" builder specific "$RECOMMEND" ui:visual-regression
 assert_eq "delivery-stores-selected-schema" "3" "$(jq -r .version "$KIT")"
 assert_eq "delivery-stores-selected-id" "ui:visual-regression" "$(jq -r '.lanes.builder.selected.specific[0].id' "$KIT")"
 assert_eq "delivery-stores-selected-source" "trusted-root" "$(jq -r '.lanes.builder.selected.specific[0].source' "$KIT")"
 assert_contains "delivery-carries-recommendation-reason" "activities:capture screenshots" "$(jq -r '.lanes.builder.selected.specific[0].reason' "$KIT")"
 assert_ok "delivery-stores-immutable-fingerprint" jq -e '.lanes.builder.selected.specific[0].fingerprint | test("^[0-9]+-[0-9]+$")' "$KIT"
 assert_ok "delivery-validates-typed-records" env POLYLANE_SKILLS_DIRS="$ROOT" "$SCOUT" validate "$KIT" "$MANIFEST"
+
+printf '%s\n' 'fingerprint changed after benchmark receipts' >> "$REC_PATH"
+REC_FP="$(cksum "$REC_PATH" | awk '{print $1 "-" $2}')"
+make_recommendation "$REC_FP"
+assert_fail "delivery-rejects-stale-benchmark-evidence" env POLYLANE_SKILLS_DIRS="$ROOT" POLYLANE_SKILL_BENCHMARK_LEDGER="$BENCH_LEDGER" "$SCOUT" arm-recommendation "$KIT" builder specific "$RECOMMEND" ui:visual-regression
 
 jq '(.lanes.builder.selected.specific[0].path) = "/missing/SKILL.md"' "$KIT" > "$KIT.bad" && mv "$KIT.bad" "$KIT"
 assert_fail "delivery-rejects-missing-runtime-path" env POLYLANE_SKILLS_DIRS="$ROOT" "$SCOUT" validate "$KIT" "$MANIFEST"
