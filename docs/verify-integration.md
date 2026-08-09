@@ -43,3 +43,5 @@ consequential external action was run here.
 POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c17-recovery-cert-20260809-a1
 
 DOMAIN-GRADER: PASS bundle=docs/polylane/domain-runtime/bundle.json grade=docs/polylane/domain-runtime/grade.json
+
+ACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.
