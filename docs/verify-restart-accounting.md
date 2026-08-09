@@ -67,6 +67,16 @@ Each command ran once from this worktree through
 Total: 153 pass, 0 fail. No full suite, whole-tree ShellCheck, installer, doctor, or
 rehearsal command was run.
 
+### Current focused execution
+
+This audit re-executed each of the six listed commands once from the current worktree,
+after the commit/source trace and without a source edit in between. Their exit status
+was 0 and their observed counts were, respectively, 27/0, 11/0, 35/0, 40/0, 26/0, and
+14/0 (153/0 total). Fresh ancestry checks also returned 0 for `80849c5`, `e26c208`, and
+`23cabdf`; a focused diff of `bin/polylane-run.sh` plus the three directly relevant
+contracts against `23cabdf` returned 0, confirming that the integrated repair surface
+has not drifted since that tip.
+
 Fresh diff hygiene after this evidence correction returned clean from
 `git diff --check`; only `docs/verify-restart-accounting.md` was staged for the
 correction commit. The later status commit is restricted to
