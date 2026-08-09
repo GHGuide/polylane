@@ -385,6 +385,13 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c56",
+      "text": "A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -935,6 +942,20 @@
           "evidence": "Merged optional-domain gate af221ab2; fresh cached Cycle-16 contract 35/0 proves explicit not-requested no-op and requested bundle/grade/PASS persistence."
         }
       ]
+    },
+    {
+      "id": "m20",
+      "text": "Cycle 20 — clean process-start terminal certification",
+      "subgoals": [
+        {
+          "id": "m20.1",
+          "text": "Audit restart attribution and complete one zero-restart process-start certification",
+          "weight": 76,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1153,6 +1174,18 @@
       "kind": "learning",
       "text": "The live recovery runner rejected its own same-repository Graphify helper because lane_done compared only with the recovery root, causing one redundant builder respawn.",
       "meta": "Runner paused before integrator respawn; ownership now requires a real graph under a registered sibling worktree in the exact Git common directory; lane-done 27/0 and share-graph 11/0."
+    },
+    {
+      "cycle": 19,
+      "kind": "attempt",
+      "text": "Cycle 19 reached its verifier but correctly halted on the efficiency canary.",
+      "meta": "NO-GO; launches=2; restarts=3>1; terminal_gates=1; cleanup=pending; no promotion."
+    },
+    {
+      "cycle": 20,
+      "kind": "decision",
+      "text": "Start a fresh process from the Cycle 19 integrated tip and require a zero-restart terminal certification.",
+      "meta": "base=23cabdf; outer domain_runtime omitted; one evidence-only builder; coordinator owns full suite and GO+NO-GO rehearsal."
     }
   ],
   "accept": [
@@ -1788,6 +1821,16 @@
       "tier": "focused",
       "key": "cycle19-domain-optional",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m20.1",
+      "cmd": "bash tests/test-lane-done.sh && bash tests/test-share-graph.sh && bash tests/test-cycle-16-contract.sh && bash tests/test-verdict-repair.sh && bash tests/test-supervisor.sh && bash tests/test-efficiency-canary.sh",
+      "tier": "focused",
+      "key": "cycle20-process-start",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
