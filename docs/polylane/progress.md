@@ -8,6 +8,10 @@ subgoals: 51/56 done · criteria: 54/56 done · 93%
 
 **Route:** `CONTINUE m20.1  Audit restart attribution and complete one zero-restart process-start certification`
 
+Cycle 22 integration evidence is a nonce-bound `READY-FOR-HOST-GATE` candidate after
+the exact audit merge and scoped checks.  It does not complete a subgoal or criterion:
+the coordinator-owned terminal boundary remains the only authority for those changes.
+
 ## Open autonomous work
 
 - `m16.4` [open, w54] — Integrate both provider skills and certify all cycle-16 mechanisms end to end
