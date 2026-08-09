@@ -1799,7 +1799,7 @@
       "sid": "m18.3",
       "cmd": "bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
       "tier": "focused",
-      "key": "cycle18-integration",
+      "key": "recovery-integration",
       "status": "pass",
       "deps": [],
       "fp": "",

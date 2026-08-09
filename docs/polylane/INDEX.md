@@ -6,6 +6,13 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 21 active certification: [plan](cycle-21-plan.md) ·
+[research](cycle-21-research.md) · [skill suggestions](cycle-21-suggestions.md).
+It starts from `864050d`, targets every remaining autonomous integration subgoal,
+and reserves `c56` for the coordinator-owned final proof. The acceptance metadata
+deduplicates the identical Cycle 17/18 focused command and the identical Cycle 16/18
+terminal command, so each expensive command runs once at its boundary.
+
 Cycle 20 certification: [plan](cycle-20-plan.md) ·
 [research](cycle-20-research.md) · [skill suggestions](cycle-20-suggestions.md) ·
 [council](cycle-20-council.md) · [digest](cycle-20-digest.md) ·
