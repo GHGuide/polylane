@@ -6,6 +6,20 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 26 READY handoff: [plan](cycle-26-plan.md) ·
+[research](cycle-26-research.md) · [skill suggestions](cycle-26-suggestions.md) ·
+[council](cycle-26-council.md) · [digest](cycle-26-digest.md) ·
+[questions](cycle-26-questions.md) · [integration verification](../verify-integration.md).
+Exact terminal-finality tip `a4bb7fd442c47185c644cf08cc9999be16d06d8c`
+is merged; 700 focused checks across 28 files plus 341-check post-relay and
+246-check fingerprint/scout matrices, changed-script ShellCheck, and the repository
+seam scan are green. The final source also aligns observer completion with compiled
+prompt/pane identity and delivers typed, fingerprint-validated integrator skill
+selections conditionally; a 23-check state regression preserves integrator-less
+manifests. Canonical inspection shows one builder and one integrator launch with zero
+restarts and zero terminal gates. The coordinator owns the sole terminal gate,
+promotion, final state, report, and cleanup.
+
 Cycle 25 NO-GO evidence: [plan](cycle-25-plan.md) ·
 [research](cycle-25-research.md) · [skill suggestions](cycle-25-suggestions.md) ·
 [council](cycle-25-council.md) · [digest](cycle-25-digest.md) ·

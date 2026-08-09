@@ -1,15 +1,15 @@
-# Cycle 25 integration status — NO-GO
+# Cycle 26 integration status — READY for host gate
 
-Run: `c25-finality-20260810-a1` · branch: `lane/c25-integrator` · frozen base:
-`08a0938`.
+Run: `c26-terminal-finality-20260810-a1` · branch: `lane/c26-integrator` ·
+source/evidence boundary: `7854a1f` · Cycle 26 planning base: `0e96dc9`.
 
 | Lane | Exact tip | Integrated result |
 | --- | --- | --- |
-| handoff-contract | `aa5a3b3a867d1dc7b82029cfff5e3c262ca56f05` | merged; one canonical restart makes this run NO-GO |
-| runtime-finality | `24c2b616ea43d22929356063015b848d6c9ae494` | merged; premature completion and scalar-safe recovery contracts pass |
-| integrator | current branch | repaired generated-finalization, ownership, and completed-diff scope seams; 599/599 focused checks pass |
+| terminal-finality | `a4bb7fd442c47185c644cf08cc9999be16d06d8c` | merged exactly; transaction, efficiency, report, and supervisor contracts pass |
+| integrator | current branch | strengthened failed-admission evidence and repaired live observer/integrator-skill seams; 700 frozen, 341 post-repair, 246 fingerprint/scout, and 23 integrator-less state checks pass |
 
-Canonical stats record exactly two builder launches, one handoff restart, zero
-supervisor restarts, zero terminal gates, and pending cleanup. No terminal acceptance
-was run. The integrated source needs one new zero-restart process before host-gate
-eligibility. This document is post-cycle evidence only, never live IPC.
+Canonical stats at inspection record exactly one builder launch and one integrator
+launch, zero lane or supervisor restarts, zero terminal gates, and pending cleanup.
+The source is READY, but the integrator did not run terminal acceptance or decide GO;
+the coordinator owns the one host gate. This document is post-cycle evidence only,
+never live IPC.

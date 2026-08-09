@@ -666,7 +666,7 @@ inject_runtime_prompt_contract() {
 # The authored prompt remains immutable. A compiled copy may remove only
 # byte-identical ordinary prose after the frozen contracts are compared again.
 compile_prompt() {
-  local source="$1" name="$2" role="$3" dir tmp selected runtime compiled metrics prime
+  local source="$1" name="$2" role="$3" dir tmp selected runtime compiled metrics prime selected_required=0
   case "$name" in ''|*[!A-Za-z0-9._-]*) die "unsafe prompt lane name '$name'" ;; esac
   [ -s "$source" ] || { echo "PROMPT-COMPILE: $name source is missing or empty" >&2; return 1; }
   dir="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}"
@@ -683,10 +683,21 @@ compile_prompt() {
     echo "PROMPT-COMPILE: $name lost a frozen contract" >&2
     return 1
   fi
-  # Selected kits are added only after ordinary normalization. The optimizer
-  # owns the injected-record format; this runner forwards the single typed
-  # lane-skill kit that preflight already validated, never a SKILL.md path.
-  if [ "$role" = builder ]; then
+  # Selected kits are added only after ordinary normalization. Builders always
+  # require their validated kit. An integrator remains compatible when no
+  # integrator record exists, but a typed integrator selection is delivered by
+  # the same strict compiler instead of being silently reduced to name-only
+  # labels.
+  [ "$role" = builder ] && selected_required=1
+  if [ "$role" = integrator ] && jq -e --arg lane "$name" '
+    (((.lanes[$lane].predefined // []) | length)
+     + ((.lanes[$lane].specific // []) | length)
+     + ((.lanes[$lane].selected.predefined // []) | length)
+     + ((.lanes[$lane].selected.specific // []) | length)) > 0
+  ' "$LANE_SKILLS_FILE" >/dev/null 2>&1; then
+    selected_required=1
+  fi
+  if [ "$selected_required" = 1 ]; then
     selected=$(mktemp "$dir/.${name}.selected.XXXXXX") || { rm -f "$tmp"; return 1; }
     if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile-selected "$tmp" "$LANE_SKILLS_FILE" "$name" "$selected"; then
       rm -f "$tmp" "$selected"

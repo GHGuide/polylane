@@ -98,13 +98,15 @@ EXTERNAL-EVIDENCE: none.
 VERIFY: STATUS: transaction DONE run=transaction-run.
 EOF
 ORCHESTRATION_CONTRACT=2; DRY_RUN=0; RUN_ID=transaction-run; VERDICT_RESULT=NO-GO
+INT_PANE_IDX=7
 TX_LOG="$TEST_TMPDIR/transaction.log"
 checkpoint_lane() { printf 'checkpoint\n' >> "$TX_LOG"; git -C "$1" commit --allow-empty -qm checkpoint; }
 refresh_manifest_runtime_settings() { printf 'refresh\n' >> "$TX_LOG"; }
 retry_set() { printf 'retry\n' >> "$TX_LOG"; }
 wedge_hash_set() { :; }; wedge_cnt_set() { :; }; pane_cmd_for() { printf command; }
 repipe_pane_log() { printf 'repipe\n' >> "$TX_LOG"; }; notify_event() { :; }
-run_stats() { printf 'restart\n' >> "$TX_LOG"; }
+RESTART_EVENTS=0
+run_stats() { RESTART_EVENTS=$((RESTART_EVENTS + 1)); printf 'restart\n' >> "$TX_LOG"; }
 run() { printf 'pane\n' >> "$TX_LOG"; return 0; }
 # Simulate strict promptopt rejection after construction, before committing any
 # recovery mutation.  This is intentionally a direct admission failure, not a
@@ -113,13 +115,18 @@ assert_prompt() { return 1; }
 HEAD_BEFORE=$(git -C "$INT_WORKTREE" rev-parse HEAD)
 STATUS_BEFORE=$(cksum "$INT_WORKTREE/docs/status-integrator.md")
 VERDICT_BEFORE=$(cksum "$INT_WORKTREE/docs/verify-integration.md")
+PROMPT_BEFORE=$INT_PROMPT
+PANE_BEFORE=$INT_PANE_IDX
 repair_integrator_verdict 1 >/dev/null 2>&1
 transaction_rc=$?
 assert_eq "repair-admission-failure-returns-nonzero" "1" "$transaction_rc"
 assert_eq "repair-admission-failure-preserves-head" "$HEAD_BEFORE" "$(git -C "$INT_WORKTREE" rev-parse HEAD)"
 assert_eq "repair-admission-failure-preserves-status-bytes" "$STATUS_BEFORE" "$(cksum "$INT_WORKTREE/docs/status-integrator.md")"
 assert_eq "repair-admission-failure-preserves-verdict-bytes" "$VERDICT_BEFORE" "$(cksum "$INT_WORKTREE/docs/verify-integration.md")"
-assert_eq "repair-admission-failure-keeps-pane-and-counters-unchanged" "" "$(cat "$TX_LOG" 2>/dev/null || true)"
+assert_eq "repair-admission-failure-preserves-prompt-selection" "$PROMPT_BEFORE" "$INT_PROMPT"
+assert_eq "repair-admission-failure-preserves-pane-identity" "$PANE_BEFORE" "$INT_PANE_IDX"
+assert_eq "repair-admission-failure-performs-no-pane-action" "" "$(cat "$TX_LOG" 2>/dev/null || true)"
+assert_eq "repair-admission-failure-preserves-restart-telemetry" "0" "$RESTART_EVENTS"
 
 # READY-FOR-HOST-GATE is a nonce-bound candidate, not a self-authorized GO.
 # The outer merge gate runs the frozen coordinator checks once, then converts

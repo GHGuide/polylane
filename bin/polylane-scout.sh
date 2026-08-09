@@ -452,10 +452,11 @@ validate_selected_record() {
   [ "$(canonical_skill_file "$resolved" 2>/dev/null || true)" = "$path" ] || return 1
 }
 
-# validate_kits FILE MANIFEST : a strict orchestration contract for builders.
-# GitHub suggestions are advisory metadata and never count as installed kit skills.
+# validate_kits FILE MANIFEST : strict builder kits plus an optional typed
+# integrator kit. GitHub suggestions are advisory metadata and never count as
+# installed kit skills.
 validate_kits() {
-  local f="$1" manifest="$2" lane role count skill record paths duplicates
+  local f="$1" manifest="$2" lane role count skill record paths duplicates lanes integrator
   if [ ! -f "$f" ] ||
      ! jq -e '(.version == 2 or .version == 3) and (.lanes | type == "object")' "$f" >/dev/null 2>&1; then
     echo "SCOUT-KIT: missing or invalid structured lane kit: $f" >&2; return 7
@@ -465,7 +466,13 @@ validate_kits() {
      ! jq -e '.lanes | type == "array"' "$manifest" >/dev/null 2>&1; then
     echo "SCOUT-KIT: invalid manifest: $manifest" >&2; return 7
   fi
-  for lane in $(jq -r '.lanes[].name' "$manifest"); do
+  lanes=$(jq -r '.lanes[].name' "$manifest")
+  integrator=$(jq -r '.integrator.name // ""' "$manifest")
+  if [ -n "$integrator" ] && jq -e --arg lane "$integrator" \
+    '.lanes[$lane] | type == "object"' "$f" >/dev/null 2>&1; then
+    lanes="$lanes $integrator"
+  fi
+  for lane in $lanes; do
     for role in predefined specific; do
       count=$(jq -r --arg l "$lane" --arg r "$role" \
         '(.lanes[$l][$r] // []) | unique | length' "$f")

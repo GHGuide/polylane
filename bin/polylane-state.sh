@@ -58,6 +58,40 @@ polylane_tmux_configure "$RUN_ID"
 AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
 
+# State sources lane_done outside the live runner process, so it must reconstruct
+# the runner's authoritative prompt and worktree paths from durable run state.
+# Prefer the nonce-scoped compiled prompt when it exists; the authored manifest
+# prompt is only the pre-compilation fallback. This keeps the narrow
+# .polylane-prompt.txt dirty-tree exception byte-for-byte identical to the live
+# runner without broadly ignoring prompt scratch.
+state_worktree_path() {
+  [ -n "$1" ] || return 0
+  case "$1" in /*) printf '%s' "$1" ;; *) printf '%s/%s' "$PROJECT_ROOT" "$1" ;; esac
+}
+
+state_prompt_path() {
+  local name="$1" authored="$2" compiled="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}/$1.txt"
+  [ -n "$name" ] || return 0
+  if [ -f "$compiled" ] && [ ! -L "$compiled" ]; then
+    printf '%s' "$compiled"
+  elif [ -z "$authored" ]; then
+    return 0
+  else
+    case "$authored" in /*) printf '%s' "$authored" ;; *) printf '%s/%s' "$PROJECT_ROOT" "$authored" ;; esac
+  fi
+}
+
+LANE_NAMES=(); LANE_PROMPTS=()
+while IFS='|' read -r state_name state_prompt; do
+  [ -n "$state_name" ] || continue
+  LANE_NAMES+=("$state_name")
+  LANE_PROMPTS+=("$(state_prompt_path "$state_name" "$state_prompt")")
+done < <(jq -r '.lanes[] | "\(.name)|\(.prompt_file)"' "$MANIFEST")
+INT_NAME=$(jq -r '.integrator.name // ""' "$MANIFEST")
+INT_WT=$(state_worktree_path "$(jq -r '.integrator.worktree // ""' "$MANIFEST")")
+# shellcheck disable=SC2034  # consumed indirectly by sourced lane_prompt_get/lane_done
+INT_PROMPT=$(state_prompt_path "$INT_NAME" "$(jq -r '.integrator.prompt_file // ""' "$MANIFEST")")
+
 # discover_session : recover the exact session without relying on chat memory or
 # the observer's environment. New manifests persist `.session`; upgraded legacy
 # runs are discovered from the ownership tags written by polylane-run.sh.
@@ -128,8 +162,6 @@ while IFS= read -r line; do
   case "$line" in *"polylane-run.sh"*" $REAL_MANIFEST"*) runner_alive="alive"; break ;; esac
 done < <(pgrep -fl "polylane-run\.sh" 2>/dev/null || true)
 
-INT_NAME=$(jq -r '.integrator.name // ""' "$MANIFEST")
-INT_WT=$(jq -r '.integrator.worktree // ""' "$MANIFEST")
 verdict="UNKNOWN"
 [ -n "$INT_WT" ] && verdict=$(parse_verdict "$INT_WT/docs/verify-integration.md")
 
@@ -155,7 +187,7 @@ fi
 
 # --- emit ----------------------------------------------------------------------
 NAMES=(); WTS=()
-while IFS='|' read -r n w; do [ -n "$n" ] && { NAMES+=("$n"); WTS+=("$w"); }; done < <(jq -r '.lanes[] | "\(.name)|\(.worktree)"' "$MANIFEST")
+while IFS='|' read -r n w; do [ -n "$n" ] && { NAMES+=("$n"); WTS+=("$(state_worktree_path "$w")"); }; done < <(jq -r '.lanes[] | "\(.name)|\(.worktree)"' "$MANIFEST")
 [ -n "$INT_NAME" ] && { NAMES+=("$INT_NAME"); WTS+=("$INT_WT"); }
 
 if [ "$JSON" = "1" ]; then

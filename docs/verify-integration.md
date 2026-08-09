@@ -1,131 +1,193 @@
-# Cycle 25 integration verification — NO-GO
+# Cycle 26 integration verification — READY for the host gate
 
-Run: `c25-finality-20260810-a1`
-Branch: `lane/c25-integrator`
-Frozen base: `08a0938`
+Run: `c26-terminal-finality-20260810-a1`
 
-The selected verification-before-completion and code-review kits guided the
-evidence ordering and the independent shell/race review. The bounded context packet
-was read exactly once. No Graphify skill file was read or invoked, and the shared
-graph was not rebuilt.
+Branch: `lane/c26-integrator`
 
-## Exact-tip provenance and ownership
+Frozen source/evidence boundary: `7854a1f`
 
-The two asserted builder tips were merged without rewriting either branch:
+Cycle 26 planning base: `0e96dc9`
 
-| Lane | Asserted tip | Integration merge |
-| --- | --- | --- |
-| `handoff-contract` | `aa5a3b3a867d1dc7b82029cfff5e3c262ca56f05` | `c6da677` |
-| `runtime-finality` | `24c2b616ea43d22929356063015b848d6c9ae494` | `27a3510` |
+The selected verification-before-completion and code-review kits governed the
+evidence order and the independent transaction/error/race audit. The bounded
+context packet was read exactly once. No Graphify skill body was read or invoked,
+and the shared graph was not rebuilt.
 
-`git merge-base --is-ancestor` succeeded for both tips. The handoff tip changed only
-its prompt/lint/reference/parity surfaces, focused tests, and lane evidence. The
-runtime tip changed its runner/completion surfaces, but also changed
-`tests/test-reflexion.sh` outside its asserted owned test set. Addressed durable inbox
-message `message:98` required that file to be restored exactly to frozen base
-`08a0938`; `git diff --exit-code 08a0938 -- tests/test-reflexion.sh` now succeeds. Its
-strict-scalar regression is retained in owned `tests/test-lane-done-live.sh`.
+## Exact-tip provenance and write set
 
-## Independent review and seam repairs
+The asserted terminal-finality tip
+`a4bb7fd442c47185c644cf08cc9999be16d06d8c` was merged without rewriting it.
+Integration merge `979784293cfb6c4aa614761d403add16b5f7c343` has parents
+`0e96dc9b55555bee79e2184cd8eb7963a97bf8e5` and the exact asserted tip;
+`git merge-base --is-ancestor` succeeded.
 
-The merged diff was reviewed for fail-closed behavior, shell portability, generated
-prompt parity, exact-once scalars, process races, and branch ownership. Three proven
-cross-lane seams were repaired:
+The builder write set is limited to the runner/supervisor, Claude/Codex prompt
+guidance, prompt/reference parity, five focused test files, and its two handoff
+records. Final relay review exposed two bounded integration seams, repaired in
+`bin/polylane-run.sh` and `bin/polylane-state.sh` with regressions in
+`tests/test-cycle-13-contract.sh` and `tests/test-state.sh`:
 
-1. `inject_runtime_prompt_contract` emitted a shortened finalization line that the
-   strict generated linter rejected. It now emits the same ordered literal contract
-   as every Claude/Codex prompt surface.
-2. Authored prompts already advertise runtime labels. The injector now replaces those
-   three runner-owned labels before appending the nonce/path-specific compiled forms,
-   avoiding duplicate runtime scalars. Three explicit BSD-sed expressions are used;
-   the rejected GNU-style alternation is not retained.
-3. Prelaunch scope checks did not grade a builder's completed diff. Contract-v2
-   `lane_done` now checks every frozen-base-to-HEAD builder path with
-   `polylane-scope.sh check-lane`, fails closed when manifest/base evidence is missing,
-   surfaces exact violations, and deliberately excludes the cross-lane integrator.
+1. The read-only state observer now reconstructs absolute worktrees and prefers
+   the current nonce's canonical compiled prompt when grading the narrow
+   `.polylane-prompt.txt` exception. It no longer compares launch transport bytes
+   with an authored source prompt or broadly ignores prompt scratch.
+2. Prompt compilation now injects typed selected records for an integrator when
+   that lane has selections. A missing integrator kit remains a no-op; present
+   records still pass compile-selected validation, path/fingerprint checks,
+   dedupe, strict lint, and prompt budgets.
 
-The finalization contract is present in `SKILL.md`, `codex/SKILL.md`, planning,
-prompt blocks, lane template, and the compiled runtime injector. Strict generated lint
-requires the ordered literal and rejects a fictional executable
-`polylane-refine.sh propose-or-decline`. Prime-hybrid instructions instead run `queue`,
-then one implemented `propose` or `decline` for each eligible item. Repair and churn
-prompts preserve the original `DELEGATION`, `CHECK-CACHE`, and all other strict
-scalars. A committed status marker and READY handoff are rejected while the mapped
-nonce-bound agent is live and accepted after exit.
+Integration also strengthened `tests/test-verdict-repair.sh`: failed admission now
+explicitly proves prompt selection, pane index/no pane action, and restart
+telemetry are unchanged, in addition to HEAD and status/verdict bytes. No fixture
+was weakened; fixtures were extended only to exercise the stricter production
+invariants.
 
-Cycle 24 behavior remains intact: complete pane-local tags survive cwd drift; partial,
-wrong-run, and wrong-worktree tags fail closed; fully untagged legacy cwd adoption
-still works. A scoped inbox sees only matching-run events while the legacy unscoped API
-retains history. Manifest `intensity: custom` preserves baked model/effort values, and
-explicit CLI presets remain the only remapping operation.
+## Independent terminal transaction review
 
-## Focused verification
+- `build_integrator_repair_prompt` retains the original strict block and adds
+  prose only. Strict promptopt admission proves all 13 exact-once labels occur
+  once.
+- `repair_integrator_verdict` prepares and strictly admits a candidate before
+  checkpointing, evidence archive/removal, `INT_PROMPT` selection, runtime
+  refresh, pane respawn, or `lane-restart`. Forced admission failure leaves HEAD,
+  committed status/verdict checksums, selected prompt, pane identity/action log,
+  and restart telemetry unchanged.
+- `terminal_efficiency_eligible` reads only observed launch/restart/supervisor
+  overages and runs before `terminal-gate`. A rejected path records zero terminal
+  events and skips proof/acceptance; eligible GO and external routes each count
+  and execute the boundary exactly once. Unknown token evidence remains unknown.
+- An exhausted or nonrepairable verifier route calls
+  `publish_established_no_go`: the known NO-GO report is attempted even when graph
+  halt bookkeeping fails, and it precedes best-effort salvage/learning. Visual
+  and judge exhaustion also publish NO-GO before returning. GO/external success
+  converges on the same idempotent terminal reporter.
+- Graph/bookkeeping or promotion failures before a terminal verdict publish
+  `HALTED`, preserving recovery rather than fabricating NO-GO. A failed report
+  write preserves an older truthful report and remains reportless/recoverable.
+- `report_completed_terminal` permits one publication attempt per runner process.
+  The supervisor accepts only a fresh report containing the current nonce: fresh
+  NO-GO ends after one launch, while HALTED, a stale-run report, and a truly
+  reportless crash retain their recovery paths.
+- `safe_rm` refuses unsafe paths with `return 1`, never process `exit`. Ordering
+  and error propagation remain Bash-3.2-safe; no associative arrays, GNU-only
+  rewrites, unbounded retry, or new deletion surface was introduced.
 
-The final combined cached matrix passed **599 assertions across 24 files with zero
-failures**. It includes the 14 frozen Cycle 24 identity/context/model checks, all Cycle
-25 handoff/finality checks, `test-scope.sh`, and `test-seams.sh`. The retained log is
-`.polylane/check-cache/integrator/3744703488-936.output`.
+The review found no unresolved ordering, portability, idempotence, or race defect.
+The prepared prompt is ordinary scratch until admitted; live evidence and pane
+state remain authoritative until the prepare phase succeeds.
 
-Changed-script ShellCheck passed once on the final source across:
-`polylane-model-policy.sh`, `polylane-promptlint.sh`, `polylane-promptopt.sh`,
-`polylane-run.sh`, `polylane-scout.sh`, `polylane-state.sh`,
-`polylane-supervisor.sh`, `polylane-tmux.sh`, and `polylane-workers.sh`. Its retained
-log is `.polylane/check-cache/integrator/1929566801-329.output`. `git diff --check`
-also succeeds.
+## Fresh focused verification
 
-The terminal acceptance, whole repository suite, installers, and doctor rehearsal were
-not run; they remain coordinator-owned and no host gate was consumed.
+One cached combined run passed **700 checks across 28 files with zero failures**.
+It covers pane-local identity, run-scoped inbox and worker history, live-agent
+marker gating, completed-branch scope, finalization/handoff syntax, prompt
+compiler/lint/optimization and provider parity, refinement commands, custom
+intensity/model policy, state, supervisor, graph authority, reports, repair,
+pre-terminal efficiency, recovery/resume, run stats, acceptance, verdict parsing,
+and the seam scanner. Retained log:
+`.polylane/check-cache/integrator/51513573-1095.output`.
 
-## Fresh runtime, Graphify, and inbox evidence
+After the final relay exposed the observer and skill-delivery seams, a fresh
+affected matrix passed **341 checks across 10 files with zero failures**: state,
+lane completion, the Cycle 13 compiled-prompt journey, skill delivery, prompt
+compiler/optimization/lint, orchestration, provider parity, and verdict repair.
+Retained log: `.polylane/check-cache/integrator/979932736-508.output`.
 
-Canonical evidence is under `/Users/leonardo/Downloads/polylane-c25`, not the bounded
-runtime snapshot. `docs/polylane/run-stats.json` records exactly one launch for each of
-the two builders and one integrator launch. It also records:
+A final fingerprint-enforcement matrix then passed **246 checks across 7 files
+with zero failures**: the Cycle 13 journey, skill delivery, all scout/catalog/
+outcome contracts, orchestration, and provider parity. It proves an absent
+integrator record remains a no-op, while a present record with a stale fingerprint
+fails validation before prompt compilation. Retained log:
+`.polylane/check-cache/integrator/1461801900-415.output`.
 
-- `handoff-contract`: **1 restart**;
-- `runtime-finality`: 0 restarts;
-- `integrator`: 0 restarts;
-- supervisor restarts: 0;
-- terminal gates: 0;
-- tokens: unknown (never rendered as zero);
-- cleanup: pending.
+Final relay request 5 added the missing integrator-less observer boundary. The
+state path resolvers now preserve empty worktree/prompt values as empty, and a
+fresh **23-check** state run proves no phantom integrator lane, root worktree, or
+`.txt` prompt is synthesized. Retained test and ShellCheck logs:
+`.polylane/check-cache/integrator/3391859829-114.output` and
+`.polylane/check-cache/integrator/1034521202-133.output`.
 
-The three current worker capsules retain their role, run registration, and bounded
-context identity. All three live panes expose pane-local `@polylane_run_id`,
-`@polylane_lane`, and `@polylane_worktree`; the values match this nonce and the exact
-handoff, runtime, and integrator worktrees. The frozen custom manifest preserves
-`gpt-5.6-terra/medium` for both builders and `gpt-5.6-sol/high` for the integrator.
+Final changed-script ShellCheck passed for `bin/polylane-run.sh`,
+`bin/polylane-state.sh`, `bin/polylane-scout.sh`, and
+`bin/polylane-supervisor.sh`; retained log:
+`.polylane/check-cache/integrator/1156756985-202.output`. The real repository seam
+scan passed with log `.polylane/check-cache/integrator/860521856-190.output`.
+`git diff --check` also passed.
 
-All three canonical compiled prompts were inspected. They contain one ultimate goal,
-subgoal, goal, delegation, check-cache, exact inbox route, selected builder records,
-relay, and nonce-bound DONE path. Because this self-run launched from the Cycle 24 base
-in order to build Cycle 25, its launch-time compiled copies predate the new formal
-`POLYLANE-RUNTIME-FINALIZE` label; the merged candidate's compilation is independently
-covered by the green orchestration and live-finality acceptances above.
+The coordinator-owned full suite, installers, terminal acceptance, and doctor
+rehearsal were not run. No terminal gate was consumed by this lane.
 
-Command-field audit of all three canonical lane logs found direct
-`graphify-out/q.py` use (`handoff-contract` 8 invocations across its original and
-restarted transcript, `runtime-finality` 5, integrator 17) and **zero reads of any
-Graphify or Graphify-auto `SKILL.md`**. The shared graph was never rebuilt.
+## Live runtime, Graphify, and inbox evidence
 
-The canonical worker history contains 99 events: 96 historical unscoped events and
-three events scoped to this run. The scoped integrator inbox returned only current-run
-`message:98`; no old or unscoped event leaked into the result. That request exposed the
-ownership and missing post-completion scope gate repaired above. The refinement queue
-returned `[]`, so no `propose` or `decline` action was eligible.
+Canonical `docs/polylane/run-stats.json` was inspected after integrator launch. It
+records one `terminal-finality` launch at `1786316034`, one integrator launch at
+`1786316870`, zero lane restarts, zero supervisor restarts, zero terminal gates,
+unknown tokens, and pending cleanup. The builder capsule is complete and the
+integrator capsule is active for Cycle 26. Thus the required builder history
+before integrator launch is exactly one launch with no builder or supervisor
+restart. Runtime counters are recorded here as evidence, not used by the
+integrator to self-authorize GO.
+
+The canonical manifest preserves `intensity: custom`, builder
+`gpt-5.6-terra/medium`, and integrator `gpt-5.6-sol/high`. Pane 0 and pane 1 expose
+matching pane-local `@polylane_run_id`, `@polylane_lane`, and
+`@polylane_worktree` values for this nonce. Both canonical compiled prompts were
+inspected. The launch-time integrator copy had name-only skill labels and zero
+`SELECTED-SKILL` records, which is recorded as the relay-discovered seam above;
+the final source and 341-check matrix now prove conditional integrator delivery.
+The two exact records were read from the typed injected
+`.polylane/lane-skills.json` record, once each, rather than inferred from that
+defective launch-time prompt.
+
+Before the observer fix, the live state surface reported terminal-finality as
+`likely-done(verify me)` with pane `-`. Re-running the fixed worktree script against
+the same canonical manifest reports terminal-finality `done`, pane `0`, head
+`a4bb7fd`; the unfinished integrator remains non-done on pane `1`. This is direct
+state/runner agreement evidence. The scoped durable integrator inbox returned
+`[]` at both ordinary and final reads.
+
+Direct navigation used:
+
+```sh
+python3 graphify-out/q.py --cap 8 build_integrator_repair_prompt
+python3 graphify-out/q.py --cap 8 repair_integrator_verdict
+python3 graphify-out/q.py --cap 8 gate_with_repairs
+python3 graphify-out/q.py --cap 8 write_report
+python3 graphify-out/q.py --cap 8 supervisor_main
+```
+
+These resolved the runner symbols at lines 3512, 3558, 3645, and 4191 and the
+supervisor symbol at line 213 in the carried graph. A command-field audit found
+direct q.py use in both lane logs (one builder command field and three integrator
+command fields) and **zero Graphify skill-body read commands**. The graph was not
+rebuilt.
+
+The refinement queue returned `[]`, so no item was eligible and no `propose` or
+`decline` command was invoked. Final relay requests 3 and 4 were addressed by the
+two bounded seam fixes and their fresh tests; request 5 added the empty-preserving
+integrator-less regression. The final scoped inbox returned `[]`. No external
+evidence is claimed.
+
+## Skill receipts
+
+SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
+
+SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
+
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: withheld all
+completion claims through the final relay defects and required the original
+700-check matrix, post-repair 341-check and 246-check matrices, changed-script
+ShellCheck, repository seam scan, ancestry proof, runtime inspection, and final
+clean-state checks.
+
+SKILL-EVIDENCE: engineering:code-review — helped: structured the independent
+ordering, fail-closed, Bash portability, race-window, write-set, and report
+idempotence review; it also kept the observer exception narrow and integrator
+skill injection conditional instead of weakening dirty-tree or selection gates.
 
 ## Verdict
 
-The source candidate is focused-green, but the run is not promotable. The frozen plan
-makes any lane restart NO-GO, and canonical stats record one `handoff-contract`
-restart. No local repair can erase nonce-bound restart history. A fresh run from this
-integrated tip must prove exactly two builder launches, zero lane and supervisor
-restarts, then leave the one terminal gate to the coordinator. Cleanup for this failed
-run also remains coordinator-owned.
-
-## DEFERRED
-
-DEFERRED: fresh zero-restart host certification — rerun this integrated source in a
-new nonce; only that process may become eligible for the terminal gate.
-
-POLYLANE-VERDICT: NO-GO run=c25-finality-20260810-a1
+The exact terminal-finality source and the accumulated Cycle 24–26 contracts are
+focused-green. The integrator does not convert runtime counters into GO and leaves
+the single frozen terminal boundary to the coordinator. The formal nonce-bound
+handoff verdict is added only in the final marker commit.

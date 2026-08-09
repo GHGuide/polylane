@@ -2,12 +2,15 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-Cycle 25 integration note: exact-tip atomic completion and context hardening remain
-NO-GO despite 599 green focused checks and clean changed-script ShellCheck. Canonical
-evidence records one handoff restart; the terminal gate was correctly left untouched.
-No durable goal or criterion state changed, so the mechanically generated Cycle 23
-totals below remain authoritative. A fresh nonce must certify the repaired source with
-zero restarts.
+Cycle 26 integration note: transactional terminal finality is
+`READY-FOR-HOST-GATE` after an exact-tip merge, 700 green focused checks across 28
+files, a 341-check post-relay affected matrix for observer/skill-delivery seams, and
+a 246-check fingerprint/scout matrix. Changed-script ShellCheck and the repository
+seam scan are clean. Canonical evidence at inspection records one builder launch, one
+integrator launch, zero restarts, and zero terminal gates. No durable goal or
+criterion state changes before coordinator promotion, so the mechanically generated
+totals below remain authoritative; open `m21.1`–`m23.3` and `c57`–`c62` are finalized
+only by the host gate.
 
 ## Cycle 23
 

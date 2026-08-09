@@ -5,6 +5,7 @@
 # (a runner in ANOTHER project must not read as "alive" here).
 
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
+. "$RUNNER"
 STATE="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-state.sh"
 
 if ! command -v jq >/dev/null 2>&1 || ! command -v git >/dev/null 2>&1; then
@@ -18,7 +19,7 @@ mkdir -p "$G"
   cd "$G"
   git init -q -b main; git config user.email t@t; git config user.name t
   echo x > f; git add f; git commit -qm base
-  mkdir -p .polylane docs
+  mkdir -p .polylane/lanes .polylane/compiled-prompts/current-nonce docs
   git worktree add .polylane/wt/a  -b lane/a  >/dev/null 2>&1
   git worktree add .polylane/wt/b  -b lane/b  >/dev/null 2>&1
   git worktree add .polylane/wt/int -b lane/int >/dev/null 2>&1
@@ -29,11 +30,14 @@ mkdir -p "$G"
   ( cd .polylane/wt/a && git add docs/status-a.md && git commit -qm done )
   ( cd .polylane/wt/b && echo w > w.txt && git add w.txt && git commit -qm work )
   printf 'ev\nPOLYLANE-VERDICT: GO run=current-nonce\n' > .polylane/wt/int/docs/verify-integration.md
+  printf 'authored builder prompt\n' > .polylane/lanes/a.txt
+  printf 'compiled builder prompt\n' > .polylane/compiled-prompts/current-nonce/a.txt
+  cp .polylane/compiled-prompts/current-nonce/a.txt .polylane/wt/a/.polylane-prompt.txt
 ) >/dev/null 2>&1
 cat > "$G/.polylane/run.json" <<EOF
-{"base":"main","orchestration_contract":2,"run_id":"current-nonce","session":"manifest-owned","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$G/.polylane/wt/int","prompt_file":"p"},
-"lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"$G/.polylane/wt/a","prompt_file":"p","own_globs":["x","docs/status-a.md"]},
-{"name":"b","model":"m","effort":"h","branch":"lane/b","worktree":"$G/.polylane/wt/b","prompt_file":"p","own_globs":["y"]}]}
+{"base":"main","orchestration_contract":2,"run_id":"current-nonce","session":"manifest-owned","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":".polylane/wt/int","prompt_file":"p"},
+"lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":".polylane/wt/a","prompt_file":".polylane/lanes/a.txt","own_globs":["x","docs/status-a.md"]},
+{"name":"b","model":"m","effort":"h","branch":"lane/b","worktree":".polylane/wt/b","prompt_file":"p","own_globs":["y"]}]}
 EOF
 
 OUT=$(cd "$G" && POLYLANE_SESSION=state-test-nosuch "$STATE" .polylane/run.json)
@@ -46,6 +50,15 @@ assert_contains "state-watch-inactive"    "watch: -"               "$OUT"
 # no runner drives THIS temp project (others may run elsewhere on the machine)
 assert_contains "state-runner-dead"      "runner: dead"           "$OUT"
 
+# The live runner holds the compiled prompt in memory; the external observer
+# reconstructs that same nonce-scoped path instead of comparing transport bytes
+# with the authored source prompt.
+LANE_NAMES=(a); LANE_PROMPTS=("$G/.polylane/compiled-prompts/current-nonce/a.txt")
+INT_NAME=int; INT_PROMPT="$G/p"
+REPO_ROOT="$G" PROJECT_ROOT="$G" MANIFEST="$G/.polylane/run.json" BASE=main \
+  RUN_ID=current-nonce ORCHESTRATION_CONTRACT=2 assert_ok \
+  "runner-state-agree-on-compiled-runtime-prompt" lane_done "$G/.polylane/wt/a" a
+
 # --json is valid and carries the same facts
 J=$(cd "$G" && POLYLANE_SESSION=state-test-nosuch "$STATE" .polylane/run.json --json)
 assert_ok "state-json-valid" sh -c "printf '%s' '$(printf '%s' "$J" | tr -d "'")' | jq -e . >/dev/null"
@@ -53,6 +66,14 @@ assert_eq "state-json-verdict" "GO" "$(printf '%s' "$J" | jq -r .verdict)"
 assert_eq "state-json-lane-a"  "done" "$(printf '%s' "$J" | jq -r '.lanes[] | select(.name=="a") | .status')"
 assert_eq "state-json-watch-inactive" "-" "$(printf '%s' "$J" | jq -r .watch)"
 assert_eq "state-json-session-manifest-owned" "manifest-owned" "$(printf '%s' "$J" | jq -r .session)"
+
+# Integrator-less legacy/observer manifests remain truly integrator-less. Empty
+# fields must not normalize to PROJECT_ROOT or a phantom compiled `.txt` path.
+jq 'del(.integrator)' "$G/.polylane/run.json" > "$G/.polylane/no-integrator.json"
+J_NO_INT=$(cd "$G" && POLYLANE_SESSION=state-test-nosuch "$STATE" .polylane/no-integrator.json --json)
+assert_eq "state-integrator-less-has-only-builders" "2" "$(printf '%s' "$J_NO_INT" | jq '.lanes | length')"
+assert_eq "state-integrator-less-verdict-unknown" "UNKNOWN" "$(printf '%s' "$J_NO_INT" | jq -r .verdict)"
+assert_eq "state-integrator-less-has-no-empty-lane" "0" "$(printf '%s' "$J_NO_INT" | jq '[.lanes[] | select(.name=="")] | length')"
 
 # Contract-v2 status is only DONE when the current-nonce marker and the entire
 # worktree are committed. State and the runner helper must agree on dirty work.
