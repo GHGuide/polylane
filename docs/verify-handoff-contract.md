@@ -30,6 +30,10 @@ Both provider skills advertise the same marker-last protocol and refinement synt
 
 Only the owned prompt lint, Claude/Codex skills, prompt/planning references, listed focused tests, and this verification record changed. No runner, tmux, supervisor, state, or base-branch implementation was modified.
 
+## Integration-boundary relay
+
+Addressed durable inbox `message:99` from the integrator was handled during final coordination. The runner-owned `inject_runtime_prompt_contract` remains outside this lane's ownership; this lane preserves that frozen boundary and supplies the direct prompt/lint/parity contract for integration. The integrator must rerun the orchestration fixture on the merged tips.
+
 ## Skill receipts
 
 SKILL-READ: engineering:documentation | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/documentation/SKILL.md | 1d469418f786a05be83d2a05f04d68788aeed584d13863a650f5ad73c6c4cf50
