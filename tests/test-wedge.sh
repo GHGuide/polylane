@@ -48,6 +48,22 @@ printf '%s\n' '{"type":"error","message":"provider failed"}' >> "$REPO_ROOT/docs
 assert_ok "latest-error-is-terminal" lane_terminal_turn a
 rm -f "$REPO_ROOT/docs/lane-logs/a.log"
 
+# Regression: the append-only transcript can retain an old agent_message while
+# a high-effort Codex turn is still live. It is progress, not a turn boundary,
+# so the real classifier must keep the long live-turn grace rather than restart
+# the lane through the normal dead-pane window.
+printf '%s\n' '{"type":"item.completed","item":{"type":"agent_message"}}' > "$REPO_ROOT/docs/lane-logs/a.log"
+LANE_WHASH=(); LANE_WCNT=()
+FAKE_AGENT_LIVE=1
+POLYLANE_LIVE_WEDGE_CHECKS=0
+FAKE_PANE_TXT='quiet live high-effort Codex turn'
+pane_wedged a 0; :
+wedge_cnt_set a 4
+pane_wedged a 0; rcOldProgressLive=$?
+assert_eq "old-agent-message-keeps-live-high-effort-turn-from-restart" "1" "$rcOldProgressLive"
+FAKE_AGENT_LIVE=0
+rm -f "$REPO_ROOT/docs/lane-logs/a.log"
+
 # --- 1. startup_check answers the trust dialog -------------------------------
 FAKE_PANE_TXT='Do you trust the files in this folder?
 ❯ 1. Yes, proceed
