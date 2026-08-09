@@ -12,6 +12,8 @@ does not close `m18.3`.
 
 - Optionality remains owned by the authoritative advanced helper; the wrapper may not
   infer artifact existence from a successful optional skip.
+- Runner-created shared context is clean only when its target belongs to a registered
+  sibling worktree in the exact same Git common directory; foreign links remain dirty.
 - Preserve frozen requested-domain grading, selected-skill delivery, approval hashes,
   file isolation, and paper-only trading.
 - The existing graph is a navigation aid only; its stale helper topology cannot replace
@@ -21,4 +23,6 @@ does not close `m18.3`.
 
 `READY-FOR-HOST-GATE` is a nonce-bound recovery handoff, not terminal GO. The
 coordinator runs the untouched full suite and both rehearsal outcomes once; that fresh
-host evidence alone decides the still-open `m18.3` terminal boundary.
+host evidence alone decides the still-open `m18.3` terminal boundary. The coordinator
+must also prove that the repaired graph ownership contract survives the live terminal
+rehearsal, rather than treating its focused regression test as terminal evidence.

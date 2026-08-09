@@ -1147,6 +1147,12 @@
       "kind": "decision",
       "text": "Cycle 19 optional-domain boundary is locally verified and ready for the coordinator host gate.",
       "meta": "merged af221ab2; c16 35/0; verdict-repair 40/0; selected-skill delivery 44/0; cycle13 44/0; parity 57/0; installers 50/0+39/0; ShellCheck clean; terminal m18.3 remains open"
+    },
+    {
+      "cycle": 19,
+      "kind": "learning",
+      "text": "The live recovery runner rejected its own same-repository Graphify helper because lane_done compared only with the recovery root, causing one redundant builder respawn.",
+      "meta": "Runner paused before integrator respawn; ownership now requires a real graph under a registered sibling worktree in the exact Git common directory; lane-done 27/0 and share-graph 11/0."
     }
   ],
   "accept": [
