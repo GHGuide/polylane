@@ -652,6 +652,7 @@ inject_runtime_prompt_contract() {
   {
     cat "$input"
     printf '\nPOLYLANE-RUNTIME-RELAY: at start and immediately before completion run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; handle requests addressed to %s. docs/parallel-status.md is post-cycle evidence only, never the live relay.\n' "$name"
+    printf 'POLYLANE-RUNTIME-FINALIZE: after the final relay/inbox read, handle all addressed autonomous work, run focused verification, stage every owned changed or new file, commit it, and verify clean status allowing only runner-owned prompt/graph scratch. Create the required status marker or verdict last, force-add it when ignored, make one final commit, then exit immediately with no later reads or mutations.\n'
     printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
   } > "$output"
 }
@@ -2190,15 +2191,31 @@ lane_done() {
     fi
     [ -z "$dirty" ] || return 1
     git -C "$wt" cat-file -e "HEAD:$rel" 2>/dev/null || return 1
-    [ "$completion" = "ready" ] && return 0
-    IFS= read -r head_first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
-    if [ -n "${RUN_ID:-}" ]; then
-      [ "$head_first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
-    else
-      [ "$head_first" = "STATUS: $name DONE" ] || return 1
+    if [ "$completion" = "status" ]; then
+      IFS= read -r head_first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
+      if [ -n "${RUN_ID:-}" ]; then
+        [ "$head_first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
+      else
+        [ "$head_first" = "STATUS: $name DONE" ] || return 1
+      fi
     fi
   fi
+  lane_completion_worker_live "$wt" "$name" && return 1
   return 0
+}
+
+# lane_completion_worker_live WORKTREE NAME : a contract-v2 handoff is not final
+# while its explicitly mapped, nonce-bound pane still has the selected agent in
+# its process tree.  An unmapped or unverifiable pane is deliberately not a new
+# blocker: marker-only callers and legacy/non-tmux paths retain their pure tests.
+lane_completion_worker_live() {
+  local wt="$1" name="$2" idx mapped
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  idx=$(pane_index_for "$name")
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  mapped=$(pane_for_worktree "$wt" 2>/dev/null || true)
+  [ "$mapped" = "$idx" ] || return 1
+  pane_agent_live "$idx"
 }
 
 # normalize_status_marker WORKTREE NAME : repair one narrow, mechanically safe
@@ -2780,8 +2797,7 @@ build_repair_prompt() {
   printf 'docs/verify-%s.md — (1) what went wrong (2) the root cause (3) the DIFFERENT\n' "$name"
   printf 'approach you will now take. THEN fix and drive to DONE. Do NOT repeat the\n'
   printf 'failed approach. Your locked goal is unchanged.\n'
-  printf 'DELEGATION: forbidden. Do not spawn subagents, collaboration agents, or fan-out.\n'
-  printf 'CHECK-CACHE: do not repeat an unchanged expensive check; use polylane-check.sh.\n'
+  printf 'Preserve every existing strict scalar contract exactly; do not append replacement scalar lines.\n'
 }
 
 # reflect_and_repair NAME WT IDX : write the augmented prompt, point the lane at
@@ -3038,9 +3054,7 @@ replan_churning_lane() {
     printf '\n\n── USAGE-GUARD REPLAN %s ─────────────────────────────────────\n' "$count"
     printf 'Your transcript executed many commands without a source-state change.\n'
     printf 'Stop broad auditing. Produce the smallest concrete change/evidence that advances GOAL.\n'
-    printf 'DELEGATION: forbidden; do not spawn subagents, collaboration agents, or fan-out.\n'
-    printf 'CHECK-CACHE: use %s/polylane-check.sh %s/.polylane/check-cache/%s -- <command>;\n' "$SCRIPT_DIR" "$REPO_ROOT" "$name"
-    printf 'never rerun an unchanged expensive pass or failure. Read its saved log instead.\n'
+    printf 'Preserve every existing strict scalar contract exactly; use its existing check-cache rule.\n'
     printf 'Work only from current evidence, make one narrow plan, execute it, then finish DONE.\n'
   } > "$repair"
   lane_prompt_set "$name" "$repair"
