@@ -31,18 +31,24 @@ The committed Cycle 20 terminal outcome (`0a9cf7b`) records run
 `c20-clean-cert-20260809-a1`: two launches, one restart, one host-boundary entry, zero
 full terminal-acceptance executions, known 4,424,983 tokens, and retained cleanup. It
 states that the host efficiency proof failed at `restarts=1>0`, so the terminal command
-was not consumed. The same commit's updated integration evidence identifies the actual
-near-miss as `docs/status-restart-accounting.md` where the required marker was
-`docs/status-restart-accounting-audit.md`; its nonce-bound first line belonged to the
-same lane and run. This attributes the restart to a plan/observer path mismatch, not to
+was not consumed.
+
+The preserved read-only manifest
+`/Users/leonardo/Downloads/polylane-c20/.polylane/run.json` is the raw primary path
+evidence. Its `restart-accounting-audit` lane owns
+`docs/status-restart-accounting.md`, while the observer's canonical lane-derived path
+is `docs/status-restart-accounting-audit.md`. The preserved authored prompt at
+`/Users/leonardo/Downloads/polylane-c20/.polylane/lanes/restart-accounting-audit.txt`
+also names `OWN: docs/verify-restart-accounting.md; docs/status-restart-accounting.md`.
+Thus the frozen manifest and prompt both assigned the same shortened, noncanonical
+marker path; the worker followed those instructions and the observer demanded a
+different path. This is direct primary evidence of the plan/observer mismatch, not
 worker noncompliance.
 
-The raw frozen `.polylane` manifest, authored prompt, live relay, and telemetry files
-for Cycle 20 are not retained in this fresh worktree's scratch area or in its reachable
-Git tree. Thus this audit can prove the committed outcome and repair provenance, but
-cannot honestly claim to have reopened the original manifest/prompt bytes. That is a
-NO-GO limitation for any stronger raw-artifact assertion; it does not rewrite Cycle 20
-or turn its recorded NO-GO into a pass.
+The raw live relay and telemetry files are not part of the preserved sources inspected
+by this lane. The committed outcome is the evidence for the host-boundary count,
+failed `restarts=1>0` certificate, skipped terminal command, and retained cleanup. This
+limitation does not rewrite Cycle 20 or turn its recorded NO-GO into a pass.
 
 | Commit | Guard confirmed from the primary patch | Regression coverage added in that patch | Fresh prescribed coverage |
 | --- | --- | --- | --- |
@@ -79,8 +85,8 @@ doctor, rehearsal, browser, installation, deployment, push, or external action w
 
 This is evidence that the specified repair commits contain the stated guards and that
 the five frozen checks pass at the current tip. It is not terminal GO: the coordinator
-retains the untouched terminal boundary, and the unavailable raw Cycle 20
-manifest/prompt bytes prevent a stronger direct-artifact claim about their contents.
+retains the untouched terminal boundary, while the raw relay and telemetry remain
+outside this lane's preserved-primary inspection.
 
 SKILL-EVIDENCE: superpowers:systematic-debugging — helped: separated the recorded path mismatch and host-gate failure from the unavailable raw scratch artifacts, preventing a causal claim beyond primary evidence.
 
