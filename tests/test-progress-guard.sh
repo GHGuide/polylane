@@ -32,7 +32,21 @@ LANE_REPAIRS=()
 INT_NAME=integrator
 AVAILABLE_MODELS=(gpt-5.6-sol gpt-5.6-terra)
 AGENT=codex
-printf 'GOAL: finish builder\n' > "${LANE_PROMPTS[0]}"
+cat > "${LANE_PROMPTS[0]}" <<'EOF'
+ULTIMATE-GOAL: ship builder.
+CURRENT-SUBGOAL: finish builder.
+GOAL: finish builder.
+OWN: builder files.
+FORBIDDEN: unrelated files.
+PREDEFINED-SKILLS: engineering:debug
+LANE-SPECIFIC-SKILLS: engineering:debug
+Read only the named kit once.
+TEST-CADENCE: focused first.
+DELEGATION: forbidden.
+CHECK-CACHE: use $PWD/.polylane/check-cache/builder.
+EXTERNAL-EVIDENCE: none.
+VERIFY: write evidence then STATUS: builder DONE run=progress-run.
+EOF
 
 : > "$REPO_ROOT/docs/lane-logs/builder.log"
 
@@ -84,7 +98,9 @@ assert_eq "progress-replan-respawns" "1" "$RESPAWNS"
 assert_eq "progress-replan-model-downgrade" "gpt-5.6-terra" "${LANE_MODELS[0]}"
 assert_eq "progress-replan-effort-downgrade" "high" "${LANE_EFFORTS[0]}"
 assert_contains "progress-replan-forbids-delegation" "DELEGATION: forbidden" "$(cat "${LANE_PROMPTS[0]}")"
-assert_contains "progress-replan-enforces-cache" "polylane-check.sh" "$(cat "${LANE_PROMPTS[0]}")"
+assert_contains "progress-replan-preserves-cache" "CHECK-CACHE: use \$PWD/.polylane/check-cache/builder." "$(cat "${LANE_PROMPTS[0]}")"
+assert_ok "progress-replan-preserves-strict-scalar-contract" \
+  "$SCRIPT_DIR/../bin/polylane-promptopt.sh" check "${LANE_PROMPTS[0]}"
 
 replan_churning_lane builder "$WT" 0
 assert_eq "progress-second-replan-respawns" "2" "$RESPAWNS"
