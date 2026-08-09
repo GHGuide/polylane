@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c23-terminal-cert-20260809-a1",
   "started_at": 1786308291,
-  "updated_at": 1786309265,
-  "wall_s": 974,
+  "updated_at": 1786309579,
+  "wall_s": 1288,
   "lanes": {
     "terminal-fixture-audit": {
       "launches": 1,
@@ -22,7 +22,7 @@
     "terminal-fixture-audit": 280604,
     "integrator": 352735
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -65,6 +65,11 @@
     {
       "type": "terminal_gate",
       "at": 1786309265
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786309579
     }
   ]
 }

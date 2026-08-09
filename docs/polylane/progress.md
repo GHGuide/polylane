@@ -4,20 +4,13 @@ Generated mechanically from `max-state.json`. Conversation summaries are not aut
 
 ## Cycle 23
 
-subgoals: 51/56 done · criteria: 54/56 done · 93%
+subgoals: 55/56 done · criteria: 55/56 done · 98%
 
-**Route:** `CONTINUE m20.1  Audit restart attribution and complete one zero-restart process-start certification`
-
-Cycle 23 integration evidence records the exact terminal-fixture-audit merge and a
-focused 225/0 repair matrix.  It does not complete a subgoal or criterion: the
-coordinator-owned terminal boundary remains the only authority for those changes.
+**Route:** `NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
 
 ## Open autonomous work
 
-- `m16.4` [open, w54] — Integrate both provider skills and certify all cycle-16 mechanisms end to end
-- `m17.3` [open, w58] — Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities
-- `m18.3` [open, w66] — Integrate Cycle 18 fixes and complete one clean terminal certification
-- `m20.1` [open, w76] — Audit restart attribution and complete one zero-restart process-start certification
+- None
 
 ## External/user evidence
 
@@ -84,13 +77,11 @@ coordinator-owned terminal boundary remains the only authority for those changes
 - `c53` [done] — A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog
 - `c54` [done] — Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph
 - `c55` [done] — Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence
-- `c56` [open] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion; Cycle 23 coordinator-owned finalization remains pending
+- `c56` [done] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion
 
 ## Acceptance checks
 
 - Total: 67
-- Pass: 65
+- Pass: 67
 - Fail: 0
-- Unchecked: 2
-  - `m16.4` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-  - `m18.3` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
+- Unchecked: 0

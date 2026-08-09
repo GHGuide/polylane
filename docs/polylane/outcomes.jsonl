@@ -16,3 +16,4 @@
 {"lane":"project-runtime","sig":"b11:hub0:crowd1","model":"gpt-5.6-terra","verdict":"HALTED","ts":"2026-08-08T20:42:09Z"}
 {"lane":"domain-contract","sig":"b12:hub0:crowd0","model":"gpt-5.6-terra","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-08T21:23:46Z"}
 {"lane":"project-runtime","sig":"b11:hub0:crowd1","model":"gpt-5.6-terra","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-08T21:23:46Z"}
+{"lane":"terminal-fixture-audit","sig":"b2:hub0:crowd0","model":"gpt-5.6-terra","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-09T21:06:19Z"}

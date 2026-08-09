@@ -390,7 +390,7 @@
       "id": "c56",
       "text": "A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -863,9 +863,9 @@
           "id": "m16.4",
           "text": "Integrate both provider skills and certify all cycle-16 mechanisms end to end",
           "weight": 54,
-          "status": "open",
-          "cycle": 17,
-          "evidence": "Cycle 16 terminal gate found 9 compatibility failures; fresh Cycle 17 certification required"
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
     },
@@ -893,9 +893,9 @@
           "id": "m17.3",
           "text": "Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities",
           "weight": 58,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
     },
@@ -923,9 +923,9 @@
           "id": "m18.3",
           "text": "Integrate Cycle 18 fixes and complete one clean terminal certification",
           "weight": 66,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
     },
@@ -951,9 +951,9 @@
           "id": "m20.1",
           "text": "Audit restart attribution and complete one zero-restart process-start certification",
           "weight": 76,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
     }
