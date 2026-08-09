@@ -40,7 +40,9 @@ After the implementation, the lane-local check cache recorded:
   double recorded the legacy builder tag.
 - `bash tests/test-runtime-recovery.sh` — 15 pass, 0 fail; its narrow
   pane-identity double recorded the recreated-pane tag while preserving state
-  reindexing and pipe assertions.
+  reindexing and pipe assertions. A late relay regression first failed with
+  inherited `IFS=|` (`quiet-codex-child-is-live` returned 1); both liveness
+  helpers now set local default `IFS`, and the same cached test passed 15/15.
 - `bash tests/test-intensity.sh` — 20 pass, 0 fail.
 - `shellcheck -S warning bin/polylane-run.sh bin/polylane-model-policy.sh` —
   exit 0, no findings.

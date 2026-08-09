@@ -58,11 +58,15 @@ pane_dead() { return 1; }
 pane_wedged() { return 1; }
 
 # tmux may report its shell while a Codex child is still actively running.
-# Process-tree liveness prevents treating that quiet pane as dead.
-agent_procs() { printf 'codex\n'; }
-process_tree_has_agent() { [ "$1" = 4242 ]; }
+# A manifest reader can leave IFS='|'; process matching must restore ordinary
+# word splitting instead of treating `codex node` as one impossible process.
+AGENT=codex
+ps() { printf 'codex\n'; }
+pgrep() { :; }
+IFS='|'
 assert_ok "quiet-codex-child-is-live" pane_agent_live 4
 assert_fail "quiet-codex-child-is-not-dead" pane_dead 4
+IFS=$' \t\n'
 
 health_check "builder:$TEST_TMPDIR/wt"
 assert_eq "missing-pane-remapped" "7" "${LANE_PANE_IDX[0]}"

@@ -2487,7 +2487,7 @@ lane_needs_decision() { case " ${NEEDS_DECISION_LANES:-} " in *" $1 "*) return 0
 # contains the selected agent. Kept separate so the wedge detector can give a
 # live inference/build/test turn a longer quiet window than an empty shell.
 pane_agent_live() {
-  local idx="$1" cmd p pane_pid
+  local idx="$1" cmd p pane_pid IFS=$' \t\n'
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
   cmd=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_current_command}' 2>/dev/null || echo "")
   for p in $(agent_procs); do
@@ -2515,7 +2515,7 @@ pane_dead() {
 }
 
 process_tree_has_agent() {
-  local queue="$1" seen="" pid comm child p count=0
+  local queue="$1" seen="" pid comm child p count=0 IFS=$' \t\n'
   while [ -n "$queue" ] && [ "$count" -lt 128 ]; do
     pid="${queue%% *}"
     if [ "$queue" = "$pid" ]; then queue=""; else queue="${queue#* }"; fi
