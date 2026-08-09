@@ -4,16 +4,15 @@ Generated mechanically from `max-state.json`. Conversation summaries are not aut
 
 ## Cycle 19
 
-subgoals: 50/55 done · criteria: 53/55 done · 93%
+subgoals: 51/55 done · criteria: 54/55 done · 95%
 
-**Route:** `CONTINUE m19.1  Guard optional domain-grade post-processing and prove both absent and requested paths`
+**Route:** `CONTINUE m18.3  Integrate Cycle 18 fixes and complete one clean terminal certification`
 
 ## Open autonomous work
 
 - `m16.4` [open, w54] — Integrate both provider skills and certify all cycle-16 mechanisms end to end
 - `m17.3` [open, w58] — Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities
 - `m18.3` [open, w66] — Integrate Cycle 18 fixes and complete one clean terminal certification
-- `m19.1` [open, w74] — Guard optional domain-grade post-processing and prove both absent and requested paths
 
 ## External/user evidence
 
@@ -79,14 +78,13 @@ subgoals: 50/55 done · criteria: 53/55 done · 93%
 - `c52` [done] — Selected skills can be armed only from reproducible fingerprint-matched benchmark evidence while legacy delivery tests remain truthful
 - `c53` [done] — A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog
 - `c54` [done] — Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph
-- `c55` [open] — Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence
+- `c55` [done] — Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence
 
 ## Acceptance checks
 
 - Total: 66
-- Pass: 63
+- Pass: 64
 - Fail: 0
-- Unchecked: 3
+- Unchecked: 2
   - `m16.4` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
   - `m18.3` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-  - `m19.1` [unchecked] — bash tests/test-cycle-16-contract.sh

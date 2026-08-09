@@ -383,7 +383,7 @@
       "id": "c55",
       "text": "Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -930,9 +930,9 @@
           "id": "m19.1",
           "text": "Guard optional domain-grade post-processing and prove both absent and requested paths",
           "weight": 74,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 19,
+          "evidence": "Merged optional-domain gate af221ab2; fresh cached Cycle-16 contract 35/0 proves explicit not-requested no-op and requested bundle/grade/PASS persistence."
         }
       ]
     }
@@ -1141,6 +1141,12 @@
       "kind": "decision",
       "text": "Run one narrow Polylane recovery lane for optional-domain no-op semantics, then a fresh integrator and one fresh terminal certification.",
       "meta": "Root cause confirmed by standalone POLYLANE_REHEARSE_DEBUG=1 reproduction; no speculative fixes."
+    },
+    {
+      "cycle": 19,
+      "kind": "decision",
+      "text": "Cycle 19 optional-domain boundary is locally verified and ready for the coordinator host gate.",
+      "meta": "merged af221ab2; c16 35/0; verdict-repair 40/0; selected-skill delivery 44/0; cycle13 44/0; parity 57/0; installers 50/0+39/0; ShellCheck clean; terminal m18.3 remains open"
     }
   ],
   "accept": [
@@ -1775,7 +1781,7 @@
       "cmd": "bash tests/test-cycle-16-contract.sh",
       "tier": "focused",
       "key": "cycle19-domain-optional",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

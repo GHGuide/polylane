@@ -6,10 +6,14 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 19: [plan](cycle-19-plan.md) · [research](cycle-19-research.md) ·
-[skill suggestions](cycle-19-suggestions.md). This narrow recovery starts from the
-preserved Cycle 18 integrated tip and fixes the confirmed optional-domain post-grade
-boundary before one fresh host certification.
+Cycle 19 recovery: [plan](cycle-19-plan.md) · [research](cycle-19-research.md) ·
+[skill suggestions](cycle-19-suggestions.md) · [questions](cycle-19-questions.md) ·
+[council](cycle-19-council.md) · [digest](cycle-19-digest.md) ·
+[integration verification](../verify-integration.md). The nonce-bound optional-domain
+repair is locally verified: generic projects now preserve `not-requested` as a true
+no-op and requested profiles retain their bundle/grade/PASS commit. `m19.1` and `c55`
+are done; the preserved Cycle 18 terminal boundary remains open for one fresh host
+certification.
 
 Cycle 18 recovery history: [plan](cycle-18-plan.md) · [research](cycle-18-research.md) ·
 [skill suggestions](cycle-18-suggestions.md) · [questions](cycle-18-questions.md) ·

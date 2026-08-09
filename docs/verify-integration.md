@@ -1,59 +1,49 @@
-# Cycle 18 integration verification — walk-away recovery truth
+# Cycle 19 integration verification — optional domain gate recovery
 
-Run: `c18-walkaway-truth-20260809-a1`.
+Run: `c19-domain-gate-20260809-a1` on `lane/c19-integrator`.
 
-## Exact provenance
+## Provenance and review
 
-Merged committed builder tips only: runtime-resilience `631bd3ab1eda4f20262bd4d890e41109324a3efd`
-through merge `0cf81ca`, and skill-context `e21c26ac086f314796934bc5c4a346e00430d9c5`
-through merge `6a22ecc`. Their committed first-line DONE markers match this run. The
-integrator then corrected one cross-lane caller seam: `compile_prompt` now passes the
-single preflight-validated `lane_skills_file` JSON to `compile-selected`, rather than
-mistaking a `SELECTED-SKILL` record's `SKILL.md` path for that JSON kit.
+The integrator accepted only the committed builder tip
+`af221ab2b69365e497be2278234488e91a8784a5`, after reading its committed first line
+`STATUS: optional-domain-gate DONE run=c19-domain-gate-20260809-a1`. Merge commit
+`e9eb4230db8eed397c86d2a0c80b60ffc13ba08b` has that tip as its second parent.
 
-The new runner-delivery assertions in `test-cycle-13-contract.sh` were red with the
-original caller (40 pass, 4 fail: zero selected records and no receipt contract), then
-green after the correction (44 pass, 0 fail). The compiled builder fixture contains all
-four trusted records, including exact id/path/source/fingerprint/reason data, immediately
-after the named-kit instruction; the integrator fixture remains unselected.
+The required existing graph was queried first for `domain_grade_gate`, `domain_grade`,
+and callers. Its indexed C17-era documents did not contain the changed helper or its
+runtime caller, so this limitation was recorded and the current source was traced
+independently: `run_verifier_gate` is the sole production caller, and hermetic tests
+cover the other call sites. Correctness review found no issue: the guard runs only after
+the authoritative helper succeeds and before any evidence or Git mutation. Ponytail
+review: `Lean already. Ship.`
 
-## Reproduced local matrix
+## Fresh merged evidence
 
-All commands ran from this merged worktree through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"` unless noted.
+All commands below ran from the merged worktree through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"`.
 
-- Runtime recovery: `test-wedge.sh` 29/0; `test-lane-done.sh` 26/0;
-  `test-verdict-repair.sh` 40/0; `test-graph-events.sh` 47/0;
-  `test-write-report.sh` 33/0; `test-supervisor.sh` 26/0; and
-  `test-share-graph.sh` 11/0.
-- Selected-skill delivery: `test-skill-delivery.sh` 44/0 and
-  `test-prompt-compiler.sh` 16/0.
-- Cross-contract/provider evidence: `test-cycle-13-contract.sh` 44/0,
-  `test-cycle-16-contract.sh` 29/0, `test-skill-parity.sh` 57/0,
-  `test-installers.sh` 50/0, and `test-install-fresh.sh` 39/0.
-- Static/document evidence: whole-tree `shellcheck -S warning bin/*.sh`,
-  `bin/polylane-markers.sh check-docs references/`,
-  `bin/polylane-seams.sh scan "$PWD"`, and
-  `git diff --check candidate/c18-base` all exited 0.
+- `bash tests/test-cycle-16-contract.sh` — 35 pass, 0 fail. The generic fixture emits
+  `ADVANCED: domain-grader=not-requested`, returns successfully, preserves its sole
+  integration-evidence line and `HEAD`, creates no bundle or grade, and remains clean.
+  The unchanged requested fixture commits the tracked bundle and grade and records
+  `DOMAIN-GRADER: PASS`.
+- `bash tests/test-verdict-repair.sh` — 40 pass, 0 fail; the domain gate still runs
+  before each merge attempt and the coordinator-owned READY host boundary remains
+  single-use.
+- `bash tests/test-skill-delivery.sh` — 44 pass, 0 fail; `bash
+  tests/test-prompt-compiler.sh` — 16 pass, 0 fail; and `bash
+  tests/test-cycle-13-contract.sh` — 44 pass, 0 fail, preserving exact selected-skill
+  delivery and the Cycle 13 runner contract.
+- Whole-tree `shellcheck -S warning bin/*.sh` was clean. `bash
+  tests/test-skill-parity.sh` passed 57/0, `bash tests/test-installers.sh` passed 50/0,
+  and `bash tests/test-install-fresh.sh` passed 39/0.
 
-The adversarial fixtures prove prose-only trust and banner text send no tmux keys;
-canonical host-gate failure leaves a committed READY integrator clean and resumable;
-simulated report and event failures preserve the prior report/JSONL replay; the
-10,000-event replay remains linear; fake low disk waits without spending restart budget;
-and a recovery worktree receives only a same-common-repository graph link without
-overwriting a local path. No test fills real disk, and all trading/action behavior remains
-paper-only, simulated, and approval-bound.
+## Durable state and remaining boundary
 
-## Review and remaining boundary
+`m19.1`, its focused frozen acceptance, and `c55` are marked done only from the fresh
+35/0 reproduction. `m18.3` and both terminal acceptances remain unchecked. The
+coordinator alone owns one fresh terminal matrix and both GO/NO-GO rehearsal outcomes;
+this lane did not run `tests/run.sh` or either rehearsal. No external action occurred:
+approval hashes remain required and trading remains research/backtest/paper-only.
 
-The correctness/security/maintainability review found and closed the selected-kit caller
-mismatch above; no other actionable issue remained after the final matrix. Ponytail
-review result: `Lean already. Ship.` The canonical graph was queried before implementation
-inspection; its indexed C17-era topology did not contain the new runtime helpers, while
-the same-repository fallback was independently exercised by the merged fixture. The
-coordinator alone must still run the untouched terminal `tests/run.sh` matrix and live
-GO/NO-GO rehearsal; the optional 6/12/24-hour soak is operator certification, not CI.
-
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c18-walkaway-truth-20260809-a1
-
-DOMAIN-GRADER: PASS bundle=docs/polylane/domain-runtime/bundle.json grade=docs/polylane/domain-runtime/grade.json
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c19-domain-gate-20260809-a1

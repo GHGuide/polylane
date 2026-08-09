@@ -1,14 +1,14 @@
-# Cycle 18 integration status
+# Cycle 19 integration status
 
-Run: `c18-walkaway-truth-20260809-a1` · branch: `lane/c18-integrator`.
+Run: `c19-domain-gate-20260809-a1` · branch: `lane/c19-integrator`.
 
 | Lane | Exact tip | Integration state | Reproduced evidence |
 | --- | --- | --- | --- |
-| runtime resilience | `631bd3a` | merged as `0cf81ca`; runtime/event/supervisor/graph seams coexist | recovery matrix 29/26/40/47/33/26/11, all pass |
-| skill context | `e21c26a` | merged as `6a22ecc`; typed compiler contract retained | delivery 44/0; compiler 16/0 |
-| integrator | current branch | corrected JSON-kit caller seam and added regression | Cycle-13 runner delivery 44/0; Cycle-16 29/0 |
+| optional domain gate | `af221ab2` | merged as `e9eb423`; guard returns before durable post-processing when domain grading is not requested | Cycle 16 contract 35/0: generic `not-requested` no-op and requested bundle/grade/PASS persistence |
+| integrator | `e9eb423` | independent helper/caller trace and boundary review; no integration seam edit | verdict repair 40/0; selected-skill delivery 44/0; Cycle 13 runner 44/0 |
 
-Parity is 57/0; installers are 50/0 and fresh installs 39/0; whole-tree ShellCheck,
-marker consistency, seam scan, and diff hygiene are clean. The coordinator alone owns the
-unchanged terminal suite and live rehearsal. Optional 6/12/24-hour soak remains resumable
-operator certification; no live external action occurred and trading remains paper-only.
+Whole-tree ShellCheck is clean; parity is 57/0; installers are 50/0 and fresh installs
+39/0. Marker consistency, seam scan, and diff hygiene are recorded with this handoff.
+The coordinator alone owns the unchanged terminal suite and both live rehearsal outcomes.
+Optional 6/12/24-hour soak remains resumable operator certification; no live external
+action occurred and trading remains paper-only.
