@@ -127,3 +127,5 @@ run also remains coordinator-owned.
 
 DEFERRED: fresh zero-restart host certification — rerun this integrated source in a
 new nonce; only that process may become eligible for the terminal gate.
+
+POLYLANE-VERDICT: NO-GO run=c25-finality-20260810-a1
