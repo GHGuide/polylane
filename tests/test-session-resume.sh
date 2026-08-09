@@ -42,6 +42,20 @@ LANE_ADOPTED=(0)
 mkdir -p "$PROJECT_ROOT/.polylane" "$LANE_WORKTREES" "$INT_WORKTREE"
 PROJECT_ROOT=$(cd "$PROJECT_ROOT" && pwd -P)
 MANIFEST="$PROJECT_ROOT/.polylane/run.json"
+TAG_LOG="$TEST_TMPDIR/pane-tags.log"
+# Pane identity lands from its sibling lane.  This narrow double preserves the
+# frozen legacy lookup behavior while this runner lane verifies its call sites.
+polylane_tmux_find_pane() {
+  local session="$1" run_id="$2" worktree="$3" line path
+  worktree=$(cd "$worktree" && pwd -P)
+  while IFS= read -r line; do
+    path="${line#*|}"
+    path=$(cd "$path" 2>/dev/null && pwd -P)
+    [ "$path" = "$worktree" ] && { printf '%s' "${line%%|*}"; return 0; }
+  done < <(tmux list-panes -t "$session:0" -F '#{pane_index}|#{pane_current_path}')
+  return 1
+}
+polylane_tmux_tag_pane() { printf '%s|%s|%s|%s|%s\n' "$@" >> "$TAG_LOG"; }
 
 tmux new-session -d -s "$TMUX_SESSION" -c "$LANE_WORKTREES" \
   "sh -c 'sleep 20'"
@@ -53,6 +67,7 @@ assert_eq "resume-session-started" "1" "$SESSION_STARTED"
 assert_eq "resume-pane-adopted" "1" "${LANE_ADOPTED[0]}"
 assert_eq "resume-pane-index" "0" "${LANE_PANE_IDX[0]}"
 assert_ok "resume-session-owned" session_owned_by_run
+assert_contains "resume-legacy-builder-tagged" "$TMUX_SESSION|0|$RUN_ID|builder|${LANE_WORKTREES[0]}" "$(cat "$TAG_LOG" 2>/dev/null || true)"
 
 # A fresh observer with no POLYLANE_SESSION environment recovers the exact live
 # attach command from those ownership tags.

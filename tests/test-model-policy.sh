@@ -49,6 +49,16 @@ assert_eq "policy-missing-intensity-preserves-manifest" \
   "claude-haiku-4-5|medium|claude-sonnet-5|medium|claude-opus-4-8|xhigh|claude-haiku-4-5|medium|claude-sonnet-5|high" \
   "$(policy_state claude '' '' 'claude-haiku-4-5 claude-sonnet-5 claude-opus-4-8 claude-fable-5')"
 
+# `custom` is documented manifest metadata: it activates availability/effort
+# validation, but preserves the baked lane and integrator choices.  A CLI preset
+# remains an explicit operation and wins over that metadata.
+assert_eq "policy-manifest-custom-preserves-baked-settings" \
+  "claude-haiku-4-5|medium|claude-sonnet-5|medium|claude-opus-4-8|xhigh|claude-haiku-4-5|medium|claude-sonnet-5|high" \
+  "$(policy_state claude '' custom 'claude-haiku-4-5 claude-sonnet-5 claude-opus-4-8 claude-fable-5')"
+assert_eq "policy-cli-preset-remaps-manifest-custom" \
+  "claude-haiku-4-5|medium|claude-haiku-4-5|high|claude-haiku-4-5|medium|claude-opus-4-8|high|claude-fable-5|xhigh" \
+  "$(policy_state claude economy custom 'claude-haiku-4-5 claude-sonnet-5 claude-opus-4-8 claude-fable-5')"
+
 # Old manifests that opt out of intensity and available_models may deliberately
 # target a custom agent command. Active policy validation must not retroactively
 # reject that established explicit model/effort contract.

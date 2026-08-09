@@ -19,6 +19,14 @@ FAILED_LANES=""; STALLED_LANES=""; RUN_ID=recovery-run
 mkdir -p "$TEST_TMPDIR/wt/docs"; printf 'build\n' > "$TEST_TMPDIR/prompt"
 FAKE_PANES='0 1 7'
 FAKE_WORKTREE_PANES=""
+polylane_tmux_find_pane() {
+  local session="$1" run_id="$2" worktree="$3" line
+  for line in $FAKE_WORKTREE_PANES; do
+    [ "${line#*|}" = "$worktree" ] && { printf '%s' "${line%%|*}"; return 0; }
+  done
+  return 1
+}
+polylane_tmux_tag_pane() { printf 'tag %s %s %s %s %s\n' "$@" >> "$KEYLOG"; }
 tmux() {
   case "$1" in
     display-message)
@@ -50,17 +58,22 @@ pane_dead() { return 1; }
 pane_wedged() { return 1; }
 
 # tmux may report its shell while a Codex child is still actively running.
-# Process-tree liveness prevents treating that quiet pane as dead.
-agent_procs() { printf 'codex\n'; }
-process_tree_has_agent() { [ "$1" = 4242 ]; }
+# A manifest reader can leave IFS='|'; process matching must restore ordinary
+# word splitting instead of treating `codex node` as one impossible process.
+AGENT=codex
+ps() { printf 'codex\n'; }
+pgrep() { :; }
+IFS='|'
 assert_ok "quiet-codex-child-is-live" pane_agent_live 4
 assert_fail "quiet-codex-child-is-not-dead" pane_dead 4
+IFS=$' \t\n'
 
 health_check "builder:$TEST_TMPDIR/wt"
 assert_eq "missing-pane-remapped" "7" "${LANE_PANE_IDX[0]}"
 assert_eq "missing-pane-counts-after-launch" "1" "${LANE_RETRIES[7]}"
 assert_contains "missing-pane-creates-owned-pane" "split-window -t recovery-test:0 -P -F #{pane_index}" "$(cat "$KEYLOG")"
 assert_contains "missing-pane-attaches-log" "pipe 7 builder" "$(cat "$KEYLOG")"
+assert_contains "missing-pane-tags-replacement" "tag recovery-test 7 recovery-run builder $TEST_TMPDIR/wt" "$(cat "$KEYLOG")"
 assert_eq "missing-pane-never-sends-old-target" "0" "$(grep -c 'recovery-test:0.4' "$KEYLOG" || true)"
 
 # tmux can renumber a surviving pane after another pane exits. The numeric

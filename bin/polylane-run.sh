@@ -822,6 +822,8 @@ preflight_contract() {
         die "prime_hybrid lane '$lane' prompt must require one bounded packet read"
       grep -qiE 'durable inbox|POLYLANE_WORKERS_DIR' "$prompt" ||
         die "prime_hybrid lane '$lane' prompt must route follow-ups through the durable inbox"
+      grep -qF '"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"' "$prompt" ||
+        die "prime_hybrid lane '$lane' prompt must use the frozen durable-inbox command"
       if [ "$lane" = "$INT_NAME" ]; then
         grep -qiE 'propose[- ]or[- ]decline' "$prompt" ||
           die "prime_hybrid integrator prompt must require a propose-or-decline decision for queued refinements"
@@ -1490,7 +1492,7 @@ prime_hybrid_prepare_runtime() {
 prime_hybrid_workers() {
   local workers
   workers=$(prime_hybrid_workers_dir)
-  POLYLANE_PROJECT_ROOT="$PROJECT_ROOT" POLYLANE_WORKERS_DIR="$workers" \
+  POLYLANE_PROJECT_ROOT="$PROJECT_ROOT" POLYLANE_WORKERS_DIR="$workers" POLYLANE_WORKER_RUN_ID="${RUN_ID:-legacy}" \
     "$SCRIPT_DIR/polylane-workers.sh" "$@"
 }
 
@@ -1504,8 +1506,8 @@ prime_hybrid_pane_exports() {
   harness="$(prime_hybrid_runtime_root)/docs/polylane/harness"
   workers="$(prime_hybrid_runtime_root)/docs/polylane/workers"
   packet=$(prime_hybrid_runtime_context_packet "$worker")
-  printf 'POLYLANE_HARNESS_DIR=%q POLYLANE_WORKERS_DIR=%q POLYLANE_WORKER_ID=%q POLYLANE_CONTEXT_PACKET=%q' \
-    "$harness" "$workers" "$worker" "$packet"
+  printf 'POLYLANE_HARNESS_DIR=%q POLYLANE_WORKERS_DIR=%q POLYLANE_WORKER_ID=%q POLYLANE_CONTEXT_PACKET=%q POLYLANE_WORKER_RUN_ID=%q' \
+    "$harness" "$workers" "$worker" "$packet" "${RUN_ID:-legacy}"
 }
 
 prime_hybrid_worker_for_worktree() {
@@ -1972,17 +1974,9 @@ repipe_pane_log() {
   pipe_pane_log "$idx" "$name"
 }
 
-# pane_for_worktree WT : print the pane index currently rooted at WT.
+# pane_for_worktree WT : delegate run-aware lookup to pane identity.
 pane_for_worktree() {
-  local wt="$1" line pane_path
-  [ ! -d "$wt" ] || wt=$(cd "$wt" 2>/dev/null && pwd -P)
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    pane_path="${line#*|}"
-    [ ! -d "$pane_path" ] || pane_path=$(cd "$pane_path" 2>/dev/null && pwd -P)
-    [ "$pane_path" = "$wt" ] && { printf '%s' "${line%%|*}"; return 0; }
-  done < <(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}' 2>/dev/null || true)
-  return 1
+  polylane_tmux_find_pane "$TMUX_SESSION" "${RUN_ID:-}" "$1"
 }
 
 # session_owned_by_run : an existing session is adoptable only when it is tagged
@@ -2031,6 +2025,7 @@ adopt_existing_session() {
     if idx=$(pane_for_worktree "${LANE_WORKTREES[$i]}"); then
       LANE_PANE_IDX[i]="$idx"
       LANE_ADOPTED[i]=1
+      polylane_tmux_tag_pane "$TMUX_SESSION" "$idx" "${RUN_ID:-legacy}" "${LANE_NAMES[$i]}" "${LANE_WORKTREES[$i]}" || return 1
       echo "resume: adopted live tmux pane $idx for lane '${LANE_NAMES[$i]}'"
       pipe_pane_log "$idx" "${LANE_NAMES[$i]}"
     fi
@@ -2125,6 +2120,7 @@ launch_panes() {
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
     graph_authority_require "lane:${LANE_NAMES[$i]}" "launch lane '${LANE_NAMES[$i]}'" || return 1
     new_pane "${LANE_NAMES[$i]}" "$pc"
+    polylane_tmux_tag_pane "$TMUX_SESSION" "$NEW_PANE_IDX" "${RUN_ID:-legacy}" "${LANE_NAMES[$i]}" "${LANE_WORKTREES[$i]}" || return 1
     LANE_PANE_IDX[i]="$NEW_PANE_IDX"
     baseline_usage_log "${LANE_NAMES[$i]}"
     pipe_pane_log "$NEW_PANE_IDX" "${LANE_NAMES[$i]}"
@@ -2491,7 +2487,7 @@ lane_needs_decision() { case " ${NEEDS_DECISION_LANES:-} " in *" $1 "*) return 0
 # contains the selected agent. Kept separate so the wedge detector can give a
 # live inference/build/test turn a longer quiet window than an empty shell.
 pane_agent_live() {
-  local idx="$1" cmd p pane_pid
+  local idx="$1" cmd p pane_pid IFS=$' \t\n'
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
   cmd=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_current_command}' 2>/dev/null || echo "")
   for p in $(agent_procs); do
@@ -2519,7 +2515,7 @@ pane_dead() {
 }
 
 process_tree_has_agent() {
-  local queue="$1" seen="" pid comm child p count=0
+  local queue="$1" seen="" pid comm child p count=0 IFS=$' \t\n'
   while [ -n "$queue" ] && [ "$count" -lt 128 ]; do
     pid="${queue%% *}"
     if [ "$queue" = "$pid" ]; then queue=""; else queue="${queue#* }"; fi
@@ -2744,6 +2740,7 @@ recreate_lane_pane() {
   idx=$(run tmux split-window -t "$TMUX_SESSION:0" -P -F '#{pane_index}' "$(pane_launch_command "$cmd")" 2>/dev/null) || return 1
   case "$idx" in ''|*[!0-9]*) return 1 ;; esac
   pane_exists "$idx" || return 1
+  polylane_tmux_tag_pane "$TMUX_SESSION" "$idx" "${RUN_ID:-legacy}" "$name" "$wt" || return 1
   pane_index_set "$name" "$idx" || return 1
   wedge_hash_set "$name" ""; wedge_cnt_set "$name" 0
   progress_hash_set "$name" ""; progress_count_set "$name" 0
@@ -3219,6 +3216,7 @@ run_integrator() {
   pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
   # new_pane also handles the all-lanes-resumed case (no session yet).
   new_pane "$INT_NAME" "$pc"
+  polylane_tmux_tag_pane "$TMUX_SESSION" "$NEW_PANE_IDX" "${RUN_ID:-legacy}" "$INT_NAME" "$INT_WORKTREE" || return 1
   INT_PANE_IDX="$NEW_PANE_IDX"
   baseline_usage_log "$INT_NAME"
   pipe_pane_log "$NEW_PANE_IDX" "$INT_NAME"
@@ -3231,6 +3229,7 @@ adopt_integrator() {
   [ "${SESSION_STARTED:-0}" = "1" ] || return 1
   if idx=$(pane_for_worktree "$INT_WORKTREE"); then
     INT_PANE_IDX="$idx"
+    polylane_tmux_tag_pane "$TMUX_SESSION" "$idx" "${RUN_ID:-legacy}" "$INT_NAME" "$INT_WORKTREE" || return 1
     echo "resume: adopted live tmux pane $idx for integrator '$INT_NAME'"
     pipe_pane_log "$idx" "$INT_NAME"
     return 0
