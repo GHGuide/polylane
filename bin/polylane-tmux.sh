@@ -65,6 +65,49 @@ polylane_tmux_watch_command() {
   fi
 }
 
+polylane_tmux_canonical_path() {
+  local path="${1:-}"
+  [ -d "$path" ] || return 1
+  (cd "$path" 2>/dev/null && pwd -P)
+}
+
+# polylane_tmux_tag_pane SESSION PANE RUN_ID LANE WORKTREE
+# Pane-local ownership survives agent cwd drift and is scoped to a run nonce.
+polylane_tmux_tag_pane() {
+  local session="${1:-}" pane="${2:-}" run_id="${3:-}" lane="${4:-}" worktree="${5:-}" canonical
+  [ -n "$session" ] && [ -n "$pane" ] && [ -n "$run_id" ] && [ -n "$lane" ] || return 2
+  canonical=$(polylane_tmux_canonical_path "$worktree") || return 1
+  tmux set-option -p -t "$session:0.$pane" @polylane_run_id "$run_id" || return 1
+  tmux set-option -p -t "$session:0.$pane" @polylane_lane "$lane" || return 1
+  tmux set-option -p -t "$session:0.$pane" @polylane_worktree "$canonical"
+}
+
+# polylane_tmux_find_pane SESSION RUN_ID WORKTREE
+# Full matching tags are authoritative. Cwd is only a migration fallback for a
+# pane with no Polylane identity options whatsoever; partial or stale tags fail
+# closed rather than being silently adopted by a different run.
+polylane_tmux_find_pane() {
+  local session="${1:-}" run_id="${2:-}" worktree="${3:-}" canonical idx pane_path tagged_run tagged_lane tagged_worktree legacy_idx="" conflict=0
+  [ -n "$session" ] || return 2
+  canonical=$(polylane_tmux_canonical_path "$worktree") || return 1
+  while IFS='|' read -r idx pane_path tagged_run tagged_lane tagged_worktree; do
+    [ -n "$idx" ] || continue
+    pane_path=$(polylane_tmux_canonical_path "$pane_path" 2>/dev/null || true)
+    if [ -n "$tagged_run$tagged_lane$tagged_worktree" ]; then
+      if [ -n "$tagged_run" ] && [ -n "$tagged_lane" ] && [ -n "$tagged_worktree" ] && \
+        [ "$tagged_run" = "$run_id" ] && [ "$tagged_worktree" = "$canonical" ]; then
+        printf '%s' "$idx"
+        return 0
+      fi
+      if [ "$tagged_worktree" = "$canonical" ] || [ "$pane_path" = "$canonical" ]; then conflict=1; fi
+      continue
+    fi
+    [ "$pane_path" = "$canonical" ] && legacy_idx="$idx"
+  done < <(tmux list-panes -t "$session:0" -F '#{pane_index}|#{pane_current_path}|#{@polylane_run_id}|#{@polylane_lane}|#{@polylane_worktree}' 2>/dev/null || true)
+  [ "$conflict" = 0 ] && [ -n "$legacy_idx" ] && { printf '%s' "$legacy_idx"; return 0; }
+  return 1
+}
+
 if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
   case "${1:-}" in
     root)  polylane_tmux_default_root "${2:?usage: polylane-tmux.sh root <run-id>}" ;;

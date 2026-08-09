@@ -46,10 +46,21 @@ if ! command -v tmux >/dev/null 2>&1; then
 fi
 
 TMUX_SESSION="polylane-atomic-$$"
+IDENTITY_SESSION="polylane-identity-$$"
 DRY_RUN=0; SESSION_STARTED=0; NEXT_PANE_IDX=0
 RUN_ID="$RUN_ONE"; PROJECT_ROOT="$TEST_TMPDIR/project"
-mkdir -p "$PROJECT_ROOT"
-trap 'tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true; rm -rf "$ROOT_ONE" "$ROOT_TWO" "$ROOT_NESTED"; cleanup_tmpdirs' EXIT
+LEGACY_PROJECT="$TEST_TMPDIR/legacy-project"
+mkdir -p "$PROJECT_ROOT" "$LEGACY_PROJECT"
+trap 'tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true; tmux kill-session -t "$IDENTITY_SESSION" 2>/dev/null || true; rm -rf "$ROOT_ONE" "$ROOT_TWO" "$ROOT_NESTED"; cleanup_tmpdirs' EXIT
+
+# A pane can retain its Polylane identity after its process changes directory.
+# Tags are authoritative; cwd is migration-only for fully untagged panes.
+polylane_tmux_configure "$RUN_ONE" ensure
+tmux new-session -d -s "$IDENTITY_SESSION" -c /tmp 'sleep 30'
+tmux split-window -d -t "$IDENTITY_SESSION:0" -c "$LEGACY_PROJECT" 'sleep 30'
+polylane_tmux_tag_pane "$IDENTITY_SESSION" 0 "$RUN_ONE" atomic "$PROJECT_ROOT"
+assert_eq "tmux-find-tag-survives-cwd-drift" "0" "$(polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$PROJECT_ROOT")"
+assert_ok "tmux-find-allows-fully-untagged-legacy-cwd" polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$LEGACY_PROJECT"
 
 # A payload longer than the command that exposed the old seed race must arrive
 # byte-for-byte through one fresh-server pane launch without send-keys.
