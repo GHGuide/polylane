@@ -1,6 +1,6 @@
 # Lane prompt template — assemble from prompt-blocks.md
 
-Emit ONE of these per lane, as: a launch line + a fenced paste block. A lane owns disjoint changed artifacts—not necessarily source code. Its `OWN` globs may cover documents, datasets, notebooks, models, analyses, runbooks, media, configurations, or source files. Order the blocks exactly A→J. Everything in `<...>` is filled from the validated outcome profile, recon, and derivation; blocks C, E, G, H, I are verbatim. A Codex builder receives native instructions, never fictional Claude slash-command requirements.
+Emit ONE of these per lane, as: a launch line + a fenced paste block. A lane owns disjoint changed artifacts—not necessarily source code. Its `OWN` globs may cover documents, datasets, notebooks, models, analyses, runbooks, media, configurations, or source files. Order the blocks exactly A→K. Everything in `<...>` is filled from the validated outcome profile, recon, and derivation; blocks C, E, G, H, I, K are verbatim. A Codex builder receives native instructions, never fictional Claude slash-command requirements.
 
 Codex builder: state the locked goals directly and read only the selected kit once.
 
@@ -30,11 +30,14 @@ WORKFLOW: <writing-plans → smallest steps → verify each → commit>.
 [H coordination + mutex]   (canonical relay = live requests/decisions/mutexes; docs/parallel-status.md = post-cycle summary only)
 [I scoped git]
 [J done checklist]
+[K POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.]
+
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored, commit it, and exit immediately. Integrator final handoff: write its current-run status and integrator verdict, force-add ignored handoff files, commit them, and exit immediately. For prime-hybrid refinements, first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
 
 DELEGATION: forbidden — this tmux CLI is the sole agent for the lane; do not spawn subagents or fan-out.
 CHECK-CACHE: use bin/polylane-check.sh "$PWD/.polylane/check-cache/<lane>" -- <command>; reuse unchanged pass/fail results.
 
-DONE-SIGNAL: on completion write docs/status-<lane>.md, first line EXACTLY `STATUS: <lane> DONE run=<RUN_ID>` — per-lane + worktree-safe; the runner reads this file to know the lane finished.
+DONE-SIGNAL: the finalization transaction, not ordinary work, writes docs/status-<lane>.md with first line EXACTLY `STATUS: <lane> DONE run=<RUN_ID>` — per-lane + worktree-safe; the runner reads this file only after the final handoff commit.
 ```
 
 ## After all lane prompts — emit the run manifest (planner action, not the builder's)

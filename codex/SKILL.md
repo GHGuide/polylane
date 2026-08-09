@@ -159,8 +159,8 @@ artifacts. Plan the smallest safe lane set: target, evidence, risks, dependencie
 repeat a recorded failed approach.
 
 Each prompt must state the goal, project profile, ownership, selected installed skills,
-focused test cadence, scoped staging, `docs/verify-<lane>.md`, and exact completion
-marker `STATUS: <lane> DONE run=<RUN_ID>`. Route expensive repeated checks through:
+focused test cadence, scoped staging, `docs/verify-<lane>.md`, exact completion
+marker `STATUS: <lane> DONE run=<RUN_ID>`, and POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. Route expensive repeated checks through:
 
 ```bash
 scripts/polylane-check.sh <canonical-project>/.polylane/check-cache/<lane> -- <command>
@@ -172,9 +172,16 @@ syntax, model names, or memory helpers.
 
 A cached failure requires a relevant source change before retry. For `prime_hybrid`,
 read `POLYLANE_CONTEXT_PACKET` exactly once and use `polylane-workers.sh` and the
-durable inbox for follow-ups. `prime_hybrid` refinements use
-`scripts/polylane-refine.sh propose-or-decline`; global skill changes remain proposals
+durable inbox for follow-ups. `prime_hybrid` refinements first run
+`"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then
+exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT
+a subcommand. Global skill changes remain proposals
 to `scripts/polylane-skill-evolve.sh`, never edits to the active skill.
+
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored,
+commit it, and exit immediately. Integrator final handoff: write its current-run
+status and integrator verdict, force-add ignored handoff files, commit them, and exit
+immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
 
 Use `orchestration_contract: 2`; validate scope and prompts. A contract-v2 manifest
 uses Codex-only model IDs and defaults `codex_profile` to `lean`. Run doctor and the
@@ -196,7 +203,8 @@ Use the compiled launch and lifecycle hooks contract in
 `references/cycle-13-integration.md` only through shared helpers.
 
 For `prime_hybrid`, retain bounded worker context and reject unvalidated refinement.
-Repeated evidence enters the queue; `propose-or-decline` then validates it or invokes a rollback next cycle.
+Repeated evidence enters the queue; queue it, then make exactly one real proposal or
+decline decision, which validates it or invokes a rollback next cycle.
 Skill evolution uses `scripts/polylane-skill-evolve.sh`: champion and challenger compare
 against frozen cases, a failed canary rolls back, and ordinary
 success does not rewrite the skill. Use `scripts/polylane-certify.sh` for focused and

@@ -33,6 +33,7 @@ CHECK-CACHE: use polylane-check.sh with $PWD/.polylane/check-cache/ for expensiv
 EXTERNAL-EVIDENCE: keep physical-only proof external; continue all autonomous work.
 VERIFY: run the focused contract checks before the DONE marker.
 Write docs/verify-builder.md. Finish STATUS: builder DONE run=run-1.
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 PROMPT
 cat > "$P/.polylane/lanes/integrator.txt" <<'PROMPT'
 ULTIMATE-GOAL: ship a complete, verified product.
@@ -49,6 +50,7 @@ EXTERNAL-EVIDENCE: keep physical-only proof external; continue autonomous work.
 VERIFY: run the focused contract checks before the verdict sentinel.
 Write docs/verify-integration.md ending POLYLANE-VERDICT: GO run=run-1.
 Finish STATUS: integrator DONE run=run-1.
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 PROMPT
 printf '# cycle plan\n' > "$P/docs/polylane/cycle-1-plan.md"
 printf '# index\n' > "$P/docs/polylane/INDEX.md"
@@ -110,16 +112,16 @@ jq '.prime_hybrid=true' "$MANIFEST" > "$P/.polylane/prime-hybrid.json"
 MANIFEST="$P/.polylane/prime-hybrid.json"; load_manifest
 assert_fail "contract-prime-hybrid-requires-prompt-continuity" preflight_contract
 cat >> "$PROMPT" <<'PROMPT'
-Read the POLYLANE_CONTEXT_PACKET context packet once; use polylane-workers.sh durable inbox follow-ups.
+Read the POLYLANE_CONTEXT_PACKET context packet exactly once; use the durable inbox through "$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID" for follow-ups.
 PROMPT
 cat >> "$P/.polylane/lanes/integrator.txt" <<'PROMPT'
-Read the POLYLANE_CONTEXT_PACKET context packet once; use polylane-workers.sh durable inbox follow-ups.
-For each eligible refinement queue item, propose-or-decline it before DONE.
+Read the POLYLANE_CONTEXT_PACKET context packet exactly once; use the durable inbox through "$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID" for follow-ups.
+Run "$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR", then exactly one real `propose` or `decline` for each eligible refinement queue item; `propose-or-decline` is NOT a subcommand.
 PROMPT
 load_manifest
 assert_ok "contract-prime-hybrid-valid-v2" preflight_contract
 
-grep -v 'propose-or-decline' "$P/.polylane/lanes/integrator.txt" > "$P/.polylane/lanes/integrator-no-refinement-decision.txt"
+grep -v 'exactly one real' "$P/.polylane/lanes/integrator.txt" > "$P/.polylane/lanes/integrator-no-refinement-decision.txt"
 jq '.integrator.prompt_file=".polylane/lanes/integrator-no-refinement-decision.txt"' \
   "$MANIFEST" > "$P/.polylane/prime-hybrid-no-refinement-decision.json"
 MANIFEST="$P/.polylane/prime-hybrid-no-refinement-decision.json"; load_manifest

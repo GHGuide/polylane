@@ -93,10 +93,11 @@ memory file or edit the relay.
 Local refinements require repeated observed evidence and a declared bounded expected
 check through polylane-refine.sh; next-cycle validation either validates or rolls
 back the immutable harness snapshot. If the packet contains `refinement-queue.json`,
-handle every item before DONE: either use `polylane-refine.sh propose` for the smallest
-local change with a bounded expected check and later-cycle deadline, or use
-`polylane-refine.sh decline` with a concrete reason. Never silently leave an eligible
-item unreviewed. A global prompt or skill idea is proposal-only:
+first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`.
+For each eligible item, then exactly one real `propose` or `decline` invocation through
+`"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh"`; `propose-or-decline` is NOT a subcommand
+(it is only the conceptual decision phrase). Never silently leave an eligible item
+unreviewed. A global prompt or skill idea is proposal-only:
 stage it for bin/polylane-skill-evolve.sh. Never directly overwrite SKILL.md or an
 installed skill.
 ```
@@ -145,9 +146,17 @@ Commit often. Stage ONLY your paths (git add <your files>) — NEVER git add -A 
 
 ## J. Done checklist
 ```
-DONE = all true: <per-lane observable criteria> + docs/verify-<lane>.md has proof + docs/status-<lane>.md written with first line EXACTLY `STATUS: <lane> DONE run=<RUN_ID>` (the orchestrator bakes the manifest's literal run_id nonce in place of <RUN_ID>; the runner trusts the marker only when the tag matches THIS run) + no new errors. Drive with the skills; no generic output.
+DONE = all true: <per-lane observable criteria> + docs/verify-<lane>.md has proof + no new errors. The status marker is written only by the finalization transaction below. Drive with the skills; no generic output.
 ```
 Also write a `## DEFERRED` section at the END of docs/verify-<lane>.md: every fork/decision this lane PUNTED, each as `DEFERRED: <what> — <options left open>` (or `DEFERRED: none`). Phase 5's emergent-question harvest greps these — a missing section is a defect; an empty one is fine.
+
+## K. Runtime finalization — every compiled builder and integrator prompt
+```
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
+```
+The final relay command is `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; the final inbox command is `"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"`. `docs/parallel-status.md` remains post-cycle evidence, never the live relay. Builders create only `docs/status-<lane>.md`; integrators create their current-run status and verdict. Keep the marker nonce, exact first line, clean-tree, exact-HEAD, and host-gate ownership language intact.
+
+Builder final handoff: after the scoped implementation/evidence commit and clean-status check, write only its current-run `docs/status-<lane>.md`, force-add it if ignored, commit it, and exit immediately. Integrator final handoff: after the same scoped commit and clean-status check, write its current-run status file and integrator verdict, force-add ignored handoff files, commit them, and exit immediately. Neither role may perform repository work after that final commit.
 
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
