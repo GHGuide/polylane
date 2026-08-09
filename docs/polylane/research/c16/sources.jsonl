@@ -1,0 +1,15 @@
+{"id":"fred-observations","type":"official-doc","url":"https://fred.stlouisfed.org/docs/api/fred/series_observations.html","retrieved_at":"2026-08-09"}
+{"id":"fred-vintages","type":"official-doc","url":"https://fred.stlouisfed.org/docs/api/fred/realtime_period.html","retrieved_at":"2026-08-09"}
+{"id":"crossref-filters","type":"official-doc","url":"https://www.crossref.org/documentation/retrieve-metadata/rest-api/rest-api-filters/","retrieved_at":"2026-08-09"}
+{"id":"crossref-tips","type":"official-doc","url":"https://www.crossref.org/documentation/retrieve-metadata/rest-api/tips-for-using-the-crossref-rest-api/","retrieved_at":"2026-08-09"}
+{"id":"openalex-api","type":"official-doc","url":"https://developers.openalex.org/api-reference/introduction","retrieved_at":"2026-08-09"}
+{"id":"openalex-pagination","type":"official-doc","url":"https://developers.openalex.org/guides/page-through-results","retrieved_at":"2026-08-09"}
+{"id":"nist-incident","type":"standard","url":"https://csrc.nist.gov/pubs/sp/800/61/r3/final","retrieved_at":"2026-08-09"}
+{"id":"anthropic-evals","type":"official-engineering","url":"https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents","retrieved_at":"2026-08-09"}
+{"id":"anthropic-agents","type":"official-guide","url":"https://resources.anthropic.com/building-effective-ai-agents","retrieved_at":"2026-08-09"}
+{"id":"openai-evals","type":"official-doc","url":"https://evals.openai.com/","retrieved_at":"2026-08-09"}
+{"id":"openai-gdpval","type":"official-research","url":"https://openai.com/index/gdpval/","retrieved_at":"2026-08-09"}
+{"id":"w3c-prov","type":"standard","url":"https://www.w3.org/TR/prov-o/","retrieved_at":"2026-08-09"}
+{"id":"chaos-principles","type":"industry-principles","url":"https://principlesofchaos.org/","retrieved_at":"2026-08-09"}
+{"id":"google-sre","type":"official-book","url":"https://sre.google/sre-book/table-of-contents/","retrieved_at":"2026-08-09"}
+{"id":"backtest-overfit","type":"research-paper","url":"https://papers.ssrn.com/sol3/Papers.cfm?abstract_id=2326253","retrieved_at":"2026-08-09"}

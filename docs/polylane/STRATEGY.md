@@ -25,3 +25,11 @@ describes what actually happened, never what a draft, simulation, or plan implie
 Every refinement names evidence, an expected measurable outcome, and a validation deadline.
 An unvalidated or regressing change is rolled back. The system optimizes verified product
 criteria, not lane prose, model confidence, or activity volume.
+
+Cycle 16 makes that optimization executable across domains. Adapters declare read/write
+capabilities, provenance, dependencies, and side effects; profile graders validate the
+resulting deliverable bundle; real-source snapshots and optional live canaries exercise the
+same contract. Historical policy may change model, effort, lane count, context, or skill
+selection only after accepted outcomes provide enough samples and confidence. A resumable
+fault harness checks long-run recovery. Consequential external actions remain two-phase:
+simulation and a hashed impact preview first, then explicit approval for that exact receipt.

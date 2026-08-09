@@ -1,0 +1,6 @@
+{"id":"e1","sources":["fred-observations","fred-vintages","crossref-filters","crossref-tips","openalex-api","openalex-pagination","w3c-prov"],"finding":"Reproducible public-data work must preserve query, retrieval time, version or vintage, pagination behavior, transformations, and content identity."}
+{"id":"e2","sources":["anthropic-evals","openai-evals","openai-gdpval"],"finding":"Reliable agent evaluation needs task-shaped cases, deterministic checks where possible, independent judgment where necessary, and recorded outcome evidence."}
+{"id":"e3","sources":["backtest-overfit"],"finding":"Selecting strategies from many backtests creates an overfitting risk, so trading graders must test time order, robustness, and selection bias rather than reward headline return alone."}
+{"id":"e4","sources":["chaos-principles","google-sre","nist-incident"],"finding":"Long-run reliability improves when bounded failures are injected against a defined steady state and recovery is measured and recorded."}
+{"id":"e5","sources":["anthropic-agents","anthropic-evals"],"finding":"Autonomous routing should add complexity only when measured outcomes justify it and should retain observable guardrails and stopping conditions."}
+

@@ -1,0 +1,6 @@
+{"id":"c16-claim-1","claim":"Adapters are capability-declared and provenance-bearing, with deterministic snapshots as the default test path.","evidence":["e1"]}
+{"id":"c16-claim-2","claim":"Graders combine deterministic domain checks with independent judgment.","evidence":["e2"]}
+{"id":"c16-claim-3","claim":"Trading grades temporal validity, costs, robustness, and overfitting risk rather than return alone.","evidence":["e3"]}
+{"id":"c16-claim-4","claim":"The soak harness injects bounded failures and measures return to steady state.","evidence":["e4"]}
+{"id":"c16-claim-5","claim":"Learning and economy recommendations require accepted outcome evidence, minimum samples, and safe fallback clamps.","evidence":["e5"]}
+

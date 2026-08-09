@@ -280,6 +280,76 @@
       "weight": 10,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c41",
+      "text": "Real cross-domain trials use public-source snapshots plus optional live canaries, not only synthetic fixtures",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c42",
+      "text": "Domain adapters declare capabilities, dependencies, provenance, side effects, and deterministic offline fallbacks",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c43",
+      "text": "Profile-aware graders verify domain validity, including temporal leakage and overfitting for trading research",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c44",
+      "text": "Outcome memory learns only from accepted evidence and recommends changes with sample and confidence guards",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c45",
+      "text": "Skill suggestions are lane-specific, benchmarked before admission, explainable, and safe by default",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c46",
+      "text": "A resumable accelerated soak and fault harness proves long-run recovery and supports a real 6-to-24-hour mode",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c47",
+      "text": "Economy policy optimizes verified progress per token and minute across model, effort, lane count, and context",
+      "weight": 10,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c48",
+      "text": "Discovery uses domain-specific question trees with deeper follow-ups and measurable stopping conditions",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c49",
+      "text": "Final deliverables are profile-specific, complete, provenance-bearing, and decision-ready",
+      "weight": 9,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c50",
+      "text": "Every consequential external action has a deterministic impact preview, simulation receipt, and explicit approval boundary",
+      "weight": 10,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -718,6 +788,44 @@
           "evidence": "Cycle 15 promoted the domain-general contract and runtime. Seven project profiles including trading passed 35/35 focused checks; the final complete suite passed 1941/1941; ShellCheck and live GO/NO-GO rehearsal passed; nested per-run tmux isolation and atomic 4096-byte worker launch were certified; Claude and both Codex installs validated byte-identical."
         }
       ]
+    },
+    {
+      "id": "m16",
+      "text": "Evidence-driven domain autonomy and efficient long-run execution",
+      "subgoals": [
+        {
+          "id": "m16.1",
+          "text": "Implement domain adapters, profile-aware graders, domain question trees, deliverable contracts, and external-action preview",
+          "weight": 60,
+          "status": "doing",
+          "cycle": 16,
+          "evidence": "Cycle 16 frozen before builder launch"
+        },
+        {
+          "id": "m16.2",
+          "text": "Implement accepted-outcome learning, benchmark-gated skill recommendations, and empirical economy optimization",
+          "weight": 58,
+          "status": "doing",
+          "cycle": 16,
+          "evidence": "Cycle 16 frozen before builder launch"
+        },
+        {
+          "id": "m16.3",
+          "text": "Implement real cross-domain trials plus resumable accelerated and 6-to-24-hour soak fault testing",
+          "weight": 56,
+          "status": "doing",
+          "cycle": 16,
+          "evidence": "Cycle 16 frozen before builder launch"
+        },
+        {
+          "id": "m16.4",
+          "text": "Integrate both provider skills and certify all cycle-16 mechanisms end to end",
+          "weight": 54,
+          "status": "doing",
+          "cycle": 16,
+          "evidence": "Cycle 16 frozen before builder launch"
+        }
+      ]
     }
   ],
   "log": [
@@ -858,6 +966,12 @@
       "kind": "decision",
       "text": "Generalize Polylane around project outcome profiles; software remains one specialization, and consequential external actions stay gated.",
       "meta": "User explicitly requested trading and non-app projects."
+    },
+    {
+      "cycle": 16,
+      "kind": "decision",
+      "text": "Implement all ten requested improvements as executable, evidence-gated mechanisms across three isolated lanes and one independent integrator.",
+      "meta": ""
     }
   ],
   "accept": [
@@ -1363,6 +1477,56 @@
       "tier": "terminal",
       "key": "full-domain-certification",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m16.1",
+      "cmd": "bash tests/test-domain-runtime.sh",
+      "tier": "focused",
+      "key": "domain-runtime",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m16.2",
+      "cmd": "bash tests/test-learning-economy.sh",
+      "tier": "focused",
+      "key": "learning-economy",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m16.3",
+      "cmd": "bash tests/test-domain-trials.sh && bash tests/test-soak.sh",
+      "tier": "focused",
+      "key": "trials-soak",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m16.4",
+      "cmd": "bash tests/test-cycle-16-contract.sh",
+      "tier": "focused",
+      "key": "cycle16-contract",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m16.4",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "cycle16-terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

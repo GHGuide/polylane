@@ -6,10 +6,15 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 15: [plan](cycle-15-plan.md) · [research](cycle-15-research.md) ·
-[integration](cycle-15-integration.md) · [skill suggestions](cycle-15-suggestions.md). Target: make project outcomes—not
-apps—the core abstraction, with trading/research, operations, content/data,
-software, and custom profiles plus consequential-action gates.
+Active cycle 16: [plan](cycle-16-plan.md) · [research](cycle-16-research.md) ·
+[skill suggestions](cycle-16-suggestions.md). Target: make every supported domain
+executable, provenance-bearing, profile-graded, outcome-learning, economy-aware, and
+long-run tested while preserving explicit external-action approval boundaries.
+
+Closed cycle 15: [plan](cycle-15-plan.md) · [research](cycle-15-research.md) ·
+[integration](cycle-15-integration.md) · [skill suggestions](cycle-15-suggestions.md).
+Project outcomes—not apps—are now the core abstraction, with trading/research,
+operations, content/data, software, and custom profiles plus consequential-action gates.
 
 Closed cycle 14: [plan](cycle-14-plan.md) · [research](cycle-14-research.md) ·
 [30-candidate audit](cycle-14-suggestions.md) · [questions](cycle-14-questions.md) ·
