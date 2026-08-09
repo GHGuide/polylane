@@ -1,6 +1,4 @@
 # Cycle 23 questions
 
-No blocking or material product question exists before this frozen certification.  The
-recommended autonomous choice is to execute the untouched terminal boundary.  If a new
-material ambiguity emerges, the integrator must record it with `Recommended`, `Go deeper
-next round`, and `Defer`; otherwise it explicitly records that none arose and continues.
+No material emergent question arose during integration.  The frozen host boundary is
+already specified, so this lane makes no further choice: the coordinator retains it.
