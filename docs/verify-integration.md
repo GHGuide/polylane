@@ -1,45 +1,57 @@
-# Cycle 17 integration verification — recovery certification
+# Cycle 18 integration verification — walk-away recovery truth
 
-Run: `c17-recovery-cert-20260809-a1`
+Run: `c18-walkaway-truth-20260809-a1`.
 
-## Merged provenance
+## Exact provenance
 
-`lane/c17-gate-contracts` at `20aa6e8f85fc304bf60cc93c509e5d2bf00263c6` and
-`lane/c17-skill-contracts` at `6e0c38fd03ea96b89d16de66e1fbcb4b651f29f8` are verified
-ancestors of this integrator through merge commits `ba01c5d` and `614c571`. The recovery
-preserves Cycle 16's recorded 2,088-check, nine-failure **NO-GO**; this is a fresh run,
-not a rewrite of historical evidence.
+Merged committed builder tips only: runtime-resilience `631bd3ab1eda4f20262bd4d890e41109324a3efd`
+through merge `0cf81ca`, and skill-context `e21c26ac086f314796934bc5c4a346e00430d9c5`
+through merge `6a22ecc`. Their committed first-line DONE markers match this run. The
+integrator then corrected one cross-lane caller seam: `compile_prompt` now passes the
+single preflight-validated `lane_skills_file` JSON to `compile-selected`, rather than
+mistaking a `SELECTED-SKILL` record's `SKILL.md` path for that JSON kit.
 
-## Reproduced focused acceptance
+The new runner-delivery assertions in `test-cycle-13-contract.sh` were red with the
+original caller (40 pass, 4 fail: zero selected records and no receipt contract), then
+green after the correction (44 pass, 0 fail). The compiled builder fixture contains all
+four trusted records, including exact id/path/source/fingerprint/reason data, immediately
+after the named-kit instruction; the integrator fixture remains unselected.
 
-All commands ran through `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"`:
-graph authority **56/0**, verdict repair **36/0**, wedge **27/0**, skill delivery
-**31/0**, Cycle-14 compatibility **13/0**, learning economy **57/0**, and Cycle-16
-contract **29/0**. Provider parity passed **57/0**, installers passed **50/0**, and
-fresh installers passed **39/0**.
+## Reproduced local matrix
 
-## Cross-contract and safety review
+All commands ran from this merged worktree through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"` unless noted.
 
-ShellCheck is clean for the changed scripts `bin/polylane-scout.sh` and
-`bin/polylane-skill-catalog.sh`; `git diff --check`, marker documentation consistency,
-and seam scanning are clean. The graph-only fixture stubs its domain-grade prerequisite
-without replacing production coverage, while verdict repair counts one grade call before
-each of three merge attempts. The liveness fixture uses the real terminal classifier to
-prove an old `agent_message` does not shorten a live high-effort turn. Skill arming
-re-resolves a trusted path and invokes the public benchmark gate with the exact current
-fingerprint, domain, and lane shape, so missing, thin, stale, or unbenchmarked evidence
-cannot arm a recommendation. Profile grading, benchmark admission, receipt hashes,
-single terminal-gate accounting, paper-only trading, and exact-hash approval-bound action
-simulation remain unchanged.
+- Runtime recovery: `test-wedge.sh` 29/0; `test-lane-done.sh` 26/0;
+  `test-verdict-repair.sh` 40/0; `test-graph-events.sh` 47/0;
+  `test-write-report.sh` 33/0; `test-supervisor.sh` 26/0; and
+  `test-share-graph.sh` 11/0.
+- Selected-skill delivery: `test-skill-delivery.sh` 44/0 and
+  `test-prompt-compiler.sh` 16/0.
+- Cross-contract/provider evidence: `test-cycle-13-contract.sh` 44/0,
+  `test-cycle-16-contract.sh` 29/0, `test-skill-parity.sh` 57/0,
+  `test-installers.sh` 50/0, and `test-install-fresh.sh` 39/0.
+- Static/document evidence: whole-tree `shellcheck -S warning bin/*.sh`,
+  `bin/polylane-markers.sh check-docs references/`,
+  `bin/polylane-seams.sh scan "$PWD"`, and
+  `git diff --check candidate/c18-base` all exited 0.
 
-## Host boundary
+The adversarial fixtures prove prose-only trust and banner text send no tmux keys;
+canonical host-gate failure leaves a committed READY integrator clean and resumable;
+simulated report and event failures preserve the prior report/JSONL replay; the
+10,000-event replay remains linear; fake low disk waits without spending restart budget;
+and a recovery worktree receives only a same-common-repository graph link without
+overwriting a local path. No test fills real disk, and all trading/action behavior remains
+paper-only, simulated, and approval-bound.
 
-`c51`, `c52`, `m17.1`, and `m17.2` are complete from this reproduced evidence. `m16.4`
-and `m17.3` remain open for the coordinator's one fresh terminal matrix: full suite,
-whole-tree ShellCheck, provider/install parity, and GO/NO-GO rehearsal. No terminal suite,
-live rehearsal, real trade, deployment, publication, spend, contact, or other
-consequential external action was run here.
+## Review and remaining boundary
 
-DOMAIN-GRADER: PASS bundle=docs/polylane/domain-runtime/bundle.json grade=docs/polylane/domain-runtime/grade.json
+The correctness/security/maintainability review found and closed the selected-kit caller
+mismatch above; no other actionable issue remained after the final matrix. Ponytail
+review result: `Lean already. Ship.` The canonical graph was queried before implementation
+inspection; its indexed C17-era topology did not contain the new runtime helpers, while
+the same-repository fallback was independently exercised by the merged fixture. The
+coordinator alone must still run the untouched terminal `tests/run.sh` matrix and live
+GO/NO-GO rehearsal; the optional 6/12/24-hour soak is operator certification, not CI.
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c17-recovery-cert-20260809-a1
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c18-walkaway-truth-20260809-a1

@@ -1,16 +1,14 @@
-# Cycle 16 integration status
+# Cycle 18 integration status
 
-Run: `c16-evidence-autonomy-20260809-a1` · branch: `lane/c16-integrator`.
+Run: `c18-walkaway-truth-20260809-a1` · branch: `lane/c18-integrator`.
 
-| Lane | Exact tip | Integration state | Reproduced focused evidence |
+| Lane | Exact tip | Integration state | Reproduced evidence |
 | --- | --- | --- | --- |
-| domain runtime | `c929c99` | merged; traversal/symlink and action-receipt seams reviewed | `test-domain-runtime.sh` 76/0 |
-| learning economy | `a1c7622` | merged; benchmark-only scout arming wired | `test-learning-economy.sh` 57/0 |
-| trials/soak | `3449e63` | merged; deterministic corpus and resumable fault mode retained | trials 15/0; soak 21/0 |
-| integrator | current branch | runner, provider, docs, installer, and contract seams wired | `test-cycle-16-contract.sh` 29/0; terminal gate remains host-owned |
+| runtime resilience | `631bd3a` | merged as `0cf81ca`; runtime/event/supervisor/graph seams coexist | recovery matrix 29/26/40/47/33/26/11, all pass |
+| skill context | `e21c26a` | merged as `6a22ecc`; typed compiler contract retained | delivery 44/0; compiler 16/0 |
+| integrator | current branch | corrected JSON-kit caller seam and added regression | Cycle-13 runner delivery 44/0; Cycle-16 29/0 |
 
-Fresh provider parity is 57/0; fresh isolated installers are 50/0; whole-tree ShellCheck,
-marker validation, profile validation, and seam scan are clean. The coordinator alone owns
-the terminal composite gate and rehearsal. Optional live source canaries and real 6/12/24-hour
-soak are explicitly non-CI evidence; the old `m12.4`/`c28` visual corpus remains external
-and outside this non-UI repair scope.
+Parity is 57/0; installers are 50/0 and fresh installs 39/0; whole-tree ShellCheck,
+marker consistency, seam scan, and diff hygiene are clean. The coordinator alone owns the
+unchanged terminal suite and live rehearsal. Optional 6/12/24-hour soak remains resumable
+operator certification; no live external action occurred and trading remains paper-only.

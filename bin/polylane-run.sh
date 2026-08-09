@@ -635,7 +635,7 @@ prompt_budget_check() {
 # The authored prompt remains immutable. A compiled copy may remove only
 # byte-identical ordinary prose after the frozen contracts are compared again.
 compile_prompt() {
-  local source="$1" name="$2" role="$3" dir tmp selected compiled metrics prime kit
+  local source="$1" name="$2" role="$3" dir tmp selected compiled metrics prime
   case "$name" in ''|*[!A-Za-z0-9._-]*) die "unsafe prompt lane name '$name'" ;; esac
   [ -s "$source" ] || { echo "PROMPT-COMPILE: $name source is missing or empty" >&2; return 1; }
   dir="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}"
@@ -652,19 +652,17 @@ compile_prompt() {
     echo "PROMPT-COMPILE: $name lost a frozen contract" >&2
     return 1
   fi
-  # Selected kits are added only after ordinary normalization.  The optimizer
-  # owns the injected-record format; this runner only forwards each exact path.
+  # Selected kits are added only after ordinary normalization. The optimizer
+  # owns the injected-record format; this runner forwards the single typed
+  # lane-skill kit that preflight already validated, never a SKILL.md path.
   if [ "$role" = builder ]; then
-    while IFS= read -r kit; do
-      [ -n "$kit" ] || continue
-      selected=$(mktemp "$dir/.${name}.selected.XXXXXX") || { rm -f "$tmp"; return 1; }
-      if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile-selected "$tmp" "$kit" "$name" "$selected"; then
-        rm -f "$tmp" "$selected"
-        echo "PROMPT-COMPILE: $name selected-kit compilation failed" >&2
-        return 1
-      fi
-      mv "$selected" "$tmp"
-    done < <(awk -F ' \| ' '/^SELECTED-SKILL: / {print $2}' "$source")
+    selected=$(mktemp "$dir/.${name}.selected.XXXXXX") || { rm -f "$tmp"; return 1; }
+    if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile-selected "$tmp" "$LANE_SKILLS_FILE" "$name" "$selected"; then
+      rm -f "$tmp" "$selected"
+      echo "PROMPT-COMPILE: $name selected-kit compilation failed" >&2
+      return 1
+    fi
+    mv "$selected" "$tmp"
   fi
   mv "$tmp" "$compiled"
   prime=false

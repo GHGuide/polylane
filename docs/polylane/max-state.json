@@ -369,14 +369,14 @@
       "id": "c53",
       "text": "A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c54",
       "text": "Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -893,17 +893,17 @@
           "id": "m18.1",
           "text": "Harden startup detection, committed-DONE resume, disk-pressure event/report writes, and supervisor recovery",
           "weight": 70,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 18,
+          "evidence": "docs/verify-integration.md: reproduced runtime recovery matrix via integrator cache"
         },
         {
           "id": "m18.2",
           "text": "Compile exact benchmark-admitted selected skill paths and share canonical graph context into recovery roots",
           "weight": 68,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 18,
+          "evidence": "docs/verify-integration.md: reproduced selected-skill delivery and same-repository graph fallback"
         },
         {
           "id": "m18.3",
@@ -1102,6 +1102,12 @@
       "kind": "learning",
       "text": "Runner-owned host failure prose dirtied the completed integrator worktree",
       "meta": "lane_done then failed clean-tree validation on resume, causing a committed DONE integrator to be adopted and respawned."
+    },
+    {
+      "cycle": 18,
+      "kind": "decision",
+      "text": "Cycle 18 local recovery and exact skill-delivery integration is ready for the single host gate.",
+      "meta": "runtime 29/26/40/47/33/26/11; delivery 44/0; runner delivery 44/0; C16 29/0; parity 57/0; installers 50/0+39/0; terminal/rehearsal untouched"
     }
   ],
   "accept": [
@@ -1696,7 +1702,7 @@
       "cmd": "bash tests/test-wedge.sh && bash tests/test-lane-done.sh && bash tests/test-verdict-repair.sh && bash tests/test-graph-events.sh && bash tests/test-write-report.sh && bash tests/test-supervisor.sh",
       "tier": "focused",
       "key": "cycle18-runtime",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1706,7 +1712,7 @@
       "cmd": "bash tests/test-skill-delivery.sh && bash tests/test-prompt-compiler.sh && bash tests/test-share-graph.sh",
       "tier": "focused",
       "key": "cycle18-skill-context",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1716,7 +1722,7 @@
       "cmd": "bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
       "tier": "focused",
       "key": "cycle18-integration",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

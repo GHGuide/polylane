@@ -6,11 +6,14 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Active cycle 18: [plan](cycle-18-plan.md) · [skill suggestions](cycle-18-suggestions.md).
-This fresh recovery cycle fixes the walk-away defects exposed by Cycle 17: false startup
+Active cycle 18: [plan](cycle-18-plan.md) · [skill suggestions](cycle-18-suggestions.md) ·
+[questions](cycle-18-questions.md) · [council](cycle-18-council.md) ·
+[digest](cycle-18-digest.md) · [integration verification](../verify-integration.md).
+This fresh recovery cycle repairs the walk-away defects exposed by Cycle 17: false startup
 input, DONE-lane relaunch, disk-pressure truth, missing exact selected-skill paths, and
-graphless recovery roots. Builders run focused checks only; the coordinator owns the
-single terminal matrix.
+graphless recovery roots. Its focused and cross-contract evidence is reproduced on the
+merged source; `READY-FOR-HOST-GATE` leaves the one terminal matrix and rehearsal to the
+coordinator.
 
 Cycle 17 recovery history: [plan](cycle-17-plan.md) ·
 [skill suggestions](cycle-17-suggestions.md) · [questions](cycle-17-questions.md) ·
