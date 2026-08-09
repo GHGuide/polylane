@@ -1,6 +1,6 @@
 # Verification — restart accounting and process-start boundary
 
-Run: `c20-clean-cert-20260809-a1`  
+Run: `c20-clean-cert-20260809-a1`
 Scope: evidence-only audit; no production code, test, provider, reference, state, or cycle-control document was changed.
 
 ## Skill receipts
@@ -66,6 +66,11 @@ Each command ran once from this worktree through
 
 Total: 153 pass, 0 fail. No full suite, whole-tree ShellCheck, installer, doctor, or
 rehearsal command was run.
+
+Fresh diff hygiene after this evidence correction returned clean from
+`git diff --check`; only `docs/verify-restart-accounting.md` was staged for the
+correction commit. The later status commit is restricted to
+`docs/status-restart-accounting.md`.
 
 ## Limitations and boundary
 
