@@ -19,6 +19,14 @@ FAILED_LANES=""; STALLED_LANES=""; RUN_ID=recovery-run
 mkdir -p "$TEST_TMPDIR/wt/docs"; printf 'build\n' > "$TEST_TMPDIR/prompt"
 FAKE_PANES='0 1 7'
 FAKE_WORKTREE_PANES=""
+polylane_tmux_find_pane() {
+  local session="$1" run_id="$2" worktree="$3" line
+  for line in $FAKE_WORKTREE_PANES; do
+    [ "${line#*|}" = "$worktree" ] && { printf '%s' "${line%%|*}"; return 0; }
+  done
+  return 1
+}
+polylane_tmux_tag_pane() { printf 'tag %s %s %s %s %s\n' "$@" >> "$KEYLOG"; }
 tmux() {
   case "$1" in
     display-message)
@@ -61,6 +69,7 @@ assert_eq "missing-pane-remapped" "7" "${LANE_PANE_IDX[0]}"
 assert_eq "missing-pane-counts-after-launch" "1" "${LANE_RETRIES[7]}"
 assert_contains "missing-pane-creates-owned-pane" "split-window -t recovery-test:0 -P -F #{pane_index}" "$(cat "$KEYLOG")"
 assert_contains "missing-pane-attaches-log" "pipe 7 builder" "$(cat "$KEYLOG")"
+assert_contains "missing-pane-tags-replacement" "tag recovery-test 7 recovery-run builder $TEST_TMPDIR/wt" "$(cat "$KEYLOG")"
 assert_eq "missing-pane-never-sends-old-target" "0" "$(grep -c 'recovery-test:0.4' "$KEYLOG" || true)"
 
 # tmux can renumber a surviving pane after another pane exits. The numeric
