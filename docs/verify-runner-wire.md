@@ -63,6 +63,7 @@ Base: `843102ac1e7562921b560dd7bb15b5d6abd01cc6`.
 - `tests/test-runtime-recovery.sh`
 - `tests/test-model-policy.sh`
 - `docs/verify-runner-wire.md`
+- `docs/status-runner-wire.md`
 
 The committed patch is inspectable with
 `git diff 843102ac1e7562921b560dd7bb15b5d6abd01cc6..HEAD --` for this exact list.
