@@ -2,11 +2,12 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-Cycle 24 integration note: exact-tip context hardening remains NO-GO despite green
-focused checks because canonical evidence records two lane restarts and one supervisor
-restart. The sole terminal gate rejected the efficiency proof and is exhausted. No
-durable goal or criterion state changed; the mechanically generated Cycle 23 totals
-below remain authoritative.
+Cycle 25 integration note: exact-tip atomic completion and context hardening remain
+NO-GO despite 599 green focused checks and clean changed-script ShellCheck. Canonical
+evidence records one handoff restart; the terminal gate was correctly left untouched.
+No durable goal or criterion state changed, so the mechanically generated Cycle 23
+totals below remain authoritative. A fresh nonce must certify the repaired source with
+zero restarts.
 
 ## Cycle 23
 

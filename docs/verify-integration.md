@@ -1,136 +1,129 @@
-# Cycle 24 integration verification — NO-GO
+# Cycle 25 integration verification — NO-GO
 
-Run: `c24-context-hardening-20260810-a1`
-Branch: `lane/c24-integrator`
-Frozen base: `843102ac1e7562921b560dd7bb15b5d6abd01cc6`
+Run: `c25-finality-20260810-a1`
+Branch: `lane/c25-integrator`
+Frozen base: `08a0938`
 
-## Selected-skill receipts
+The selected verification-before-completion and code-review kits guided the
+evidence ordering and the independent shell/race review. The bounded context packet
+was read exactly once. No Graphify skill file was read or invoked, and the shared
+graph was not rebuilt.
 
-SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
+## Exact-tip provenance and ownership
 
-SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
-
-Both selected files and the bounded context packet were each read exactly once. No
-Graphify skill file was read or invoked, and the shared graph was not rebuilt.
-
-## Exact-tip provenance
-
-The three current asserted builder tips were merged without conflict:
+The two asserted builder tips were merged without rewriting either branch:
 
 | Lane | Asserted tip | Integration merge |
 | --- | --- | --- |
-| `pane-identity` | `3a99b106b6075fd58a2cb7dd41db3adb89032e17` | `ebe5c3326b9662c7b2e3b9a58dc0d2d8e290e272` |
-| `context-hygiene` | `7eadd5fba104013719f5325494ebaa1f3a8c12dc` | `f948218b4c84f7281cd1980ac6c901e9b7a99934` |
-| `runner-wire` | `f8540bd3d7b7cf2b7059a7bfa18fd448e0ad94b8` | `63c11fdef204e34e7ad7ad603dbe83fc636c24e3` |
+| `handoff-contract` | `aa5a3b3a867d1dc7b82029cfff5e3c262ca56f05` | `c6da677` |
+| `runtime-finality` | `24c2b616ea43d22929356063015b848d6c9ae494` | `27a3510` |
 
-`git merge-base --is-ancestor` succeeded for every asserted tip. The original builder
-ranges stayed within their frozen OWN boundaries. Integrator changes add missing
-identity/navigation assertions and repair one cross-lane tmux lookup seam discovered
-from canonical live evidence.
+`git merge-base --is-ancestor` succeeded for both tips. The handoff tip changed only
+its prompt/lint/reference/parity surfaces, focused tests, and lane evidence. The
+runtime tip changed its runner/completion surfaces, but also changed
+`tests/test-reflexion.sh` outside its asserted owned test set. Addressed durable inbox
+message `message:98` required that file to be restored exactly to frozen base
+`08a0938`; `git diff --exit-code 08a0938 -- tests/test-reflexion.sh` now succeeds. Its
+strict-scalar regression is retained in owned `tests/test-lane-done-live.sh`.
 
-## Independent review and focused contracts
+## Independent review and seam repairs
 
-The merged diff was reviewed for correctness, security, performance, maintainability,
-shell portability, and error propagation.
+The merged diff was reviewed for fail-closed behavior, shell portability, generated
+prompt parity, exact-once scalars, process races, and branch ownership. Three proven
+cross-lane seams were repaired:
 
-- Pane tags are written before dependent state, usage, or transcript work on fresh,
-  adopted, recreated, and integrator paths. Complete matching pane-local tags survive
-  cwd drift; partial, wrong-run, and wrong-worktree tags fail closed; a truly untagged
-  pane retains legacy cwd adoption.
-- Worker run IDs use the existing name grammar plus a 128-byte bound. Message, relay,
-  acknowledgement, inbox, and resume-packet paths share the optional scope, while an
-  unscoped caller retains the historical API.
-- Prime-hybrid host calls and pane exports carry `POLYLANE_WORKER_RUN_ID`; preflight
-  and lint require the exact fixed-string inbox command and reject reversed arguments.
-- `graphify` and `graphify-auto` are rejected before arming or compilation while Block
-  E retains direct `graphify-out/q.py` queries.
-- Manifest `custom` validates baked model IDs, availability, and effort without remap;
-  an explicit CLI preset still remaps and wins. Liveness helpers restore local ordinary
-  word splitting after inherited `IFS=|`.
+1. `inject_runtime_prompt_contract` emitted a shortened finalization line that the
+   strict generated linter rejected. It now emits the same ordered literal contract
+   as every Claude/Codex prompt surface.
+2. Authored prompts already advertise runtime labels. The injector now replaces those
+   three runner-owned labels before appending the nonce/path-specific compiled forms,
+   avoiding duplicate runtime scalars. Three explicit BSD-sed expressions are used;
+   the rejected GNU-style alternation is not retained.
+3. Prelaunch scope checks did not grade a builder's completed diff. Contract-v2
+   `lane_done` now checks every frozen-base-to-HEAD builder path with
+   `polylane-scope.sh check-lane`, fails closed when manifest/base evidence is missing,
+   surfaces exact violations, and deliberately excludes the cross-lane integrator.
 
-The initial combined focused command ran once through the integrator cache and passed
-349/349 across 14 files. Changed-script ShellCheck also passed once. Its retained test
-log is `.polylane/check-cache/integrator/1095121181-634.output`.
+The finalization contract is present in `SKILL.md`, `codex/SKILL.md`, planning,
+prompt blocks, lane template, and the compiled runtime injector. Strict generated lint
+requires the ordered literal and rejects a fictional executable
+`polylane-refine.sh propose-or-decline`. Prime-hybrid instructions instead run `queue`,
+then one implemented `propose` or `decline` for each eligible item. Repair and churn
+prompts preserve the original `DELEGATION`, `CHECK-CACHE`, and all other strict
+scalars. A committed status marker and READY handoff are rejected while the mapped
+nonce-bound agent is live and accepted after exit.
 
-Independent review added coverage for partial, wrong-run, wrong-worktree, and
-`graphify-auto` rejection. The later live relay then exposed a distinct tmux semantic:
-`#{@polylane_run_id}` inherits a session option when the pane has no local option, so
-the merged finder could mistake a fully untagged legacy pane for a partially tagged
-pane. Live reproduction showed:
+Cycle 24 behavior remains intact: complete pane-local tags survive cwd drift; partial,
+wrong-run, and wrong-worktree tags fail closed; fully untagged legacy cwd adoption
+still works. A scoped inbox sees only matching-run events while the legacy unscoped API
+retains history. Manifest `intensity: custom` preserves baked model/effort values, and
+explicit CLI presets remain the only remapping operation.
 
-- `tmux show-options -p -v ... @polylane_run_id` -> `invalid option`;
-- `tmux display-message ... '#{@polylane_run_id}'` -> the session nonce.
+## Focused verification
 
-The new real-tmux regression first failed exactly `13 pass, 1 fail`. The finder was
-then changed to list only pane index/cwd and query all three identity keys with
-pane-scoped `show-options -p -v`, which has no session fallback. The affected cached
-green matrix passed 65/65 (`test-tmux-runtime` 14, `test-state` 19,
-`test-supervisor` 32), and changed-helper ShellCheck exited 0. This local repair is
-required source for the next cycle but cannot erase this run's restart history.
+The final combined cached matrix passed **599 assertions across 24 files with zero
+failures**. It includes the 14 frozen Cycle 24 identity/context/model checks, all Cycle
+25 handoff/finality checks, `test-scope.sh`, and `test-seams.sh`. The retained log is
+`.polylane/check-cache/integrator/3744703488-936.output`.
 
-## Canonical transcript and context evidence
+Changed-script ShellCheck passed once on the final source across:
+`polylane-model-policy.sh`, `polylane-promptlint.sh`, `polylane-promptopt.sh`,
+`polylane-run.sh`, `polylane-scout.sh`, `polylane-state.sh`,
+`polylane-supervisor.sh`, `polylane-tmux.sh`, and `polylane-workers.sh`. Its retained
+log is `.polylane/check-cache/integrator/1929566801-329.output`. `git diff --check`
+also succeeds.
 
-Before targeted source reads, the frozen helper was queried directly for worker inbox,
-prompt/model policy, tmux identity, and all runner launch/adopt/recreate surfaces. The
-graph had no useful shell call edges, so direct source review remained authoritative.
+The terminal acceptance, whole repository suite, installers, and doctor rehearsal were
+not run; they remain coordinator-owned and no host gate was consumed.
 
-The canonical logs are outside the runtime snapshot at
-`/Users/leonardo/Downloads/polylane-c24/docs/lane-logs/*.log`. Command-field inspection
-shows direct `q.py` queries in every builder:
+## Fresh runtime, Graphify, and inbox evidence
 
-- pane identity: `pane_for_worktree`, `polylane_tmux_configure`, `discover_session`;
-- context hygiene: `inbox_json`, `compile_selected`, `lint_one`;
-- runner wire: `launch_panes`, both adoption paths, `recreate_lane_pane`,
-  `run_integrator`, and `prime_hybrid_pane_exports`.
+Canonical evidence is under `/Users/leonardo/Downloads/polylane-c25`, not the bounded
+runtime snapshot. `docs/polylane/run-stats.json` records exactly one launch for each of
+the two builders and one integrator launch. It also records:
 
-The canonical command audit found zero reads of `graphify/SKILL.md` or
-`graphify-auto/SKILL.md`.
+- `handoff-contract`: **1 restart**;
+- `runtime-finality`: 0 restarts;
+- `integrator`: 0 restarts;
+- supervisor restarts: 0;
+- terminal gates: 0;
+- tokens: unknown (never rendered as zero);
+- cleanup: pending.
 
-At lane start, the exact inbox command returned three Cycle 15 imports because this
-bootstrap process did not export the new run scope. They were identified as historical,
-not followed, and not acknowledged. The integrated scope test proves that a `new-run`
-caller sees only its two matching events, rejects an old acknowledgement, and an
-unscoped legacy caller retains all five historical events. Only a fresh process can
-certify the new export in live use.
+The three current worker capsules retain their role, run registration, and bounded
+context identity. All three live panes expose pane-local `@polylane_run_id`,
+`@polylane_lane`, and `@polylane_worktree`; the values match this nonce and the exact
+handoff, runtime, and integrator worktrees. The frozen custom manifest preserves
+`gpt-5.6-terra/medium` for both builders and `gpt-5.6-sol/high` for the integrator.
 
-## Canonical runtime truth
+All three canonical compiled prompts were inspected. They contain one ultimate goal,
+subgoal, goal, delegation, check-cache, exact inbox route, selected builder records,
+relay, and nonce-bound DONE path. Because this self-run launched from the Cycle 24 base
+in order to build Cycle 25, its launch-time compiled copies predate the new formal
+`POLYLANE-RUNTIME-FINALIZE` label; the merged candidate's compilation is independently
+covered by the green orchestration and live-finality acceptances above.
 
-`/Users/leonardo/Downloads/polylane-c24/docs/polylane/run-stats.json` is decisive:
+Command-field audit of all three canonical lane logs found direct
+`graphify-out/q.py` use (`handoff-contract` 8 invocations across its original and
+restarted transcript, `runtime-finality` 5, integrator 17) and **zero reads of any
+Graphify or Graphify-auto `SKILL.md`**. The shared graph was never rebuilt.
 
-- `context-hygiene`: 1 launch, **2 restarts**;
-- `supervisor_restarts`: **1**;
-- all other lanes: 1 launch, 0 lane restarts;
-- `terminal_gates`: 1;
-- `cleanup`: `pending`.
+The canonical worker history contains 99 events: 96 historical unscoped events and
+three events scoped to this run. The scoped integrator inbox returned only current-run
+`message:98`; no old or unscoped event leaked into the result. That request exposed the
+ownership and missing post-completion scope gate repaired above. The refinement queue
+returned `[]`, so no `propose` or `decline` action was eligible.
 
-The canonical runner log records dead-pane retries at lines 550 and 814, then a
-reflexion attempt at line 995. Line 996 rejects duplicate strict `DELEGATION` scalar
-values. The first restarts followed a builder handoff that did not mechanically require
-committing every owned file; the marker was therefore not a valid contract-v2 handoff.
-The plan states that any restart is NO-GO. Focused code health cannot override this
-nonce-bound runtime evidence. The coordinator subsequently consumed the sole terminal
-gate. Its efficiency proof failed with `restarts=3>0`; the host-gate failure records
-that the gate is exhausted, nothing was merged or deleted, and cleanup remains pending.
+## Verdict
 
-## Exact repairs and next gate
+The source candidate is focused-green, but the run is not promotable. The frozen plan
+makes any lane restart NO-GO, and canonical stats record one `handoff-contract`
+restart. No local repair can erase nonce-bound restart history. A fresh run from this
+integrated tip must prove exactly two builder launches, zero lane and supervisor
+restarts, then leave the one terminal gate to the coordinator. Cleanup for this failed
+run also remains coordinator-owned.
 
-Cycle 24 ends NO-GO. A fresh hardening cycle must:
+## DEFERRED
 
-1. Compile an explicit builder instruction to commit every owned changed/new file
-   before the DONE marker, with a prompt contract regression.
-2. Make reflexion prompt augmentation replace/dedupe strict scalar contracts rather
-   than append a second `DELEGATION` value, with a red/green promptopt regression.
-3. Start from the pane-local option repair in this integrator branch and certify a new
-   process with zero lane restarts, zero supervisor restarts, scoped live inbox output,
-   one new-run coordinator-owned terminal gate, and complete cleanup.
-
-This lane did not run the full suite, whole-tree ShellCheck, parity, either installer,
-doctor, live rehearsal, push, deployment, publication, purchase, or live action. No
-external evidence is required; the ten-product visual corpus remains separate. The
-refinement queue returned `[]`, so no propose-or-decline action was eligible.
-
-SKILL-EVIDENCE: engineering:code-review — helped: the structured review found missing edge assertions and, when canonical live evidence arrived, isolated session-option inheritance as a real cross-lane correctness seam.
-
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: canonical restart evidence overrode the earlier green focused matrix, forced withdrawal of READY, and tied the pane repair to red/green verification.
-
-POLYLANE-VERDICT: NO-GO run=c24-context-hardening-20260810-a1
+DEFERRED: fresh zero-restart host certification — rerun this integrated source in a
+new nonce; only that process may become eligible for the terminal gate.

@@ -6,6 +6,14 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 25 NO-GO evidence: [plan](cycle-25-plan.md) ·
+[research](cycle-25-research.md) · [skill suggestions](cycle-25-suggestions.md) ·
+[council](cycle-25-council.md) · [digest](cycle-25-digest.md) ·
+[questions](cycle-25-questions.md) · [integration verification](../verify-integration.md).
+The exact two tips and three integration seam repairs pass 599 focused checks plus
+changed-script ShellCheck. Canonical stats nevertheless record one handoff restart, so
+the untouched terminal gate cannot run. A fresh nonce owns zero-restart certification.
+
 Cycle 24 NO-GO evidence: [plan](cycle-24-plan.md) ·
 [research](cycle-24-research.md) · [skill suggestions](cycle-24-suggestions.md) ·
 [council](cycle-24-council.md) · [digest](cycle-24-digest.md) ·

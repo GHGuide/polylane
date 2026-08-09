@@ -16,6 +16,11 @@ git -C "$WT" add docs/status-builder.md && git -C "$WT" commit -qm done
 
 ORCHESTRATION_CONTRACT=2
 RUN_ID=live-run
+BASE=$(git -C "$WT" rev-list --max-parents=0 HEAD)
+MANIFEST="$TEST_TMPDIR/run.json"
+cat > "$MANIFEST" <<'JSON'
+{"base":"main","lanes":[{"name":"builder","own_globs":["docs/status-builder.md"]}]}
+JSON
 LANE_NAMES=(builder)
 LANE_PANE_IDX=(4)
 INT_NAME=integrator
@@ -29,6 +34,18 @@ assert_ok "done-v2-accepts-same-marker-after-agent-exit" lane_done "$WT" builder
 pane_for_worktree() { return 1; }
 LIVE=1
 assert_ok "done-v2-unmapped-fixture-remains-pure" lane_done "$WT" builder
+
+# Completion grades the committed builder diff against the manifest, not only
+# the prelaunch static scope promise.
+printf 'escaped\n' > "$WT/outside.txt"
+git -C "$WT" add outside.txt && git -C "$WT" commit -qm out-of-scope
+assert_fail "done-v2-rejects-committed-out-of-scope-path" lane_done "$WT" builder
+git -C "$WT" rm -q outside.txt && git -C "$WT" commit -qm remove-out-of-scope
+assert_ok "done-v2-accepts-scope-clean-net-diff" lane_done "$WT" builder
+SAVED_MANIFEST=$MANIFEST
+MANIFEST="$TEST_TMPDIR/missing-manifest.json"
+assert_fail "done-v2-scope-gate-fails-closed-without-manifest" lane_done "$WT" builder
+MANIFEST=$SAVED_MANIFEST
 
 # READY follows the same liveness gate for the nonce-bound integrator pane.
 printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=live-run\n' > "$WT/docs/verify-integration.md"
@@ -67,5 +84,11 @@ assert_ok "runtime-finalize-promptopt-strict" "$SCRIPT_DIR/../bin/polylane-promp
 assert_ok "runtime-finalize-promptlint-strict" \
   env POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 \
   "$SCRIPT_DIR/../bin/polylane-promptlint.sh" lint "$RUNTIME" builder false builder
+
+# Recovery addenda preserve, rather than append, the strict scalar contracts.
+REPAIR="$TEST_TMPDIR/repair.prompt"
+build_repair_prompt "$SOURCE" builder 2 > "$REPAIR"
+assert_ok "runtime-repair-preserves-strict-scalars" \
+  "$SCRIPT_DIR/../bin/polylane-promptopt.sh" check "$REPAIR"
 
 finish

@@ -32,7 +32,7 @@ mkdir -p "$G"
 ) >/dev/null 2>&1
 cat > "$G/.polylane/run.json" <<EOF
 {"base":"main","orchestration_contract":2,"run_id":"current-nonce","session":"manifest-owned","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$G/.polylane/wt/int","prompt_file":"p"},
-"lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"$G/.polylane/wt/a","prompt_file":"p","own_globs":["x"]},
+"lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"$G/.polylane/wt/a","prompt_file":"p","own_globs":["x","docs/status-a.md"]},
 {"name":"b","model":"m","effort":"h","branch":"lane/b","worktree":"$G/.polylane/wt/b","prompt_file":"p","own_globs":["y"]}]}
 EOF
 

@@ -650,9 +650,14 @@ inject_runtime_prompt_contract() {
     marker="STATUS: $name DONE"
   fi
   {
-    cat "$input"
+    # Authored prompt surfaces advertise the protocol, but the live command,
+    # nonce, and canonical status path remain runner-owned. Replace those
+    # advertised labels with one compiled copy instead of duplicating scalars.
+    sed -e '/^POLYLANE-RUNTIME-RELAY:/d' \
+      -e '/^POLYLANE-RUNTIME-FINALIZE:/d' \
+      -e '/^POLYLANE-RUNTIME-DONE:/d' "$input"
     printf '\nPOLYLANE-RUNTIME-RELAY: at start and immediately before completion run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; handle requests addressed to %s. docs/parallel-status.md is post-cycle evidence only, never the live relay.\n' "$name"
-    printf 'POLYLANE-RUNTIME-FINALIZE: after the final relay/inbox read, handle all addressed autonomous work, run focused verification, stage every owned changed or new file, commit it, and verify clean status allowing only runner-owned prompt/graph scratch. Create the required status marker or verdict last, force-add it when ignored, make one final commit, then exit immediately with no later reads or mutations.\n'
+    printf 'POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.\n'
     printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
   } > "$output"
 }
@@ -2199,9 +2204,30 @@ lane_done() {
         [ "$head_first" = "STATUS: $name DONE" ] || return 1
       fi
     fi
+    lane_completion_scope_valid "$wt" "$name" || return 1
   fi
   lane_completion_worker_live "$wt" "$name" && return 1
   return 0
+}
+
+# lane_completion_scope_valid WORKTREE NAME : the static ownership plan is only
+# a promise until the completed builder diff is checked.  Grade every path from
+# the frozen base to HEAD; missing manifest/base evidence fails closed.  The
+# integrator is intentionally excluded because it owns the cross-lane merge.
+lane_completion_scope_valid() {
+  local wt="$1" name="$2" changed path
+  local -a paths=()
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
+  [ "$name" = "${INT_NAME:-}" ] && return 0
+  [ -s "${MANIFEST:-}" ] || return 1
+  [ -n "${BASE:-}" ] || return 1
+  git -C "$wt" rev-parse --verify "${BASE}^{commit}" >/dev/null 2>&1 || return 1
+  changed=$(git -C "$wt" diff --name-only "${BASE}...HEAD" 2>/dev/null) || return 1
+  while IFS= read -r path; do
+    [ -n "$path" ] && paths+=("$path")
+  done <<<"$changed"
+  [ "${#paths[@]}" -gt 0 ] || return 0
+  "$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${paths[@]}" >/dev/null
 }
 
 # lane_completion_worker_live WORKTREE NAME : a contract-v2 handoff is not final

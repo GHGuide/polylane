@@ -57,6 +57,11 @@ mkdir -p "$G"
 )
 ORCHESTRATION_CONTRACT=2
 RUN_ID=run-2
+BASE=$(git -C "$G" rev-parse HEAD)
+MANIFEST="$TEST_TMPDIR/contract-v2-manifest.json"
+cat > "$MANIFEST" <<'JSON'
+{"base":"main","lanes":[{"name":"alpha","own_globs":["docs/status-alpha.md","docs/verify-alpha.md"]}]}
+JSON
 printf 'STATUS: alpha DONE run=run-2\n' > "$G/docs/status-alpha.md"
 assert_fail "done-v2-rejects-uncommitted-marker" lane_done "$G" alpha
 (cd "$G" && git add docs/status-alpha.md && git commit -qm done)
@@ -83,6 +88,10 @@ assert_fail "done-v2-ready-rejects-stale-nonce" lane_done "$G" integrator
 printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=run-2\n' > "$G/docs/verify-integration.md"
 (cd "$G" && git add docs/verify-integration.md && git commit -qm current-ready)
 assert_ok "done-v2-ready-restores-current-nonce" lane_done "$G" integrator
+
+# The remainder exercises runner-owned scratch exceptions on a fixture that
+# has already absorbed the integrator-only commits above.
+BASE=$(git -C "$G" rev-parse HEAD)
 
 # The runner-created graph link is an untracked helper, not unfinished lane work.
 # A recovery root may borrow it from another registered worktree in the exact
