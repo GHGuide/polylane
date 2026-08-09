@@ -97,6 +97,7 @@ LANE-SPECIFIC-SKILLS: ui:visual-regression
 Read only the named kit once from its resolved SKILL.md paths and use it.
 SELECTED-SKILL: duplicated stale record
 SELECTED-SKILL: duplicated stale record
+SKILL-DELIVERY: stale pre-authored delivery record
 TEST-CADENCE: focused tests first.
 DELEGATION: forbidden.
 CHECK-CACHE: use bin/polylane-check.sh "$PWD/.polylane/check-cache/skill-delivery" -- <command>.
@@ -106,7 +107,45 @@ EOF
 assert_ok "delivery-compiles-selected-paths" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED"
 assert_eq "delivery-emits-each-selected-record-once" "2" "$(grep -c '^SELECTED-SKILL:' "$COMPILED")"
 assert_eq "delivery-removes-duplicate-prompt-record" "0" "$(grep -c 'duplicated stale record' "$COMPILED" || true)"
-assert_contains "delivery-instructs-exact-file-reads" "Read only these exact selected SKILL.md files; do not rediscover or inventory skills." "$(cat "$COMPILED")"
+assert_eq "delivery-removes-stale-delivery-record" "0" "$(grep -c 'stale pre-authored delivery record' "$COMPILED" || true)"
+assert_eq "delivery-places-records-beside-named-kit" "yes" "$(awk '
+  /Read only the named kit once/ { named = NR; next }
+  named && /^SELECTED-SKILL:/ { print (NR == named + 2 ? "yes" : "no"); exit }
+' "$COMPILED")"
+PRE_ID="$(jq -r '.lanes.builder.selected.predefined[0].id' "$KIT")"
+PRE_PATH="$(jq -r '.lanes.builder.selected.predefined[0].path' "$KIT")"
+PRE_SOURCE="$(jq -r '.lanes.builder.selected.predefined[0].source' "$KIT")"
+PRE_FP="$(jq -r '.lanes.builder.selected.predefined[0].fingerprint' "$KIT")"
+PRE_REASON="$(jq -r '.lanes.builder.selected.predefined[0].reason' "$KIT")"
+assert_contains "delivery-emits-exact-predefined-record" "SELECTED-SKILL: $PRE_ID | $PRE_PATH | $PRE_SOURCE | $PRE_FP | $PRE_REASON" "$(cat "$COMPILED")"
+SPEC_ID="$(jq -r '.lanes.builder.selected.specific[0].id' "$KIT")"
+SPEC_PATH="$(jq -r '.lanes.builder.selected.specific[0].path' "$KIT")"
+SPEC_SOURCE="$(jq -r '.lanes.builder.selected.specific[0].source' "$KIT")"
+SPEC_FP="$(jq -r '.lanes.builder.selected.specific[0].fingerprint' "$KIT")"
+SPEC_REASON="$(jq -r '.lanes.builder.selected.specific[0].reason' "$KIT")"
+assert_contains "delivery-emits-exact-specific-record" "SELECTED-SKILL: $SPEC_ID | $SPEC_PATH | $SPEC_SOURCE | $SPEC_FP | $SPEC_REASON" "$(cat "$COMPILED")"
+assert_contains "delivery-requires-observable-read-receipt" "SKILL-READ: id | path | fingerprint" "$(cat "$COMPILED")"
+assert_contains "delivery-requires-final-use-evidence" "SKILL-EVIDENCE: id — helped|unused|hurt: specific observation" "$(cat "$COMPILED")"
+assert_ok "delivery-keeps-compiled-prompt-within-budget" "$PROMPTOPT" check "$COMPILED" 10000
+COMPILED_REPEAT="$TEST_TMPDIR/compiled-repeat.txt"
+assert_ok "delivery-recompiles-deterministically" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED_REPEAT"
+assert_ok "delivery-compiled-output-is-byte-identical" cmp -s "$COMPILED" "$COMPILED_REPEAT"
+assert_fail "delivery-rejects-unselected-integrator-lane" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" integrator "$TEST_TMPDIR/integrator.txt"
+
+cp "$KIT" "$KIT.clean"
+jq '.lanes.builder.selected.predefined += [.lanes.builder.selected.predefined[0]]' "$KIT.clean" > "$KIT"
+assert_ok "delivery-dedupes-identical-id-path-records" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED"
+assert_eq "delivery-deduped-record-count-is-deterministic" "2" "$(grep -c '^SELECTED-SKILL:' "$COMPILED")"
+jq '(.lanes.builder.selected.predefined[1].reason) = "conflicting duplicate reason"' "$KIT" > "$KIT.bad" && mv "$KIT.bad" "$KIT"
+assert_fail "delivery-rejects-conflicting-immutable-duplicate" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED"
+mv "$KIT.clean" "$KIT"
+
+jq '(.lanes.builder.selected.specific) += [
+  (.lanes.builder.selected.specific[0] | .id = "extra:one" | .path = "/trusted/one/SKILL.md"),
+  (.lanes.builder.selected.specific[0] | .id = "extra:two" | .path = "/trusted/two/SKILL.md"),
+  (.lanes.builder.selected.specific[0] | .id = "extra:three" | .path = "/trusted/three/SKILL.md")
+]' "$KIT" > "$KIT.too-many" && mv "$KIT.too-many" "$KIT"
+assert_fail "delivery-rejects-more-than-four-selected-records" env POLYLANE_SKILLS_DIRS="$ROOT" "$PROMPTOPT" compile-selected "$PROMPT" "$KIT" builder "$COMPILED"
 
 printf '%s\n' 'SKILL-EVIDENCE: ui:visual-regression — helped: fake receipt without a read.' > "$VERIFY"
 AUDIT="$TEST_TMPDIR/audit.json"

@@ -17,6 +17,15 @@ assert_contains "compiler-preserves-predefined-skills" \
   "superpowers:test-driven-development superpowers:verification-before-completion" "$(cat "$COMPILED")"
 assert_contains "compiler-preserves-lane-skills" \
   "caveman:caveman-compress product-management:write-spec" "$(cat "$COMPILED")"
+assert_eq "compiler-unselected-compilation-has-no-selected-records" "0" "$(grep -c '^SELECTED-SKILL:' "$COMPILED" || true)"
+assert_eq "compiler-unselected-compilation-has-no-receipt-contract" "0" "$(grep -c '^SKILL-RECEIPTS:' "$COMPILED" || true)"
+
+INTEGRATOR_SOURCE="$TEST_TMPDIR/integrator-source.txt"
+INTEGRATOR_COMPILED="$TEST_TMPDIR/integrator-compiled.txt"
+sed 's/^CURRENT-SUBGOAL:.*/CURRENT-SUBGOAL: Integrate lane evidence without selected builder skills./' "$SOURCE" > "$INTEGRATOR_SOURCE"
+"$PROMPTOPT" compile "$INTEGRATOR_SOURCE" > "$INTEGRATOR_COMPILED"
+assert_eq "compiler-integrator-compilation-has-no-selected-records" "0" "$(grep -c '^SELECTED-SKILL:' "$INTEGRATOR_COMPILED" || true)"
+assert_eq "compiler-integrator-compilation-has-no-read-receipts" "0" "$(grep -c 'SKILL-READ: id | path | fingerprint' "$INTEGRATOR_COMPILED" || true)"
 
 out=$("$PROMPTOPT" compile "$FIXTURES/contradictory.txt" 2>&1 || true)
 assert_contains "compiler-names-conflicting-label" "GOAL" "$out"
