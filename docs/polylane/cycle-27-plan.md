@@ -8,6 +8,8 @@ Base: `candidate/c27-repair` at Cycle 26 integration tip `d8b9417`
 
 - `m24.1` — optional integrator kits are a true no-op unless any integrator skill
   is armed; a non-empty kit receives full trusted-path/fingerprint validation.
+  The same orchestration-contract repair also makes virtual dry-run panes skip
+  real tmux tagging while leaving real pane identity fail-closed.
 - `m24.2` — the runner's one exact committed status-marker rename remains
   compatible with completed-branch scope enforcement without creating a general
   out-of-scope bypass.
@@ -25,7 +27,7 @@ bounded seam repairs, and Cycle 27 evidence.
 
 ## Frozen focused acceptance
 
-- `m24.1`: `bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh`
+- `m24.1`: `bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh && bash tests/test-dryrun-pure.sh`
 - `m24.2`: `bash tests/test-status-marker-normalization.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-scope.sh`
 - `m24.3`: `bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-write-report.sh`
 
@@ -41,4 +43,3 @@ Cycle 28 starts a new process from the promoted repair tip and spends one termin
 gate on the full suite, ShellCheck, parity, installers, and live GO/NO-GO doctor
 rehearsal. A failure remains NO-GO and its exact command output must already be
 available without rerunning the suite.
-

@@ -1131,7 +1131,7 @@
       "subgoals": [
         {
           "id": "m24.1",
-          "text": "Make optional integrator skill kits no-op when empty and fully trusted when armed",
+          "text": "Make optional integrator skill kits truthful and keep virtual dry-run panes free of real tmux tagging",
           "weight": 97,
           "status": "open",
           "cycle": null,
@@ -2457,7 +2457,7 @@
     },
     {
       "sid": "m24.1",
-      "cmd": "bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh",
+      "cmd": "bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh && bash tests/test-dryrun-pure.sh",
       "tier": "focused",
       "key": "",
       "status": "unchecked",
@@ -2467,7 +2467,8 @@
         "tests/test-manifest-validation.sh",
         "tests/test-cycle-13-contract.sh",
         "tests/test-scout.sh",
-        "tests/test-orchestration-contract.sh"
+        "tests/test-orchestration-contract.sh",
+        "tests/test-dryrun-pure.sh"
       ],
       "fp": "",
       "regressed_cycle": null

@@ -16,6 +16,11 @@ tip isolated two source contracts:
    calls the stricter completed-branch scope gate. That gate sees the deleted
    near-miss status path as unowned and rejects the runner's own bounded repair;
    `test-status-marker-normalization.sh` has three failures.
+3. Cycle 27's final launch preview exposed another source contract before any
+   worker spent tokens: `new_pane` correctly creates only a virtual pane index
+   under `--dry-run`, but `launch_panes` then unconditionally calls the real tmux
+   pane-tagging helper. The missing dry-run guard returns 1 midway through the
+   preview. Real pane tagging must remain mandatory; only virtual panes may skip it.
 
 The durable host-gate record retained only the generic phrase `frozen checks
 failed`. The exact command tail existed on stderr but was discarded, forcing a
@@ -26,4 +31,3 @@ Cycle 27 is deliberately repair-only. It targets those three contracts with
 focused checks and leaves fresh-process terminal certification open, so this run
 must consume **zero** terminal gates. Cycle 28 will start from the promoted repair
 tip and certify the loaded runtime once.
-
