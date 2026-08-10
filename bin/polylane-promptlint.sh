@@ -38,6 +38,9 @@ lint_one() {
   fi
   if [ "${POLYLANE_RUNTIME_COMPILED:-0}" = "1" ]; then
     grep -qF 'POLYLANE-RUNTIME-RELAY:' "$f" || miss="$miss runtime-relay-contract"
+    grep -qF 'POLYLANE-RUNTIME-ROOTS: source edits/tests/Graphify use "$POLYLANE_SOURCE_ROOT"' "$f" || miss="$miss runtime-roots-contract"
+    grep -qF '${POLYLANE_SOURCE_ROOT:-$PWD}/graphify-out/q.py' "$f" || miss="$miss runtime-source-graphify-command"
+    grep -qF 'coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".' "$f" || miss="$miss runtime-control-root-contract"
     grep -qF 'COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"' "$f" || miss="$miss runtime-relay-command"
     grep -qF 'docs/parallel-status.md is post-cycle evidence only, never the live relay.' "$f" || miss="$miss runtime-relay-boundary"
     grep -qF "POLYLANE-RUNTIME-DONE: write only docs/status-$lane.md;" "$f" || miss="$miss runtime-done-path"
@@ -73,7 +76,7 @@ builder_status_paths_canonical() {
 
 runtime_exact_once() {
   local f="$1" label count
-  for label in POLYLANE-RUNTIME-RELAY POLYLANE-RUNTIME-DONE POLYLANE-RUNTIME-FINALIZE; do
+  for label in POLYLANE-RUNTIME-RELAY POLYLANE-RUNTIME-ROOTS POLYLANE-RUNTIME-DONE POLYLANE-RUNTIME-FINALIZE; do
     count=$(grep -cF "$label:" "$f" || true)
     [ "$count" -eq 1 ] || return 1
   done

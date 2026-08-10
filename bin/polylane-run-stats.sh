@@ -67,7 +67,7 @@ capture() {
   while [ "$#" -gt 0 ]; do case "$1" in --lane) lane="$2";shift 2;;--log)log="$2";shift 2;;--offset)off="$2";shift 2;;*)return 2;;esac; done
   [ -n "$lane" ] && [ -n "$log" ] && uint "$off" || { usage; return 2; }
   lock "$FILE" || return 1
-  local s seen start bytes add t attempts limit
+  local s seen start bytes usage add t attempts limit
   if [ -s "$FILE" ]; then s=$(cat "$FILE"); else s=$(fresh "$NOW"); fi
   seen=$(printf '%s' "$s"|jq -r --arg l "$lane" '.usage_offsets[$l] // 0'); uint "$seen" || seen=0
   start="$off"; [ "$seen" -gt "$start" ] && start="$seen"
@@ -81,27 +81,26 @@ capture() {
   [ "$seen" = 0 ] && [ "$off" = 0 ] && limit="$attempts"
   if [ -f "$log" ]; then
     bytes=$(wc -c < "$log"|tr -d ' '); [ "$start" -le "$bytes" ] || start=0
-    add=$(tail -c "+$((start+1))" "$log" 2>/dev/null | jq -Rrs --argjson limit "$limit" '
+    usage=$(tail -c "+$((start+1))" "$log" 2>/dev/null | jq -Rrs --argjson limit "$limit" '
       [split("\n")[]
        | fromjson?
        | select(.type=="turn.completed")
-       | .usage?
-       | if (.total_tokens?|type)=="number" then .total_tokens
-         elif ((.input_tokens?|type)=="number" and (.output_tokens?|type)=="number")
-         then (.input_tokens+.output_tokens)
-         else empty end]
+       | .usage? | select(type=="object")]
       | if $limit > 0 then .[-$limit:] else . end
-      | add // null' 2>/dev/null || true)
-  else bytes="$start"; add=; fi
+      | def sum_field($field): [ .[] | .[$field]? | select(type=="number") ] | if length == 0 then null else add end;
+      def total: [ .[] | if (.total_tokens?|type)=="number" then .total_tokens elif ((.input_tokens?|type)=="number" and (.output_tokens?|type)=="number") then (.input_tokens + .output_tokens) else empty end ] | if length == 0 then null else add end;
+      {total_tokens:total,input_tokens:sum_field("input_tokens"),cached_input_tokens:sum_field("cached_input_tokens"),output_tokens:sum_field("output_tokens"),reasoning_output_tokens:sum_field("reasoning_output_tokens"),uncached_input_tokens:([.[] | select((.input_tokens?|type)=="number" and (.cached_input_tokens?|type)=="number") | (.input_tokens - .cached_input_tokens | if . < 0 then 0 else . end)] | if length == 0 then null else add end)}' 2>/dev/null || true)
+  else bytes="$start"; usage=; fi
+  add=$(printf '%s' "$usage" | jq -r '.total_tokens // empty' 2>/dev/null || true)
   [ "$add" = null ] && add=
   [ -n "$add" ] || add=null
   t="$FILE.tmp.$$"
-  if ! printf '%s\n' "$s"|jq --argjson n "$NOW" --arg l "$lane" --argjson o "$bytes" --argjson a "$add" 'def tick: (($n-.updated_at)|if .<0 then 0 else . end) as $d | .wall_s += $d | .updated_at=$n; tick | .usage_offsets[$l]=$o | if $a==null then . else .tokens=((.tokens//0)+$a)|.token_state="known" end | .events += [{type:"usage_capture",lane:$l,at:$n,added:$a}]' > "$t"; then rm -f "$t";unlock "$FILE";return 1;fi
+  if ! printf '%s\n' "$s"|jq --argjson n "$NOW" --arg l "$lane" --argjson o "$bytes" --argjson a "$add" --argjson u "${usage:-null}" 'def tick: (($n-.updated_at)|if .<0 then 0 else . end) as $d | .wall_s += $d | .updated_at=$n; tick | .usage_offsets[$l]=$o | if $a==null then . else .tokens=((.tokens//0)+$a)|.token_state="known" end | if $u==null then . else reduce ["input_tokens","cached_input_tokens","uncached_input_tokens","output_tokens","reasoning_output_tokens"][] as $key (.; if $u[$key]==null then . else .usage = (.usage // {}) | .usage[$key]=((.usage[$key]//0)+$u[$key]) end) end | .events += [{type:"usage_capture",lane:$l,at:$n,added:$a}]' > "$t"; then rm -f "$t";unlock "$FILE";return 1;fi
   mv "$t" "$FILE"; unlock "$FILE"
 }
 snapshot() {
   common "$@"; [ -z "$REST" ] || return 2
-  if [ -s "$FILE" ]; then jq --argjson n "$NOW" '(.wall_s+(($n-.updated_at)|if .<0 then 0 else . end)) as $w|{run_id,started_at,wall_s:$w,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}' "$FILE"; else fresh "$NOW"|jq '{run_id,started_at,wall_s,lanes,supervisor_restarts,terminal_gates,tokens,token_state,cleanup}';fi
+  if [ -s "$FILE" ]; then jq --argjson n "$NOW" '(.wall_s+(($n-.updated_at)|if .<0 then 0 else . end)) as $w|{run_id,started_at,wall_s:$w,lanes,supervisor_restarts,terminal_gates,tokens,token_state,usage,cleanup}' "$FILE"; else fresh "$NOW"|jq '{run_id,started_at,wall_s,lanes,supervisor_restarts,terminal_gates,tokens,token_state,usage,cleanup}';fi
 }
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   cmd="$1"; shift || true

@@ -44,14 +44,31 @@ printf '%s\n' \
 "$STATS" capture-usage --file "$state" --now 220 --lane telemetry --log "$log" --offset 0
 assert_jq "$state" '.tokens' '21'
 assert_jq "$state" '.token_state' '"known"'
+assert_jq "$state" '.usage.input_tokens' '3'
+assert_jq "$state" '.usage.output_tokens' '7'
+assert_jq "$state" '.usage.cached_input_tokens' 'null'
+assert_jq "$state" '.usage.uncached_input_tokens' 'null'
+assert_jq "$state" '.usage.reasoning_output_tokens' 'null'
 before=$(wc -c < "$log" | tr -d ' ')
 "$STATS" capture-usage --file "$state" --now 230 --lane telemetry --log "$log" --offset 0
 assert_jq "$state" '.tokens' '21'
 assert_jq "$state" '.usage_offsets.telemetry' "$before"
 
+# Codex reports cache and reasoning fields independently.  Preserve legacy
+# total tokens while exposing truthful breakdowns and clamp malformed cache
+# relationships at zero uncached input.
+printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":100,"cached_input_tokens":80,"output_tokens":5,"reasoning_output_tokens":2}}' >> "$log"
+"$STATS" capture-usage --file "$state" --now 245 --lane telemetry --log "$log" --offset "$before"
+assert_jq "$state" '.tokens' '126'
+assert_jq "$state" '.usage.input_tokens' '103'
+assert_jq "$state" '.usage.cached_input_tokens' '80'
+assert_jq "$state" '.usage.uncached_input_tokens' '20'
+assert_jq "$state" '.usage.output_tokens' '12'
+assert_jq "$state" '.usage.reasoning_output_tokens' '2'
+
 printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":0,"output_tokens":0}}' >> "$log"
 "$STATS" capture-usage --file "$state" --now 240 --lane telemetry --log "$log" --offset "$before"
-assert_jq "$state" '.tokens' '21'
+assert_jq "$state" '.tokens' '126'
 
 # Real Codex pane logs are append-only across cycles and contain warning/prompt
 # lines around valid JSON events. A fresh run with one launch must ignore both
@@ -71,8 +88,9 @@ assert_jq "$noisy_state" '.token_state' '"known"'
 
 "$STATS" snapshot --file "$state" --now 300 > "$TMP/snapshot.json"
 assert_jq "$TMP/snapshot.json" '.started_at' '100'
-assert_jq "$TMP/snapshot.json" '.wall_s' '200'
+assert_jq "$TMP/snapshot.json" '.wall_s' '205'
 assert_jq "$TMP/snapshot.json" '.cleanup' '"warning"'
+assert_jq "$TMP/snapshot.json" '.usage.uncached_input_tokens' '20'
 
 # A new run ID starts a fresh accounting window; the same run ID resumes it.
 fresh_run="$TMP/fresh-run.json"

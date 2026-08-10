@@ -154,18 +154,25 @@ pane_wedged a 0; rcLiveLong=$?
 assert_eq "live-terminal-turn-recovers-at-60s" "0" "$rcLiveShort"
 assert_eq "live-terminal-turn-remains-recoverable" "0" "$rcLiveLong"
 
-# A quiet high-effort Codex child has no terminal turn yet. Its grace is
-# bounded, but longer than the ordinary medium-effort live window.
+# A quiet high-effort Codex child whose latest durable boundary is turn.started
+# is still in-flight.  The former 40-check cap falsely halted Cycle 27 at a
+# ten-second health interval, so the production grace is effort-scaled seconds
+# and the derived check ceiling must remain independent of poll cadence.
 lane_terminal_turn() { return 1; }
 LANE_WHASH=(); LANE_WCNT=()
-POLYLANE_LIVE_WEDGE_CHECKS=20
+unset POLYLANE_LIVE_WEDGE_CHECKS POLYLANE_LIVE_WEDGE_SECONDS POLYLANE_LIVE_WEDGE_HARD_SECONDS
+POLYLANE_HEALTH_INTERVAL=10
+printf '%s\n' '{"type":"turn.started"}' > "$REPO_ROOT/docs/lane-logs/a.log"
 pane_wedged a 0; :
-wedge_cnt_set a 20
-pane_wedged a 0; rcHighQuiet=$?
-assert_eq "quiet-high-effort-live-turn-gets-grace" "1" "$rcHighQuiet"
 wedge_cnt_set a 40
+pane_wedged a 0; rcHighQuiet=$?
+assert_eq "quiet-high-effort-turn-started-survives-old-40-check-cap" "1" "$rcHighQuiet"
+assert_eq "quiet-high-effort-live-turn-ceiling-is-seconds-derived" "180" "$(lane_live_wedge_checks a)"
+POLYLANE_LIVE_WEDGE_HARD_SECONDS=60
+wedge_cnt_set a 6
 pane_wedged a 0; rcHighBounded=$?
-assert_eq "quiet-high-effort-live-turn-still-recovers" "0" "$rcHighBounded"
+assert_eq "quiet-high-effort-live-turn-hard-cap-still-recovers" "0" "$rcHighBounded"
+unset POLYLANE_LIVE_WEDGE_HARD_SECONDS
 FAKE_AGENT_LIVE=0
 
 # --- 3. respawn resets the wedge window --------------------------------------

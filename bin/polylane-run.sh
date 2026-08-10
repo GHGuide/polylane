@@ -654,9 +654,11 @@ inject_runtime_prompt_contract() {
     # nonce, and canonical status path remain runner-owned. Replace those
     # advertised labels with one compiled copy instead of duplicating scalars.
     sed -e '/^POLYLANE-RUNTIME-RELAY:/d' \
+      -e '/^POLYLANE-RUNTIME-ROOTS:/d' \
       -e '/^POLYLANE-RUNTIME-FINALIZE:/d' \
       -e '/^POLYLANE-RUNTIME-DONE:/d' "$input"
     printf '\nPOLYLANE-RUNTIME-RELAY: at start and immediately before completion run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; handle requests addressed to %s. docs/parallel-status.md is post-cycle evidence only, never the live relay.\n' "$name"
+    printf 'POLYLANE-RUNTIME-ROOTS: source edits/tests/Graphify use "$POLYLANE_SOURCE_ROOT" (query `${POLYLANE_SOURCE_ROOT:-$PWD}/graphify-out/q.py`); coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".\n'
     printf 'POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.\n'
     printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
   } > "$output"
@@ -1844,7 +1846,7 @@ agent_procs() {
 
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" resume="${5:-}" pfx=""
-  local qwt qmodel qpf qeffort qproject qcoord qhybrid project_root coord_file tmpl add_dir runtime_pf
+  local qwt qmodel qpf qeffort qproject qcoord qsource qhybrid project_root coord_file tmpl add_dir runtime_pf
   runtime_pf=$(stage_pane_prompt "$wt" "$pf") || return 1
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$runtime_pf"); qeffort=$(printf '%q' "${effort:-medium}")
   # Every pane remains in its isolated worktree. Prime-hybrid panes receive a
@@ -1858,7 +1860,7 @@ pane_cmd() {
     project_root="${COORDINATION_PROJECT_ROOT:-${REPO_ROOT:-${POLYLANE_PROJECT_ROOT:-$(pwd)}}}"
     coord_file="${COORDINATION_FILE:-${POLYLANE_COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
   fi
-  qproject=$(printf '%q' "$project_root"); qcoord=$(printf '%q' "$coord_file")
+  qproject=$(printf '%q' "$project_root"); qcoord=$(printf '%q' "$coord_file"); qsource=$(printf '%q' "$wt")
   qhybrid=$(prime_hybrid_pane_exports "$wt") || return 1
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
   # NEVER launch an agent with no prompt: that starts an amnesiac session with no
@@ -1881,8 +1883,8 @@ pane_cmd() {
   tmpl=${tmpl//'{effort}'/$qeffort}
   tmpl=${tmpl//'{add_dir}'/$add_dir}
   # shellcheck disable=SC2016  # $(cat …) must expand in the PANE's shell, not here
-  printf 'export POLYLANE_PROJECT_ROOT=%s POLYLANE_COORDINATION_FILE=%s %s; cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
-    "$qproject" "$qcoord" "$qhybrid" "$qwt" "$pfx" "$tmpl"
+  printf 'export POLYLANE_SOURCE_ROOT=%s POLYLANE_PROJECT_ROOT=%s POLYLANE_COORDINATION_FILE=%s %s; cd %s && %s%s; printf "\\n[polylane] lane exited (rc=%%s) — health-check respawns if not DONE\\n" "$?"' \
+    "$qsource" "$qproject" "$qcoord" "$qhybrid" "$qwt" "$pfx" "$tmpl"
 }
 
 # pane_runtime_prompt_path WT : reserved worktree-local prompt path. A tmux
@@ -2483,6 +2485,27 @@ pane_retryable_error() {
 }
 
 lane_failed() { case " ${FAILED_LANES:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+lane_failure_reason_get() {
+  local i
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "${LANE_NAMES[$i]}" = "$1" ] && { printf '%s' "${LANE_FAILURE_REASONS[$i]:-}"; return; }
+  done
+  [ "$1" = "${INT_NAME:-}" ] && printf '%s' "${INT_FAILURE_REASON:-}"
+}
+lane_failure_reason_set() {
+  local name="$1" reason="$2" i
+  reason=$(printf '%s' "$reason" | tr '\r\n\t' '   ' | cut -c1-160)
+  [ -n "$reason" ] || reason="errored after retries"
+  for i in "${!LANE_NAMES[@]}"; do
+    [ "${LANE_NAMES[$i]}" = "$name" ] && { LANE_FAILURE_REASONS[i]="$reason"; return; }
+  done
+  [ "$name" = "${INT_NAME:-}" ] && INT_FAILURE_REASON="$reason"
+}
+mark_lane_failed() {
+  local name="$1" reason="$2"
+  lane_failed "$name" || FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+  [ -n "$(lane_failure_reason_get "$name")" ] || lane_failure_reason_set "$name" "$reason"
+}
 
 # --- usage-limit stall (money decision — never auto-answered/retried) ---------
 # A pane asking to buy/switch credits is STALLED, not errored: a respawn would
@@ -2949,7 +2972,7 @@ resolve_stalls() {
         wmax="${POLYLANE_STALL_MAX:-6}"
         if [ "$w" -ge "$wmax" ]; then
           echo "stall: lane '$name' still limited after $w checks — marking failed (POLYLANE_ON_LIMIT=wait)." >&2
-          FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"; unstall "$name"
+          mark_lane_failed "$name" "usage wait exhausted"; unstall "$name"
         else
           echo "stall: lane '$name' limited — waiting ($w/$wmax, POLYLANE_ON_LIMIT=wait)"
         fi
@@ -2971,7 +2994,7 @@ resolve_stalls() {
         else
           echo "stall: lane '$name' limited on $cur, no fallback model left — marking failed." >&2
           notify_event halt "lane '$name': usage limited, no fallback model available"
-          FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"; unstall "$name"
+          mark_lane_failed "$name" "no fallback"; unstall "$name"
         fi
         ;;
     esac
@@ -3021,22 +3044,44 @@ lane_terminal_turn() {
   printf '%s' "$last" | grep -qE '"type":"(turn\.completed|turn\.failed|error)"'
 }
 
-# lane_live_wedge_checks NAME : bound a quiet live turn according to the
-# effective reasoning effort. A larger explicit env value may extend the bound
-# for slow hosts, but it never shortens a high-effort turn to the medium grace.
-lane_live_wedge_checks() {
-  local effort configured limit
+# lane_live_wedge_seconds NAME : effort-scaled grace in elapsed seconds. Legacy
+# check-count configuration is converted through the current health interval so
+# it remains extension-compatible; the hard cap keeps recovery finite.
+lane_live_wedge_seconds() {
+  local effort configured checks interval limit hard
   effort=$(lane_effort_get "$1")
   case "$effort" in
-    low) limit=12 ;;
-    high) limit=40 ;;
-    xhigh|ultra|max) limit=60 ;;
-    *) limit=20 ;;
+    low) limit=300 ;;
+    high) limit=1800 ;;
+    xhigh|ultra|max) limit=3600 ;;
+    *) limit=900 ;;
   esac
-  configured="${POLYLANE_LIVE_WEDGE_CHECKS:-0}"
+  configured="${POLYLANE_LIVE_WEDGE_SECONDS:-0}"
   case "$configured" in ''|*[!0-9]*) configured=0 ;; esac
   [ "$configured" -gt "$limit" ] 2>/dev/null && limit="$configured"
+  checks="${POLYLANE_LIVE_WEDGE_CHECKS:-0}"
+  case "$checks" in ''|*[!0-9]*) checks=0 ;; esac
+  interval="${POLYLANE_HEALTH_INTERVAL:-15}"
+  case "$interval" in ''|*[!0-9]*) interval=15 ;; esac
+  [ "$interval" -gt 0 ] 2>/dev/null || interval=15
+  configured=$((checks * interval))
+  [ "$configured" -gt "$limit" ] 2>/dev/null && limit="$configured"
+  hard="${POLYLANE_LIVE_WEDGE_HARD_SECONDS:-3600}"
+  case "$hard" in ''|*[!0-9]*) hard=3600 ;; esac
+  [ "$hard" -gt 0 ] 2>/dev/null || hard=3600
+  [ "$limit" -gt "$hard" ] 2>/dev/null && limit="$hard"
   printf '%s' "$limit"
+}
+
+# lane_live_wedge_checks NAME : ceiling(seconds / health interval), so changing
+# the polling frequency cannot shorten a legitimate in-flight turn.
+lane_live_wedge_checks() {
+  local seconds interval
+  seconds=$(lane_live_wedge_seconds "$1")
+  interval="${POLYLANE_HEALTH_INTERVAL:-15}"
+  case "$interval" in ''|*[!0-9]*) interval=15 ;; esac
+  [ "$interval" -gt 0 ] 2>/dev/null || interval=15
+  printf '%s' "$(( (seconds + interval - 1) / interval ))"
 }
 
 # lane_durable_activity_hash NAME : source/evidence activity, deliberately not
@@ -3150,7 +3195,7 @@ replan_churning_lane() {
     echo "usage-guard: lane '$name' made no source/evidence progress after $max narrowed replans — user input required; stopping usage burn." >&2
     notify_event approval "lane '$name' exhausted no-progress replans — inspect evidence and choose a new core approach"
     NEEDS_DECISION_LANES="${NEEDS_DECISION_LANES:+$NEEDS_DECISION_LANES }$name"
-    FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+    mark_lane_failed "$name" "material-progress replans exhausted"
     mkdir -p "$REPO_ROOT/.polylane" 2>/dev/null || true
     printf '%s\n' "$name" >> "$REPO_ROOT/.polylane/needs-user"
     return 1
@@ -3212,7 +3257,7 @@ health_check() {
         retry_set "$name" "$n"
         echo "health: lane '$name' — $why — retry $n/$max, recreated pane $(pane_index_for "$name")"
       elif [ "$n" -gt "$max" ]; then
-        FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+        mark_lane_failed "$name" "mapped pane missing past retries"
       fi
       continue
     elif material_progress_stalled "$name" "$wt"; then
@@ -3220,7 +3265,12 @@ health_check() {
       continue
     elif pane_retryable_error "$idx"; then why="a transient error after agent exit"
     elif pane_dead "$idx"; then why="a dead pane ($(agent_selected) exited)"
-    elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-4} * ${POLYLANE_HEALTH_INTERVAL:-15} ))s)"
+    elif pane_wedged "$name" "$idx"; then
+      if pane_agent_live "$idx" && ! lane_terminal_turn "$name"; then
+        why="a wedged live turn (quiet for $(lane_live_wedge_seconds "$name")s)"
+      else
+        why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-4} * ${POLYLANE_HEALTH_INTERVAL:-15} ))s)"
+      fi
     else continue
     fi
     case "$why" in
@@ -3246,7 +3296,10 @@ health_check() {
         :   # repaired — fresh budget, new approach
       else
         echo "health: lane '$name' failed after $max retries + $rc repair(s) — marking failed." >&2
-        FAILED_LANES="${FAILED_LANES:+$FAILED_LANES }$name"
+        case "$why" in
+          *live\ turn*) mark_lane_failed "$name" "live turn silence cap exhausted after $(lane_live_wedge_seconds "$name")s" ;;
+          *) mark_lane_failed "$name" "transient/dead/wedged retries and repairs exhausted: $why" ;;
+        esac
       fi
     fi
   done
@@ -4373,7 +4426,7 @@ report_host_gate_failure() {
 }
 
 write_report() {
-  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" tmp i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state host_failure_detail="" host_failure_path=""
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" tmp i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state host_failure_detail="" host_failure_path="" failure_reason=""
   # dry-run must never touch the tree — print the intent, write nothing.
   if [ "${DRY_RUN:-0}" = "1" ]; then
     printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
@@ -4413,7 +4466,10 @@ write_report() {
     local _total="0.00" _tokens_total=0 _tok _price _cost _unknown_cost=0
     for i in "${!LANE_NAMES[@]}"; do
       local _r="${LANE_STATS[$i]:-completed}"
-      lane_failed "${LANE_NAMES[$i]}" && _r="FAILED — errored after retries"
+      if lane_failed "${LANE_NAMES[$i]}"; then
+        failure_reason=$(lane_failure_reason_get "${LANE_NAMES[$i]}")
+        _r="FAILED — ${failure_reason:-errored after retries}"
+      fi
       lane_stalled "${LANE_NAMES[$i]}" && _r="STALLED — usage limit (human decision needed)"
       _tok=$(parse_tokens "$_r"); _price=$(model_out_price "${LANE_MODELS[$i]}")
       _cost="?"
@@ -4436,7 +4492,7 @@ write_report() {
       echo "**Estimated total: \$${_total}** — rough, output-rate pricing from \`references/model-selection.md\`."
     fi
     if [ -n "$telemetry" ] && printf '%s\n' "$telemetry" | jq -e . >/dev/null 2>&1; then
-      echo "**Run telemetry:** $(printf '%s\n' "$telemetry" | jq -r '"wall_s=" + (.wall_s|tostring) + " · launches=" + ([.lanes[]?.launches] | add // 0 | tostring) + " · restarts=" + (([.lanes[]?.restarts] | add // 0) + .supervisor_restarts | tostring) + " · terminal_gates=" + (.terminal_gates|tostring) + " · cleanup=" + .cleanup + " · tokens=" + (if .tokens == null then "unknown" else (.tokens|tostring) end)')"
+      echo "**Run telemetry:** $(printf '%s\n' "$telemetry" | jq -r '"wall_s=" + (.wall_s|tostring) + " · launches=" + ([.lanes[]?.launches] | add // 0 | tostring) + " · restarts=" + (([.lanes[]?.restarts] | add // 0) + .supervisor_restarts | tostring) + " · terminal_gates=" + (.terminal_gates|tostring) + " · cleanup=" + .cleanup + " · tokens=" + (if .tokens == null then "unknown" else (.tokens|tostring) end) + (if .usage == null then "" else " · usage=input=" + ((.usage.input_tokens // "unknown")|tostring) + ", cached=" + ((.usage.cached_input_tokens // "unknown")|tostring) + ", uncached=" + ((.usage.uncached_input_tokens // "unknown")|tostring) + ", output=" + ((.usage.output_tokens // "unknown")|tostring) + ", reasoning=" + ((.usage.reasoning_output_tokens // "unknown")|tostring) end)')"
       [ -n "$telemetry_tokens" ] && _tokens_total="$telemetry_tokens"
     fi
     # durable spend ledger (best-effort; never fails the report).
@@ -4491,10 +4547,21 @@ write_report() {
     elif [ -n "$host_failure_detail" ]; then
       echo "- Read \`${host_failure_path}\` for the runner-owned gate failure; preserve the integrator's READY evidence and repair the host condition in a fresh run."
     elif [ -n "${FAILED_LANES:-}" ]; then
-      echo "- Lane(s) errored out and could not recover after retries: **${FAILED_LANES}**."
-      echo "  A transient API/network error (e.g. 500 / overloaded) kept firing. Their"
-      echo "  worktrees are left intact — re-run the runner to resume just those, or wait"
-      echo "  for https://status.claude.com to clear and re-run."
+      for i in "${!LANE_NAMES[@]}"; do
+        lane_failed "${LANE_NAMES[$i]}" || continue
+        failure_reason=$(lane_failure_reason_get "${LANE_NAMES[$i]}")
+        failure_reason="${failure_reason:-errored after retries}"
+        echo "- Lane **${LANE_NAMES[$i]}** halted: ${failure_reason}."
+        case "$failure_reason" in
+          transient/dead/wedged*) echo "  Its worktree is intact. Re-run to resume, or check the provider status page if a transient API/network error persists." ;;
+          usage\ wait\ exhausted) echo "  Its worktree is intact. Restore available usage or choose a different limit policy, then resume." ;;
+          no\ fallback) echo "  Its worktree is intact. Add an allowed fallback model or restore the current model's availability, then resume." ;;
+          material-progress*) echo "  Its worktree is intact. Inspect the evidence and choose a new concrete approach before resuming." ;;
+          mapped\ pane*) echo "  Its worktree is intact. Inspect tmux mapping and recreate the missing pane before resuming." ;;
+          *live\ turn*) echo "  Its worktree is intact. Inspect the live turn and its durable transcript before resuming." ;;
+          *) echo "  Its worktree is intact. Inspect the retained lane evidence, then resume." ;;
+        esac
+      done
     else
       echo "- Read \`docs/verify-integration.md\` for why the integrator said ${verdict}; fix the flagged lane(s) and re-run."
     fi

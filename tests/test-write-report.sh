@@ -146,13 +146,16 @@ unset RUN_ID
 make_tmpdir
 REPO_ROOT="$TEST_TMPDIR"
 FAILED_LANES="beta"
+LANE_FAILURE_REASONS=()
+lane_failure_reason_set beta "live turn silence cap exhausted after 900s"
 PROMOTION_STATE=not-attempted
 CLEANUP_STATE=retained
 write_report HALTED
 halted=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
 assert_contains "halted-verdict-line" "**Outcome:** HALTED" "$halted"
-assert_contains "halted-failed-row"   "| beta | claude-haiku-4-5 | lane/beta | FAILED — errored after retries |" "$halted"
-assert_contains "halted-retry-hint"   "could not recover after retries: **beta**" "$halted"
+assert_contains "halted-failed-row"   "| beta | claude-haiku-4-5 | lane/beta | FAILED — live turn silence cap exhausted after 900s |" "$halted"
+assert_contains "halted-live-turn-hint" "live turn silence cap" "$halted"
+if printf '%s' "$halted" | grep -qF 'status.claude.com'; then fail "halted-live-turn-no-provider-status-hint" "live-turn halt was misattributed to provider"; else pass "halted-live-turn-no-provider-status-hint"; fi
 FAILED_LANES=""
 
 # ENOSPC/failing output must not tear or replace a prior truthful report, and

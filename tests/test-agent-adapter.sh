@@ -94,6 +94,7 @@ assert_ok "panecmd-relative-worktree-staged-prompt-identical" \
 REPO_ROOT='/tmp/canonical project' POLYLANE_COORDINATION_FILE='/tmp/canonical project/.polylane/coordination.jsonl'
 CMD=$(pane_cmd '/tmp/lane worktree' gpt-5-codex '/tmp/prompt;unsafe.txt' high)
 assert_contains "panecmd-canonical-project-env" "POLYLANE_PROJECT_ROOT=/tmp/canonical\\ project" "$CMD"
+assert_contains "panecmd-exact-source-root" "POLYLANE_SOURCE_ROOT=/tmp/lane\\ worktree" "$CMD"
 assert_contains "panecmd-coordination-file-env" "POLYLANE_COORDINATION_FILE=/tmp/canonical\\ project/.polylane/coordination.jsonl" "$CMD"
 if printf '%s' "$CMD" | grep -q 'unsafe.txt.*POLYLANE_COORDINATION'; then fail "panecmd-coordination-not-prompt-interpolated" "relay env was derived from prompt"; else pass "panecmd-coordination-not-prompt-interpolated"; fi
 # A self-run inherits the outer pane's relay environment. Once load_manifest has
@@ -103,6 +104,7 @@ POLYLANE_PROJECT_ROOT='/tmp/outer project'; POLYLANE_COORDINATION_FILE='/tmp/out
 CMD=$(pane_cmd '/tmp/lane worktree' gpt-5-codex '/tmp/prompt.txt' high)
 assert_contains "panecmd-manifest-project-wins-stale-env" "POLYLANE_PROJECT_ROOT=/tmp/inner\\ project" "$CMD"
 assert_contains "panecmd-manifest-coordination-wins-stale-env" "POLYLANE_COORDINATION_FILE=/tmp/inner\\ project/.polylane/coordination.jsonl" "$CMD"
+assert_contains "panecmd-worktree-source-wins-stale-env" "POLYLANE_SOURCE_ROOT=/tmp/lane\\ worktree" "$CMD"
 unset COORDINATION_PROJECT_ROOT COORDINATION_FILE POLYLANE_PROJECT_ROOT POLYLANE_COORDINATION_FILE
 
 # Break caught: a linked-worktree Codex workspace-write command cannot commit

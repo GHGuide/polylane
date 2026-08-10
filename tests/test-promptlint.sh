@@ -60,11 +60,15 @@ RUNTIME_GOOD="$TEST_TMPDIR/runtime-good.txt"
 cp "$GOOD" "$RUNTIME_GOOD"
 cat >> "$RUNTIME_GOOD" <<'P'
 POLYLANE-RUNTIME-RELAY: run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; docs/parallel-status.md is post-cycle evidence only, never the live relay.
+POLYLANE-RUNTIME-ROOTS: source edits/tests/Graphify use "$POLYLANE_SOURCE_ROOT" (query `${POLYLANE_SOURCE_ROOT:-$PWD}/graphify-out/q.py`); coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".
 POLYLANE-RUNTIME-DONE: write only docs/status-x.md; first line exactly `STATUS: x DONE run=run-1`.
 POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 P
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_ok \
   "lint-runtime-builder-canonical-status-path" lint_one "$RUNTIME_GOOD" x false builder
+grep -v 'POLYLANE-RUNTIME-ROOTS:' "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-no-roots.txt"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
+  "lint-runtime-requires-source-control-roots-contract" lint_one "$TEST_TMPDIR/runtime-no-roots.txt" x false builder
 grep -v 'POLYLANE-RUNTIME-FINALIZE:' "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-no-finalize.txt"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
   "lint-runtime-requires-finalize-contract" lint_one "$TEST_TMPDIR/runtime-no-finalize.txt" x false builder

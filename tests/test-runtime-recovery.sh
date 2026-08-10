@@ -100,4 +100,34 @@ new_pane integrator >/dev/null
 assert_eq "new-pane-uses-tmux-returned-index" "7" "$NEW_PANE_IDX"
 assert_eq "new-pane-next-follows-actual-index" "8" "$NEXT_PANE_IDX"
 
+# Failed lanes retain the actual recovery cause, not a generic retry label.
+# A missing mapped pane and a finite live-turn silence cap require different
+# operator actions and must therefore survive to report publication.
+FAILED_LANES=""; LANE_FAILURE_REASONS=(); LANE_PANE_IDX=(4); FAKE_PANES='0 1 7'; FAKE_WORKTREE_PANES=""
+POLYLANE_MAX_RETRIES=0
+health_check "builder:$TEST_TMPDIR/wt"
+assert_eq "missing-pane-stores-exact-failure-reason" "mapped pane missing past retries" "$(lane_failure_reason_get builder)"
+
+FAILED_LANES=""; LANE_FAILURE_REASONS=(); LANE_PANE_IDX=(7); FAKE_PANES='0 1 7'; FAKE_WORKTREE_PANES=""
+pane_agent_live() { return 0; }
+lane_terminal_turn() { return 1; }
+pane_wedged() { return 0; }
+POLYLANE_MAX_REPAIRS=0
+POLYLANE_LIVE_WEDGE_HARD_SECONDS=60
+health_check "builder:$TEST_TMPDIR/wt"
+assert_eq "live-turn-stores-effective-silence-reason" "live turn silence cap exhausted after 60s" "$(lane_failure_reason_get builder)"
+
+FAILED_LANES=""; LANE_FAILURE_REASONS=(); LANE_PANE_IDX=(7); FAKE_PANES='0 1 7'
+pane_retryable_error() { return 0; }
+pane_wedged() { return 1; }
+health_check "builder:$TEST_TMPDIR/wt"
+assert_eq "retry-exhaustion-retains-actual-transient-cause" \
+  "transient/dead/wedged retries and repairs exhausted: a transient error after agent exit" \
+  "$(lane_failure_reason_get builder)"
+
+INT_NAME=integrator
+lane_failure_reason_set integrator "no fallback"
+assert_eq "integrator-stores-failure-reason" "no fallback" "$(lane_failure_reason_get integrator)"
+unset POLYLANE_MAX_RETRIES POLYLANE_MAX_REPAIRS POLYLANE_LIVE_WEDGE_HARD_SECONDS
+
 finish
