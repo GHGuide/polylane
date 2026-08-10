@@ -1132,7 +1132,7 @@
         {
           "id": "m24.1",
           "text": "Make optional integrator skill kits no-op when empty and fully trusted when armed",
-          "weight": 10,
+          "weight": 97,
           "status": "open",
           "cycle": null,
           "evidence": ""
