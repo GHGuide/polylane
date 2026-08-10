@@ -3432,6 +3432,7 @@ report_acceptance_failures() {
 
 contract_acceptance_gate() {
   local verdict="${1:-GO}" terminal_counted="${2:-0}" targets outside terminal_targets
+  local failure_root="$REPO_ROOT"
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
   targets=$(jq -r '.target_subgoals | join(",")' "$MANIFEST")
   (
@@ -3439,7 +3440,7 @@ contract_acceptance_gate() {
     export REPO="$PWD" REPO_ROOT="$PWD"
     export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
     export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
-    export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+    export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
     export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
     export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
@@ -3479,7 +3480,7 @@ contract_acceptance_gate() {
           export REPO="$PWD" REPO_ROOT="$PWD"
           export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
           export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
-          export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+          export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
           export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
           export POLYLANE_ACCEPT_FAILURE_PHASE="terminal"
           "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
@@ -3503,7 +3504,7 @@ contract_acceptance_gate() {
           export REPO="$PWD" REPO_ROOT="$PWD"
           export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
           export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
-          export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+          export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
           export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
           export POLYLANE_ACCEPT_FAILURE_PHASE="terminal"
           "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
@@ -3524,7 +3525,7 @@ contract_acceptance_gate() {
 # intentionally repeats this check immediately before terminal execution so a
 # concurrent source change still fails closed.
 contract_focused_acceptance_gate() {
-  local targets
+  local targets failure_root="$REPO_ROOT"
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
   targets=$(jq -r '.target_subgoals | join(",")' "$MANIFEST")
   (
@@ -3534,7 +3535,7 @@ contract_focused_acceptance_gate() {
     # path and nonce atomic: exporting only the new nonce makes nested canaries
     # validate an inherited/default proof against the wrong run.
     unset POLYLANE_EFFICIENCY_PROOF POLYLANE_EXPECTED_RUN_ID
-    export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+    export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
     export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
     export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \

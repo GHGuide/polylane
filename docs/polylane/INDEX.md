@@ -6,7 +6,19 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Cycle 26 READY handoff: [plan](cycle-26-plan.md) ·
+Cycle 27 repair READY handoff: [plan](cycle-27-plan.md) ·
+[research](cycle-27-research.md) · [skill suggestions](cycle-27-suggestions.md) ·
+[council](cycle-27-council.md) · [digest](cycle-27-digest.md) ·
+[questions](cycle-27-questions.md) · [integration verification](../verify-integration.md).
+Exact gate-repair tip `013534eef494976e66826d39e3fd2c9a845c60e8` is
+merged; the frozen repair matrices pass 124/78/183 assertions, adjacent runtime and
+graph checks pass 133/133, and changed-script ShellCheck is clean. Independent review
+repaired one canonical failure-output root seam. Canonical telemetry records one
+builder launch, one integrator launch, zero restarts, and zero terminal gates. Cycle
+28 owns fresh-process one-gate certification, installers, parity, and both live
+rehearsal routes.
+
+Cycle 26 terminal history: [plan](cycle-26-plan.md) ·
 [research](cycle-26-research.md) · [skill suggestions](cycle-26-suggestions.md) ·
 [council](cycle-26-council.md) · [digest](cycle-26-digest.md) ·
 [questions](cycle-26-questions.md) · [integration verification](../verify-integration.md).

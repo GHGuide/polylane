@@ -47,6 +47,7 @@ JSON
 ORCHESTRATION_CONTRACT=2
 CYCLE=1
 INT_WORKTREE="$P/int"
+REPO_ROOT="$P"
 TERMINAL_LOG="$TEST_TMPDIR/terminal-gates.log"; : > "$TERMINAL_LOG"
 run_stats() {
   [ "${1:-}" = terminal-gate ] && printf 'terminal\n' >> "$TERMINAL_LOG"
@@ -77,5 +78,26 @@ assert_eq "accept-host-criterion-deferred-until-cleanup" "open" "$(jq -r '.crite
 out=$(finalize_cycle_criteria)
 assert_contains "accept-finalize-routes-needs-user" "NEEDS-USER" "$out"
 assert_eq "accept-target-criterion-marked-done" "done" "$(jq -r '.criteria[] | select(.id=="c2") | .status' "$STATE_FILE")"
+
+# Failure output belongs to the canonical runner project, not the disposable
+# integrator checkout where the acceptance command executes.
+"$MEM" "$STATE_FILE" add-subgoal m1 s3 failing 1 >/dev/null
+"$MEM" "$STATE_FILE" add-accept s3 "printf 'canonical failure tail\\n' >&2; exit 9" >/dev/null
+jq '.target_subgoals = ["s3"]' "$MANIFEST" > "$MANIFEST.tmp"
+mv "$MANIFEST.tmp" "$MANIFEST"
+RUN_ID=accept-canonical
+assert_fail "accept-focused-failure-is-rejected" contract_focused_acceptance_gate
+CANONICAL_FAILURE="$P/docs/polylane/host-gate-failures/accept-canonical.acceptance.jsonl"
+assert_ok "accept-failure-output-is-canonical" test -f "$CANONICAL_FAILURE"
+assert_fail "accept-failure-output-is-not-in-integrator-worktree" \
+  test -e "$P/int/docs/polylane/host-gate-failures/accept-canonical.acceptance.jsonl"
+assert_ok "accept-canonical-output-retains-current-run" jq -e '
+  length == 1
+  and .[0].run == "accept-canonical"
+  and .[0].phase == "focused"
+  and .[0].return_code == 9
+  and (. [0].output_tail | contains("canonical failure tail"))
+' "$CANONICAL_FAILURE"
+unset RUN_ID
 
 finish

@@ -120,6 +120,14 @@ if printf '%s' "$nogo" | grep -qF -- "shell output must not leak"; then fail "no
 # A READY integrator can be rejected by a runner-owned host gate. The durable
 # report must attribute that NO-GO to the host check and point at its evidence,
 # not falsely claim that the integrator withheld GO.
+RUN_ID=host-report-stale
+mkdir -p "$TEST_TMPDIR/docs/polylane/host-gate-failures"
+printf '%s\n' '[{"run":"older-run","phase":"terminal","command":"false","return_code":1,"timestamp":"2026-08-10T00:00:00Z","output_tail":"stale"}]' \
+  > "$TEST_TMPDIR/docs/polylane/host-gate-failures/host-report-stale.acceptance.jsonl"
+POLYLANE_MIN_DISK_GB=0 host_gate_failure "stale acceptance output must not be attributed"
+stale_host_failure=$(cat "$TEST_TMPDIR/docs/polylane/host-gate-failures/host-report-stale.md")
+if printf '%s' "$stale_host_failure" | grep -qF -- "acceptance_output="; then fail "host-nogo-rejects-stale-acceptance-output" "stale output was linked"; else pass "host-nogo-rejects-stale-acceptance-output"; fi
+
 RUN_ID=host-report-run
 mkdir -p "$TEST_TMPDIR/docs/polylane/host-gate-failures"
 printf '%s\n' '[{"run":"host-report-run","phase":"terminal","command":"false","return_code":1,"timestamp":"2026-08-10T00:00:00Z","output_tail":"failure"}]' \

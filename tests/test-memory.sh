@@ -96,6 +96,7 @@ E="$TEST_TMPDIR/accept-evidence-state.json"
 POLYLANE_ACCEPT_FAILURE_ROOT="$EVIDENCE_ROOT" \
 POLYLANE_ACCEPT_FAILURE_RUN_ID="accept-current" \
 POLYLANE_ACCEPT_FAILURE_PHASE="terminal" \
+POLYLANE_ACCEPT_TAIL_LINES=1 \
   "$MEM" "$E" check-accept >/dev/null 2>&1 || true
 EVIDENCE="$EVIDENCE_ROOT/docs/polylane/host-gate-failures/accept-current.acceptance.jsonl"
 assert_ok "accept-failure-tail-is-retained" test -f "$EVIDENCE"
@@ -106,6 +107,7 @@ assert_ok "accept-failure-tail-is-current-run-data" jq -e '
   and .[0].return_code == 7
   and (. [0].command | contains("$(touch never-run)"))
   and (. [0].output_tail | contains("second line"))
+  and ((. [0].output_tail | contains("literal")) | not)
 ' "$EVIDENCE"
 assert_fail "accept-failure-tail-never-executes-output" test -e never-run
 SUCCESS_ROOT="$TEST_TMPDIR/accept-success"; mkdir -p "$SUCCESS_ROOT"

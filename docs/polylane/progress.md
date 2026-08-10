@@ -2,15 +2,14 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-Cycle 26 integration note: transactional terminal finality is
-`READY-FOR-HOST-GATE` after an exact-tip merge, 700 green focused checks across 28
-files, a 341-check post-relay affected matrix for observer/skill-delivery seams, and
-a 246-check fingerprint/scout matrix. Changed-script ShellCheck and the repository
-seam scan are clean. Canonical evidence at inspection records one builder launch, one
-integrator launch, zero restarts, and zero terminal gates. No durable goal or
-criterion state changes before coordinator promotion, so the mechanically generated
-totals below remain authoritative; open `m21.1`–`m23.3` and `c57`–`c62` are finalized
-only by the host gate.
+Cycle 27 integration note: the exact gate-repair tip is merged and the three frozen
+matrices pass 124/78/183 assertions. Independent review repaired the canonical
+acceptance-output root seam; adjacent runtime/graph tests pass 133/133 and
+changed-script ShellCheck is clean. Canonical evidence records one builder launch,
+one integrator launch, zero restarts, and zero terminal gates. No terminal gate or
+durable state finalization occurs in this repair cycle, so the mechanically generated
+totals below remain authoritative. `m24.4` and its fresh-process certification remain
+open for Cycle 28.
 
 ## Cycle 23
 
