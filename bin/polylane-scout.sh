@@ -452,6 +452,29 @@ validate_selected_record() {
   [ "$(canonical_skill_file "$resolved" 2>/dev/null || true)" = "$path" ] || return 1
 }
 
+# kit_active FILE LANE : an absent or structurally empty optional kit is a
+# compatibility no-op. Any role content (including malformed non-array content)
+# arms the kit so validate_kits applies the complete trusted-record contract.
+kit_active() {
+  local f="$1" lane="$2"
+  [ -f "$f" ] || return 1
+  jq -e --arg lane "$lane" '
+    .lanes[$lane] as $kit
+    | if $kit == null then false
+      elif ($kit | type) != "object" then true
+      else
+        ($kit.selected // null) as $selected
+        | [ $kit.predefined, $kit.specific,
+            (if ($selected | type) == "object" then $selected.predefined else $selected end),
+            (if ($selected | type) == "object" then $selected.specific else $selected end) ]
+        | any(if . == null then false
+              elif (type == "array") then length > 0
+              else true
+              end)
+      end
+  ' "$f" >/dev/null 2>&1
+}
+
 # validate_kits FILE MANIFEST : strict builder kits plus an optional typed
 # integrator kit. GitHub suggestions are advisory metadata and never count as
 # installed kit skills.
@@ -468,8 +491,7 @@ validate_kits() {
   fi
   lanes=$(jq -r '.lanes[].name' "$manifest")
   integrator=$(jq -r '.integrator.name // ""' "$manifest")
-  if [ -n "$integrator" ] && jq -e --arg lane "$integrator" \
-    '.lanes[$lane] | type == "object"' "$f" >/dev/null 2>&1; then
+  if [ -n "$integrator" ] && kit_active "$f" "$integrator"; then
     lanes="$lanes $integrator"
   fi
   for lane in $lanes; do
@@ -534,6 +556,7 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     arm-role)  shift; arm_role "$@" ;;
     arm-recommendation) shift; arm_recommendation "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" ;;
     migrate)   shift; migrate_kit "${1:?usage: migrate <kit>}" ;;
+    active)    shift; kit_active "${1:?usage: active <kit> <lane>}" "${2:?usage: active <kit> <lane>}" ;;
     armed-role) shift; armed_role "${1:?}" "${2:?}" "${3:?}" ;;
     github)    shift; record_github "${1:?}" "${2:?}" "${3:?}" "${4:?}" ;;
     github-suggest) shift; github_suggest "${1:?usage: github-suggest <activity> [limit]}" "${2:-5}" ;;

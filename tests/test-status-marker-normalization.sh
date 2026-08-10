@@ -10,6 +10,9 @@
 make_tmpdir
 RUN_ID=normalize-run
 ORCHESTRATION_CONTRACT=2
+BASE=main
+MANIFEST="$TEST_TMPDIR/manifest.json"
+printf '%s\n' '{"lanes":[{"name":"restart-accounting-audit","own_globs":["docs/status-restart-accounting-audit.md"]}]}' > "$MANIFEST"
 
 new_repo() {
   local dir="$1"
@@ -20,6 +23,7 @@ new_repo() {
   printf 'base\n' > "$dir/base.txt"
   git -C "$dir" add base.txt
   git -C "$dir" commit -qm base
+  BASE=$(git -C "$dir" rev-parse HEAD)
 }
 
 commit_marker() {
@@ -104,6 +108,31 @@ git -C "$SYMLINK" add target.txt docs/status-short.md
 git -C "$SYMLINK" commit -qm marker
 assert_fail "normalize-rejects-symlink-candidate" \
   normalize_status_marker "$SYMLINK" restart-accounting-audit
+
+# Scope does not become a broad status-file exemption: an ordinary committed
+# out-of-scope file remains blocked even when the runner can prove its own
+# subsequent marker rename.
+EXTRA="$TEST_TMPDIR/extra"
+new_repo "$EXTRA"
+printf '%s\n' 'STATUS: restart-accounting-audit DONE run=normalize-run' \
+  > "$EXTRA/docs/status-short.md"
+printf 'outside\n' > "$EXTRA/outside.txt"
+git -C "$EXTRA" add docs/status-short.md outside.txt
+git -C "$EXTRA" commit -qm marker-and-extra
+assert_fail "normalize-rejects-extra-committed-path-from-completion" \
+  normalize_status_marker "$EXTRA" restart-accounting-audit
+assert_fail "normalize-extra-path-remains-out-of-scope" \
+  lane_done "$EXTRA" restart-accounting-audit
+
+# A hand-authored rename cannot claim the runner's narrow repair allowance.
+FABRICATED="$TEST_TMPDIR/fabricated"
+new_repo "$FABRICATED"
+commit_marker "$FABRICATED" docs/status-short.md \
+  'STATUS: restart-accounting-audit DONE run=normalize-run'
+git -C "$FABRICATED" mv docs/status-short.md docs/status-restart-accounting-audit.md
+git -C "$FABRICATED" commit -qm 'manual marker rename'
+assert_fail "normalize-scope-rejects-fabricated-rename-commit" \
+  lane_done "$FABRICATED" restart-accounting-audit
 
 # Integration seam: a dead worker with the one safe near-miss is normalized
 # before retry accounting and before respawn_lane can spend another model turn.

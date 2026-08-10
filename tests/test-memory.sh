@@ -84,6 +84,41 @@ diagnostic_out=$("$MEM" "$D" check-accept 2>&1); diagnostic_rc=$?
 assert_eq "accept-diagnostic-fails" "1" "$diagnostic_rc"
 assert_contains "accept-failure-surfaces-command" "ACCEPTANCE-COMMAND-FAILED rc=7" "$diagnostic_out"
 assert_contains "accept-failure-surfaces-output" "accept-diagnostic-token" "$diagnostic_out"
+
+# A runner-owned acceptance boundary retains a bounded, nonce-scoped JSONL tail
+# in the canonical project. The command and its shell-special/multiline output
+# remain data, and successful checks do not create durable failure chatter.
+EVIDENCE_ROOT="$TEST_TMPDIR/accept-evidence"; mkdir -p "$EVIDENCE_ROOT"
+E="$TEST_TMPDIR/accept-evidence-state.json"
+"$MEM" "$E" init g >/dev/null; "$MEM" "$E" add-milestone m1 M >/dev/null
+"$MEM" "$E" add-subgoal m1 s1 A >/dev/null
+"$MEM" "$E" add-accept s1 "printf '%s\\n%s\\n' 'literal \$(touch never-run)' 'second line' >&2; exit 7" >/dev/null
+POLYLANE_ACCEPT_FAILURE_ROOT="$EVIDENCE_ROOT" \
+POLYLANE_ACCEPT_FAILURE_RUN_ID="accept-current" \
+POLYLANE_ACCEPT_FAILURE_PHASE="terminal" \
+  "$MEM" "$E" check-accept >/dev/null 2>&1 || true
+EVIDENCE="$EVIDENCE_ROOT/docs/polylane/host-gate-failures/accept-current.acceptance.jsonl"
+assert_ok "accept-failure-tail-is-retained" test -f "$EVIDENCE"
+assert_ok "accept-failure-tail-is-current-run-data" jq -e '
+  length == 1
+  and .[0].run == "accept-current"
+  and .[0].phase == "terminal"
+  and .[0].return_code == 7
+  and (. [0].command | contains("$(touch never-run)"))
+  and (. [0].output_tail | contains("second line"))
+' "$EVIDENCE"
+assert_fail "accept-failure-tail-never-executes-output" test -e never-run
+SUCCESS_ROOT="$TEST_TMPDIR/accept-success"; mkdir -p "$SUCCESS_ROOT"
+PASS_E="$TEST_TMPDIR/accept-success-state.json"
+"$MEM" "$PASS_E" init g >/dev/null; "$MEM" "$PASS_E" add-milestone m1 M >/dev/null
+"$MEM" "$PASS_E" add-subgoal m1 s1 A >/dev/null
+"$MEM" "$PASS_E" add-accept s1 true >/dev/null
+POLYLANE_ACCEPT_FAILURE_ROOT="$SUCCESS_ROOT" \
+POLYLANE_ACCEPT_FAILURE_RUN_ID="accept-success" \
+POLYLANE_ACCEPT_FAILURE_PHASE="focused" \
+  "$MEM" "$PASS_E" check-accept >/dev/null 2>&1
+assert_fail "accept-success-creates-no-durable-chatter" \
+  test -e "$SUCCESS_ROOT/docs/polylane/host-gate-failures/accept-success.acceptance.jsonl"
 # flip the grader to pass -> check + met both clear
 B="$TEST_TMPDIR/accept-ok.json"
 "$MEM" "$B" init g >/dev/null; "$MEM" "$B" add-criterion c1 x >/dev/null

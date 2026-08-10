@@ -689,12 +689,8 @@ compile_prompt() {
   # the same strict compiler instead of being silently reduced to name-only
   # labels.
   [ "$role" = builder ] && selected_required=1
-  if [ "$role" = integrator ] && jq -e --arg lane "$name" '
-    (((.lanes[$lane].predefined // []) | length)
-     + ((.lanes[$lane].specific // []) | length)
-     + ((.lanes[$lane].selected.predefined // []) | length)
-     + ((.lanes[$lane].selected.specific // []) | length)) > 0
-  ' "$LANE_SKILLS_FILE" >/dev/null 2>&1; then
+  if [ "$role" = integrator ] &&
+     "$SCRIPT_DIR/polylane-scout.sh" active "$LANE_SKILLS_FILE" "$name"; then
     selected_required=1
   fi
   if [ "$selected_required" = 1 ]; then
@@ -2137,7 +2133,9 @@ launch_panes() {
     pc=$(pane_cmd "${LANE_WORKTREES[$i]}" "${LANE_MODELS[$i]}" "${LANE_PROMPTS[$i]}" "${LANE_EFFORTS[$i]:-}")
     graph_authority_require "lane:${LANE_NAMES[$i]}" "launch lane '${LANE_NAMES[$i]}'" || return 1
     new_pane "${LANE_NAMES[$i]}" "$pc"
-    polylane_tmux_tag_pane "$TMUX_SESSION" "$NEW_PANE_IDX" "${RUN_ID:-legacy}" "${LANE_NAMES[$i]}" "${LANE_WORKTREES[$i]}" || return 1
+    if [ "${DRY_RUN:-0}" != "1" ]; then
+      polylane_tmux_tag_pane "$TMUX_SESSION" "$NEW_PANE_IDX" "${RUN_ID:-legacy}" "${LANE_NAMES[$i]}" "${LANE_WORKTREES[$i]}" || return 1
+    fi
     LANE_PANE_IDX[i]="$NEW_PANE_IDX"
     baseline_usage_log "${LANE_NAMES[$i]}"
     pipe_pane_log "$NEW_PANE_IDX" "${LANE_NAMES[$i]}"
@@ -2226,7 +2224,7 @@ lane_done() {
 # the frozen base to HEAD; missing manifest/base evidence fails closed.  The
 # integrator is intentionally excluded because it owns the cross-lane merge.
 lane_completion_scope_valid() {
-  local wt="$1" name="$2" changed path
+  local wt="$1" name="$2" changed path normalized_source="" commit head
   local -a paths=()
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
   [ "$name" = "${INT_NAME:-}" ] && return 0
@@ -2238,7 +2236,84 @@ lane_completion_scope_valid() {
     [ -n "$path" ] && paths+=("$path")
   done <<<"$changed"
   [ "${#paths[@]}" -gt 0 ] || return 0
-  "$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${paths[@]}" >/dev/null
+  # Status-source deletions are never ordinary lane output. Inspect every
+  # completed-branch commit, not merely the net diff: an add-then-delete source
+  # can otherwise disappear from BASE...HEAD and evade the scope boundary.
+  head=$(git -C "$wt" rev-parse HEAD 2>/dev/null) || return 1
+  while IFS= read -r commit; do
+    while IFS= read -r path; do
+      case "$path" in
+        docs/status-*.md)
+          [ "$commit" = "$head" ] || return 1
+          [ -n "$normalized_source" ] || normalized_source=$(lane_completion_normalization_source "$wt" "$name" 2>/dev/null || true)
+          [ "$path" = "$normalized_source" ] || return 1
+          ;;
+      esac
+    done < <(git -C "$wt" diff-tree --no-commit-id --name-only --diff-filter=D -r "$commit" 2>/dev/null)
+  done < <(git -C "$wt" rev-list "$BASE..HEAD" 2>/dev/null)
+  # Also reject a status deletion that remains in the net diff (for example a
+  # source already present at BASE) unless it is that same proven final rename.
+  for path in "${paths[@]}"; do
+    case "$path" in
+      docs/status-*.md)
+        [ "$path" = "docs/status-$name.md" ] && continue
+        [ -n "$normalized_source" ] || normalized_source=$(lane_completion_normalization_source "$wt" "$name" 2>/dev/null || true)
+        [ "$path" = "$normalized_source" ] || return 1
+        ;;
+    esac
+  done
+  if [ -z "$normalized_source" ]; then
+    "$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${paths[@]}" >/dev/null
+    return
+  fi
+  # The canonical destination still has to pass ordinary lane ownership; only
+  # the mechanically proven source deletion is filtered from that check.
+  local scoped=()
+  for path in "${paths[@]}"; do
+    [ "$path" = "$normalized_source" ] || scoped+=("$path")
+  done
+  [ "${#scoped[@]}" -gt 0 ] || return 0
+  "$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${scoped[@]}" >/dev/null
+}
+
+# lane_completion_normalization_source WORKTREE NAME : print only the deleted
+# path from the runner's exact current-run status rename at HEAD. This makes the
+# completed-branch scope exception auditable and rejects fabricated, ambiguous,
+# symlink, stale, or extra-file commits.
+lane_completion_normalization_source() {
+  local wt="$1" name="$2" canonical="docs/status-$2.md" expected source="" path first before after subject count=0 candidates=0
+  [ -n "${RUN_ID:-}" ] || return 1
+  git -C "$wt" rev-parse --verify 'HEAD^' >/dev/null 2>&1 || return 1
+  subject=$(git -C "$wt" log -1 --format=%s 2>/dev/null) || return 1
+  [ "$subject" = "polylane: normalize status marker for $name" ] || return 1
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    count=$((count + 1))
+    case "$path" in
+      "$canonical") : ;;
+      docs/status-*.md) source="$path" ;;
+      *) return 1 ;;
+    esac
+  done < <(git -C "$wt" diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
+  [ "$count" -eq 2 ] && [ -n "$source" ] && [ "$source" != "$canonical" ] || return 1
+  [ "$(git -C "$wt" ls-tree HEAD^ -- "$source" | awk '{print $1}')" = 100644 ] || return 1
+  [ "$(git -C "$wt" ls-tree HEAD -- "$canonical" | awk '{print $1}')" = 100644 ] || return 1
+  IFS= read -r first < <(git -C "$wt" show "HEAD^:$source" 2>/dev/null) || true
+  expected="STATUS: $name DONE run=$RUN_ID"
+  [ "$first" = "$expected" ] || return 1
+  # The parent must have contained exactly this one regular current-run source;
+  # a fabricated rename cannot turn an ambiguous set of near-misses into scope.
+  while IFS= read -r path; do
+    case "$path" in docs/status-*.md) : ;; *) continue ;; esac
+    [ "$(git -C "$wt" ls-tree HEAD^ -- "$path" | awk '{print $1}')" = 100644 ] || continue
+    IFS= read -r first < <(git -C "$wt" show "HEAD^:$path" 2>/dev/null) || true
+    [ "$first" = "$expected" ] && candidates=$((candidates + 1))
+  done < <(git -C "$wt" ls-tree -r --name-only HEAD^ -- docs 2>/dev/null)
+  [ "$candidates" -eq 1 ] || return 1
+  before=$(git -C "$wt" rev-parse "HEAD^:$source" 2>/dev/null) || return 1
+  after=$(git -C "$wt" rev-parse "HEAD:$canonical" 2>/dev/null) || return 1
+  [ "$before" = "$after" ] || return 1
+  printf '%s\n' "$source"
 }
 
 # lane_completion_worker_live WORKTREE NAME : a contract-v2 handoff is not final
@@ -2305,6 +2380,7 @@ normalize_status_marker() {
     git -C "$wt" mv -- "$canonical" "$candidate" >/dev/null 2>&1 || true
     return 1
   fi
+  [ "$(lane_completion_normalization_source "$wt" "$name" 2>/dev/null || true)" = "$candidate" ] || return 1
   lane_done "$wt" "$name"
 }
 
@@ -3267,7 +3343,9 @@ run_integrator() {
   pc=$(pane_cmd "$INT_WORKTREE" "$INT_MODEL" "$INT_PROMPT" "${INT_EFFORT:-}")
   # new_pane also handles the all-lanes-resumed case (no session yet).
   new_pane "$INT_NAME" "$pc"
-  polylane_tmux_tag_pane "$TMUX_SESSION" "$NEW_PANE_IDX" "${RUN_ID:-legacy}" "$INT_NAME" "$INT_WORKTREE" || return 1
+  if [ "${DRY_RUN:-0}" != "1" ]; then
+    polylane_tmux_tag_pane "$TMUX_SESSION" "$NEW_PANE_IDX" "${RUN_ID:-legacy}" "$INT_NAME" "$INT_WORKTREE" || return 1
+  fi
   INT_PANE_IDX="$NEW_PANE_IDX"
   baseline_usage_log "$INT_NAME"
   pipe_pane_log "$NEW_PANE_IDX" "$INT_NAME"
@@ -3361,6 +3439,9 @@ contract_acceptance_gate() {
     export REPO="$PWD" REPO_ROOT="$PWD"
     export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
     export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+    export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+    export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
+    export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
       --cycle "$CYCLE" --targets "$targets" --focused
   ) || { report_acceptance_failures; return 1; }
@@ -3398,6 +3479,9 @@ contract_acceptance_gate() {
           export REPO="$PWD" REPO_ROOT="$PWD"
           export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
           export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+          export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+          export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
+          export POLYLANE_ACCEPT_FAILURE_PHASE="terminal"
           "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
             --cycle "$CYCLE" --targets "$terminal_targets" --only-terminal
         ) || { report_acceptance_failures; return 1; }
@@ -3419,6 +3503,9 @@ contract_acceptance_gate() {
           export REPO="$PWD" REPO_ROOT="$PWD"
           export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
           export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+          export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+          export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
+          export POLYLANE_ACCEPT_FAILURE_PHASE="terminal"
           "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
             --cycle "$CYCLE" --targets "$targets" --only-terminal
         ) || { report_acceptance_failures; return 1; }
@@ -3447,6 +3534,9 @@ contract_focused_acceptance_gate() {
     # path and nonce atomic: exporting only the new nonce makes nested canaries
     # validate an inherited/default proof against the wrong run.
     unset POLYLANE_EFFICIENCY_PROOF POLYLANE_EXPECTED_RUN_ID
+    export POLYLANE_ACCEPT_FAILURE_ROOT="$REPO_ROOT"
+    export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
+    export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
       --cycle "$CYCLE" --targets "$targets" --focused
   ) || { report_acceptance_failures; return 1; }
@@ -3493,7 +3583,7 @@ terminal_efficiency_eligible() {
 # that would dirty its committed READY/DONE handoff and relaunch finished work on
 # resume.  The canonical root receives one atomic, run-scoped failure record.
 host_gate_failure() {
-  local detail="$1" dir f tmp when
+  local detail="$1" dir f tmp when acceptance_rel=""
   VERDICT_ORIGIN="host-gate"
   disk_guard || return 1
   dir="$REPO_ROOT/docs/polylane/host-gate-failures"
@@ -3501,9 +3591,15 @@ host_gate_failure() {
   f="$dir/${RUN_ID:-legacy}.md"
   tmp=$(mktemp "$dir/.${RUN_ID:-legacy}.XXXXXX") || return 1
   when=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo '?')
+  if [ -f "$dir/${RUN_ID:-legacy}.acceptance.jsonl" ] && [ ! -L "$dir/${RUN_ID:-legacy}.acceptance.jsonl" ] &&
+     jq -e --arg run "${RUN_ID:-legacy}" 'type == "array" and length > 0 and all(.[]; .run == $run)' \
+       "$dir/${RUN_ID:-legacy}.acceptance.jsonl" >/dev/null 2>&1; then
+    acceptance_rel="docs/polylane/host-gate-failures/${RUN_ID:-legacy}.acceptance.jsonl"
+  fi
   {
     printf '# Host gate failure\n\n'
     printf 'run=%s\nwhen=%s\n\n%s\n' "${RUN_ID:-legacy}" "$when" "$detail"
+    [ -z "$acceptance_rel" ] || printf 'acceptance_output=%s\n' "$acceptance_rel"
   } > "$tmp" || { rm -f "$tmp"; return 1; }
   mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
 }
@@ -4561,6 +4657,10 @@ main() {
   launch_panes
   echo "Launched ${LAUNCHED:-0} of ${#LANE_NAMES[@]} lane(s). Watch: $(tmux_watch_command)"
   verify_seeds
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "Dry-run preview complete: no tmux session or durable run state was created."
+    return 0
+  fi
 
   echo "== poll: waiting for builders (auto-retry on transient errors) =="
   if poll_done "${LANE_POLLSPEC[@]}"; then

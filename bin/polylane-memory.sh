@@ -77,6 +77,35 @@ _need() {
   jq -e . "$F" >/dev/null 2>&1 || { echo "polylane-memory: state at $F is not valid JSON (corrupt/truncated) — restore from git or re-init" >&2; exit 1; }
 }
 
+# _accept_failure_evidence CMD RC OUTPUT TAIL_LINES : write a bounded, atomic,
+# nonce-scoped JSON record only when the runner supplied a canonical root. The
+# command/output travel through jq as data, never through executable syntax.
+_accept_failure_evidence() {
+  local cmd="$1" rc="$2" out="$3" tail_lines="$4" root run phase dir f tmp record when
+  root="${POLYLANE_ACCEPT_FAILURE_ROOT:-}"
+  run="${POLYLANE_ACCEPT_FAILURE_RUN_ID:-}"
+  phase="${POLYLANE_ACCEPT_FAILURE_PHASE:-}"
+  case "$root" in /*) : ;; *) return 0 ;; esac
+  case "$run" in ''|*[!A-Za-z0-9._-]*) return 0 ;; esac
+  case "$phase" in ''|*[!A-Za-z0-9._-]*) return 0 ;; esac
+  dir="$root/docs/polylane/host-gate-failures"
+  mkdir -p "$dir" 2>/dev/null || return 0
+  f="$dir/$run.acceptance.jsonl"
+  [ ! -e "$f" ] || { [ -f "$f" ] && [ ! -L "$f" ]; } || return 0
+  when=$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo '?')
+  record=$(tail -n "$tail_lines" "$out" | jq -Rsc \
+    --arg run "$run" --arg phase "$phase" --arg command "$cmd" --arg when "$when" --argjson rc "$rc" \
+    '{run:$run,phase:$phase,command:$command,return_code:$rc,timestamp:$when,output_tail:.}') || return 0
+  tmp=$(mktemp "$dir/.$run.acceptance.XXXXXX") || return 0
+  if [ -f "$f" ] && [ ! -L "$f" ] &&
+     jq -e --arg run "$run" 'type == "array" and all(.[]; .run == $run)' "$f" >/dev/null 2>&1; then
+    jq --argjson record "$record" '. + [$record]' "$f" > "$tmp" || { rm -f "$tmp"; return 0; }
+  else
+    jq -n --argjson record "$record" '[$record]' > "$tmp" || { rm -f "$tmp"; return 0; }
+  fi
+  mv "$tmp" "$f" 2>/dev/null || rm -f "$tmp"
+}
+
 # _accept_run CMD : run CMD (bash -c) in the CURRENT dir with a wall-clock cap.
 # Uses timeout/gtimeout when present; otherwise runs uncapped (never wedges the
 # verb — a hung check is the check author's bug, surfaced by the orchestrator).
@@ -95,6 +124,7 @@ _accept_run() {
     case "$tail_lines" in ''|*[!0-9]*) tail_lines=80 ;; esac
     printf 'ACCEPTANCE-COMMAND-FAILED rc=%s: %s\n' "$rc" "$cmd" >&2
     tail -n "$tail_lines" "$out" >&2
+    _accept_failure_evidence "$cmd" "$rc" "$out" "$tail_lines"
   fi
   rm -f "$out"
   return "$rc"
