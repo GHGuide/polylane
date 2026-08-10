@@ -4485,6 +4485,17 @@ write_report() {
         "${LANE_NAMES[$i]}" "${LANE_MODELS[$i]}" "${LANE_BRANCHES[$i]}" "$_r" \
         "${_tok:-?}" "$_cost"
     done
+    # The integrator is supervised by the same health loop as builders but is
+    # not represented in LANE_NAMES. Keep its exact bounded failure reason in
+    # the report rather than silently collapsing a failed final lane to the
+    # generic integration verdict.
+    if lane_failed "${INT_NAME:-integrator}"; then
+      failure_reason=$(lane_failure_reason_get "${INT_NAME:-integrator}")
+      _r="FAILED — ${failure_reason:-errored after retries}"
+      _tok=""; _cost="?"; _unknown_cost=1
+      printf '| %s | %s | %s | %s | %s | %s |\n' \
+        "${INT_NAME:-integrator}" "${INT_MODEL:-?}" "${INT_BRANCH:-?}" "$_r" "?" "$_cost"
+    fi
     echo
     if [ "$_unknown_cost" = 1 ]; then
       echo "**Estimated total unavailable.** Known-priced subtotal: \$${_total}; at least one lane lacks a token count or a verified model price, so zero is not claimed."
@@ -4562,6 +4573,20 @@ write_report() {
           *) echo "  Its worktree is intact. Inspect the retained lane evidence, then resume." ;;
         esac
       done
+      if lane_failed "${INT_NAME:-integrator}"; then
+        failure_reason=$(lane_failure_reason_get "${INT_NAME:-integrator}")
+        failure_reason="${failure_reason:-errored after retries}"
+        echo "- Lane **${INT_NAME:-integrator}** halted: ${failure_reason}."
+        case "$failure_reason" in
+          transient/dead/wedged*) echo "  Its worktree is intact. Re-run to resume, or check the provider status page if a transient API/network error persists." ;;
+          usage\ wait\ exhausted) echo "  Its worktree is intact. Restore available usage or choose a different limit policy, then resume." ;;
+          no\ fallback) echo "  Its worktree is intact. Add an allowed fallback model or restore the current model's availability, then resume." ;;
+          material-progress*) echo "  Its worktree is intact. Inspect the evidence and choose a new concrete approach before resuming." ;;
+          mapped\ pane*) echo "  Its worktree is intact. Inspect tmux mapping and recreate the missing pane before resuming." ;;
+          *live\ turn*) echo "  Its worktree is intact. Inspect the live turn and its durable transcript before resuming." ;;
+          *) echo "  Its worktree is intact. Inspect the retained lane evidence, then resume." ;;
+        esac
+      fi
     else
       echo "- Read \`docs/verify-integration.md\` for why the integrator said ${verdict}; fix the flagged lane(s) and re-run."
     fi

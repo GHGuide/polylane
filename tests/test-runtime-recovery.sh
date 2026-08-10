@@ -126,8 +126,18 @@ assert_eq "retry-exhaustion-retains-actual-transient-cause" \
   "$(lane_failure_reason_get builder)"
 
 INT_NAME=integrator
-lane_failure_reason_set integrator "no fallback"
-assert_eq "integrator-stores-failure-reason" "no fallback" "$(lane_failure_reason_get integrator)"
+INT_PANE_IDX=7
+FAILED_LANES=""; INT_FAILURE_REASON=""; LANE_FAILURE_REASONS=(); LANE_RETRIES=(); LANE_REPAIRS=()
+pane_retryable_error() { return 1; }
+pane_agent_live() { return 0; }
+lane_terminal_turn() { return 1; }
+pane_wedged() { return 0; }
+POLYLANE_MAX_RETRIES=0
+POLYLANE_MAX_REPAIRS=0
+POLYLANE_LIVE_WEDGE_HARD_SECONDS=60
+health_check "integrator:$TEST_TMPDIR/wt"
+assert_eq "integrator-health-stores-live-turn-reason" "live turn silence cap exhausted after 60s" "$(lane_failure_reason_get integrator)"
+assert_eq "integrator-health-records-failed-lane" "integrator" "$FAILED_LANES"
 unset POLYLANE_MAX_RETRIES POLYLANE_MAX_REPAIRS POLYLANE_LIVE_WEDGE_HARD_SECONDS
 
 finish

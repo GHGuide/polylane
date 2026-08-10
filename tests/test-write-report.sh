@@ -158,6 +158,22 @@ assert_contains "halted-live-turn-hint" "live turn silence cap" "$halted"
 if printf '%s' "$halted" | grep -qF 'status.claude.com'; then fail "halted-live-turn-no-provider-status-hint" "live-turn halt was misattributed to provider"; else pass "halted-live-turn-no-provider-status-hint"; fi
 FAILED_LANES=""
 
+# The integrator is supervised by the same health loop. Its exact stored reason
+# must reach the same report table and non-provider recovery guidance as a
+# builder failure; otherwise Cycle 27's failed lane is silently misreported.
+INT_NAME=integrator
+INT_MODEL=codex
+INT_BRANCH=lane/integrator
+INT_FAILURE_REASON=""
+FAILED_LANES="integrator"
+lane_failure_reason_set integrator "live turn silence cap exhausted after 60s"
+write_report HALTED
+integrator_halted=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
+assert_contains "halted-integrator-failed-row" "| integrator | codex | lane/integrator | FAILED — live turn silence cap exhausted after 60s |" "$integrator_halted"
+assert_contains "halted-integrator-live-turn-guidance" "Lane **integrator** halted: live turn silence cap exhausted after 60s." "$integrator_halted"
+if printf '%s' "$integrator_halted" | grep -qF 'status.claude.com'; then fail "halted-integrator-no-provider-status-hint" "integrator live-turn halt was misattributed to provider"; else pass "halted-integrator-no-provider-status-hint"; fi
+FAILED_LANES=""
+
 # ENOSPC/failing output must not tear or replace a prior truthful report, and
 # callers need a non-zero result to avoid announcing a report that was not made.
 printf 'OLD VALID REPORT\n' > "$TEST_TMPDIR/docs/polylane-report.md"
