@@ -462,6 +462,41 @@
       "weight": 10,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c67",
+      "text": "A live in-flight agent turn receives an effort-scaled time-based silence allowance and remains finitely recoverable without the old false-restart window",
+      "weight": 102,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c68",
+      "text": "Every failed lane retains and reports its exact bounded terminal reason instead of being misclassified as a transient provider error",
+      "weight": 101,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c69",
+      "text": "Codex usage telemetry separates total, cached, uncached, output, and reasoning tokens while preserving resumable no-double-count accounting",
+      "weight": 100,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c70",
+      "text": "Every pane and compiled prompt distinguish its writable source worktree from canonical orchestration state and address Graphify through the source root",
+      "weight": 99,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c71",
+      "text": "A fresh post-watchdog process certifies all recovered repairs with two launches, zero restarts, one terminal gate, complete cleanup, and live GO and NO-GO rehearsals",
+      "weight": 98,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1162,6 +1197,52 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m25",
+      "text": "Truthful long-turn supervision and usage accounting",
+      "subgoals": [
+        {
+          "id": "m25.1",
+          "text": "Replace the short check-count live-turn watchdog with an effort-scaled time-based hard cap that protects active inference and still recovers a genuine freeze",
+          "weight": 102,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m25.2",
+          "text": "Persist exact per-lane failure reasons and render truthful HALTED rows and recovery guidance",
+          "weight": 101,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m25.3",
+          "text": "Separate cached and uncached Codex usage in durable telemetry and reports without breaking legacy totals or resume offsets",
+          "weight": 100,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m25.4",
+          "text": "Expose distinct source and control roots to every pane and compiled prompt so Graphify and file work stay lane-local while coordination stays canonical",
+          "weight": 99,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m25.5",
+          "text": "Certify the recovered terminal and watchdog source from one fresh zero-restart one-gate process",
+          "weight": 98,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1422,6 +1503,18 @@
       "kind": "attempt",
       "text": "Repair the two Cycle 26 terminal-suite failures and retain exact host-gate output before fresh certification",
       "meta": "source=d8b9417; cycle26=NO-GO; terminal_gate=1"
+    },
+    {
+      "cycle": 28,
+      "kind": "learning",
+      "text": "Cycle 27's old watchdog falsely halted a still-live high-effort integrator after 40 quiet checks; the worker later completed and committed READY source.",
+      "meta": "preserve Cycle 27 HALTED report; recovered exact tip=38ee3fa8bd0720d02755d2f3215f9bd936a17a78"
+    },
+    {
+      "cycle": 28,
+      "kind": "attempt",
+      "text": "Repair long-turn supervision, failure attribution, cached-token accounting, and source/control-root clarity before a fresh terminal certification.",
+      "meta": "run=c28-watchdog-truth-20260810-a1; focused only; expected launches=2 restarts=0 terminal_gates=0"
     }
   ],
   "accept": [
@@ -2503,6 +2596,83 @@
         "tests/test-contract-acceptance.sh",
         "tests/test-verdict-repair.sh",
         "tests/test-write-report.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.1",
+      "cmd": "bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh && bash tests/test-pane-errored.sh",
+      "tier": "focused",
+      "key": "live-turn-supervision",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-wedge.sh",
+        "tests/test-runtime-recovery.sh",
+        "tests/test-pane-errored.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.2",
+      "cmd": "bash tests/test-write-report.sh && bash tests/test-runtime-recovery.sh",
+      "tier": "focused",
+      "key": "failure-reason-truth",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-write-report.sh",
+        "tests/test-runtime-recovery.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.3",
+      "cmd": "bash tests/test-run-stats.sh && bash tests/test-write-report.sh && bash tests/test-efficiency-canary.sh",
+      "tier": "focused",
+      "key": "usage-breakdown",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run-stats.sh",
+        "bin/polylane-run.sh",
+        "tests/test-run-stats.sh",
+        "tests/test-write-report.sh",
+        "tests/test-efficiency-canary.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.4",
+      "cmd": "bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-orchestration-contract.sh && bash tests/test-promptlint.sh",
+      "tier": "focused",
+      "key": "source-control-roots",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-agent-adapter.sh",
+        "tests/test-prompt-compiler.sh",
+        "tests/test-orchestration-contract.sh",
+        "tests/test-promptlint.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.5",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "terminal-cert-c29",
+      "status": "unchecked",
+      "deps": [
+        "bin/*.sh",
+        "tests/test-*.sh",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "references/*.md"
       ],
       "fp": "",
       "regressed_cycle": null
