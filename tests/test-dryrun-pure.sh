@@ -12,6 +12,15 @@ make_tmpdir
 R="$TEST_TMPDIR/proj"; mkdir -p "$R/.polylane/lanes" "$R/docs/polylane"
 ( cd "$R" && git init -q -b main . && git config user.email t@t && git config user.name t \
   && echo s > s.txt && git add -A && git commit -qm seed ) >/dev/null 2>&1
+printf 'index\n' > "$R/docs/polylane/INDEX.md"
+
+# A real contract-v2 preview needs a complete builder kit, but never an
+# integrator kit. Keep every selected record inside this test's trusted root.
+export POLYLANE_SKILLS_DIRS="$TEST_TMPDIR/skills"
+for skill in s1 s2 s3 s4; do
+  mkdir -p "$POLYLANE_SKILLS_DIRS/$skill"
+  printf '%s\n' '---' "name: $skill" > "$POLYLANE_SKILLS_DIRS/$skill/SKILL.md"
+done
 
 MEMH="$BIN/polylane-memory.sh"; ST="$R/docs/polylane/max-state.json"
 "$MEMH" "$ST" init g >/dev/null
@@ -23,32 +32,56 @@ MEMH="$BIN/polylane-memory.sh"; ST="$R/docs/polylane/max-state.json"
 # minimal contract-v2 prompt set (satisfies the strict lint)
 P="$R/.polylane/lanes/a.txt"
 cat > "$P" <<EOF
-/goal x. OWN: a. FORBIDDEN: rest. PREDEFINED-SKILLS: s1 s2
+ULTIMATE-GOAL: preview remains safe and complete.
+CURRENT-SUBGOAL: launch one virtual builder pane.
+GOAL: prove the dry-run preview completes.
+OWN: a/** docs/status-a.md. FORBIDDEN: rest.
+PREDEFINED-SKILLS: s1 s2
 LANE-SPECIFIC-SKILLS: s3 s4
-TEST-CADENCE: x. DELEGATION: none. CHECK-CACHE: x. EXTERNAL-EVIDENCE: none.
-STATUS: a DONE run=r1 · verify docs/verify-a.md
+Read only the named kit once; do not enumerate or rediscover skills.
+TEST-CADENCE: focused first.
+DELEGATION: forbidden; do not spawn subagents or fan-out.
+CHECK-CACHE: use \$PWD/.polylane/check-cache/a with polylane-check.sh for repeat checks.
+EXTERNAL-EVIDENCE: none.
+VERIFY: write docs/verify-a.md before DONE.
+Finish STATUS: a DONE run=r1.
 EOF
 IP="$R/.polylane/lanes/i.txt"
 cat > "$IP" <<EOF
-/goal merge. OWN: docs. FORBIDDEN: rest. PREDEFINED-SKILLS: s1 s2
+ULTIMATE-GOAL: preview remains safe and complete.
+CURRENT-SUBGOAL: launch one virtual builder pane.
+GOAL: prove the dry-run preview completes.
+OWN: integrator branch. FORBIDDEN: base branch.
+PREDEFINED-SKILLS: s1 s2
 LANE-SPECIFIC-SKILLS: s3 s4
-TEST-CADENCE: once. DELEGATION: verifiers only. CHECK-CACHE: x. EXTERNAL-EVIDENCE: none.
-POLYLANE-VERDICT: GO run=r1 · verify
+Read only the named kit once; do not enumerate or rediscover skills.
+TEST-CADENCE: focused first.
+DELEGATION: forbidden; do not spawn subagents or fan-out.
+CHECK-CACHE: use \$PWD/.polylane/check-cache/i with polylane-check.sh for repeat checks.
+EXTERNAL-EVIDENCE: none.
+VERIFY: write docs/verify-integration.md before DONE.
+Finish STATUS: i DONE run=r1.
+POLYLANE-VERDICT: GO run=r1
 EOF
-printf '{"a":["s1"],"lanes":{}}' > "$R/.polylane/lane-skills.json"
+"$BIN/polylane-scout.sh" arm-role "$R/.polylane/lane-skills.json" a predefined s1 s2
+"$BIN/polylane-scout.sh" arm-role "$R/.polylane/lane-skills.json" a specific s3 s4
 printf 'plan\n' > "$R/.polylane/cycle-plan.md"
 cat > "$R/.polylane/run.json" <<EOF
 {"base":"main","run_id":"r1","cycle":1,"orchestration_contract":2,"session":"plt","agent":"claude",
  "state_file":"docs/polylane/max-state.json","lane_skills_file":".polylane/lane-skills.json",
  "cycle_plan_file":".polylane/cycle-plan.md","target_subgoals":["t1"],"target_criteria":["c1"],
- "quality_judges":["judge-a"],
  "integrator":{"name":"i","model":"m","effort":"x","branch":"l/i","worktree":"$R/wt-i","prompt_file":".polylane/lanes/i.txt"},
- "lanes":[{"name":"a","model":"m","effort":"h","branch":"l/a","worktree":"$R/wt-a","prompt_file":".polylane/lanes/a.txt","own_globs":["a/**"],"target_subgoals":["t1"]}]}
+ "lanes":[{"name":"a","model":"m","effort":"h","branch":"l/a","worktree":"$R/wt-a","prompt_file":".polylane/lanes/a.txt","own_globs":["a/**","docs/status-a.md"],"target_subgoals":["t1"]}]}
 EOF
 
 before=$(jq -S . "$ST")
 DRYOUT="$TEST_TMPDIR/dry-run.out"
-( cd "$R" && POLYLANE_MIN_DISK_GB=0 POLYLANE_SESSION=pltdry "$RUNNER" .polylane/run.json --dry-run ) >"$DRYOUT" 2>&1 || true
+( cd "$R" && POLYLANE_MIN_DISK_GB=0 POLYLANE_AGENT_CMD='true {model} {prompt}' POLYLANE_SESSION=pltdry "$RUNNER" .polylane/run.json --dry-run ) >"$DRYOUT" 2>&1
+dry_rc=$?
+[ "$dry_rc" = 0 ] || sed -n '1,160p' "$DRYOUT" >&2
+assert_eq "dryrun-preview-completes" "0" "$dry_rc"
+assert_contains "dryrun-preview-reaches-launch-completion" "Dry-run preview complete" "$(cat "$DRYOUT")"
+assert_fail "dryrun-creates-no-tmux-session" tmux has-session -t pltdry
 tmux kill-session -t pltdry 2>/dev/null || true
 after=$(jq -S . "$ST")
 assert_eq "dryrun-state-unchanged" "$before" "$after"

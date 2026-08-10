@@ -121,12 +121,16 @@ if printf '%s' "$nogo" | grep -qF -- "shell output must not leak"; then fail "no
 # report must attribute that NO-GO to the host check and point at its evidence,
 # not falsely claim that the integrator withheld GO.
 RUN_ID=host-report-run
+mkdir -p "$TEST_TMPDIR/docs/polylane/host-gate-failures"
+printf '%s\n' '[{"run":"host-report-run","phase":"terminal","command":"false","return_code":1,"timestamp":"2026-08-10T00:00:00Z","output_tail":"failure"}]' \
+  > "$TEST_TMPDIR/docs/polylane/host-gate-failures/host-report-run.acceptance.jsonl"
 POLYLANE_MIN_DISK_GB=0 host_gate_failure "efficiency proof failed because restarts=1 exceeds max_restarts=0"
 write_report NO-GO
 host_nogo=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
 assert_contains "host-nogo-attributed-to-runner-gate" "runner-owned host gate rejected the READY handoff" "$host_nogo"
 assert_contains "host-nogo-carries-real-reason" "restarts=1 exceeds max_restarts=0" "$host_nogo"
 assert_contains "host-nogo-points-to-canonical-evidence" "docs/polylane/host-gate-failures/host-report-run.md" "$host_nogo"
+assert_contains "host-nogo-points-to-acceptance-output" "docs/polylane/host-gate-failures/host-report-run.acceptance.jsonl" "$host_nogo"
 if printf '%s' "$host_nogo" | grep -qF -- "integrator withheld GO"; then fail "host-nogo-does-not-blame-integrator" "host failure was attributed to integrator"; else pass "host-nogo-does-not-blame-integrator"; fi
 unset RUN_ID
 
