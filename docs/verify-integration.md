@@ -94,3 +94,11 @@ telemetry inspection before any READY claim while preserving terminal_gates=0.
 
 The final machine verdict is intentionally reserved for the last handoff commit
 after the final live relay, durable inbox, focused-evidence, and commit-scope checks.
+
+## Final verdict
+
+The exact repair source, independent seam repair, focused evidence, runtime identity,
+and zero-terminal-gate telemetry satisfy the Cycle 27 handoff contract. Fresh-process
+terminal certification remains open as `m24.4` for Cycle 28.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c27-gate-repair-20260810-a1
