@@ -6,6 +6,18 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 34 terminal-gate handoff: [plan](cycle-34-plan.md) ·
+[research](cycle-34-research.md) · [skill suggestions](cycle-34-suggestions.md) ·
+[council](cycle-34-council.md) · [digest](cycle-34-digest.md) ·
+[questions](cycle-34-questions.md) · [audit](../verify-terminal-certification-audit.md) ·
+[integration verification](../verify-integration.md). Exact audit tip
+`2e065fb84a8e42a25cd6c0e061caf62f93024bd6` is merged. All 24 target-scoped
+focused entries and bounded retained-script checks pass; canonical telemetry records
+one audit launch, one integrator launch, zero restarts, and zero terminal gates. All
+27 current autonomous targets are covered and four own terminal acceptance. The
+runner alone owns the one real terminal matrix and may award GO only after promotion,
+cleanup, and a current PASS `1 / 1` proof.
+
 Cycle 33 focused efficiency-contract handoff: [plan](cycle-33-plan.md) ·
 [research](cycle-33-research.md) · [skill suggestions](cycle-33-suggestions.md) ·
 [council](cycle-33-council.md) · [digest](cycle-33-digest.md) ·
