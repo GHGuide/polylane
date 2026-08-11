@@ -19,3 +19,4 @@
 {"cycle":15,"kind":"no-go","subject":"integrator","evidence":"integrator verdict NO-GO in run c15-domain-general-20260808"}
 {"cycle":32,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c32-contract-drift-20260811-a1"}
 {"cycle":33,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c33-efficiency-contract-20260811-a1"}
+{"cycle":34,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c34-terminal-cert-20260811-a1"}

@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "run_id": "c33-efficiency-contract-20260811-a1",
-  "started_at": 1786462629,
-  "updated_at": 1786463575,
-  "wall_s": 946,
+  "run_id": "c34-terminal-cert-20260811-a1",
+  "started_at": 1786463778,
+  "updated_at": 1786465224,
+  "wall_s": 1446,
   "lanes": {
-    "efficiency-contract-repair": {
+    "terminal-certification-audit": {
       "launches": 1,
       "restarts": 0
     },
@@ -15,76 +15,63 @@
     }
   },
   "supervisor_restarts": 0,
-  "terminal_gates": 0,
-  "tokens": 3416675,
+  "terminal_gates": 1,
+  "tokens": 5750106,
   "token_state": "known",
   "usage_offsets": {
-    "efficiency-contract-repair": 115981,
-    "integrator": 412673
+    "terminal-certification-audit": 265641,
+    "integrator": 722200
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786462629
+      "at": 1786463778
     },
     {
       "type": "usage_capture",
-      "lane": "efficiency-contract-repair",
-      "at": 1786462651,
+      "lane": "terminal-certification-audit",
+      "at": 1786463801,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "efficiency-contract-repair",
-      "at": 1786462651
+      "lane": "terminal-certification-audit",
+      "at": 1786463801
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786463027,
+      "at": 1786464098,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786463027
+      "at": 1786464098
     },
     {
       "type": "usage_capture",
-      "lane": "efficiency-contract-repair",
-      "at": 1786463544,
-      "added": 1084176
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786463544,
-      "added": 2332499
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786463574
-    },
-    {
-      "type": "usage_capture",
-      "lane": "efficiency-contract-repair",
-      "at": 1786463575,
-      "added": null
+      "lane": "terminal-certification-audit",
+      "at": 1786464924,
+      "added": 1327883
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786463575,
-      "added": null
+      "at": 1786464924,
+      "added": 4422223
+    },
+    {
+      "type": "terminal_gate",
+      "at": 1786465224
     }
   ],
   "usage": {
-    "input_tokens": 3384172,
-    "cached_input_tokens": 3228416,
-    "uncached_input_tokens": 155756,
-    "output_tokens": 32503,
-    "reasoning_output_tokens": 15253
+    "input_tokens": 5713858,
+    "cached_input_tokens": 5483264,
+    "uncached_input_tokens": 230594,
+    "output_tokens": 36248,
+    "reasoning_output_tokens": 12663
   }
 }

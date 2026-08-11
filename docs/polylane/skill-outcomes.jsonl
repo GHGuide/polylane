@@ -50,3 +50,7 @@
 
 {"lane":"efficiency-contract-repair","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the focused `0 / 0` and malformed configuration assertions failed before the helper change, then passed with the minimal manifest-driven implementation."}
 
+{"lane":"terminal-certification-audit","domain":"report","skill":"engineering:testing-strategy","outcome":"helped","why":" it limited fresh execution"}
+
+{"lane":"terminal-certification-audit","domain":"report","skill":"superpowers:verification-before-completion","outcome":"helped","why":" it required"}
+

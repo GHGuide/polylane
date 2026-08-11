@@ -2,9 +2,9 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 13,
-    "latest_cycle": 32,
-    "latest_evidence": "bounded packets built for run c32-contract-drift-20260811-a1",
+    "observation_count": 14,
+    "latest_cycle": 33,
+    "latest_evidence": "bounded packets built for run c33-efficiency-contract-20260811-a1",
     "required_action": "propose-or-decline"
   }
 ]

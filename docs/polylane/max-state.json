@@ -2373,7 +2373,7 @@
       "cmd": "bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh",
       "tier": "focused",
       "key": "pane-identity",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-tmux.sh",
         "bin/polylane-state.sh",
@@ -2383,7 +2383,7 @@
         "tests/test-state.sh",
         "tests/test-supervisor.sh"
       ],
-      "fp": "",
+      "fp": "1533571123",
       "regressed_cycle": null
     },
     {
@@ -2391,7 +2391,7 @@
       "cmd": "bash tests/test-workers.sh && bash tests/test-worker-canonical-state.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-promptlint.sh && bash tests/test-skill-delivery.sh && bash tests/test-promptopt.sh",
       "tier": "focused",
       "key": "bounded-context",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-workers.sh",
         "bin/polylane-promptlint.sh",
@@ -2407,7 +2407,7 @@
         "tests/test-skill-delivery.sh",
         "tests/test-promptopt.sh"
       ],
-      "fp": "",
+      "fp": "2722162176",
       "regressed_cycle": null
     },
     {
@@ -2415,7 +2415,7 @@
       "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "terminal-cert",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/*.sh",
         "tests/test-*.sh",
@@ -2423,7 +2423,7 @@
         "codex/SKILL.md",
         "references/*.md"
       ],
-      "fp": "",
+      "fp": "806407979",
       "regressed_cycle": null
     },
     {
@@ -2431,7 +2431,7 @@
       "cmd": "bash tests/test-model-policy.sh && bash tests/test-intensity.sh",
       "tier": "focused",
       "key": "custom-intensity",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-model-policy.sh",
         "bin/polylane-run.sh",
@@ -2439,7 +2439,7 @@
         "tests/test-intensity.sh",
         ".polylane/SCHEMA.md"
       ],
-      "fp": "",
+      "fp": "4274120585",
       "regressed_cycle": null
     },
     {
@@ -2447,7 +2447,7 @@
       "cmd": "bash tests/test-handoff-contract.sh && bash tests/test-promptlint.sh && bash tests/test-orchestration-contract.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-skill-parity.sh",
       "tier": "focused",
       "key": "handoff-contract",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-promptlint.sh",
         "references/prompt-blocks.md",
@@ -2461,7 +2461,7 @@
         "tests/test-prime-hybrid-integration.sh",
         "tests/test-skill-parity.sh"
       ],
-      "fp": "",
+      "fp": "2749471627",
       "regressed_cycle": null
     },
     {
@@ -2469,7 +2469,7 @@
       "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-progress-guard.sh && bash tests/test-promptopt.sh",
       "tier": "focused",
       "key": "runtime-finality",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-lane-done-live.sh",
@@ -2477,7 +2477,7 @@
         "tests/test-progress-guard.sh",
         "tests/test-promptopt.sh"
       ],
-      "fp": "",
+      "fp": "882425623",
       "regressed_cycle": null
     },
     {
@@ -2485,7 +2485,7 @@
       "cmd": "bash tests/test-handoff-contract.sh && bash tests/test-lane-done-live.sh && bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh && bash tests/test-workers.sh && bash tests/test-worker-run-scope.sh && bash tests/test-model-policy.sh && bash tests/test-intensity.sh",
       "tier": "focused",
       "key": "c25-integration",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "bin/polylane-tmux.sh",
@@ -2501,7 +2501,7 @@
         "tests/test-model-policy.sh",
         "tests/test-intensity.sh"
       ],
-      "fp": "",
+      "fp": "1103188311",
       "regressed_cycle": null
     },
     {
@@ -2509,7 +2509,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "terminal-cert",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-action-preview.sh",
         "bin/polylane-advanced.sh",
@@ -2700,7 +2700,7 @@
         "references/skill-scout.md",
         "references/visual-intelligence.md"
       ],
-      "fp": "",
+      "fp": "3114259137",
       "regressed_cycle": null
     },
     {
@@ -2708,14 +2708,14 @@
       "cmd": "bash tests/test-verdict-repair.sh && bash tests/test-promptopt.sh && bash tests/test-runtime-recovery.sh",
       "tier": "focused",
       "key": "repair-transaction",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-verdict-repair.sh",
         "tests/test-promptopt.sh",
         "tests/test-runtime-recovery.sh"
       ],
-      "fp": "",
+      "fp": "524140082",
       "regressed_cycle": null
     },
     {
@@ -2723,7 +2723,7 @@
       "cmd": "bash tests/test-write-report.sh && bash tests/test-supervisor.sh && bash tests/test-session-resume.sh && bash tests/test-clear-markers.sh",
       "tier": "focused",
       "key": "terminal-report",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "bin/polylane-supervisor.sh",
@@ -2732,7 +2732,7 @@
         "tests/test-session-resume.sh",
         "tests/test-clear-markers.sh"
       ],
-      "fp": "",
+      "fp": "1666392478",
       "regressed_cycle": null
     },
     {
@@ -2740,7 +2740,7 @@
       "cmd": "bash tests/test-run-stats.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh",
       "tier": "focused",
       "key": "fresh-runtime",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "bin/polylane-supervisor.sh",
@@ -2749,7 +2749,7 @@
         "tests/test-state.sh",
         "tests/test-supervisor.sh"
       ],
-      "fp": "",
+      "fp": "4079757791",
       "regressed_cycle": null
     },
     {
@@ -2757,7 +2757,7 @@
       "cmd": "bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh && bash tests/test-dryrun-pure.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-scout.sh",
         "bin/polylane-run.sh",
@@ -2767,7 +2767,7 @@
         "tests/test-orchestration-contract.sh",
         "tests/test-dryrun-pure.sh"
       ],
-      "fp": "",
+      "fp": "495465295",
       "regressed_cycle": null
     },
     {
@@ -2775,7 +2775,7 @@
       "cmd": "bash tests/test-status-marker-normalization.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-scope.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "bin/polylane-scope.sh",
@@ -2784,7 +2784,7 @@
         "tests/test-lane-done-live.sh",
         "tests/test-scope.sh"
       ],
-      "fp": "",
+      "fp": "2672156905",
       "regressed_cycle": null
     },
     {
@@ -2792,7 +2792,7 @@
       "cmd": "bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-write-report.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-memory.sh",
         "bin/polylane-run.sh",
@@ -2801,7 +2801,7 @@
         "tests/test-verdict-repair.sh",
         "tests/test-write-report.sh"
       ],
-      "fp": "",
+      "fp": "4284459469",
       "regressed_cycle": null
     },
     {
@@ -2809,7 +2809,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "terminal-cert-c29",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/*.sh",
         "tests/test-*.sh",
@@ -2817,7 +2817,7 @@
         "codex/SKILL.md",
         "references/*.md"
       ],
-      "fp": "",
+      "fp": "806407979",
       "regressed_cycle": null
     },
     {
@@ -2825,14 +2825,14 @@
       "cmd": "bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh && bash tests/test-pane-errored.sh",
       "tier": "focused",
       "key": "live-turn-supervision",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-wedge.sh",
         "tests/test-runtime-recovery.sh",
         "tests/test-pane-errored.sh"
       ],
-      "fp": "",
+      "fp": "2546687324",
       "regressed_cycle": null
     },
     {
@@ -2840,13 +2840,13 @@
       "cmd": "bash tests/test-write-report.sh && bash tests/test-runtime-recovery.sh",
       "tier": "focused",
       "key": "failure-reason-truth",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-write-report.sh",
         "tests/test-runtime-recovery.sh"
       ],
-      "fp": "",
+      "fp": "892024012",
       "regressed_cycle": null
     },
     {
@@ -2854,7 +2854,7 @@
       "cmd": "bash tests/test-run-stats.sh && bash tests/test-write-report.sh && bash tests/test-efficiency-canary.sh",
       "tier": "focused",
       "key": "usage-breakdown",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run-stats.sh",
         "bin/polylane-run.sh",
@@ -2862,7 +2862,7 @@
         "tests/test-write-report.sh",
         "tests/test-efficiency-canary.sh"
       ],
-      "fp": "",
+      "fp": "473079299",
       "regressed_cycle": null
     },
     {
@@ -2870,7 +2870,7 @@
       "cmd": "bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-orchestration-contract.sh && bash tests/test-promptlint.sh",
       "tier": "focused",
       "key": "source-control-roots",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-agent-adapter.sh",
@@ -2878,7 +2878,7 @@
         "tests/test-orchestration-contract.sh",
         "tests/test-promptlint.sh"
       ],
-      "fp": "",
+      "fp": "3405823763",
       "regressed_cycle": null
     },
     {
@@ -2886,7 +2886,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "terminal-cert-c29",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/*.sh",
         "tests/test-*.sh",
@@ -2894,7 +2894,7 @@
         "codex/SKILL.md",
         "references/*.md"
       ],
-      "fp": "",
+      "fp": "806407979",
       "regressed_cycle": null
     },
     {
@@ -2902,7 +2902,7 @@
       "cmd": "bash tests/test-progress-guard.sh && bash tests/test-wedge.sh",
       "tier": "focused",
       "key": "active-command-progress",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -2912,7 +2912,7 @@
       "cmd": "bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-promptlint.sh",
       "tier": "focused",
       "key": "absolute-source-root",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -2922,7 +2922,7 @@
       "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-write-report.sh",
       "tier": "focused",
       "key": "scope-fail-fast",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -2932,7 +2932,7 @@
       "cmd": "bash tests/test-scope.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh",
       "tier": "focused",
       "key": "planned-write-set",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -2942,13 +2942,13 @@
       "cmd": "bash tests/test-contract-acceptance.sh && bash tests/test-run-stats.sh",
       "tier": "focused",
       "key": "target-terminal-eligibility",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-contract-acceptance.sh",
         "tests/test-run-stats.sh"
       ],
-      "fp": "",
+      "fp": "583827816",
       "regressed_cycle": null
     },
     {
@@ -2956,14 +2956,14 @@
       "cmd": "bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh",
       "tier": "focused",
       "key": "accept-evidence-hermetic",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-memory.sh",
         "bin/polylane-run.sh",
         "tests/test-memory.sh",
         "tests/test-contract-acceptance.sh"
       ],
-      "fp": "",
+      "fp": "1659722472",
       "regressed_cycle": null
     },
     {
@@ -2971,13 +2971,13 @@
       "cmd": "bash tests/test-promotion-transaction.sh && bash tests/test-write-report.sh",
       "tier": "focused",
       "key": "promotion-failure-report",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-promotion-transaction.sh",
         "tests/test-write-report.sh"
       ],
-      "fp": "",
+      "fp": "2572459859",
       "regressed_cycle": null
     },
     {
@@ -2985,13 +2985,13 @@
       "cmd": "bash tests/test-contract-acceptance.sh && bash tests/test-efficiency-canary.sh",
       "tier": "focused",
       "key": "focused-proof-snapshot",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "tests/test-contract-acceptance.sh",
         "tests/test-efficiency-canary.sh"
       ],
-      "fp": "",
+      "fp": "3287849340",
       "regressed_cycle": null
     },
     {
