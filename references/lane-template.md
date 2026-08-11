@@ -47,6 +47,7 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
 ```json
 {
   "orchestration_contract": 2,
+  "write_plan_contract": 1,
   "run_id": "<fresh per-run nonce>",
   "cycle": <N>,
   "state_file": "docs/polylane/max-state.json",
@@ -61,14 +62,15 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
   "available_models": ["<id>", "..."],
   "integrator": {"name":"<int>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<int-branch>","worktree":"<int-worktree>","prompt_file":".polylane/lanes/<int>.txt"},
   "lanes": [
-    {"name":"<lane>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>","docs/status-<lane>.md"],"target_subgoals":["<subgoal-id>"]}
+    {"name":"<lane>","model":"<id>","effort":"<low|medium|high|xhigh>","branch":"<lane-branch>","worktree":"<lane-worktree>","prompt_file":".polylane/lanes/<lane>.txt","own_globs":["<glob>","docs/status-<lane>.md"],"planned_writes":["<exact-path>","docs/status-<lane>.md"],"target_subgoals":["<subgoal-id>"]}
   ]
 }
 ```
-`intensity` is the Phase 1 preset; `available_models` is the set it resolved against; per-object `model` + `effort` are the Phase 4-resolved (or Phase 5-overridden) values, on every lane object and the integrator (matching Lc's `.polylane/SCHEMA.md`). `worktree` is each lane's Phase 5 worktree; `prompt_file` is its `.polylane/lanes/<lane>.txt`. The integrator omits `own_globs`; every lane includes it.
+`intensity` is the Phase 1 preset; `available_models` is the set it resolved against; per-object `model` + `effort` are the Phase 4-resolved (or Phase 5-overridden) values, on every lane object and the integrator (matching Lc's `.polylane/SCHEMA.md`). `worktree` is each lane's Phase 5 worktree; `prompt_file` is its `.polylane/lanes/<lane>.txt`. New generated manifests set `write_plan_contract: 1`; every builder then includes non-empty, unique, safe repository-relative exact `planned_writes`, all mechanically covered by its `own_globs`. The integrator omits `own_globs`; every builder includes it.
 
 ## Rules
 - The GOAL is copied verbatim from the locked INTEGRATION SPEC — never paraphrased or expanded. If a builder wants scope beyond it, it must raise NEEDS DECISION, not act.
+- Derive `planned_writes` from the lane’s concrete artifact write-set, include `docs/status-<lane>.md`, and run `bin/polylane-scope.sh check-write-plan .polylane/run.json` before launch. Do not use a glob, absolute path, traversal, duplicate, or an unowned path; the runner rejects the manifest before creating a worktree or pane.
 - Keep each prompt self-contained (a fresh terminal has no session context).
 - Project-specific recipes (build/install commands, device IDs, known-broken tooling) are pulled from the project's CLAUDE.md and inlined into the relevant lane(s) — not hardcoded in this template.
 - A software UI lane is one specialization. Research, operations, content, data, and custom lanes substitute artifact-appropriate commands and evidence; never invent a source change, build, test, UI, deployment, publication, live trade, or physical/manual result when the profile calls for analysis, a dry run, a sample, a backtest, a prepared artifact, or external approval.

@@ -66,6 +66,11 @@ POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay an
 P
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_ok \
   "lint-runtime-builder-canonical-status-path" lint_one "$RUNTIME_GOOD" x false builder
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 POLYLANE_WRITE_PLAN_CONTRACT=1 assert_fail \
+  "lint-runtime-write-plan-requires-boundary" lint_one "$RUNTIME_GOOD" x false builder
+printf '%s\n' 'PLANNED-WRITES: docs/status-x.md, src/x.' >> "$RUNTIME_GOOD"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 POLYLANE_WRITE_PLAN_CONTRACT=1 assert_ok \
+  "lint-runtime-write-plan-accepts-boundary" lint_one "$RUNTIME_GOOD" x false builder
 grep -v 'POLYLANE-RUNTIME-ROOTS:' "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-no-roots.txt"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
   "lint-runtime-requires-source-control-roots-contract" lint_one "$TEST_TMPDIR/runtime-no-roots.txt" x false builder

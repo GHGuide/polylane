@@ -140,4 +140,44 @@ assert_eq "integrator-health-stores-live-turn-reason" "live turn silence cap exh
 assert_eq "integrator-health-records-failed-lane" "integrator" "$FAILED_LANES"
 unset POLYLANE_MAX_RETRIES POLYLANE_MAX_REPAIRS POLYLANE_LIVE_WEDGE_HARD_SECONDS
 
+# A clean, current-run committed handoff that violates its declared ownership is
+# terminal evidence, not an unfinished pane. It must retain the offending path
+# and consume neither retry nor repair budget across repeated polls.
+SCOPE_WT="$TEST_TMPDIR/scope-wt"
+git init -q -b main "$SCOPE_WT"
+git -C "$SCOPE_WT" config user.email test@example.invalid
+git -C "$SCOPE_WT" config user.name test
+mkdir -p "$SCOPE_WT/docs"
+printf 'base\n' > "$SCOPE_WT/base.txt"
+git -C "$SCOPE_WT" add base.txt && git -C "$SCOPE_WT" commit -qm base
+SCOPE_BASE=$(git -C "$SCOPE_WT" rev-parse HEAD)
+printf 'escaped\n' > "$SCOPE_WT/outside.txt"
+printf 'STATUS: scope DONE run=scope-run\n' > "$SCOPE_WT/docs/status-scope.md"
+git -C "$SCOPE_WT" add outside.txt docs/status-scope.md && git -C "$SCOPE_WT" commit -qm done
+SCOPE_MANIFEST="$TEST_TMPDIR/scope-run.json"
+printf '%s\n' '{"base":"main","lanes":[{"name":"scope","own_globs":["docs/status-scope.md"]}]}' > "$SCOPE_MANIFEST"
+MANIFEST="$SCOPE_MANIFEST"; BASE="$SCOPE_BASE"; ORCHESTRATION_CONTRACT=2; RUN_ID=scope-run
+REPO_ROOT="$TEST_TMPDIR/recovery-repo"; mkdir -p "$REPO_ROOT/docs/lane-logs"
+LANE_NAMES=(scope); LANE_WORKTREES=("$SCOPE_WT"); LANE_PANE_IDX=(7); LANE_RETRIES=(); LANE_REPAIRS=()
+FAILED_LANES=""; LANE_FAILURE_REASONS=(); RESPAWNS=0
+pane_for_worktree() { return 1; }
+pane_exists() { return 0; }
+pane_retryable_error() { return 1; }
+pane_dead() { return 1; }
+pane_wedged() { return 1; }
+respawn_lane() { RESPAWNS=$((RESPAWNS + 1)); }
+scope_reason=$(lane_completion_scope_failure_reason "$SCOPE_WT" scope 2>&1 || true)
+assert_contains "scope-handoff-captures-real-offending-path" "outside.txt" "$scope_reason"
+health_check "scope:$SCOPE_WT"
+assert_eq "scope-handoff-fails-lane-once" "scope" "$FAILED_LANES"
+assert_contains "scope-handoff-stores-bounded-real-reason" "outside.txt" "$(lane_failure_reason_get scope)"
+assert_eq "scope-handoff-never-respawns" "0" "$RESPAWNS"
+health_check "scope:$SCOPE_WT"
+assert_eq "scope-handoff-repeat-does-not-replan-or-respawn" "0" "$RESPAWNS"
+
+# An uncommitted marker/worktree is still in progress, never terminal evidence.
+printf 'uncommitted\n' > "$SCOPE_WT/dirty.txt"
+dirty_reason=$(lane_completion_scope_failure_reason "$SCOPE_WT" scope 2>&1 || true)
+assert_eq "scope-handoff-dirty-tree-is-not-terminal" "" "$dirty_reason"
+
 finish

@@ -59,4 +59,23 @@ cat > "$TEST_TMPDIR/status-duplicate.json" <<'JSON'
 JSON
 assert_fail "scope-status-rejects-duplicate-canonical" "$SCOPE" check-status "$TEST_TMPDIR/status-duplicate.json"
 
+# New generated plans opt in to exact write declarations.  The static gate must
+# prove every declared write is safe, unique, and owned before launch side effects.
+cat > "$TEST_TMPDIR/write-plan-ok.json" <<'JSON'
+{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/a/**","docs/status-a.md"],"planned_writes":["src/a/one.sh","docs/status-a.md"]}]}
+JSON
+assert_ok "scope-write-plan-valid" "$SCOPE" check-static "$TEST_TMPDIR/write-plan-ok.json"
+for bad in missing absolute traversal glob duplicate outside; do
+  case "$bad" in
+    missing) json='{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/a/**"]}]}' ;;
+    absolute) json='{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/a/**"],"planned_writes":["/tmp/a"]}]}' ;;
+    traversal) json='{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/a/**"],"planned_writes":["src/a/../b"]}]}' ;;
+    glob) json='{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/a/**"],"planned_writes":["src/a/*.sh"]}]}' ;;
+    duplicate) json='{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/a/**"],"planned_writes":["src/a/x","src/a/x"]}]}' ;;
+    outside) json='{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/a/**"],"planned_writes":["src/b/x"]}]}' ;;
+  esac
+  printf '%s' "$json" > "$TEST_TMPDIR/write-plan-$bad.json"
+  assert_fail "scope-write-plan-rejects-$bad" "$SCOPE" check-static "$TEST_TMPDIR/write-plan-$bad.json"
+done
+
 finish

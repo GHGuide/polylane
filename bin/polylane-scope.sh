@@ -44,6 +44,65 @@ globs_overlap() {                        # 0 iff some path could match BOTH glob
 
 _lane_globs() { jq -r --arg n "$2" '.lanes[] | select(.name==$n) | .own_globs[]?' "$1"; }
 
+# check_write_plan MANIFEST : opt-in contract for generated plans.  Exact planned
+# writes are deliberately narrower than ownership globs: a planner must name a
+# safe, unique repository-relative path and the static gate proves its owner can
+# write it before git worktrees or tmux panes exist.  Legacy manifests omit the
+# version and remain unchanged.
+planned_write_safe() {
+  local path="$1" part
+  case "$path" in
+    ''|/*|*/|*'//'*) return 1 ;;
+    *'*'*|*'?'*|*'['*|*']'*|*'{'*|*'}'*) return 1 ;;
+  esac
+  local IFS=/
+  for part in $path; do
+    case "$part" in ''|.|..) return 1 ;; esac
+  done
+}
+
+check_write_plan() {
+  local mf="$1" contract names lane globs writes path dup rc=0
+  command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
+  contract=$(jq -r 'if has("write_plan_contract") then .write_plan_contract else 0 end' "$mf") || return 2
+  case "$contract" in
+    0|null) return 0 ;;
+    1) : ;;
+    *) echo "SCOPE-WRITE-PLAN: write_plan_contract must be 1 when present" >&2; return 2 ;;
+  esac
+  names=$(jq -r '.lanes[].name' "$mf")
+  for lane in $names; do
+    if ! jq -e --arg n "$lane" '
+      any(.lanes[]; .name==$n and
+        (.planned_writes | type=="array" and length>0 and
+          all(.[]; (type=="string") and (contains("\n") | not) and (contains("\r") | not) and (index("\u0000") | not))))
+    ' "$mf" >/dev/null 2>&1; then
+      echo "SCOPE-WRITE-PLAN: lane '$lane' needs a non-empty planned_writes array" >&2
+      rc=2
+      continue
+    fi
+    writes=$(jq -r --arg n "$lane" '.lanes[] | select(.name==$n) | .planned_writes[]' "$mf")
+    dup=$(printf '%s\n' "$writes" | LC_ALL=C sort | uniq -d | head -n 1)
+    if [ -n "$dup" ]; then
+      echo "SCOPE-WRITE-PLAN: lane '$lane' repeats planned write '$dup'" >&2
+      rc=2
+    fi
+    globs=$(_lane_globs "$mf" "$lane" | tr '\n' ' ')
+    while IFS= read -r path; do
+      if ! planned_write_safe "$path"; then
+        echo "SCOPE-WRITE-PLAN: lane '$lane' has unsafe planned write '$path'" >&2
+        rc=2
+      elif ! path_in_any "$path" $globs; then
+        echo "SCOPE-WRITE-PLAN: lane '$lane' planned write is out of scope '$path'" >&2
+        rc=2
+      fi
+    done <<EOF
+$writes
+EOF
+  done
+  return $rc
+}
+
 check_static() {
   local mf="$1" names i j a b ga gb rc=0
   command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
@@ -67,6 +126,7 @@ check_static() {
     done
     i=$((i + 1))
   done
+  check_write_plan "$mf" || rc=2
   return $rc
 }
 
@@ -114,6 +174,7 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     check-static) shift; check_static "$@" ;;
     check-status) shift; check_status_markers "$@" ;;
     check-lane)   shift; check_lane   "$@" ;;
-    *) echo "usage: polylane-scope.sh check-static <manifest> | check-status <manifest> | check-lane <manifest> <lane> <path>..." >&2; exit 2 ;;
+    check-write-plan) shift; check_write_plan "$@" ;;
+    *) echo "usage: polylane-scope.sh check-static <manifest> | check-status <manifest> | check-lane <manifest> <lane> <path>... | check-write-plan <manifest>" >&2; exit 2 ;;
   esac
 fi

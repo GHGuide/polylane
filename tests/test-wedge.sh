@@ -168,6 +168,9 @@ wedge_cnt_set a 40
 pane_wedged a 0; rcHighQuiet=$?
 assert_eq "quiet-high-effort-turn-started-survives-old-40-check-cap" "1" "$rcHighQuiet"
 assert_eq "quiet-high-effort-live-turn-ceiling-is-seconds-derived" "180" "$(lane_live_wedge_checks a)"
+POLYLANE_LIVE_WEDGE_SECONDS=7200
+assert_eq "quiet-high-effort-explicit-multi-hour-window-is-not-silently-clamped" "7200" "$(lane_live_wedge_seconds a)"
+unset POLYLANE_LIVE_WEDGE_SECONDS
 POLYLANE_LIVE_WEDGE_HARD_SECONDS=60
 wedge_cnt_set a 6
 pane_wedged a 0; rcHighBounded=$?

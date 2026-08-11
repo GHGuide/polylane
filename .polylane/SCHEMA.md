@@ -11,6 +11,7 @@ lanes L2/L3/L4 depend on them.
 ```json
 {
   "orchestration_contract": 2,
+  "write_plan_contract": 1,
   "prime_hybrid": true,
   "run_id": "cycle-7-unique-nonce",
   "cycle": 7,
@@ -57,7 +58,8 @@ lanes L2/L3/L4 depend on them.
       "branch": "lane/api",
       "worktree": "../pl-api",
       "prompt_file": ".polylane/prompts/api.txt",
-    "own_globs": ["backend/api/**", "docs/status-api.md"],
+      "own_globs": ["backend/api/**", "docs/status-api.md"],
+      "planned_writes": ["backend/api/routes.sh", "docs/status-api.md"],
       "target_subgoals": ["m2.3"],
       "effort": "high"
     }
@@ -70,6 +72,7 @@ lanes L2/L3/L4 depend on them.
 | Key | Type | Meaning |
 |---|---|---|
 | `orchestration_contract` | integer | Set to `2` for reliable Codex runs. Enables pre-launch gates for state, plans, prompts, skills, scope, acceptance, and prior-cycle artifacts. Fresh Codex runs reject legacy manifests unless `POLYLANE_ALLOW_LEGACY=1` is explicitly set for migration. A `--resume` may grandfather a legacy manifest only when it has a non-empty `run_id` and at least one already-materialized lane worktree, preventing an upgrade from stranding real in-flight work without weakening new launches. |
+| `write_plan_contract` | integer | *(new generated manifests: `1`)* Enables planned-write admission before any worktree or tmux side effect. Every builder must declare a non-empty, unique `planned_writes` array of safe exact repository-relative paths, and each path must match that lane’s `own_globs`. Legacy manifests that omit this opt-in remain valid. |
 | `prime_hybrid` | boolean | *(optional, default `false`)* Retained-worker and evidence-gated refinement runtime for long product work. Requires contract v2. Before panes open, it initializes canonical `docs/polylane/harness` and `docs/polylane/workers`, validates pending prior-cycle refinements, refreshes the deduplicated propose-or-decline queue, imports the live relay, and creates one bounded `.polylane/context/<lane>.md` per builder and integrator. Legacy manifests are unchanged. |
 | `run_id` | string | Fresh per-run nonce baked into every DONE marker and verdict sentinel. |
 | `cycle` | integer | Current durable cycle number, starting at 1. |
@@ -103,6 +106,7 @@ Each **lane** object (and the **integrator** object) has:
 | `prompt_file` | string | File whose contents seed the lane's selected-agent pane. Read at pane runtime. |
 | `effort` | string | *(optional)* Reasoning effort for this lane: `low` \| `medium` \| `high` \| `xhigh` \| `max`. Surfaced to the pane as the `POLYLANE_EFFORT` env var and printed at launch. Absent → unset (no behavior change; the legacy pane command is reproduced byte-for-byte). |
 | `own_globs` | string[] | *(lanes only)* Files the lane owns. Contract v2 rejects empty or conservatively overlapping sets before launch, and requires exactly the canonical `docs/status-<name>.md` marker path with no second/broad status glob. |
+| `planned_writes` | string[] | *(required per builder when `write_plan_contract: 1`)* Exact files the generated lane plans to create or modify, including its status marker. Paths must be non-empty repository-relative paths without traversal, absolute roots, glob syntax, duplicates, or paths outside `own_globs`. The runner injects this compact boundary into the compiled builder prompt and lints it before launch. |
 | `target_subgoals` | string[] | *(lanes only, contract v2)* The run-level target ids assigned to this builder. Must be non-empty and a subset of the run-level list. |
 
 ---

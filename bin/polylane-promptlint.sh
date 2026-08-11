@@ -47,6 +47,9 @@ lint_one() {
     grep -qF "STATUS: $lane DONE run=" "$f" || miss="$miss runtime-done-marker"
     runtime_finalize_contract "$f" "$role" || miss="$miss runtime-finalize-contract"
     runtime_exact_once "$f" || miss="$miss duplicate-runtime-contract"
+    if [ "${POLYLANE_WRITE_PLAN_CONTRACT:-0}" = "1" ] && [ "$role" = builder ]; then
+      grep -qE '^PLANNED-WRITES: [^[:space:]]' "$f" || miss="$miss planned-write-boundary"
+    fi
     grep -qiE 'polylane-refine\.sh[^[:alnum:]_-]+propose-or-decline' "$f" && miss="$miss fictional-refine-subcommand"
     if [ "$role" = builder ]; then
       builder_status_paths_canonical "$f" "$lane" || miss="$miss conflicting-status-path"

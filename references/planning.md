@@ -78,6 +78,14 @@ Every builder has non-empty `own_globs`; run:
 bin/polylane-scope.sh check-static .polylane/run.json
 ```
 
+For every newly generated manifest, set `write_plan_contract: 1` and give each
+builder a non-empty `planned_writes` array of unique safe exact repository-relative
+paths, including `docs/status-<lane>.md`. Run
+`bin/polylane-scope.sh check-write-plan .polylane/run.json` before any worktree or
+tmux side effect. The gate rejects absolute paths, traversal, globs, duplicates,
+and paths not covered by the lane’s `own_globs`; legacy manifests without the
+opt-in remain compatible.
+
 A shared file has one owner. Other lanes use the canonical append-only relay at
 `$POLYLANE_COORDINATION_FILE` through
 `$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh`; the runner exports both into
@@ -157,6 +165,7 @@ bin/polylane-scout.sh lint .polylane/lane-skills.json <lane> .polylane/lanes/<la
 ```json
 {
   "orchestration_contract": 2,
+  "write_plan_contract": 1,
   "run_id": "fresh-safe-nonce",
   "cycle": 3,
   "prime_hybrid": true,
@@ -185,6 +194,7 @@ bin/polylane-scout.sh lint .polylane/lane-skills.json <lane> .polylane/lanes/<la
     "worktree": "/absolute/scratch/feature",
     "prompt_file": ".polylane/lanes/feature.txt",
     "own_globs": ["src/feature/**", "docs/status-feature.md"],
+    "planned_writes": ["src/feature/handler.sh", "docs/status-feature.md"],
     "target_subgoals": ["m2.1"]
   }]
 }

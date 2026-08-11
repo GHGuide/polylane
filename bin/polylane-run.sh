@@ -537,6 +537,20 @@ abs_project_path() {
   esac
 }
 
+# abs_worktree PATH : anchor a manifest worktree to the canonical project, then
+# resolve an existing checkout physically before it crosses a shell-escaping or
+# pane-export boundary.  A non-existent future worktree remains absolute so the
+# later git worktree operation still receives one unambiguous path.
+abs_worktree() {
+  local path
+  path=$(abs_project_path "$1")
+  if [ -d "$path" ]; then
+    (cd "$path" && pwd -P)
+  else
+    printf '%s' "$path"
+  fi
+}
+
 # die MSG : print a fatal error and stop before any side effect.
 die() { echo "polylane-run: $*" >&2; exit 2; }
 
@@ -585,7 +599,7 @@ load_manifest() {
   INT_NAME=$(jq -r '.integrator.name' "$MANIFEST")
   INT_MODEL=$(jq -r '.integrator.model' "$MANIFEST")
   INT_BRANCH=$(jq -r '.integrator.branch' "$MANIFEST")
-  INT_WORKTREE=$(jq -r '.integrator.worktree' "$MANIFEST")
+  INT_WORKTREE=$(abs_worktree "$(jq -r '.integrator.worktree' "$MANIFEST")")
   INT_PROMPT=$(abs_prompt "$(jq -r '.integrator.prompt_file' "$MANIFEST")")
   # effort is optional; absent -> "" (no behavior change). // "" also maps a JSON null.
   INT_EFFORT=$(jq -r '.integrator.effort // ""' "$MANIFEST")
@@ -601,7 +615,8 @@ load_manifest() {
   LANE_PANE_IDX=(); LANE_RESUMED=(); LANE_ADOPTED=(); LANE_WHASH=(); LANE_WCNT=()
   LANE_PHASH=(); LANE_PCNT=(); LANE_PCOMMANDS=(); LANE_PREPLANS=()
   INT_PANE_IDX=-1; NEXT_PANE_IDX=0; SESSION_STARTED=0
-  local n i
+  WRITE_PLAN_CONTRACT=$(jq -r 'if .write_plan_contract == 1 then 1 else 0 end' "$MANIFEST")
+  local n i wt
   n=$(jq '.lanes | length' "$MANIFEST")
   for ((i = 0; i < n; i++)); do
     LANE_NAMES+=("$(jq -r ".lanes[$i].name" "$MANIFEST")")
@@ -609,9 +624,10 @@ load_manifest() {
     LANE_EFFORTS+=("$(jq -r ".lanes[$i].effort // \"\"" "$MANIFEST")")
     LANE_ROLES+=("$(jq -r ".lanes[$i].role // \"\"" "$MANIFEST")")
     LANE_BRANCHES+=("$(jq -r ".lanes[$i].branch" "$MANIFEST")")
-    LANE_WORKTREES+=("$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
+    wt=$(abs_worktree "$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
+    LANE_WORKTREES+=("$wt")
     LANE_PROMPTS+=("$(abs_prompt "$(jq -r ".lanes[$i].prompt_file" "$MANIFEST")")")
-    LANE_POLLSPEC+=("$(jq -r ".lanes[$i].name" "$MANIFEST"):$(jq -r ".lanes[$i].worktree" "$MANIFEST")")
+    LANE_POLLSPEC+=("$(jq -r ".lanes[$i].name" "$MANIFEST"):$wt")
     LANE_PANE_IDX+=(-1); LANE_RESUMED+=(0); LANE_ADOPTED+=(0)
   done
 
@@ -643,7 +659,7 @@ prompt_budget_check() {
 # a hand-authored prompt merely says "read coordination" or names a near-miss
 # marker. The source prompt remains immutable.
 inject_runtime_prompt_contract() {
-  local input="$1" name="$2" output="$3" marker
+  local input="$1" name="$2" output="$3" marker planned=""
   if [ -n "${RUN_ID:-}" ]; then
     marker="STATUS: $name DONE run=$RUN_ID"
   else
@@ -659,6 +675,10 @@ inject_runtime_prompt_contract() {
       -e '/^POLYLANE-RUNTIME-DONE:/d' "$input"
     printf '\nPOLYLANE-RUNTIME-RELAY: at start and immediately before completion run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; handle requests addressed to %s. docs/parallel-status.md is post-cycle evidence only, never the live relay.\n' "$name"
     printf 'POLYLANE-RUNTIME-ROOTS: source edits/tests/Graphify use "$POLYLANE_SOURCE_ROOT" (query `${POLYLANE_SOURCE_ROOT:-$PWD}/graphify-out/q.py`); coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".\n'
+    if [ "${WRITE_PLAN_CONTRACT:-$(jq -r 'if .write_plan_contract == 1 then 1 else 0 end' "${MANIFEST:-/dev/null}" 2>/dev/null || printf 0)}" = "1" ]; then
+      planned=$(jq -r --arg lane "$name" '.lanes[] | select(.name==$lane) | .planned_writes | join(", ")' "$MANIFEST" 2>/dev/null || true)
+      [ -n "$planned" ] && printf 'PLANNED-WRITES: only %s. Do not write outside this current planned boundary.\n' "$planned"
+    fi
     printf 'POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.\n'
     printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
   } > "$output"
@@ -714,7 +734,7 @@ compile_prompt() {
   mv "$tmp" "$compiled"
   prime=false
   prime_hybrid_enabled && prime=true
-  POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 "$SCRIPT_DIR/polylane-promptlint.sh" \
+  POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 POLYLANE_WRITE_PLAN_CONTRACT="${WRITE_PLAN_CONTRACT:-0}" "$SCRIPT_DIR/polylane-promptlint.sh" \
     lint "$compiled" "$name" "$prime" "$role" || {
       echo "PROMPT-COMPILE: $name failed strict generated-prompt lint" >&2
       return 1
@@ -765,6 +785,8 @@ preflight_contract() {
   esac
   jq -e '(.prime_hybrid // false | type == "boolean")' "$MANIFEST" >/dev/null 2>&1 ||
     die "prime_hybrid must be a boolean"
+  "$SCRIPT_DIR/polylane-scope.sh" check-write-plan "$MANIFEST" ||
+    die "planned-write contract failed"
   if prime_hybrid_enabled; then
     [ "$strict" = "1" ] || die "prime_hybrid requires orchestration_contract: 2"
   fi
@@ -1847,6 +1869,7 @@ agent_procs() {
 pane_cmd() {
   local wt="$1" model="$2" pf="$3" effort="${4:-}" resume="${5:-}" pfx=""
   local qwt qmodel qpf qeffort qproject qcoord qsource qhybrid project_root coord_file tmpl add_dir runtime_pf
+  wt=$(abs_worktree "$wt") || return 1
   runtime_pf=$(stage_pane_prompt "$wt" "$pf") || return 1
   qwt=$(printf '%q' "$wt"); qmodel=$(printf '%q' "$model"); qpf=$(printf '%q' "$runtime_pf"); qeffort=$(printf '%q' "${effort:-medium}")
   # Every pane remains in its isolated worktree. Prime-hybrid panes receive a
@@ -2226,8 +2249,9 @@ lane_done() {
 # the frozen base to HEAD; missing manifest/base evidence fails closed.  The
 # integrator is intentionally excluded because it owns the cross-lane merge.
 lane_completion_scope_valid() {
-  local wt="$1" name="$2" changed path normalized_source="" commit head
+  local wt="$1" name="$2" changed path normalized_source="" commit head scope_output
   local -a paths=()
+  LANE_COMPLETION_SCOPE_REASON=""
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
   [ "$name" = "${INT_NAME:-}" ] && return 0
   [ -s "${MANIFEST:-}" ] || return 1
@@ -2265,8 +2289,11 @@ lane_completion_scope_valid() {
     esac
   done
   if [ -z "$normalized_source" ]; then
-    "$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${paths[@]}" >/dev/null
-    return
+    scope_output=$("$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${paths[@]}" 2>&1) || {
+      LANE_COMPLETION_SCOPE_REASON="$scope_output"
+      return 1
+    }
+    return 0
   fi
   # The canonical destination still has to pass ordinary lane ownership; only
   # the mechanically proven source deletion is filtered from that check.
@@ -2275,7 +2302,45 @@ lane_completion_scope_valid() {
     [ "$path" = "$normalized_source" ] || scoped+=("$path")
   done
   [ "${#scoped[@]}" -gt 0 ] || return 0
-  "$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${scoped[@]}" >/dev/null
+  scope_output=$("$SCRIPT_DIR/polylane-scope.sh" check-lane "$MANIFEST" "$name" "${scoped[@]}" 2>&1) || {
+    LANE_COMPLETION_SCOPE_REASON="$scope_output"
+    return 1
+  }
+}
+
+# lane_completion_scope_failure_reason WORKTREE NAME : recognize only a clean,
+# exact-HEAD, current-run DONE handoff whose completed branch failed the scope
+# gate.  This distinguishes deterministic completed evidence from ordinary dirty
+# or uncommitted in-progress work, so health_check halts it once without spending
+# respawn/reflexion budgets or touching the retained worktree.
+lane_completion_scope_failure_reason() {
+  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" dirty runtime_prompt expected_prompt reason
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  [ "$name" != "${INT_NAME:-}" ] || return 1
+  [ -f "$f" ] && [ ! -L "$f" ] || return 1
+  IFS= read -r first < "$f" || true
+  [ "$first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
+  git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  dirty=$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null) || return 1
+  if shared_graph_link_owned "$wt"; then
+    dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
+  fi
+  runtime_prompt=$(pane_runtime_prompt_path "$wt")
+  expected_prompt=$(lane_prompt_get "$name")
+  if [ -f "$runtime_prompt" ] && [ ! -L "$runtime_prompt" ] &&
+     [ -n "$expected_prompt" ] && [ -f "$expected_prompt" ] &&
+     cmp -s "$runtime_prompt" "$expected_prompt"; then
+    dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? .polylane-prompt.txt"')
+  fi
+  [ -z "$dirty" ] || return 1
+  git -C "$wt" cat-file -e "HEAD:docs/status-$name.md" 2>/dev/null || return 1
+  IFS= read -r head_first < <(git -C "$wt" show "HEAD:docs/status-$name.md" 2>/dev/null) || true
+  [ "$head_first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
+  lane_completion_worker_live "$wt" "$name" && return 1
+  lane_completion_scope_valid "$wt" "$name" && return 1
+  reason=$(printf '%s' "${LANE_COMPLETION_SCOPE_REASON:-}" | tr '\r\n\t' '   ' | cut -c1-160)
+  [ -n "$reason" ] || return 1
+  printf 'completed handoff scope violation: %s' "$reason"
 }
 
 # lane_completion_normalization_source WORKTREE NAME : print only the deleted
@@ -3024,10 +3089,22 @@ checkpoint_lane() {
 # A live command is always left alone; a terminal turn with no durable source or
 # evidence progress gets the normal 60-second recovery window.
 lane_active_command() {
-  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log" last
+  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log"
   [ -f "$log" ] || return 1
-  last=$(tail -n 100 "$log" 2>/dev/null | grep 'command_execution' | tail -n 1 || true)
-  printf '%s' "$last" | grep -q 'in_progress'
+  jq -R -s -e '
+    split("\n") | map(try fromjson catch null) | map(select(type == "object")) |
+    reduce .[] as $event ({};
+      ($event.item.id // "") as $id |
+      if (($event.type == "turn.started") or ($event.type == "turn.completed") or
+          ($event.type == "turn.failed") or ($event.type == "error")) then {}
+      elif (($event.type == "item.started") and ($event.item.type == "command_execution") and ($id | type == "string") and ($id != "")) then .[$id] = true
+      elif (($id | type == "string") and ($id != "") and (has($id)) and
+            (($event.type == "item.completed") or ($event.type == "item.failed") or
+             ($event.item.status == "completed") or ($event.item.status == "failed") or
+             ($event.item.status == "cancelled"))) then del(.[$id])
+      else . end
+    ) | length > 0
+  ' "$log" >/dev/null 2>&1
 }
 
 lane_terminal_turn() {
@@ -3066,9 +3143,9 @@ lane_live_wedge_seconds() {
   [ "$interval" -gt 0 ] 2>/dev/null || interval=15
   configured=$((checks * interval))
   [ "$configured" -gt "$limit" ] 2>/dev/null && limit="$configured"
-  hard="${POLYLANE_LIVE_WEDGE_HARD_SECONDS:-3600}"
-  case "$hard" in ''|*[!0-9]*) hard=3600 ;; esac
-  [ "$hard" -gt 0 ] 2>/dev/null || hard=3600
+  hard="${POLYLANE_LIVE_WEDGE_HARD_SECONDS:-14400}"
+  case "$hard" in ''|*[!0-9]*) hard=14400 ;; esac
+  [ "$hard" -gt 0 ] 2>/dev/null || hard=14400
   [ "$limit" -gt "$hard" ] 2>/dev/null && limit="$hard"
   printf '%s' "$limit"
 }
@@ -3170,6 +3247,7 @@ progress_replans_set()  { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && L
 
 material_progress_stalled() {
   local name="$1" wt="$2" fp prev cnt commands baseline delta
+  lane_active_command "$name" && return 1
   fp=$(material_progress_fingerprint "$name" "$wt")
   prev=$(progress_hash_get "$name")
   commands=$(lane_command_count "$name")
@@ -3224,13 +3302,19 @@ replan_churning_lane() {
 
 # health_check SPEC... : retry any errored, not-yet-done lane; mark failed past cap.
 health_check() {
-  local specs=("$@") s name wt idx live_idx max n why
+  local specs=("$@") s name wt idx live_idx max n why scope_reason
   max="${POLYLANE_MAX_RETRIES:-3}"
   resolve_stalls "${specs[@]}"   # usage-limit paywalls first (fallback/credits/wait)
   for s in "${specs[@]}"; do
     name="${s%%:*}"; wt="${s#*:}"
     lane_done "$wt" "$name" && continue
     lane_failed "$name" && continue
+    scope_reason=$(lane_completion_scope_failure_reason "$wt" "$name" 2>/dev/null || true)
+    if [ -n "$scope_reason" ]; then
+      echo "health: lane '$name' $scope_reason — marking failed without retry" >&2
+      mark_lane_failed "$name" "$scope_reason"
+      continue
+    fi
     lane_stalled "$name" && continue   # still mid-resolution this cycle
     idx=$(pane_index_for "$name")
     # Pane indices are not identities: tmux may renumber a live pane after a

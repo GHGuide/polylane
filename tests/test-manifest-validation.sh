@@ -27,6 +27,7 @@ dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effor
 dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a; touch /tmp/x\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "unsafe chars" "unsafe-name"
 dies "{\"base\":\"main\",\"session\":\"bad session;name\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "session has unsafe chars" "unsafe-session"
 dies "{\"base\":\"main\",\"agent\":\"codex\",\"codex_sandbox\":\"unconfined-ish\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "invalid Codex sandbox" "unsafe-codex-sandbox"
+dies "{\"base\":\"main\",\"write_plan_contract\":1,$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"],\"planned_writes\":[\"/tmp/a\"]}]}" "planned-write contract failed" "unsafe-planned-write-before-side-effects"
 
 # a WELL-FORMED manifest still dry-runs clean (rc 0) — validation isn't over-eager
 GOOD="{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}"

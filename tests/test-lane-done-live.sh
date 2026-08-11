@@ -19,7 +19,7 @@ RUN_ID=live-run
 BASE=$(git -C "$WT" rev-list --max-parents=0 HEAD)
 MANIFEST="$TEST_TMPDIR/run.json"
 cat > "$MANIFEST" <<'JSON'
-{"base":"main","lanes":[{"name":"builder","own_globs":["docs/status-builder.md"]}]}
+{"base":"main","write_plan_contract":1,"lanes":[{"name":"builder","own_globs":["docs/status-builder.md"],"planned_writes":["docs/status-builder.md"]}]}
 JSON
 LANE_NAMES=(builder)
 LANE_PANE_IDX=(4)
@@ -80,6 +80,8 @@ VERIFY: verify then STATUS: builder DONE run=live-run.
 EOF
 inject_runtime_prompt_contract "$SOURCE" builder "$RUNTIME"
 assert_eq "runtime-finalize-injected-once" "1" "$(grep -c '^POLYLANE-RUNTIME-FINALIZE:' "$RUNTIME" || true)"
+assert_eq "runtime-write-plan-boundary-injected-once" "1" "$(grep -c '^PLANNED-WRITES:' "$RUNTIME" || true)"
+assert_contains "runtime-write-plan-boundary-is-current-lane" "docs/status-builder.md" "$(grep '^PLANNED-WRITES:' "$RUNTIME")"
 assert_ok "runtime-finalize-promptopt-strict" "$SCRIPT_DIR/../bin/polylane-promptopt.sh" check "$RUNTIME"
 assert_ok "runtime-finalize-promptlint-strict" \
   env POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 \

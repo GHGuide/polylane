@@ -89,6 +89,48 @@ done >> "$REPO_ROOT/docs/lane-logs/builder.log"
 material_progress_stalled builder "$WT"; rc6=$?
 assert_eq "progress-post-evidence-churn-still-fires" "0" "$rc6"
 
+# Active command executions are not command churn.  Cycle 28 had twenty command
+# starts across the old 12-check threshold while one long matrix was still live;
+# suppress every churn tick until the final structured completion arrives, then
+# retain the same bounded replan policy for the settled transcript.
+LANE_PHASH=()
+LANE_PCNT=()
+LANE_PCOMMANDS=()
+LANE_PREPLANS=()
+: > "$REPO_ROOT/docs/lane-logs/builder.log"
+POLYLANE_PROGRESS_CHECKS=12
+POLYLANE_PROGRESS_MIN_COMMANDS=20
+material_progress_stalled builder "$WT"
+for i in $(seq 1 20); do
+  printf '{"type":"item.started","item":{"id":"cmd-%s","type":"command_execution","status":"in_progress"}}\n' "$i"
+done >> "$REPO_ROOT/docs/lane-logs/builder.log"
+for i in $(seq 1 19); do
+  printf '{"type":"item.completed","item":{"id":"cmd-%s","type":"command_execution","status":"completed"}}\n' "$i"
+done >> "$REPO_ROOT/docs/lane-logs/builder.log"
+printf '%s\n' 'provider warning: retained raw pane line' >> "$REPO_ROOT/docs/lane-logs/builder.log"
+assert_ok "progress-mixed-log-keeps-active-command" lane_active_command builder
+# A stale command from an interrupted turn must not suppress a later turn
+# forever. The next turn starts fresh and contributes only its own command ID.
+printf '%s\n' '{"type":"turn.completed"}' >> "$REPO_ROOT/docs/lane-logs/builder.log"
+assert_fail "progress-terminal-turn-clears-stale-active-command" lane_active_command builder
+printf '%s\n' '{"type":"turn.started"}' >> "$REPO_ROOT/docs/lane-logs/builder.log"
+printf '%s\n' '{"type":"item.started","item":{"id":"cmd-current","type":"command_execution","status":"in_progress"}}' \
+  >> "$REPO_ROOT/docs/lane-logs/builder.log"
+for i in $(seq 1 12); do
+  material_progress_stalled builder "$WT" || true
+done
+assert_eq "progress-active-commands-do-not-advance-churn" "0" "${LANE_PCNT[0]:-0}"
+assert_eq "progress-active-commands-do-not-replan" "0" "${LANE_PREPLANS[0]:-0}"
+printf '{"type":"item.completed","item":{"id":"cmd-20","type":"command_execution","status":"completed"}}\n' \
+  >> "$REPO_ROOT/docs/lane-logs/builder.log"
+printf '%s\n' '{"type":"item.completed","item":{"id":"cmd-current","type":"command_execution","status":"completed"}}' \
+  >> "$REPO_ROOT/docs/lane-logs/builder.log"
+for i in $(seq 1 11); do
+  material_progress_stalled builder "$WT" || true
+done
+material_progress_stalled builder "$WT"; settled_rc=$?
+assert_eq "progress-settled-command-churn-still-fires" "0" "$settled_rc"
+
 RESPAWNS=0
 respawn_lane() { RESPAWNS=$((RESPAWNS + 1)); }
 notify_event() { :; }
