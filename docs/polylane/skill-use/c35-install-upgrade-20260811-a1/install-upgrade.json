@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "install-upgrade",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c35-install-upgrade/docs/verify-install-upgrade.md",
+  "helped": [
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " the regression fixtures cover the critical upgrade boundary: obsolete root artifacts, stale executable engines, two Codex discovery roots, and Claude's source-equals-destination clone."
+    },
+    {
+      "id": "superpowers:verification-before-completion",
+      "effect": " the dirty fixtures were run red before the repair, and the focused checks below were run after the staged replacement implementation."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

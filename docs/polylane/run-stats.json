@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "run_id": "c34-terminal-cert-20260811-a1",
-  "started_at": 1786463778,
-  "updated_at": 1786465910,
-  "wall_s": 2132,
+  "run_id": "c35-install-upgrade-20260811-a1",
+  "started_at": 1786466329,
+  "updated_at": 1786466990,
+  "wall_s": 661,
   "lanes": {
-    "terminal-certification-audit": {
+    "install-upgrade": {
       "launches": 1,
       "restarts": 0
     },
@@ -15,80 +15,71 @@
     }
   },
   "supervisor_restarts": 0,
-  "terminal_gates": 1,
-  "tokens": 5750106,
+  "terminal_gates": 0,
+  "tokens": 1306127,
   "token_state": "known",
   "usage_offsets": {
-    "terminal-certification-audit": 265641,
-    "integrator": 722200
+    "install-upgrade": 69626,
+    "integrator": 865982
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786463778
+      "at": 1786466329
     },
     {
       "type": "usage_capture",
-      "lane": "terminal-certification-audit",
-      "at": 1786463801,
+      "lane": "install-upgrade",
+      "at": 1786466349,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "terminal-certification-audit",
-      "at": 1786463801
+      "lane": "install-upgrade",
+      "at": 1786466349
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786464098,
+      "at": 1786466625,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786464098
+      "at": 1786466625
     },
     {
       "type": "usage_capture",
-      "lane": "terminal-certification-audit",
-      "at": 1786464924,
-      "added": 1327883
+      "lane": "install-upgrade",
+      "at": 1786466988,
+      "added": 659838
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786464924,
-      "added": 4422223
-    },
-    {
-      "type": "terminal_gate",
-      "at": 1786465224
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786465909
+      "at": 1786466988,
+      "added": 646289
     },
     {
       "type": "usage_capture",
-      "lane": "terminal-certification-audit",
-      "at": 1786465910,
+      "lane": "install-upgrade",
+      "at": 1786466990,
       "added": null
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786465910,
+      "at": 1786466990,
       "added": null
     }
   ],
   "usage": {
-    "input_tokens": 5713858,
-    "cached_input_tokens": 5483264,
-    "uncached_input_tokens": 230594,
-    "output_tokens": 36248,
-    "reasoning_output_tokens": 12663
+    "input_tokens": 1282395,
+    "cached_input_tokens": 1116160,
+    "uncached_input_tokens": 166235,
+    "output_tokens": 23732,
+    "reasoning_output_tokens": 10059
   }
 }

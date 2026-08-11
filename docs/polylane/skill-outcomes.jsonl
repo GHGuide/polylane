@@ -54,3 +54,7 @@
 
 {"lane":"terminal-certification-audit","domain":"report","skill":"superpowers:verification-before-completion","outcome":"helped","why":" it required"}
 
+{"lane":"install-upgrade","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" the regression fixtures cover the critical upgrade boundary: obsolete root artifacts, stale executable engines, two Codex discovery roots, and Claude's source-equals-destination clone."}
+
+{"lane":"install-upgrade","domain":"test","skill":"superpowers:verification-before-completion","outcome":"helped","why":" the dirty fixtures were run red before the repair, and the focused checks below were run after the staged replacement implementation."}
+
