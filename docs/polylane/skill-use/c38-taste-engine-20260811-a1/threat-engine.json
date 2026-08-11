@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "threat-engine",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-threat-engine/docs/verify-threat-engine.md",
+  "helped": [
+    {
+      "id": "design:accessibility-review",
+      "effect": " the verification keeps accessibility as an explicit hard quality veto rather than an appearance or provenance signal."
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " the receipt separates high-impact integrity failures from review-only template-risk signals."
+    },
+    {
+      "id": "superpowers:systematic-debugging",
+      "effect": " the schema failure was traced to the nested `axis_results` jq scope before the targeted correction."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the missing executable was demonstrated by the red focused test before implementation."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

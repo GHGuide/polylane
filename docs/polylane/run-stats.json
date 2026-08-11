@@ -1,41 +1,41 @@
 {
   "version": 1,
-  "run_id": "c37-taste-research-20260811-a1",
-  "started_at": 1786473118,
-  "updated_at": 1786474967,
-  "wall_s": 1849,
+  "run_id": "c38-taste-engine-20260811-a1",
+  "started_at": 1786475510,
+  "updated_at": 1786478432,
+  "wall_s": 2922,
   "lanes": {
-    "hci-rubric": {
+    "capture-engine": {
       "launches": 1,
       "restarts": 0
     },
-    "human-corpus": {
+    "pixel-verifier": {
       "launches": 1,
       "restarts": 0
     },
-    "judge-science": {
+    "calibration-corpus": {
       "launches": 1,
       "restarts": 0
     },
-    "visual-feedback": {
+    "judge-calibration": {
       "launches": 1,
       "restarts": 0
     },
-    "design-practice": {
+    "blind-ballot": {
       "launches": 1,
       "restarts": 0
     },
-    "anti-homogenization": {
+    "stats-engine": {
       "launches": 1,
       "restarts": 0
     },
-    "threat-model": {
+    "cert-aggregator": {
       "launches": 1,
       "restarts": 0
     },
-    "red-team": {
+    "threat-engine": {
       "launches": 1,
-      "restarts": 1
+      "restarts": 0
     },
     "integrator": {
       "launches": 1,
@@ -44,248 +44,184 @@
   },
   "supervisor_restarts": 0,
   "terminal_gates": 0,
-  "tokens": 20689748,
+  "tokens": 36000570,
   "token_state": "known",
   "usage_offsets": {
-    "hci-rubric": 148727,
-    "human-corpus": 366552,
-    "judge-science": 80200,
-    "visual-feedback": 91144,
-    "design-practice": 91417,
-    "anti-homogenization": 87942,
-    "threat-model": 71768,
-    "red-team": 537942,
-    "integrator": 878799
+    "capture-engine": 415187,
+    "pixel-verifier": 235732,
+    "calibration-corpus": 81084,
+    "judge-calibration": 68054,
+    "blind-ballot": 199723,
+    "stats-engine": 106859,
+    "cert-aggregator": 133688,
+    "threat-engine": 148520,
+    "integrator": 1374926
   },
-  "cleanup": "warning",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786473118
+      "at": 1786475510
     },
     {
       "type": "usage_capture",
-      "lane": "hci-rubric",
-      "at": 1786473224,
+      "lane": "capture-engine",
+      "at": 1786475626,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "hci-rubric",
-      "at": 1786473224
+      "lane": "capture-engine",
+      "at": 1786475626
     },
     {
       "type": "usage_capture",
-      "lane": "human-corpus",
-      "at": 1786473224,
+      "lane": "pixel-verifier",
+      "at": 1786475626,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "human-corpus",
-      "at": 1786473224
+      "lane": "pixel-verifier",
+      "at": 1786475626
     },
     {
       "type": "usage_capture",
-      "lane": "judge-science",
-      "at": 1786473224,
+      "lane": "calibration-corpus",
+      "at": 1786475627,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "judge-science",
-      "at": 1786473224
+      "lane": "calibration-corpus",
+      "at": 1786475627
     },
     {
       "type": "usage_capture",
-      "lane": "visual-feedback",
-      "at": 1786473224,
+      "lane": "judge-calibration",
+      "at": 1786475627,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "visual-feedback",
-      "at": 1786473224
+      "lane": "judge-calibration",
+      "at": 1786475627
     },
     {
       "type": "usage_capture",
-      "lane": "design-practice",
-      "at": 1786473224,
+      "lane": "blind-ballot",
+      "at": 1786475627,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "design-practice",
-      "at": 1786473224
+      "lane": "blind-ballot",
+      "at": 1786475627
     },
     {
       "type": "usage_capture",
-      "lane": "anti-homogenization",
-      "at": 1786473224,
+      "lane": "stats-engine",
+      "at": 1786475628,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "anti-homogenization",
-      "at": 1786473224
+      "lane": "stats-engine",
+      "at": 1786475628
     },
     {
       "type": "usage_capture",
-      "lane": "threat-model",
-      "at": 1786473224,
+      "lane": "cert-aggregator",
+      "at": 1786475629,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "threat-model",
-      "at": 1786473224
+      "lane": "cert-aggregator",
+      "at": 1786475629
     },
     {
       "type": "usage_capture",
-      "lane": "red-team",
-      "at": 1786473225,
+      "lane": "threat-engine",
+      "at": 1786475629,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "red-team",
-      "at": 1786473225
-    },
-    {
-      "type": "restarts",
-      "lane": "red-team",
-      "at": 1786473487
+      "lane": "threat-engine",
+      "at": 1786475629
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786473796,
+      "at": 1786476906,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786473796
+      "at": 1786476906
     },
     {
       "type": "usage_capture",
-      "lane": "hci-rubric",
-      "at": 1786474961,
-      "added": 1650750
+      "lane": "capture-engine",
+      "at": 1786478431,
+      "added": 9753339
     },
     {
       "type": "usage_capture",
-      "lane": "human-corpus",
-      "at": 1786474961,
-      "added": 2867692
+      "lane": "pixel-verifier",
+      "at": 1786478431,
+      "added": 4894057
     },
     {
       "type": "usage_capture",
-      "lane": "judge-science",
-      "at": 1786474961,
-      "added": 822792
+      "lane": "calibration-corpus",
+      "at": 1786478431,
+      "added": 816391
     },
     {
       "type": "usage_capture",
-      "lane": "visual-feedback",
-      "at": 1786474961,
-      "added": 1014159
+      "lane": "judge-calibration",
+      "at": 1786478431,
+      "added": 1156882
     },
     {
       "type": "usage_capture",
-      "lane": "design-practice",
-      "at": 1786474961,
-      "added": 1008399
+      "lane": "blind-ballot",
+      "at": 1786478431,
+      "added": 3127663
     },
     {
       "type": "usage_capture",
-      "lane": "anti-homogenization",
-      "at": 1786474961,
-      "added": 850334
+      "lane": "stats-engine",
+      "at": 1786478432,
+      "added": 1009343
     },
     {
       "type": "usage_capture",
-      "lane": "threat-model",
-      "at": 1786474961,
-      "added": 626180
+      "lane": "cert-aggregator",
+      "at": 1786478432,
+      "added": 2318059
     },
     {
       "type": "usage_capture",
-      "lane": "red-team",
-      "at": 1786474961,
-      "added": 2252301
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786474961,
-      "added": 9597141
-    },
-    {
-      "type": "cleanup",
-      "state": "warning",
-      "at": 1786474967
-    },
-    {
-      "type": "usage_capture",
-      "lane": "hci-rubric",
-      "at": 1786474967,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "human-corpus",
-      "at": 1786474967,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "judge-science",
-      "at": 1786474967,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "visual-feedback",
-      "at": 1786474967,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "design-practice",
-      "at": 1786474967,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "anti-homogenization",
-      "at": 1786474967,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "threat-model",
-      "at": 1786474967,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "red-team",
-      "at": 1786474967,
-      "added": null
+      "lane": "threat-engine",
+      "at": 1786478432,
+      "added": 1394329
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786474967,
-      "added": null
+      "at": 1786478432,
+      "added": 11530507
     }
   ],
   "usage": {
-    "input_tokens": 20496017,
-    "cached_input_tokens": 19481088,
-    "uncached_input_tokens": 1014929,
-    "output_tokens": 193731,
-    "reasoning_output_tokens": 55206
+    "input_tokens": 35763874,
+    "cached_input_tokens": 34593792,
+    "uncached_input_tokens": 1170082,
+    "output_tokens": 236696,
+    "reasoning_output_tokens": 92609
   }
 }

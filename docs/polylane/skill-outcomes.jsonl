@@ -126,3 +126,67 @@
 
 {"lane":"red-team","domain":"report","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-red-team/docs/verify-red-team.md"}
 
+{"lane":"capture-engine","domain":"test","skill":"design:accessibility-review","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-capture-engine/docs/verify-capture-engine.md"}
+
+{"lane":"capture-engine","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-capture-engine/docs/verify-capture-engine.md"}
+
+{"lane":"capture-engine","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-capture-engine/docs/verify-capture-engine.md"}
+
+{"lane":"capture-engine","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-capture-engine/docs/verify-capture-engine.md"}
+
+{"lane":"pixel-verifier","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-pixel-verifier/docs/verify-pixel-verifier.md"}
+
+{"lane":"pixel-verifier","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-pixel-verifier/docs/verify-pixel-verifier.md"}
+
+{"lane":"pixel-verifier","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-pixel-verifier/docs/verify-pixel-verifier.md"}
+
+{"lane":"pixel-verifier","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-pixel-verifier/docs/verify-pixel-verifier.md"}
+
+{"lane":"calibration-corpus","domain":"test","skill":"data:validate-data","outcome":"helped","why":" explicit source, deduplication, split-balance, and reproducibility checks became fail-closed manifest assertions."}
+
+{"lane":"calibration-corpus","domain":"test","skill":"design:research-synthesis","outcome":"helped","why":" the schema separates rated human observations from interpretations and keeps acquisition/label limitations explicit."}
+
+{"lane":"calibration-corpus","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" focused tests cover the valid path, deterministic sampler, integrity boundaries, and rights boundary."}
+
+{"lane":"calibration-corpus","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the focused test failed first because the command did not exist, then passed after the minimal implementation."}
+
+{"lane":"judge-calibration","domain":"test","skill":"data:statistical-analysis","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-judge-calibration/docs/verify-judge-calibration.md"}
+
+{"lane":"judge-calibration","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-judge-calibration/docs/verify-judge-calibration.md"}
+
+{"lane":"judge-calibration","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-judge-calibration/docs/verify-judge-calibration.md"}
+
+{"lane":"judge-calibration","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-judge-calibration/docs/verify-judge-calibration.md"}
+
+{"lane":"blind-ballot","domain":"test","skill":"design:design-critique","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-blind-ballot/docs/verify-blind-ballot.md"}
+
+{"lane":"blind-ballot","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-blind-ballot/docs/verify-blind-ballot.md"}
+
+{"lane":"blind-ballot","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-blind-ballot/docs/verify-blind-ballot.md"}
+
+{"lane":"blind-ballot","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-blind-ballot/docs/verify-blind-ballot.md"}
+
+{"lane":"stats-engine","domain":"test","skill":"data:statistical-analysis","outcome":"helped","why":" selected a Wilson interval over point-rate-only gating and preserved ties as half preference successes."}
+
+{"lane":"stats-engine","domain":"test","skill":"data:validate-data","outcome":"helped","why":" strict raw-unit validation rejects duplicate sampling, injected counts, and invalid numeric payloads."}
+
+{"lane":"stats-engine","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" focused coverage spans calculation vectors, pass boundaries, locale behavior, and hostile input."}
+
+{"lane":"stats-engine","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the initial focused test was run red against the absent script before implementation."}
+
+{"lane":"cert-aggregator","domain":"test","skill":"engineering:code-review","outcome":"helped","why":" caught the need to reject caller verdict fields and receipt-path trust boundaries."}
+
+{"lane":"cert-aggregator","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" focused the fixture on thresholds, error paths, and atomic output behavior."}
+
+{"lane":"cert-aggregator","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" made missing/tampered evidence a hard failure, rather than a fallback."}
+
+{"lane":"cert-aggregator","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the initial missing compiler and later caller-status case were both observed red before their implementation."}
+
+{"lane":"threat-engine","domain":"test","skill":"design:accessibility-review","outcome":"helped","why":" the verification keeps accessibility as an explicit hard quality veto rather than an appearance or provenance signal."}
+
+{"lane":"threat-engine","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" the receipt separates high-impact integrity failures from review-only template-risk signals."}
+
+{"lane":"threat-engine","domain":"test","skill":"superpowers:systematic-debugging","outcome":"helped","why":" the schema failure was traced to the nested `axis_results` jq scope before the targeted correction."}
+
+{"lane":"threat-engine","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the missing executable was demonstrated by the red focused test before implementation."}
+

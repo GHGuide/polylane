@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "stats-engine",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-stats-engine/docs/verify-stats-engine.md",
+  "helped": [
+    {
+      "id": "data:statistical-analysis",
+      "effect": " selected a Wilson interval over point-rate-only gating and preserved ties as half preference successes."
+    },
+    {
+      "id": "data:validate-data",
+      "effect": " strict raw-unit validation rejects duplicate sampling, injected counts, and invalid numeric payloads."
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " focused coverage spans calculation vectors, pass boundaries, locale behavior, and hostile input."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the initial focused test was run red against the absent script before implementation."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

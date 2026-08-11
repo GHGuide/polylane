@@ -3211,7 +3211,7 @@
       "cmd": "tests/test-taste-certification.sh && tests/test-visual-capture.sh && shellcheck -S warning bin/polylane-taste.sh bin/polylane-visual-capture.sh",
       "tier": "focused",
       "key": "taste-engine",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

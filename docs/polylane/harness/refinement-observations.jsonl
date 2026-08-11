@@ -24,3 +24,4 @@
 {"cycle":35,"kind":"no-go","subject":"integrator","evidence":"integrator verdict UNKNOWN in run c35-install-upgrade-20260811-a1"}
 {"cycle":36,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c36-verdict-path-20260811-a1"}
 {"cycle":37,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c37-taste-research-20260811-a1"}
+{"cycle":38,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c38-taste-engine-20260811-a1"}
