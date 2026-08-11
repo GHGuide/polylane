@@ -146,6 +146,7 @@ EFFICIENCY_PROOFS=0
 TERMINAL_EVENTS=0
 contract_focused_acceptance_gate() { return 0; }
 contract_ready_verdict() { printf 'GO'; }
+contract_terminal_eligible() { return 0; }
 run_stats() {
   [ "${1:-}" != terminal-gate ] || TERMINAL_EVENTS=$((TERMINAL_EVENTS + 1))
   return 0
@@ -178,6 +179,19 @@ merge_gate; external_rc=$?
 assert_eq "ready-host-gate-preserves-external-route" "0" "$external_rc"
 assert_eq "ready-host-gate-external-runs-once" "1" "$HOST_GATES"
 assert_eq "ready-host-gate-converts-to-external" "EXTERNAL-EVIDENCE-OPEN" "$VERDICT_RESULT"
+
+# A READY handoff for a focused-only recovery target promotes after its focused
+# proof without a terminal telemetry event, proof, or terminal acceptance call.
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
+HOST_GATES=0; EFFICIENCY_PROOFS=0; TERMINAL_EVENTS=0
+contract_terminal_eligible() { return 1; }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
+merge_gate; focused_only_ready_rc=$?
+assert_eq "ready-focused-only-promotes" "0" "$focused_only_ready_rc"
+assert_eq "ready-focused-only-skips-terminal-count" "0" "$TERMINAL_EVENTS"
+assert_eq "ready-focused-only-skips-proof" "0" "$EFFICIENCY_PROOFS"
+assert_eq "ready-focused-only-runs-focused-host-completion" "1" "$HOST_GATES"
+contract_terminal_eligible() { return 0; }
 contract_ready_verdict() { printf 'GO'; }
 
 printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"

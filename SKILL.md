@@ -182,9 +182,12 @@ immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.
 
 Use `orchestration_contract: 2`, validate scope and prompts, then run doctor and the
 supervisor. Surface only the truthful watch command, `tmux attach -t <session>`.
-The integrator checks seams, profile evidence, and focused failures, then hands a
-source-green result to the coordinator as `READY-FOR-HOST-GATE` without reinterpreting
-launch or restart counters; runner-owned eligibility decides whether terminal checks start.
+The integrator checks seams, profile evidence, and focused failures, then uses
+`READY-FOR-HOST-GATE` only when the current target owns at least one terminal-tier
+acceptance and no open/doing autonomous subgoal remains outside that target. A
+focused-only recovery target emits `GO` after its focused host verification; it does
+not invent a terminal gate. Runner-owned eligibility decides whether terminal checks
+start and terminal targets execute/count exactly once.
 It writes one nonce-bearing verdict. `NO-GO` names repairs;
 `EXTERNAL-EVIDENCE-OPEN` promotes verified repository work but never passes missing
 external proof.

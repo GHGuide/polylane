@@ -106,6 +106,32 @@ _accept_failure_evidence() {
   mv "$tmp" "$f" 2>/dev/null || rm -f "$tmp"
 }
 
+# _accept_clear_failure_evidence : a fresh top-level phase supersedes only its
+# own current-run diagnostics.  Preserve another phase's bounded record, and
+# retain the existing fail-closed nonce, regular-file, and atomic-replace rules.
+_accept_clear_failure_evidence() {
+  local root run phase dir f tmp kept
+  root="${POLYLANE_ACCEPT_FAILURE_ROOT:-}"
+  run="${POLYLANE_ACCEPT_FAILURE_RUN_ID:-}"
+  phase="${POLYLANE_ACCEPT_FAILURE_PHASE:-}"
+  case "$root" in /*) : ;; *) return 0 ;; esac
+  case "$run" in ''|*[!A-Za-z0-9._-]*) return 0 ;; esac
+  case "$phase" in ''|*[!A-Za-z0-9._-]*) return 0 ;; esac
+  dir="$root/docs/polylane/host-gate-failures"
+  f="$dir/$run.acceptance.jsonl"
+  [ -e "$f" ] || return 0
+  [ -f "$f" ] && [ ! -L "$f" ] || return 0
+  kept=$(jq --arg run "$run" --arg phase "$phase" \
+    '[.[] | select(.run != $run or .phase != $phase)]' "$f") || return 0
+  if [ "$kept" = '[]' ]; then
+    rm -f "$f"
+    return 0
+  fi
+  tmp=$(mktemp "$dir/.$run.acceptance.XXXXXX") || return 0
+  printf '%s\n' "$kept" > "$tmp" || { rm -f "$tmp"; return 0; }
+  mv "$tmp" "$f" 2>/dev/null || rm -f "$tmp"
+}
+
 # _accept_run CMD : run CMD (bash -c) in the CURRENT dir with a wall-clock cap.
 # Uses timeout/gtimeout when present; otherwise runs uncapped (never wedges the
 # verb — a hung check is the check author's bug, surfaced by the orchestrator).
@@ -114,10 +140,13 @@ _accept_run() {
   command -v timeout  >/dev/null 2>&1 && t=timeout
   [ -z "$t" ] && command -v gtimeout >/dev/null 2>&1 && t=gtimeout
   out=$(mktemp "${TMPDIR:-/tmp}/polylane-accept.XXXXXX") || return 1
+  # Authority belongs to this checker, never to a command it invokes.  Nested
+  # acceptance fixtures can fail intentionally; they must not write canonical
+  # host evidence while this parent still records its own bounded failure.
   if [ -n "$t" ]; then
-    if "$t" "$to" bash -c "$cmd" >"$out" 2>&1; then rc=0; else rc=$?; fi
+    if ( unset POLYLANE_ACCEPT_FAILURE_ROOT POLYLANE_ACCEPT_FAILURE_RUN_ID POLYLANE_ACCEPT_FAILURE_PHASE; "$t" "$to" bash -c "$cmd" ) >"$out" 2>&1; then rc=0; else rc=$?; fi
   else
-    if bash -c "$cmd" >"$out" 2>&1; then rc=0; else rc=$?; fi
+    if ( unset POLYLANE_ACCEPT_FAILURE_ROOT POLYLANE_ACCEPT_FAILURE_RUN_ID POLYLANE_ACCEPT_FAILURE_PHASE; bash -c "$cmd" ) >"$out" 2>&1; then rc=0; else rc=$?; fi
   fi
   if [ "$rc" -ne 0 ]; then
     tail_lines="${POLYLANE_ACCEPT_TAIL_LINES:-80}"
@@ -336,6 +365,9 @@ case "$CMD" in
     done
     _n=$(jq '.accept // [] | length' "$F")
     [ "$_n" = "0" ] && { echo "check-accept: no acceptance checks registered"; exit 0; }
+    # A successful top-level invocation must not inherit an old failure for the
+    # same nonce/phase.  A real failure below recreates one bounded record.
+    _accept_clear_failure_evidence
     _rows="["; _i=0; _failed=0; _key_results="|"
     while [ "$_i" -lt "$_n" ]; do
       _cmd=$(jq -r ".accept[$_i].cmd" "$F")

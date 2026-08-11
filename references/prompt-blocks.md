@@ -161,7 +161,7 @@ Builder final handoff: after the scoped implementation/evidence commit and clean
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:
 - **Merge into YOUR OWN integrator branch — NEVER the base branch.** You run in your own worktree on your own branch. Merge each lane branch's CURRENT tip INTO THIS branch and verify the combined tree HERE. Do NOT check out or merge into `main`/base — the runner fast-forwards the base to your branch itself, and ONLY on a GO, so a NO-GO can never touch the base. Never trust a prior GO: if commits followed one, re-verify from scratch.
-- Read all verify-*.md plus the canonical relay snapshot, and, for a prime-hybrid run, the bounded integrator packet and eligible refinement evidence. Combine current artifact tips, run cross-lane focused evidence checks, list what is missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane seams, each logged in the relay; write `docs/parallel-status.md` once as the durable post-cycle summary. When only coordinator-owned terminal checks remain, commit the exact handoff `READY-FOR-HOST-GATE run=<RUN_ID>`; do not rerun the full terminal suite or reinterpret launch/restart counters in this sandbox: runner-owned eligibility decides whether terminal checks start.
+- Read all verify-*.md plus the canonical relay snapshot, and, for a prime-hybrid run, the bounded integrator packet and eligible refinement evidence. Combine current artifact tips, run cross-lane focused evidence checks, list what is missing/unverified/regressed, write docs/verify-integration.md with GO/NO-GO. Fix only cross-lane seams, each logged in the relay; write `docs/parallel-status.md` once as the durable post-cycle summary. Use `READY-FOR-HOST-GATE run=<RUN_ID>` only when this target has terminal-tier acceptance and no open/doing autonomous work remains outside it; otherwise a focused recovery emits GO. Do not rerun the full terminal suite or reinterpret launch/restart counters in this sandbox: runner-owned eligibility decides whether a real terminal boundary starts.
 - The integrator's committed `STATUS: <lane> DONE run=<RUN_ID>` means its local branch and evidence are complete; it is not a host-GO claim. It may accompany `READY-FOR-HOST-GATE` before the coordinator runs terminal checks. Never defer this local completion marker until host GO.
 - **If ponytail is installed, run `/ponytail-review` on the merged diff** — flag any over-engineering a lane introduced (dead abstraction, speculative generality, needless deps). Note findings in verify-integration.md; a lane that grossly over-built against its goal is a quality regression worth a NO-GO. Keeps the token-efficiency mission enforced at the gate, not just per-lane.
 - **Independent evidence, never a vibes-only GO.** Use independent verifier lanes
@@ -174,7 +174,8 @@ Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `mod
   `POLYLANE-VERDICT: READY-FOR-HOST-GATE run=<RUN_ID>`,
   `POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=<RUN_ID>`, or
   `POLYLANE-VERDICT: NO-GO run=<RUN_ID>`. Ready-for-host-gate is valid only when
-  frozen coordinator-owned terminal checks remain; the outer runner runs them once
+  this target owns frozen terminal-tier acceptance and no open/doing autonomous
+  work remains outside it; the outer runner runs that boundary once
   before converting it to GO. External-open is valid only after engineering is
   verified and remaining proof truly requires a person/physical system. NO-GO is
   repair feedback, not a stopping point. The runner trusts only the current nonce
