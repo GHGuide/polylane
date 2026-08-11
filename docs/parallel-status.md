@@ -1,14 +1,14 @@
-# Cycle 33 integration status — focused handoff
+# Cycle 34 integration status — terminal-gate handoff
 
-Run: `c33-efficiency-contract-20260811-a1` · branch: `lane/c33-integrator` ·
-exact builder tip: `619f4dec64e7a7592262d78107fe50a0cb9dc2bb`.
+Run: `c34-terminal-cert-20260811-a1` · branch: `lane/c34-integrator` ·
+exact audit tip: `2e065fb84a8e42a25cd6c0e061caf62f93024bd6`.
 
 | Lane | Runtime | Integrated result |
 | --- | --- | --- |
-| efficiency-contract-repair | one launch, zero restarts | manifest-driven terminal-gate capture and fail-closed proof verification, with focused regression evidence |
-| integrator | one launch, zero restarts | exact tip merged as `fe4f8c18f9a180ab0c20d435e9c5f2e8e854b890`; complete base diff reviewed; frozen cached matrix passed |
+| terminal-certification-audit | one launch, zero restarts | evidence-only audit of retained repairs, target inventory, provider/install surfaces, and the untouched host boundary |
+| integrator | one launch, zero restarts | exact tip merged as `0a95ef4957677fec15fab3697f110d00b74e70d6`; complete audit diff reviewed; all target-scoped focused checks passed |
 
 Canonical pre-handoff telemetry records zero supervisor restarts and zero terminal
-gates. The integrator ran no terminal command. The runner still owns promotion,
-final `0 / 0` capture after cleanup, durable state, and the next fresh terminal
-certification. This file is post-cycle evidence only, never live IPC.
+gates. The integrator ran no terminal command. The runner owns the one real host
+gate, promotion, cleanup, final `1 / 1` proof, criteria finalization, and report.
+This file is post-cycle evidence only, never live IPC.
