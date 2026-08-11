@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "visual-feedback",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-visual-feedback/docs/verify-visual-feedback.md",
+  "helped": [],
+  "unused": [
+    "deep-research",
+    "design:design-critique",
+    "engineering:architecture",
+    "engineering:testing-strategy"
+  ],
+  "hurt": []
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "human-corpus",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-human-corpus/docs/verify-human-corpus.md",
+  "helped": [],
+  "unused": [
+    "data-analytics:analyze-data-quality",
+    "data-analytics:validate-data",
+    "deep-research",
+    "engineering:testing-strategy"
+  ],
+  "hurt": []
+}

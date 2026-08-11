@@ -3201,7 +3201,7 @@
       "cmd": "test -s docs/polylane/taste-certification/RESEARCH.md && test -s docs/polylane/taste-certification/PROTOCOL.md && rg -qi 'human[- ]rated|human label' docs/polylane/taste-certification/RESEARCH.md && rg -qi 'pointwise.*pairwise|pairwise.*pointwise' docs/polylane/taste-certification/PROTOCOL.md && rg -qi 'position bias|side.*mirror' docs/polylane/taste-certification/PROTOCOL.md",
       "tier": "focused",
       "key": "taste-research",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

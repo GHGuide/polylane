@@ -1,13 +1,41 @@
 {
   "version": 1,
-  "run_id": "c36-verdict-path-20260811-a1",
-  "started_at": 1786467490,
-  "updated_at": 1786468757,
-  "wall_s": 1267,
+  "run_id": "c37-taste-research-20260811-a1",
+  "started_at": 1786473118,
+  "updated_at": 1786474961,
+  "wall_s": 1843,
   "lanes": {
-    "verdict-path-recovery": {
+    "hci-rubric": {
       "launches": 1,
       "restarts": 0
+    },
+    "human-corpus": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "judge-science": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "visual-feedback": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "design-practice": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "anti-homogenization": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "threat-model": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "red-team": {
+      "launches": 1,
+      "restarts": 1
     },
     "integrator": {
       "launches": 1,
@@ -16,75 +44,189 @@
   },
   "supervisor_restarts": 0,
   "terminal_gates": 0,
-  "tokens": 4333767,
+  "tokens": 20689748,
   "token_state": "known",
   "usage_offsets": {
-    "verdict-path-recovery": 314072,
-    "integrator": 1149103
+    "hci-rubric": 148727,
+    "human-corpus": 366552,
+    "judge-science": 80200,
+    "visual-feedback": 91144,
+    "design-practice": 91417,
+    "anti-homogenization": 87942,
+    "threat-model": 71768,
+    "red-team": 537942,
+    "integrator": 878601
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786467490
+      "at": 1786473118
     },
     {
       "type": "usage_capture",
-      "lane": "verdict-path-recovery",
-      "at": 1786467509,
+      "lane": "hci-rubric",
+      "at": 1786473224,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "verdict-path-recovery",
-      "at": 1786467509
+      "lane": "hci-rubric",
+      "at": 1786473224
+    },
+    {
+      "type": "usage_capture",
+      "lane": "human-corpus",
+      "at": 1786473224,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "human-corpus",
+      "at": 1786473224
+    },
+    {
+      "type": "usage_capture",
+      "lane": "judge-science",
+      "at": 1786473224,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "judge-science",
+      "at": 1786473224
+    },
+    {
+      "type": "usage_capture",
+      "lane": "visual-feedback",
+      "at": 1786473224,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "visual-feedback",
+      "at": 1786473224
+    },
+    {
+      "type": "usage_capture",
+      "lane": "design-practice",
+      "at": 1786473224,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "design-practice",
+      "at": 1786473224
+    },
+    {
+      "type": "usage_capture",
+      "lane": "anti-homogenization",
+      "at": 1786473224,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "anti-homogenization",
+      "at": 1786473224
+    },
+    {
+      "type": "usage_capture",
+      "lane": "threat-model",
+      "at": 1786473224,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "threat-model",
+      "at": 1786473224
+    },
+    {
+      "type": "usage_capture",
+      "lane": "red-team",
+      "at": 1786473225,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "red-team",
+      "at": 1786473225
+    },
+    {
+      "type": "restarts",
+      "lane": "red-team",
+      "at": 1786473487
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786468319,
+      "at": 1786473796,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786468319
+      "at": 1786473796
     },
     {
       "type": "usage_capture",
-      "lane": "verdict-path-recovery",
-      "at": 1786468724,
-      "added": 2780383
+      "lane": "hci-rubric",
+      "at": 1786474961,
+      "added": 1650750
+    },
+    {
+      "type": "usage_capture",
+      "lane": "human-corpus",
+      "at": 1786474961,
+      "added": 2867692
+    },
+    {
+      "type": "usage_capture",
+      "lane": "judge-science",
+      "at": 1786474961,
+      "added": 822792
+    },
+    {
+      "type": "usage_capture",
+      "lane": "visual-feedback",
+      "at": 1786474961,
+      "added": 1014159
+    },
+    {
+      "type": "usage_capture",
+      "lane": "design-practice",
+      "at": 1786474961,
+      "added": 1008399
+    },
+    {
+      "type": "usage_capture",
+      "lane": "anti-homogenization",
+      "at": 1786474961,
+      "added": 850334
+    },
+    {
+      "type": "usage_capture",
+      "lane": "threat-model",
+      "at": 1786474961,
+      "added": 626180
+    },
+    {
+      "type": "usage_capture",
+      "lane": "red-team",
+      "at": 1786474961,
+      "added": 2252301
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786468724,
-      "added": 1553384
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786468756
-    },
-    {
-      "type": "usage_capture",
-      "lane": "verdict-path-recovery",
-      "at": 1786468757,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786468757,
-      "added": null
+      "at": 1786474961,
+      "added": 9597141
     }
   ],
   "usage": {
-    "input_tokens": 4294590,
-    "cached_input_tokens": 3987456,
-    "uncached_input_tokens": 307134,
-    "output_tokens": 39177,
-    "reasoning_output_tokens": 17811
+    "input_tokens": 20496017,
+    "cached_input_tokens": 19481088,
+    "uncached_input_tokens": 1014929,
+    "output_tokens": 193731,
+    "reasoning_output_tokens": 55206
   }
 }

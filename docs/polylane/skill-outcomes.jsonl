@@ -62,3 +62,67 @@
 
 {"lane":"verdict-path-recovery","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c36-verdict-path-recovery/docs/verify-verdict-path-recovery.md"}
 
+{"lane":"hci-rubric","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-hci-rubric/docs/verify-hci-rubric.md"}
+
+{"lane":"hci-rubric","domain":"report","skill":"design:research-synthesis","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-hci-rubric/docs/verify-hci-rubric.md"}
+
+{"lane":"hci-rubric","domain":"report","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-hci-rubric/docs/verify-hci-rubric.md"}
+
+{"lane":"hci-rubric","domain":"report","skill":"product-management:competitive-brief","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-hci-rubric/docs/verify-hci-rubric.md"}
+
+{"lane":"human-corpus","domain":"report","skill":"data-analytics:analyze-data-quality","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-human-corpus/docs/verify-human-corpus.md"}
+
+{"lane":"human-corpus","domain":"report","skill":"data-analytics:validate-data","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-human-corpus/docs/verify-human-corpus.md"}
+
+{"lane":"human-corpus","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-human-corpus/docs/verify-human-corpus.md"}
+
+{"lane":"human-corpus","domain":"report","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-human-corpus/docs/verify-human-corpus.md"}
+
+{"lane":"judge-science","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-judge-science/docs/verify-judge-science.md"}
+
+{"lane":"judge-science","domain":"report","skill":"engineering:architecture","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-judge-science/docs/verify-judge-science.md"}
+
+{"lane":"judge-science","domain":"report","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-judge-science/docs/verify-judge-science.md"}
+
+{"lane":"judge-science","domain":"report","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-judge-science/docs/verify-judge-science.md"}
+
+{"lane":"visual-feedback","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-visual-feedback/docs/verify-visual-feedback.md"}
+
+{"lane":"visual-feedback","domain":"report","skill":"design:design-critique","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-visual-feedback/docs/verify-visual-feedback.md"}
+
+{"lane":"visual-feedback","domain":"report","skill":"engineering:architecture","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-visual-feedback/docs/verify-visual-feedback.md"}
+
+{"lane":"visual-feedback","domain":"report","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-visual-feedback/docs/verify-visual-feedback.md"}
+
+{"lane":"design-practice","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-design-practice/docs/verify-design-practice.md"}
+
+{"lane":"design-practice","domain":"report","skill":"design:research-synthesis","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-design-practice/docs/verify-design-practice.md"}
+
+{"lane":"design-practice","domain":"report","skill":"engineering:architecture","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-design-practice/docs/verify-design-practice.md"}
+
+{"lane":"design-practice","domain":"report","skill":"product-management:competitive-brief","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-design-practice/docs/verify-design-practice.md"}
+
+{"lane":"anti-homogenization","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-anti-homogenization/docs/verify-anti-homogenization.md"}
+
+{"lane":"anti-homogenization","domain":"report","skill":"design:design-critique","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-anti-homogenization/docs/verify-anti-homogenization.md"}
+
+{"lane":"anti-homogenization","domain":"report","skill":"product-management:competitive-brief","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-anti-homogenization/docs/verify-anti-homogenization.md"}
+
+{"lane":"anti-homogenization","domain":"report","skill":"product-management:product-brainstorming","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-anti-homogenization/docs/verify-anti-homogenization.md"}
+
+{"lane":"threat-model","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-threat-model/docs/verify-threat-model.md"}
+
+{"lane":"threat-model","domain":"report","skill":"engineering:architecture","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-threat-model/docs/verify-threat-model.md"}
+
+{"lane":"threat-model","domain":"report","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-threat-model/docs/verify-threat-model.md"}
+
+{"lane":"threat-model","domain":"report","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-threat-model/docs/verify-threat-model.md"}
+
+{"lane":"red-team","domain":"report","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-red-team/docs/verify-red-team.md"}
+
+{"lane":"red-team","domain":"report","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-red-team/docs/verify-red-team.md"}
+
+{"lane":"red-team","domain":"report","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-red-team/docs/verify-red-team.md"}
+
+{"lane":"red-team","domain":"report","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-red-team/docs/verify-red-team.md"}
+

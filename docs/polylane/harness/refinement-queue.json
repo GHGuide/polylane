@@ -2,9 +2,9 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 16,
-    "latest_cycle": 35,
-    "latest_evidence": "bounded packets built for run c35-install-upgrade-20260811-a1",
+    "observation_count": 17,
+    "latest_cycle": 36,
+    "latest_evidence": "bounded packets built for run c36-verdict-path-20260811-a1",
     "required_action": "propose-or-decline"
   },
   {
