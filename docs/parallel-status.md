@@ -1,15 +1,14 @@
-# Cycle 31 integration status — READY handoff
+# Cycle 32 integration status — focused GO
 
-Run: `c31-terminal-cert-20260811-a1` · branch: `lane/c31-integrator` · exact
-builder tip: `cff6ec32f988726471af51a9622f9cba53b56aa9`.
+Run: `c32-contract-drift-20260811-a1` · branch: `lane/c32-integrator` · exact
+builder tip: `712e2f898cf4e21b202c8af6e6990455bffc5e06`.
 
 | Lane | Runtime | Integrated result |
 | --- | --- | --- |
-| terminal-certification-audit | one launch, zero restarts | final DONE tip merged; immutable source, target inventory, terminal route, provider/installer surface, and focused smoke evidence audited |
-| integrator | one launch, zero restarts | retained repairs independently reviewed; all 24 current focused entries and changed-shell checks passed through the integrator cache |
+| terminal-contract-repair | one launch, zero restarts | four absolute fixture expectations and the compact Block G terminal-ownership sentence committed with focused evidence |
+| integrator | one launch, zero restarts | exact tip merged; complete diff reviewed; frozen cached matrix and prompt contracts independently passed |
 
-Canonical pre-handoff telemetry records zero supervisor restarts and zero terminal
-gates. All 27 open/doing autonomous subgoals are current targets and four have
-terminal-tier acceptance. The runner alone owns the terminal suite, promotion,
-cleanup, final proof, criteria finalization, and GO/NO-GO report. Cycle 30 remains
-NO-GO. This file is post-cycle evidence only, never live IPC.
+Canonical telemetry records zero supervisor restarts and zero terminal gates. The
+focused target is GO with no production Bash change. Cycle 31's terminal NO-GO is
+unchanged; Cycle 33 owns fresh terminal certification. This file is post-cycle
+evidence only, never live IPC.
