@@ -123,3 +123,28 @@ SKILL-EVIDENCE: superpowers:verification-before-completion — helped: it requir
 fresh exact-tip ancestry, one cached target-scoped run on a disposable state,
 bounded changed-shell evidence, final canonical telemetry, and a clean committed
 tree before the READY handoff.
+
+## Canonical telemetry, clean tree, and verdict
+
+Immediately before handoff, canonical current-run stats recorded wall time `320`,
+one `terminal-certification-audit` launch, one `integrator` launch, zero restarts
+for both lanes, zero supervisor restarts, and zero terminal gates. Token state is
+truthfully `unknown` and cleanup is `pending`; both belong to the runner's host
+gate and finalization rather than this integrator.
+
+The final live relay returned no pending requests and the durable integrator
+inbox returned `[]`. The fresh compact verification passed at
+`CHECK-CACHE: PASS source=3093572861:188`, confirming exact ancestry, no
+executable diff after the tested audit merge, the `27`/`4`/`23` target,
+terminal-entry, and criterion counts, both retained PASS cache receipts, changed
+shell syntax, and canonical zero-restart telemetry.
+
+Integration evidence was committed at
+`ca5dcfa8e291b7f75f8874dace210c0e8f209d28` with its formatting follow-up at
+`361a956ce1edb4c6a9a39c2a48fcc735dd14c9da`. Pre-marker
+`git status --short` contained only runner-owned `.polylane-prompt.txt`; no owned
+source or evidence change remained. This final commit adds only the current-run
+verdict and ignored integrator status marker. Terminal success, promotion,
+cleanup, PASS `1 / 1`, criteria finalization, report, and GO remain runner-owned.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c34-terminal-cert-20260811-a1
