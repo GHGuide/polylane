@@ -1,13 +1,13 @@
 # polylane efficiency proof
 
-- Run: c34-terminal-cert-20260811-a1
+- Run: c36-verdict-path-20260811-a1
 - Phase: final
 - Status: PASS
-- Wall seconds: 2131 / 21600
+- Wall seconds: 1266 / 7200
 - Launches: 2 / 2
 - Restarts: 0 / 0
-- Terminal gates: 1 / 1
+- Terminal gates: 0 / 0
 - Cleanup: complete
-- Tokens: 5750106 (known)
+- Tokens: 4333767 (known)
 - Unexpected launches: 0
 - Manual intervention policy: forbidden

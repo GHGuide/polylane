@@ -21,3 +21,4 @@
 {"lane":"efficiency-contract-repair","sig":"b5:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T15:52:54Z"}
 {"lane":"terminal-certification-audit","sig":"b2:hub0:crowd0","model":"gpt-5.6-terra","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-11T16:31:49Z"}
 {"lane":"install-upgrade","sig":"b6:hub0:crowd0","model":"gpt-5.6-terra","verdict":"NO-GO","ts":"2026-08-11T16:49:50Z"}
+{"lane":"verdict-path-recovery","sig":"b17:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T17:19:16Z"}

@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c36-verdict-path-20260811-a1",
   "started_at": 1786467490,
-  "updated_at": 1786468724,
-  "wall_s": 1234,
+  "updated_at": 1786468757,
+  "wall_s": 1267,
   "lanes": {
     "verdict-path-recovery": {
       "launches": 1,
@@ -20,9 +20,9 @@
   "token_state": "known",
   "usage_offsets": {
     "verdict-path-recovery": 314072,
-    "integrator": 1148745
+    "integrator": 1149103
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -61,6 +61,23 @@
       "lane": "integrator",
       "at": 1786468724,
       "added": 1553384
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786468756
+    },
+    {
+      "type": "usage_capture",
+      "lane": "verdict-path-recovery",
+      "at": 1786468757,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786468757,
+      "added": null
     }
   ],
   "usage": {

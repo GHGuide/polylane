@@ -572,14 +572,14 @@
       "id": "c82",
       "text": "Reinstalling either provider package over a legacy or full-repository skill directory removes stale package artifacts and leaves both Codex discovery roots byte-identical to the current certified package",
       "weight": 120,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c83",
       "text": "Every compiled integrator prompt writes its only current-run verdict to docs/verify-integration.md, keeps docs/status-integrator.md status-only, and fails preflight when that boundary is ambiguous",
       "weight": 125,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -1440,9 +1440,9 @@
           "id": "m30.1",
           "text": "Make Claude and Codex installers replace stale package layouts safely and prove exact installed-root parity",
           "weight": 120,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 36,
+          "evidence": "integrator GO; promoted cycle 36"
         }
       ]
     },
@@ -1454,9 +1454,9 @@
           "id": "m31.1",
           "text": "Make runtime prompt compilation role-aware and prove the canonical two-file integrator handoff end to end",
           "weight": 126,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 36,
+          "evidence": "integrator GO; promoted cycle 36"
         }
       ]
     }
