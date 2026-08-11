@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c38-taste-engine-20260811-a1",
   "started_at": 1786475510,
-  "updated_at": 1786478432,
-  "wall_s": 2922,
+  "updated_at": 1786478476,
+  "wall_s": 2966,
   "lanes": {
     "capture-engine": {
       "launches": 1,
@@ -57,7 +57,7 @@
     "threat-engine": 148520,
     "integrator": 1374926
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -215,6 +215,65 @@
       "lane": "integrator",
       "at": 1786478432,
       "added": 11530507
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786478476
+    },
+    {
+      "type": "usage_capture",
+      "lane": "capture-engine",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "pixel-verifier",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "calibration-corpus",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "judge-calibration",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "blind-ballot",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "stats-engine",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "cert-aggregator",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "threat-engine",
+      "at": 1786478476,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786478476,
+      "added": null
     }
   ],
   "usage": {

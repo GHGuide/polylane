@@ -30,3 +30,11 @@
 {"lane":"anti-homogenization","sig":"b3:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T19:02:46Z"}
 {"lane":"threat-model","sig":"b3:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T19:02:46Z"}
 {"lane":"red-team","sig":"b3:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T19:02:46Z"}
+{"lane":"capture-engine","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}
+{"lane":"pixel-verifier","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}
+{"lane":"calibration-corpus","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}
+{"lane":"judge-calibration","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}
+{"lane":"blind-ballot","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}
+{"lane":"stats-engine","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}
+{"lane":"cert-aggregator","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}
+{"lane":"threat-engine","sig":"b4:hub0:crowd0","model":"gpt-5.6-terra","verdict":"GO","ts":"2026-08-11T20:01:14Z"}

@@ -2,15 +2,14 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 37
+## Cycle 38
 
-subgoals: 87/92 done · criteria: 82/90 done · 92%
+subgoals: 88/92 done · criteria: 82/90 done · 93%
 
-**Route:** `CONTINUE m32.2  Implement live rendering, blinded ballots, calibration, aggregation, and fail-closed taste certification`
+**Route:** `CONTINUE m32.3  Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts`
 
 ## Open autonomous work
 
-- `m32.2` [open, w139] — Implement live rendering, blinded ballots, calibration, aggregation, and fail-closed taste certification
 - `m32.3` [open, w138] — Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts
 - `m32.4` [open, w137] — Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm
 - `m32.5` [open, w136] — Install both provider packages and certify the complete workflow end to end
@@ -119,10 +118,9 @@ subgoals: 87/92 done · criteria: 82/90 done · 92%
 ## Acceptance checks
 
 - Total: 104
-- Pass: 100
+- Pass: 101
 - Fail: 0
-- Unchecked: 4
-  - `m32.2` [unchecked] — tests/test-taste-certification.sh && tests/test-visual-capture.sh && shellcheck -S warning bin/polylane-taste.sh bin/polylane-visual-capture.sh
+- Unchecked: 3
   - `m32.3` [unchecked] — tests/test-visual-intelligence.sh && tests/test-visual-loop-integration.sh && tests/test-skill-parity.sh
   - `m32.4` [unchecked] — bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == "TASTE-CERTIFIED" and .human_calibrated == true and .eligible_judges >= 5 and .briefs >= 10 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null
   - `m32.5` [unchecked] — tests/run.sh && shellcheck -S warning bin/*.sh && tests/test-install.sh && tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse
