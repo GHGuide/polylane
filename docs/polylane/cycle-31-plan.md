@@ -26,6 +26,10 @@ Run the target-scoped focused checks through `bin/polylane-check.sh`. The builde
 integrator must not execute terminal-tier commands. After READY, the runner alone
 executes the frozen terminal checks, including the full test suite, production
 ShellCheck, provider parity, fresh installers, and live GO/NO-GO doctor rehearsal.
+`m24.4`, which previously had no executable grader, is registered before launch
+with the same comprehensive terminal command and invocation-local key as `m25.5`;
+the command is not weakened and its shared result is valid because the definitions
+are byte-identical.
 
 ## Runtime acceptance
 
@@ -47,4 +51,3 @@ never rewrite telemetry.
 Only a host-gated GO authorizes installing the promoted Claude and Codex variants
 locally. No push, publication, deployment, account change, or other external action
 is in scope.
-

@@ -2751,6 +2751,22 @@
       "regressed_cycle": null
     },
     {
+      "sid": "m24.4",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "terminal-cert-c29",
+      "status": "unchecked",
+      "deps": [
+        "bin/*.sh",
+        "tests/test-*.sh",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "references/*.md"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
       "sid": "m25.1",
       "cmd": "bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh && bash tests/test-pane-errored.sh",
       "tier": "focused",
