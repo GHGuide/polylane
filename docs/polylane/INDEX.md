@@ -8,11 +8,14 @@ State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it 
 
 Cycle 36 verdict-path recovery: [plan](cycle-36-plan.md) ·
 [research](cycle-36-research.md) · [skill suggestions](cycle-36-suggestions.md) ·
-[questions](cycle-36-questions.md). Cycle 35 remains an immutable `NO-GO`: its
-integrator committed a valid current-run GO to `docs/status-integrator.md`, while the
-runner correctly read only `docs/verify-integration.md` and returned `UNKNOWN`. The
-fresh recovery imports the proven installer repair and removes the compiler ambiguity
-with a red-first, role-specific two-file handoff contract.
+[council](cycle-36-council.md) · [digest](cycle-36-digest.md) ·
+[questions](cycle-36-questions.md) · [integration verification](../verify-integration.md).
+Cycle 35 remains an immutable `NO-GO`: its integrator committed a valid current-run
+GO to `docs/status-integrator.md`, while the runner correctly read only
+`docs/verify-integration.md` and returned `UNKNOWN`. The fresh recovery merges the
+proven staged installer implementation and establishes one role-specific two-file
+handoff boundary with fresh hermetic installer, compiler, lint, provider-contract,
+syntax, marker, and parity evidence.
 
 Cycle 35 focused install-upgrade repair: [plan](cycle-35-plan.md) ·
 [research](cycle-35-research.md) · [skill suggestions](cycle-35-suggestions.md) ·

@@ -4,6 +4,7 @@
 # dropping a block (the real marker-drift / missing-boundary bugs) before launch.
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 LINT="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-promptlint.sh"
+# shellcheck source=../bin/polylane-promptlint.sh
 . "$LINT"
 
 make_tmpdir
@@ -62,7 +63,7 @@ cat >> "$RUNTIME_GOOD" <<'P'
 POLYLANE-RUNTIME-RELAY: run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; docs/parallel-status.md is post-cycle evidence only, never the live relay.
 POLYLANE-RUNTIME-ROOTS: source edits/tests/Graphify use "$POLYLANE_SOURCE_ROOT" (query `${POLYLANE_SOURCE_ROOT:-$PWD}/graphify-out/q.py`); coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".
 POLYLANE-RUNTIME-DONE: write only docs/status-x.md; first line exactly `STATUS: x DONE run=run-1`.
-POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 P
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_ok \
   "lint-runtime-builder-canonical-status-path" lint_one "$RUNTIME_GOOD" x false builder
@@ -92,6 +93,24 @@ POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
 printf '%s\n' 'Run "$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" propose-or-decline "$POLYLANE_HARNESS_DIR".' >> "$RUNTIME_GOOD"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
   "lint-runtime-rejects-fictional-refine-subcommand" lint_one "$RUNTIME_GOOD" x false builder
+
+INTEGRATOR_GOOD="$TEST_TMPDIR/runtime-integrator-good.txt"
+cp "$GOOD" "$INTEGRATOR_GOOD"
+cat >> "$INTEGRATOR_GOOD" <<'P'
+POLYLANE-RUNTIME-RELAY: run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; docs/parallel-status.md is post-cycle evidence only, never the live relay.
+POLYLANE-RUNTIME-ROOTS: source edits/tests/Graphify use "$POLYLANE_SOURCE_ROOT" (query `${POLYLANE_SOURCE_ROOT:-$PWD}/graphify-out/q.py`); coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".
+POLYLANE-RUNTIME-DONE: write docs/status-integrator.md with first line exactly `STATUS: integrator DONE run=run-1`; never write a POLYLANE-VERDICT line in docs/status-integrator.md; keep the only verdict sentinel as the final line of docs/verify-integration.md.
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-integrator.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
+P
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_ok \
+  "lint-runtime-integrator-canonical-boundary" lint_one "$INTEGRATOR_GOOD" integrator false integrator
+grep -v 'only verdict sentinel as the final line' "$INTEGRATOR_GOOD" > "$TEST_TMPDIR/runtime-integrator-no-boundary.txt"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
+  "lint-runtime-integrator-rejects-missing-boundary" lint_one "$TEST_TMPDIR/runtime-integrator-no-boundary.txt" integrator false integrator
+cp "$INTEGRATOR_GOOD" "$TEST_TMPDIR/runtime-integrator-contradictory-boundary.txt"
+printf '%s\n' 'Also write the POLYLANE-VERDICT line in docs/status-integrator.md.' >> "$TEST_TMPDIR/runtime-integrator-contradictory-boundary.txt"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
+  "lint-runtime-integrator-rejects-contradictory-boundary" lint_one "$TEST_TMPDIR/runtime-integrator-contradictory-boundary.txt" integrator false integrator
 
 # the message names what's missing
 out=$(lint_one "$TEST_TMPDIR/nonce.txt" nonce 2>&1 || true)

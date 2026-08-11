@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # A committed contract-v2 handoff remains working while its nonce-bound worker lives.
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
+# shellcheck source=../bin/polylane-run.sh
 . "$RUNNER"
 
 make_tmpdir
@@ -12,16 +13,20 @@ git -C "$WT" config user.name test
 printf 'base\n' > "$WT/base"
 git -C "$WT" add base && git -C "$WT" commit -qm base
 printf 'STATUS: builder DONE run=live-run\n' > "$WT/docs/status-builder.md"
-git -C "$WT" add docs/status-builder.md && git -C "$WT" commit -qm done
+git -C "$WT" add docs/status-builder.md && git -C "$WT" commit -qm "done"
 
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 ORCHESTRATION_CONTRACT=2
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 RUN_ID=live-run
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 BASE=$(git -C "$WT" rev-list --max-parents=0 HEAD)
 MANIFEST="$TEST_TMPDIR/run.json"
 cat > "$MANIFEST" <<'JSON'
 {"base":"main","write_plan_contract":1,"lanes":[{"name":"builder","own_globs":["docs/status-builder.md"],"planned_writes":["docs/status-builder.md"]}]}
 JSON
 LANE_NAMES=(builder)
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 LANE_PANE_IDX=(4)
 INT_NAME=integrator
 pane_for_worktree() { [ "$1" = "$WT" ] && printf '4'; }
@@ -50,8 +55,11 @@ MANIFEST=$SAVED_MANIFEST
 # READY follows the same liveness gate for the nonce-bound integrator pane.
 printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=live-run\n' > "$WT/docs/verify-integration.md"
 git -C "$WT" add docs/verify-integration.md && git -C "$WT" commit -qm ready
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 LANE_NAMES=()
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 INT_NAME=integrator
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 INT_PANE_IDX=8
 pane_for_worktree() { [ "$1" = "$WT" ] && printf '8'; }
 LIVE=1
