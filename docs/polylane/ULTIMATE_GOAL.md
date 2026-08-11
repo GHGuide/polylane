@@ -77,3 +77,9 @@ appropriate evidence, live canaries, and a real self-run.
   defaults to reproducible research, backtest, walk-forward, and paper evidence; no live
   capital, publication, sent communication, production change, or physical execution is
   claimed without the authority and actual evidence.
+
+## Installed-package upgrade truth (cycle 35)
+
+- c82 Reinstalling either provider package over a legacy/full-repository skill directory
+  removes stale package artifacts, preserves no obsolete duplicate engine, and leaves the
+  two Codex discovery roots byte-identical to the current certified package.

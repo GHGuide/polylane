@@ -6,6 +6,14 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 35 focused install-upgrade repair: [plan](cycle-35-plan.md) ·
+[research](cycle-35-research.md) · [skill suggestions](cycle-35-suggestions.md) ·
+[questions](cycle-35-questions.md). The post-certification installed-path audit found
+that a Codex reinstall could retain obsolete top-level files and an old duplicate
+`bin/` engine in a legacy `~/.agents/skills/polylane` directory. One focused builder
+now owns failure-safe package replacement and hermetic dirty-upgrade regressions; the
+unrelated human visual corpus remains external.
+
 Cycle 34 terminal-gate handoff: [plan](cycle-34-plan.md) ·
 [research](cycle-34-research.md) · [skill suggestions](cycle-34-suggestions.md) ·
 [council](cycle-34-council.md) · [digest](cycle-34-digest.md) ·

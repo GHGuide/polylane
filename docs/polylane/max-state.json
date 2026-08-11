@@ -567,6 +567,13 @@
       "weight": 112,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c82",
+      "text": "Reinstalling either provider package over a legacy or full-repository skill directory removes stale package artifacts and leaves both Codex discovery roots byte-identical to the current certified package",
+      "weight": 120,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1417,6 +1424,20 @@
           "evidence": "integrator GO; promoted cycle 33"
         }
       ]
+    },
+    {
+      "id": "m30",
+      "text": "Installed-package upgrade truth",
+      "subgoals": [
+        {
+          "id": "m30.1",
+          "text": "Make Claude and Codex installers replace stale package layouts safely and prove exact installed-root parity",
+          "weight": 120,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1719,6 +1740,12 @@
       "kind": "decision",
       "text": "Run one fresh zero-retry terminal certificate over every remaining autonomous subgoal after Cycle 33 repaired focused efficiency truth",
       "meta": "default expected_terminal_gates=1; exactly two launches; one terminal event"
+    },
+    {
+      "cycle": 35,
+      "kind": "decision",
+      "text": "Repair stale installed-package upgrades with one focused builder and no terminal gate",
+      "meta": "post-Cycle-34 installed-path audit found obsolete duplicate engine files"
     }
   ],
   "accept": [
@@ -3017,6 +3044,16 @@
       "tier": "focused",
       "key": "",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m30.1",
+      "cmd": "bash tests/test-install-fresh.sh && bash tests/test-installers.sh && bash tests/test-doctor-agent.sh",
+      "tier": "focused",
+      "key": "install-upgrade",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
