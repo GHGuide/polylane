@@ -14,6 +14,8 @@ die() { echo "VISUAL-CAPTURE: $*" >&2; return 2; }
 
 sha256_file() { shasum -a 256 "$1" | awk '{print $1}'; }
 
+sha256_text() { printf '%s' "$1" | shasum -a 256 | awk '{print $1}'; }
+
 rfc3339_utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
 safe_relative_file() {
@@ -49,12 +51,17 @@ candidate_shape() {
 
 plan_shape() {
   jq -e '
-    keys == ["browser","environment","routes","run_id","schema_version","states"]
+    keys == ["browser","decoder","environment","routes","run_id","schema_version","states"]
     and .schema_version == "taste-capture-plan/v1"
     and (.run_id | type == "string" and length > 0)
     and (.browser | type == "object" and keys == ["adapter_id","adapter_version","command","profile_sha256"]
       and all([.adapter_id,.adapter_version,.command][]; type == "string" and length > 0)
       and (.profile_sha256 | type == "string" and test("^[0-9a-f]{64}$")))
+    and (.decoder | type == "object" and keys == ["adapter_id","adapter_version","command_path","command_sha256"]
+      and .adapter_id == "png-decoder"
+      and (.adapter_version | type == "string" and length > 0)
+      and (.command_path | type == "string" and length > 0 and startswith("/") | not)
+      and (.command_sha256 | type == "string" and test("^[0-9a-f]{64}$")))
     and (.environment | type == "object" and keys == ["color_scheme","device_scale_factor","locale","timezone"]
       and (.locale | type == "string" and length > 0)
       and (.timezone | type == "string" and length > 0)
@@ -85,8 +92,8 @@ result_shape() {
 capture_one() {
   local candidate="$1" plan="$2" work="$3" rows="$4" adapter_sha="$5" candidate_sha="$6" plan_sha="$7"
   local route="$8" state="$9" width="${10}" height="${11}" ordinal="${12}"
-  local id request result screen pixels dom action captured requested_view actual_view actual_width actual_height dimensions expected_bytes actual_bytes
-  local screen_sha pixels_sha dom_sha action_sha result_sha request_sha receipt receipt_sha command_text candidate_created
+  local id request result screen pixels dom action captured requested_view actual_view actual_width actual_height dimensions expected_bytes actual_bytes viewport
+  local screen_sha pixels_sha dom_sha action_sha result_sha request_sha receipt candidate_created
   id=$(printf 'cap-%03d' "$ordinal")
   shift 12
   request="$work/request-$id.json"; result="$work/adapter-$id/result.json"
@@ -133,22 +140,22 @@ capture_one() {
   cp "$work/adapter-$id/$pixels" "$work/publish/captures/$id/pixels.rgba"
   cp "$work/adapter-$id/$dom" "$work/publish/captures/$id/dom.html"
   cp "$work/adapter-$id/$action" "$work/publish/captures/$id/action-trace.json"
-  receipt="$work/publish/adapter-receipts/$id.json"; command_text=$(jq -r '.browser.command' "$plan")
+  receipt="$work/publish/adapter-receipts/$id.json"
   jq -n --arg adapter_id "$(jq -r '.browser.adapter_id' "$plan")" --arg adapter_version "$(jq -r '.browser.adapter_version' "$plan")" \
     --arg command_sha "$adapter_sha" --arg candidate_sha "$candidate_sha" --arg plan_sha "$plan_sha" --arg request_sha "$request_sha" \
     --arg screen_sha "$screen_sha" --arg pixels_sha "$pixels_sha" --arg dom_sha "$dom_sha" --arg action_sha "$action_sha" --arg result_sha "$result_sha" \
-    --arg command "$command_text" --arg executed_at "$(rfc3339_utc)" \
-    '{schema_version:"taste-adapter-receipt/v1",adapter_id:$adapter_id,adapter_version:$adapter_version,command:$command,command_sha256:$command_sha,input_sha256:[$candidate_sha,$plan_sha,$request_sha],output_sha256:[$screen_sha,$pixels_sha,$dom_sha,$action_sha,$result_sha],exit_status:0,executed_at:$executed_at}' > "$receipt"
-  receipt_sha=$(sha256_file "$receipt")
+    --arg executed_at "$(rfc3339_utc)" \
+    '{schema_version:"taste-adapter-receipt/v1",adapter_id:$adapter_id,adapter_version:$adapter_version,command_sha256:$command_sha,input_sha256:[$candidate_sha,$plan_sha,$request_sha],output_sha256:[$screen_sha,$pixels_sha,$dom_sha,$action_sha,$result_sha],exit_status:0,executed_at:$executed_at}' > "$receipt"
+  case "$width" in 1440) viewport=desktop ;; 390) viewport=mobile ;; *) die "unsupported viewport for $id"; return 1 ;; esac
   jq -nc --arg id "$id" --arg route "$route" --arg state "$state" --arg screenshot_path "captures/$id/screenshot.png" --arg screen_sha "$screen_sha" --arg pixels_sha "$pixels_sha" \
-    --arg dom_sha "$dom_sha" --arg action_sha "$action_sha" --arg captured "$captured" --arg receipt_sha "$receipt_sha" \
+    --arg dom_sha "$dom_sha" --arg action_sha "$action_sha" --arg captured "$captured" --arg viewport "$viewport" \
     --argjson width "$width" --argjson height "$height" --argjson actual_width "$actual_width" --argjson actual_height "$actual_height" \
-    '{capture_id:$id,route:$route,state:$state,action_trace_sha256:$action_sha,viewport_css_px:{width:$width,height:$height},screenshot_path:$screenshot_path,screenshot_png_sha256:$screen_sha,decoded_pixel_sha256:$pixels_sha,decoded_width:$actual_width,decoded_height:$actual_height,dom_sha256:$dom_sha,captured_at:$captured,adapter_receipt_sha256:$receipt_sha}' >> "$rows"
+    '{capture_id:$id,route:$route,state:$state,viewport:$viewport,action_trace_sha256:$action_sha,viewport_css_px:{width:$width,height:$height},screenshot_path:$screenshot_path,screenshot_png_sha256:$screen_sha,decoded_pixel_sha256:$pixels_sha,decoded_width:$actual_width,decoded_height:$actual_height,dom_sha256:$dom_sha,captured_at:$captured}' >> "$rows"
 }
 
 capture() {
   local candidate="$1" plan="$2" out="$3"; shift 3
-  local adapter candidate_sha plan_sha adapter_sha temp rows route state ordinal=0 out_parent out_name backup=""
+  local adapter candidate_sha plan_sha adapter_sha source_input_sha temp rows route state ordinal=0 out_parent out_name backup="" browser_receipt browser_outputs
   [ "${1:-}" = "--" ] || { usage; return 2; }; shift
   [ "$#" -gt 0 ] || { die "a declared browser adapter is required"; return 2; }
   adapter="$1"
@@ -178,8 +185,14 @@ capture() {
     done < <(jq -r '.states[].id' "$plan")
   done < <(jq -r '.routes[]' "$plan")
   [ "$ordinal" -gt 0 ] && [ "$(wc -l < "$rows" | tr -d ' ')" = "$ordinal" ] || { die "capture matrix is incomplete"; return 1; }
-  jq -n --slurpfile candidate "$candidate" --slurpfile plan "$plan" --slurpfile captures "$rows" --arg adapter_receipt_sha "$(sha256_file "$temp/publish/adapter-receipts/$(printf 'cap-%03d' 1).json")" \
-    '{schema_version:"taste-capture-manifest/v1",candidate_id:$candidate[0].candidate_id,candidate_source_revision:$candidate[0].source_revision,browser:{adapter_receipt_sha256:$adapter_receipt_sha,command:$plan[0].browser.command,version:$plan[0].browser.adapter_version,profile_sha256:$plan[0].browser.profile_sha256},environment:$plan[0].environment,captures:$captures}' > "$temp/publish/capture-manifest.json"
+  source_input_sha=$(sha256_text "$(jq -r .source_revision "$candidate")")
+  browser_outputs=$(jq -s '[.[].screenshot_png_sha256]' "$rows")
+  browser_receipt="$temp/publish/adapter-receipts/browser.json"
+  jq -n --arg adapter_id "$(jq -r .browser.adapter_id "$plan")" --arg adapter_version "$(jq -r .browser.adapter_version "$plan")" \
+    --arg command_sha "$adapter_sha" --arg source_input_sha "$source_input_sha" --argjson outputs "$browser_outputs" --arg executed_at "$(rfc3339_utc)" \
+    '{schema_version:"taste-adapter-receipt/v1",adapter_id:$adapter_id,adapter_version:$adapter_version,command_sha256:$command_sha,input_sha256:[$source_input_sha],output_sha256:$outputs,exit_status:0,executed_at:$executed_at}' > "$browser_receipt"
+  jq -n --slurpfile candidate "$candidate" --slurpfile plan "$plan" --slurpfile captures "$rows" \
+    '{schema_version:"taste-capture-manifest/v1",candidate_id:$candidate[0].candidate_id,candidate_source_revision:$candidate[0].source_revision,required_routes:$plan[0].routes,required_states:[$plan[0].states[].id],mobile_only_states:[],browser:{adapter_id:$plan[0].browser.adapter_id,adapter_receipt_path:"adapter-receipts/browser.json"},decoder:$plan[0].decoder,captures:$captures}' > "$temp/publish/capture-manifest.json"
   if [ -e "$out" ]; then backup="$out_parent/.${out_name}.previous.$$"; CAPTURE_BACKUP="$backup"; mv "$out" "$backup"; fi
   mv "$temp/publish" "$out"
   [ -z "$backup" ] || rm -rf "$backup"

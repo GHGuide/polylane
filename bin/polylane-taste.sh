@@ -7,12 +7,28 @@ reasons=''
 add_reason() { case "|$reasons|" in *"|$1|"*) ;; *) reasons="${reasons:+$reasons|}$1" ;; esac; }
 seen_add() { local name=$1 value=$2 current; eval "current=\${$name}"; case "|$current|" in *"|$value|"*) return 1;; *) eval "$name=\${$name:+\${$name}|}$value";; esac; }
 is_sha() { [[ $1 =~ ^[0-9a-f]{64}$ ]]; }
+is_revision() { [[ $1 =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]]; }
+
+regular_json_without_duplicate_keys() {
+  local file=$1 duplicates
+  [ -f "$file" ] && [ ! -L "$file" ] || return 1
+  jq -e . "$file" >/dev/null 2>&1 || return 1
+  duplicates=$(jq --stream -r 'select(length == 2) | .[0] | map(tostring) | join("\u001f")' "$file" 2>/dev/null | LC_ALL=C sort | uniq -d)
+  [ -z "$duplicates" ]
+}
 
 safe_receipt() {
-  local rel=$1 expected=$2 path
+  local rel=$1 expected=$2 path part prefix old_ifs
   case "$rel" in ''|/*|*'..'*|*'//'*) return 1;; esac
   path="$manifest_dir/$rel"
-  [ -f "$path" ] && [ ! -L "$path" ] || return 1
+  prefix="$manifest_dir"; old_ifs=$IFS; IFS='/'
+  for part in $rel; do
+    [ -n "$part" ] && [ "$part" != . ] && [ "$part" != .. ] || { IFS=$old_ifs; return 1; }
+    prefix="$prefix/$part"
+    [ ! -L "$prefix" ] || { IFS=$old_ifs; return 1; }
+  done
+  IFS=$old_ifs
+  regular_json_without_duplicate_keys "$path" || return 1
   jq -e --arg expected "$expected" 'type == "object" and .schema_version == $expected' "$path" >/dev/null 2>&1 || return 1
   jq -c . "$path"
 }
@@ -31,7 +47,7 @@ manifest=$2; certificate=$3
 manifest_dir=$(CDPATH='' cd -- "$(dirname -- "$manifest")" 2>/dev/null && pwd) || exit 64
 manifest="$manifest_dir/$(basename -- "$manifest")"
 run_id=unknown; protocol_version=taste-protocol/v1; brief_count=0; brief_wins=0; preference=0; confidence=0; groups_per_brief='{}'; repair_sha=''
-if [ -L "$manifest" ] || ! jq -e 'type == "object" and ([keys[]] | all(. == "schema_version" or . == "run_id" or . == "protocol_version" or . == "candidate_id" or . == "briefs" or . == "calibrations" or . == "threat_report" or . == "repair_ledger")) and .schema_version == "taste-evidence-manifest/v1" and (.run_id|type == "string" and length > 0) and .protocol_version == "taste-protocol/v1" and (.candidate_id|type == "string" and length > 0) and (.briefs|type == "array") and (.calibrations|type == "array") and (.threat_report|type == "string") and (.repair_ledger|type == "string")' "$manifest" >/dev/null 2>&1; then
+if ! regular_json_without_duplicate_keys "$manifest" || ! jq -e 'type == "object" and ([keys[]] | all(. == "schema_version" or . == "run_id" or . == "protocol_version" or . == "candidate_id" or . == "briefs" or . == "calibrations" or . == "threat_report" or . == "repair_ledger")) and .schema_version == "taste-evidence-manifest/v1" and (.run_id|type == "string" and length > 0) and .protocol_version == "taste-protocol/v1" and (.candidate_id|type == "string" and length > 0) and (.briefs|type == "array") and (.calibrations|type == "array") and (.threat_report|type == "string") and (.repair_ledger|type == "string")' "$manifest" >/dev/null 2>&1; then
   add_reason MANIFEST_INVALID; write_certificate NOT-CERTIFIED false false NOT-CERTIFIED || true; exit 1
 fi
 run_id=$(jq -r .run_id "$manifest"); protocol_version=$(jq -r .protocol_version "$manifest"); candidate_id=$(jq -r .candidate_id "$manifest"); brief_count=$(jq '.briefs|length' "$manifest")
@@ -47,9 +63,9 @@ while [ "$index" -lt "$brief_count" ]; do
   if [ -z "$brief_id" ] || ! is_sha "$brief_sha" || [ -z "$category" ] || [ -z "$task" ] || ! seen_add brief_ids "$brief_id" || ! seen_add categories "$category" || ! seen_add tasks "$task"; then add_reason BRIEF_VARIETY; fi
   candidate=$(safe_receipt "$(jq -r .candidate <<<"$brief")" taste-candidate/v1) || { add_reason CANDIDATE_INVALID; index=$((index + 1)); continue; }
   revision=$(jq -r '.source_revision // empty' <<<"$candidate")
-  if [ "$(jq -r '.candidate_id // empty' <<<"$candidate")" != "$candidate_id" ] || [ "$(jq -r '.brief_sha256 // empty' <<<"$candidate")" != "$brief_sha" ] || [ -z "$revision" ] || ! seen_add revisions "$revision"; then add_reason CANDIDATE_PROVENANCE; fi
+  if [ "$(jq -r '.candidate_id // empty' <<<"$candidate")" != "$candidate_id" ] || [ "$(jq -r '.brief_sha256 // empty' <<<"$candidate")" != "$brief_sha" ] || ! is_revision "$revision" || ! seen_add revisions "$revision"; then add_reason CANDIDATE_PROVENANCE; fi
   capture=$(safe_receipt "$(jq -r .capture <<<"$brief")" taste-capture-manifest/v1) || { add_reason CAPTURE_INVALID; index=$((index + 1)); continue; }
-  if [ "$(jq -r '.candidate_id // empty' <<<"$capture")" != "$candidate_id" ] || [ "$(jq -r '.candidate_source_revision // empty' <<<"$capture")" != "$revision" ] || ! jq -e '.captures|type == "array" and length > 0 and all(.[]; (.decoded_pixel_sha256|type == "string" and length > 0) and (.decoded_width|type == "number") and (.decoded_height|type == "number"))' >/dev/null <<<"$capture"; then add_reason CAPTURE_INVALID; fi
+  if [ "$(jq -r '.candidate_id // empty' <<<"$capture")" != "$candidate_id" ] || [ "$(jq -r '.candidate_source_revision // empty' <<<"$capture")" != "$revision" ] || ! jq -e '.captures|type == "array" and length > 0 and all(.[]; (.decoded_pixel_sha256|type == "string" and test("^[0-9a-f]{64}$")) and (.decoded_width|type == "number" and floor == . and . > 0) and (.decoded_height|type == "number" and floor == . and . > 0))' >/dev/null <<<"$capture"; then add_reason CAPTURE_INVALID; fi
   while IFS= read -r pixel; do seen_add pixels "$pixel" || add_reason DUPLICATE_RENDER; done < <(jq -r '.captures[].decoded_pixel_sha256' <<<"$capture" 2>/dev/null || true)
   hard=$(safe_receipt "$(jq -r .hard_gate <<<"$brief")" taste-hard-gate/v1) || { add_reason HARD_GATE_MISSING; index=$((index + 1)); continue; }
   if ! jq -e --arg c "$candidate_id" '.candidate_id == $c and .overall == "PASS" and (.task_results|type == "array" and length > 0 and all(.[]; .status == "pass")) and (.accessibility|type == "array" and length > 0 and all(.[]; .status == "pass")) and (.state_coverage|type == "array" and length > 0 and all(.[]; .status == "pass"))' >/dev/null <<<"$hard"; then add_reason FUNCTION_OR_ACCESSIBILITY_VETO; fi
@@ -78,13 +94,13 @@ calibrated_judges=''; cal_index=0; cal_total=$(jq '.calibrations|length' "$manif
 while [ "$cal_index" -lt "$cal_total" ]; do
   cal=$(safe_receipt "$(jq -r ".calibrations[$cal_index]" "$manifest")" taste-calibration/v1) || { add_reason CALIBRATION_INVALID; cal_index=$((cal_index + 1)); continue; }
   judge=$(jq -r '.judge_id // empty' <<<"$cal")
-  if [ -z "$judge" ] || ! seen_add calibrated_judges "$judge" || ! jq -e '.result == "eligible" and .human_labelled_pairs == 24 and .correct >= 17 and .wilson_lcb_95 >= .50 and .side_probe_n >= 12 and .side_probe_exact_binomial_p >= .05 and .mirror_probe_n >= 8 and .mirror_contradictions < 2 and (.judge_configuration.kind == "human" or .judge_configuration.kind == "machine")' >/dev/null <<<"$cal"; then add_reason CALIBRATION_INVALID; fi
+  if [ -z "$judge" ] || ! seen_add calibrated_judges "$judge" || ! jq -e --arg judge "$judge" '.result == "eligible" and .judge_id == $judge and .judge.id == $judge and .human_labelled_pairs == 24 and .correct >= 17 and .wilson_lcb_95 >= .50 and .side_probe_n >= 12 and .side_probe_exact_binomial_p >= .05 and .mirror_probe_n >= 8 and .mirror_contradictions < 2 and (.judge_configuration.kind == "human" or .judge_configuration.kind == "machine")' >/dev/null <<<"$cal"; then add_reason CALIBRATION_INVALID; fi
   [ "$(jq -r '.judge_configuration.kind // empty' <<<"$cal")" = human ] || all_human=false
   cal_index=$((cal_index + 1))
 done
 OLDIFS=$IFS; IFS='|'; for judge in $judges; do case "|$calibrated_judges|" in *"|$judge|"*) ;; *) add_reason JUDGE_NOT_CALIBRATED;; esac; done; IFS=$OLDIFS
 threat=$(safe_receipt "$(jq -r .threat_report "$manifest")" taste-threat-receipt/v1) || add_reason THREAT_GATE
-if [ -n "${threat:-}" ] && ! jq -e '.status == "clean" and .prompt_injection == "clean" and .receipt_integrity == "clean" and .provenance == "clean" and .axis_results.genericness_review != "unknown" and .axis_results.quality_risk == "pass" and .axis_results.context_fit == "pass" and .axis_results.provenance_integrity != "unknown"' >/dev/null <<<"$threat"; then add_reason THREAT_GATE; fi
+if [ -n "${threat:-}" ] && ! jq -e '(keys | sort) == ["axis_results","reason_codes","review","schema_version","status"] and .status == "clean" and .axis_results.genericness_review == "pass" and .axis_results.quality_risk == "pass" and .axis_results.context_fit == "pass" and .axis_results.provenance_integrity == "pass" and .review.status == "not-required" and .review.attribution_claim == false and (.reason_codes | type == "array" and length == 0)' >/dev/null <<<"$threat"; then add_reason THREAT_GATE; fi
 repair=$(safe_receipt "$(jq -r .repair_ledger "$manifest")" taste-repair-ledger/v1) || add_reason REPAIR_LEDGER
 if [ -n "${repair:-}" ] && jq -e '.status == "valid" and (.sha256|type == "string" and length > 0)' >/dev/null <<<"$repair"; then repair_sha=$(jq -r .sha256 <<<"$repair"); else add_reason REPAIR_LEDGER; fi
 if [ -n "$reasons" ]; then write_certificate NOT-CERTIFIED false false NOT-CERTIFIED || true; exit 1; fi

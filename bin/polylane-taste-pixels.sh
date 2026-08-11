@@ -32,7 +32,7 @@ sha256_text() {
 }
 
 safe_relative_regular_file() {
-  local root="$1" path="$2" part prefix
+  local root="$1" path="$2" part prefix local_old_ifs
   case "$path" in
     ""|/*|*'//'*) return 1 ;;
   esac
@@ -46,6 +46,14 @@ safe_relative_regular_file() {
   done
   IFS=$local_old_ifs
   [ -f "$root/$path" ] && [ ! -L "$root/$path" ]
+}
+
+regular_json_without_duplicate_keys() {
+  local file="$1" duplicates
+  [ -f "$file" ] && [ ! -L "$file" ] || return 1
+  jq -e . "$file" >/dev/null 2>&1 || return 1
+  duplicates=$(jq --stream -r 'select(length == 2) | .[0] | map(tostring) | join("\u001f")' "$file" 2>/dev/null | LC_ALL=C sort | uniq -d)
+  [ -z "$duplicates" ]
 }
 
 utc_epoch() {
@@ -112,8 +120,11 @@ png_structure() {
 }
 
 receipt_shape_and_binding() {
-  local receipt="$1" adapter_id="$2" command_sha="$3" input_sha="$4" output_sha="$5" source_epoch="$6" now_epoch="$7" executed epoch receipt_json
+  local receipt="$1" adapter_id="$2" command_sha="$3" input_sha="$4" output_sha="$5" source_epoch="$6" now_epoch="$7" executed epoch receipt_json duplicates
   receipt_json=$(cat "$receipt") || return 1
+  printf '%s' "$receipt_json" | jq -e . >/dev/null 2>&1 || return 1
+  duplicates=$(printf '%s' "$receipt_json" | jq --stream -r 'select(length == 2) | .[0] | map(tostring) | join("\u001f")' 2>/dev/null | LC_ALL=C sort | uniq -d)
+  [ -z "$duplicates" ] || return 1
   printf '%s' "$receipt_json" | jq -e --arg id "$adapter_id" --arg command "$command_sha" --arg input "$input_sha" --arg output "$output_sha" '
     (keys | sort) == ["adapter_id","adapter_version","command_sha256","executed_at","exit_status","input_sha256","output_sha256","schema_version"]
     and .schema_version == "taste-adapter-receipt/v1"
@@ -144,7 +155,8 @@ manifest_shape() {
     and (.required_states | type == "array" and length > 0 and (length == (unique | length)) and all(.[]; type == "string" and test("^[a-z0-9][a-z0-9-]*$")))
     and (.mobile_only_states | type == "array" and (length == (unique | length)) and all(.[]; type == "string"))
     and all(.mobile_only_states[]; . as $state | ($m.required_states | index($state)) != null)
-    and (.browser | type == "object" and (keys | sort) == ["adapter_receipt_path"] and (.adapter_receipt_path | type == "string" and length > 0))
+    and (.browser | type == "object" and (keys | sort) == ["adapter_id","adapter_receipt_path"]
+      and (.adapter_id | type == "string" and length > 0) and (.adapter_receipt_path | type == "string" and length > 0))
     and (.decoder | type == "object" and (keys | sort) == ["adapter_id","adapter_version","command_path","command_sha256"]
       and (.adapter_id == "png-decoder") and (.adapter_version | type == "string" and length > 0)
       and (.command_path | type == "string" and length > 0) and (.command_sha256 | type == "string" and test("^[0-9a-f]{64}$")))
@@ -177,10 +189,12 @@ actual_matrix() {
 }
 
 verify() {
-  local root="$1" manifest="$2" now="$3" source_revision source_input_sha source_epoch now_epoch browser_path browser_sha browser_receipt decoder_path decoder_sha actual expected viewport width height path image_sha decoded_sha captured captured_epoch image_mtime dimensions decoded_output pixel_sha pixel_bytes colors nonbackground receipt
+  local root="$1" manifest="$2" now="$3" manifest_dir source_revision source_input_sha source_epoch now_epoch browser_path browser_id browser_sha browser_receipt decoder_path decoder_sha actual expected viewport width height path image_sha decoded_sha captured captured_epoch image_mtime dimensions decoded_output pixel_sha pixel_bytes colors nonbackground receipt
   [ -d "$root" ] && [ ! -L "$root" ] || reject UNSAFE_ROOT
   [ -f "$manifest" ] && [ ! -L "$manifest" ] || reject MANIFEST_UNAVAILABLE
   command -v jq >/dev/null 2>&1 || reject JQ_UNAVAILABLE
+  manifest_dir=$(CDPATH='' cd -- "$(dirname -- "$manifest")" 2>/dev/null && pwd -P) || reject MANIFEST_UNAVAILABLE
+  regular_json_without_duplicate_keys "$manifest" || reject MANIFEST_SHAPE
   manifest_shape "$manifest" || reject MANIFEST_SHAPE
   now_epoch=$(utc_epoch "$now") || reject INVALID_NOW
   source_revision=$(git -C "$root" rev-parse HEAD 2>/dev/null) || reject SOURCE_REVISION_UNAVAILABLE
@@ -190,11 +204,12 @@ verify() {
   source_epoch=$(git -C "$root" log -1 --format=%ct "$source_revision" 2>/dev/null) || reject SOURCE_TIME_UNAVAILABLE
 
   browser_path=$(jq -r '.browser.adapter_receipt_path' "$manifest")
-  safe_relative_regular_file "$root" "$browser_path" || reject UNSAFE_PATH
-  browser_receipt="$root/$browser_path"
+  browser_id=$(jq -r '.browser.adapter_id' "$manifest")
+  safe_relative_regular_file "$manifest_dir" "$browser_path" || reject UNSAFE_PATH
+  browser_receipt="$manifest_dir/$browser_path"
   browser_sha=$(jq -r '.command_sha256 // empty' "$browser_receipt" 2>/dev/null || true)
   [ -n "$browser_sha" ] || reject BROWSER_RECEIPT
-  receipt_shape_and_binding "$browser_receipt" browser-capture "$browser_sha" "$source_input_sha" "$(jq -r '.captures[0].screenshot_png_sha256' "$manifest")" "$source_epoch" "$now_epoch" || reject BROWSER_RECEIPT_SHAPE
+  receipt_shape_and_binding "$browser_receipt" "$browser_id" "$browser_sha" "$source_input_sha" "$(jq -r '.captures[0].screenshot_png_sha256' "$manifest")" "$source_epoch" "$now_epoch" || reject BROWSER_RECEIPT_SHAPE
   # Bind every browser output, not merely the first one used above.
   while IFS= read -r image_sha; do
     jq -e --arg hash "$image_sha" '.output_sha256 | index($hash) != null' "$browser_receipt" >/dev/null 2>&1 || reject BROWSER_OUTPUT_MISMATCH
@@ -211,20 +226,20 @@ verify() {
   [ "$(jq '[.captures[].capture_id] | length == (unique | length)' "$manifest")" = true ] || reject MATRIX_MISMATCH
 
   while IFS=$'\t' read -r _capture_id _route _state viewport width height path image_sha decoded_sha captured; do
-    safe_relative_regular_file "$root" "$path" || reject UNSAFE_PATH
-    [ "$(sha256_file "$root/$path" 2>/dev/null || true)" = "$image_sha" ] || reject PNG_HASH_MISMATCH
+    safe_relative_regular_file "$manifest_dir" "$path" || reject UNSAFE_PATH
+    [ "$(sha256_file "$manifest_dir/$path" 2>/dev/null || true)" = "$image_sha" ] || reject PNG_HASH_MISMATCH
     captured_epoch=$(utc_epoch "$captured") || reject STALE_CAPTURE
     [ "$captured_epoch" -ge "$source_epoch" ] && [ "$captured_epoch" -le "$now_epoch" ] || reject STALE_CAPTURE
-    image_mtime=$(file_mtime_epoch "$root/$path") || reject STALE_CAPTURE
+    image_mtime=$(file_mtime_epoch "$manifest_dir/$path") || reject STALE_CAPTURE
     [ "$image_mtime" -ge "$source_epoch" ] && [ "$image_mtime" -le $((now_epoch + 5)) ] || reject STALE_CAPTURE
-    dimensions=$(png_structure "$root/$path") || reject PNG_STRUCTURE
+    dimensions=$(png_structure "$manifest_dir/$path") || reject PNG_STRUCTURE
     set -- $dimensions
     [ "$1" = "$width" ] && [ "$2" = "$height" ] || reject VIEWPORT_MISMATCH
     case "$viewport:$width:$height" in
       desktop:1440:900|mobile:390:844) ;;
       *) reject VIEWPORT_MISMATCH ;;
     esac
-    decoded_output=$("$root/$decoder_path" "$root/$path" 2>/dev/null) || reject DECODER_UNAVAILABLE
+    decoded_output=$("$root/$decoder_path" "$manifest_dir/$path" 2>/dev/null) || reject DECODER_UNAVAILABLE
     printf '%s' "$decoded_output" | jq -e '
       (keys | sort) == ["adapter_receipt","decoded_height","decoded_pixel_sha256","decoded_width","distinct_pixel_values","non_background_pixel_count","pixel_payload_bytes","schema_version"]
       and .schema_version == "taste-png-decoder/v1"
@@ -240,6 +255,7 @@ verify() {
     colors=$(printf '%s' "$decoded_output" | jq -r '.distinct_pixel_values')
     nonbackground=$(printf '%s' "$decoded_output" | jq -r '.non_background_pixel_count')
     [ "$pixel_sha" = "$decoded_sha" ] || reject DECODED_HASH_MISMATCH
+    [ "$(printf '%s' "$decoded_output" | jq -r '.decoded_width')" = "$width" ] && [ "$(printf '%s' "$decoded_output" | jq -r '.decoded_height')" = "$height" ] || reject DECODED_DIMENSIONS_MISMATCH
     [ "$pixel_bytes" -ge $((width * height)) ] && [ "$colors" -ge 2 ] && [ "$nonbackground" -gt 0 ] || reject SYNTHETIC_PLACEHOLDER
     receipt=$(printf '%s' "$decoded_output" | jq -c '.adapter_receipt')
     printf '%s\n' "$receipt" | receipt_shape_and_binding /dev/stdin png-decoder "$decoder_sha" "$image_sha" "$decoded_sha" "$source_epoch" "$now_epoch" || reject DECODER_RECEIPT

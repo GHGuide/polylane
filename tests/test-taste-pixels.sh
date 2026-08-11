@@ -81,9 +81,9 @@ export TASTE_NOW="$NOW"
 sha() { shasum -a 256 "$1" | awk '{print $1}'; }
 capture_json() {
   local id="$1" route="$2" state="$3" viewport="$4" width="$5" height="$6" path="$7" result
-  result=$("$ROOT/tools/decode-png" "$ROOT/$path")
+  result=$("$ROOT/tools/decode-png" "$ROOT/evidence/$path")
   jq -n --arg id "$id" --arg route "$route" --arg state "$state" --arg viewport "$viewport" \
-    --argjson width "$width" --argjson height "$height" --arg path "$path" --arg sha "$(sha "$ROOT/$path")" \
+    --argjson width "$width" --argjson height "$height" --arg path "$path" --arg sha "$(sha "$ROOT/evidence/$path")" \
     --arg decoded "$(printf '%s' "$result" | jq -r .decoded_pixel_sha256)" --arg now "$NOW" \
     '{capture_id:$id,route:$route,state:$state,viewport:$viewport,viewport_css_px:{width:$width,height:$height},screenshot_path:$path,screenshot_png_sha256:$sha,decoded_pixel_sha256:$decoded,decoded_width:$width,decoded_height:$height,action_trace_sha256:("a" * 64),dom_sha256:("c" * 64),captured_at:$now}'
 }
@@ -96,14 +96,14 @@ write_browser_receipt() {
 write_manifest() {
   local captures
   captures=$(printf '%s\n' \
-    "$(capture_json cap-default-desktop /declared default desktop 1440 900 evidence/default-desktop.png)" \
-    "$(capture_json cap-default-mobile /declared default mobile 390 844 evidence/default-mobile.png)" \
-    "$(capture_json cap-loading-desktop /declared loading desktop 1440 900 evidence/loading-desktop.png)" \
-    "$(capture_json cap-loading-mobile /declared loading mobile 390 844 evidence/loading-mobile.png)" | jq -s .)
+    "$(capture_json cap-default-desktop /declared default desktop 1440 900 default-desktop.png)" \
+    "$(capture_json cap-default-mobile /declared default mobile 390 844 default-mobile.png)" \
+    "$(capture_json cap-loading-desktop /declared loading desktop 1440 900 loading-desktop.png)" \
+    "$(capture_json cap-loading-mobile /declared loading mobile 390 844 loading-mobile.png)" | jq -s .)
   jq -n --arg rev "$REVISION" --arg decoder "$DECODER_SHA" --arg now "$NOW" --argjson captures "$captures" '
     {schema_version:"taste-capture-manifest/v1",candidate_id:"cand-opaque-a",candidate_source_revision:$rev,
      required_routes:["/declared"],required_states:["default","loading"],mobile_only_states:[],
-     browser:{adapter_receipt_path:"evidence/browser-receipt.json"},
+     browser:{adapter_id:"browser-capture",adapter_receipt_path:"browser-receipt.json"},
      decoder:{adapter_id:"png-decoder",adapter_version:"fixture-v1",command_path:"tools/decode-png",command_sha256:$decoder},
      captures:$captures}' > "$MANIFEST"
   write_browser_receipt

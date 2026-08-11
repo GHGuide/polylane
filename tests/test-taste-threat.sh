@@ -63,7 +63,7 @@ write_manifest "$MANIFEST"
 jq '.sidecars[1].visual = .sidecars[0].visual | .sidecars[1].signature = .sidecars[0].signature | .sidecars[2].visual = .sidecars[0].visual | .sidecars[2].signature = .sidecars[0].signature' "$MANIFEST" > "$MANIFEST.tmp" && mv "$MANIFEST.tmp" "$MANIFEST"
 assert_fail "threat-routes-template-sameness-to-blinded-review" "$THREAT" check "$MANIFEST" "$OUT"
 assert_eq "threat-sameness-is-not-authorship-claim" "CROSS_BRIEF_REVIEW" "$(jq -r '.review.status' "$OUT")"
-assert_eq "threat-sameness-preserves-provenance-unknown" "unknown" "$(jq -r '.axis_results.provenance_integrity' "$OUT")"
+assert_eq "threat-sameness-preserves-verified-provenance" "pass" "$(jq -r '.axis_results.provenance_integrity' "$OUT")"
 write_manifest "$MANIFEST"
 
 # One common motif remains a false-positive guard, not a genericness verdict.

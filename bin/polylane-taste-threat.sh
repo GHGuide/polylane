@@ -26,6 +26,28 @@ sha256_text() {
   fi
 }
 
+safe_relative_regular_file() {
+  local root="$1" path="$2" part prefix old_ifs
+  case "$path" in ''|/*|*'//'*) return 1 ;; esac
+  prefix="$root"
+  old_ifs=$IFS; IFS='/'
+  for part in $path; do
+    [ -n "$part" ] && [ "$part" != . ] && [ "$part" != .. ] || { IFS=$old_ifs; return 1; }
+    prefix="$prefix/$part"
+    [ ! -L "$prefix" ] || { IFS=$old_ifs; return 1; }
+  done
+  IFS=$old_ifs
+  [ -f "$root/$path" ] && [ ! -L "$root/$path" ]
+}
+
+regular_json_without_duplicate_keys() {
+  local file="$1" duplicates
+  [ -f "$file" ] && [ ! -L "$file" ] || return 1
+  jq -e . "$file" >/dev/null 2>&1 || return 1
+  duplicates=$(jq --stream -r 'select(length == 2) | .[0] | map(tostring) | join("\u001f")' "$file" 2>/dev/null | LC_ALL=C sort | uniq -d)
+  [ -z "$duplicates" ]
+}
+
 manifest_shape() {
   jq -e '
     .schema_version == "taste-threat/v1"
@@ -84,7 +106,7 @@ captures_are_real_and_bound() {
   while IFS= read -r capture; do
     path=$(printf '%s' "$capture" | jq -r '.path')
     declared=$(printf '%s' "$capture" | jq -r '.sha256')
-    [ -f "$root/$path" ] && [ ! -L "$root/$path" ] || return 1
+    safe_relative_regular_file "$root" "$path" || return 1
     actual=$(sha256_file "$root/$path") || return 1
     [ "$declared" = "$actual" ] || return 1
   done < <(jq -c '.captures[]' "$manifest")
@@ -150,8 +172,8 @@ write_receipt() {
 }
 
 check() {
-  local manifest="$1" output="$2" genericness="pass" quality="pass" provenance="unknown" context status="clean" review="not-required" reasons='[]'
-  manifest_shape "$manifest" || { echo "TASTE-THREAT: malformed or unknown manifest" >&2; return 2; }
+  local manifest="$1" output="$2" genericness="pass" quality="pass" provenance="pass" context status="clean" review="not-required" reasons='[]'
+  regular_json_without_duplicate_keys "$manifest" && manifest_shape "$manifest" || { echo "TASTE-THREAT: malformed or unknown manifest" >&2; return 2; }
   context=$(jq -r '.context.status' "$manifest")
   if ! captures_are_real_and_bound "$manifest"; then
     provenance="fail"; reasons=$(jq -cn '["capture-hash-or-path-invalid"]')

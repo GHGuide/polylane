@@ -14,6 +14,7 @@ fi
 INPUT_PATH=$1
 OUTPUT_PATH=$2
 RECEIPT_TMP=
+JUDGE_ID=
 umask 077
 
 cleanup() {
@@ -47,6 +48,7 @@ emit_receipt() {
     --argjson wilson "$receipt_wilson" \
     --arg provider "$receipt_provider" \
     --arg model "$receipt_model" \
+    --arg judge_id "$JUDGE_ID" \
     --arg input_sha256 "$receipt_hash" \
     --argjson side_probe_n "$receipt_side_probe_n" \
     --argjson side_probe_exact_binomial_p "$receipt_side_p" \
@@ -69,15 +71,24 @@ emit_receipt() {
       side_probe_exact_binomial_p: $side_probe_exact_binomial_p,
       mirror_probe_n: $mirror_probe_n,
       mirror_contradictions: $mirror_contradictions,
-      judge_configuration: {kind: "provider-model", provider: $provider, model: $model},
-      judge: {provider: $provider, model: $model},
+      judge_configuration: {kind: "machine", provider: $provider, model: $model},
+      judge: {id: $judge_id, provider: $provider, model: $model},
+      judge_id: $judge_id,
       input_sha256: $input_sha256
     }' > "$RECEIPT_TMP"
   mv -f "$RECEIPT_TMP" "$OUTPUT_PATH"
   RECEIPT_TMP=
 }
 
-if [ ! -f "$INPUT_PATH" ] || ! jq -e . "$INPUT_PATH" >/dev/null 2>&1; then
+regular_json_without_duplicate_keys() {
+  local duplicate_paths
+  [ -f "$1" ] && [ ! -L "$1" ] || return 1
+  jq -e . "$1" >/dev/null 2>&1 || return 1
+  duplicate_paths=$(jq --stream -r 'select(length == 2) | .[0] | map(tostring) | join("\u001f")' "$1" 2>/dev/null | LC_ALL=C sort | uniq -d)
+  [ -z "$duplicate_paths" ]
+}
+
+if ! regular_json_without_duplicate_keys "$INPUT_PATH"; then
   emit_receipt false 'invalid JSON calibration input' 0 0 0 '' '' '' 0 0 0 0
   exit 1
 fi
@@ -85,6 +96,7 @@ fi
 INPUT_HASH=$(shasum -a 256 "$INPUT_PATH" | awk '{print $1}')
 JUDGE_PROVIDER=$(jq -r '.judge.provider // ""' "$INPUT_PATH")
 JUDGE_MODEL=$(jq -r '.judge.model // ""' "$INPUT_PATH")
+JUDGE_ID=$(jq -r '.judge.id // ""' "$INPUT_PATH")
 
 VALIDATION_ERRORS=$(jq -r '
   def valid_vote:
@@ -116,7 +128,8 @@ VALIDATION_ERRORS=$(jq -r '
     if (.calibration | type) != "object" then "missing calibration metadata" else empty end,
     if .calibration.partition != "held_out" then "calibration is not held_out" else empty end,
     if .calibration.label_provenance != "human-labeled" then "labels are not human-labeled" else empty end,
-    if (.judge | type) != "object" then "missing judge identity" else empty end,
+    if (.judge | type) != "object" or ((.judge | keys | sort) != ["id", "model", "provider"]) then "missing or malformed judge identity" else empty end,
+    if (.judge.id | type) != "string" or (.judge.id | test("^judge-[a-z0-9-]{3,}$") | not) then "missing judge id" else empty end,
     if (.judge.provider | type) != "string" or (.judge.provider | length) == 0 then "missing judge provider" else empty end,
     if (.judge.model | type) != "string" or (.judge.model | length) == 0 then "missing judge model" else empty end,
     if (.judge | has("eligible") or has("eligibility") or has("eligibility_receipt")) then "self-attested eligibility is forbidden" else empty end,

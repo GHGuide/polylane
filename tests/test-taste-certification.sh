@@ -2,7 +2,7 @@
 # Focused contract tests for the public taste certificate compiler.
 set -euo pipefail
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 TASTE="$ROOT/bin/polylane-taste.sh"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/polylane-taste-cert.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT HUP INT TERM
@@ -18,25 +18,25 @@ write_json() {
 }
 
 make_fixture() {
-  local n brief judge a b candidate digest
+  local n brief a b candidate digest
   candidate="cand-new"
   mkdir -p "$WORK/receipts"
   for n in $(seq 1 10); do
     brief="brief-$n"
     digest=$(printf '%064d' "$n")
     write_json "$WORK/receipts/$brief-lock.json" "{\"schema_version\":\"taste-brief/v1\",\"brief_id\":\"$brief\",\"brief_sha256\":\"$digest\",\"target_population\":{\"role\":\"role-$n\"},\"core_task\":{\"id\":\"task-$n\"},\"required_routes\":[\"/r-$n\"],\"required_states\":[\"default\"],\"acceptance_facts_sha256\":\"$digest\",\"rubric_version\":\"taste-rubric/v1\",\"locked_at\":\"2026-08-11T00:00:00Z\"}"
-    write_json "$WORK/receipts/$brief-candidate.json" "{\"schema_version\":\"taste-candidate/v1\",\"candidate_id\":\"$candidate\",\"brief_sha256\":\"$digest\",\"design_lock_sha256\":\"$digest\",\"direction_id\":\"d-$n\",\"source_revision\":\"rev-$n\",\"dependency_lock_sha256\":\"$digest\",\"build_receipt_sha256\":\"$digest\",\"created_at\":\"2026-08-11T00:00:00Z\"}"
-    write_json "$WORK/receipts/$brief-capture.json" "{\"schema_version\":\"taste-capture-manifest/v1\",\"candidate_id\":\"$candidate\",\"candidate_source_revision\":\"rev-$n\",\"browser\":{\"adapter_receipt_sha256\":\"$digest\",\"command\":\"fixture\",\"version\":\"1\",\"profile_sha256\":\"$digest\"},\"environment\":{\"locale\":\"en-US\",\"timezone\":\"UTC\",\"color_scheme\":\"light\",\"device_scale_factor\":1},\"captures\":[{\"capture_id\":\"cap-$n\",\"route\":\"/r-$n\",\"state\":\"default\",\"action_trace_sha256\":\"$digest\",\"viewport_css_px\":{\"width\":1440,\"height\":900},\"screenshot_png_sha256\":\"$digest\",\"decoded_pixel_sha256\":\"pixel-$n\",\"decoded_width\":1440,\"decoded_height\":900,\"dom_sha256\":\"$digest\",\"captured_at\":\"2026-08-11T00:00:00Z\"}]}"
+    write_json "$WORK/receipts/$brief-candidate.json" "{\"schema_version\":\"taste-candidate/v1\",\"candidate_id\":\"$candidate\",\"brief_sha256\":\"$digest\",\"design_lock_sha256\":\"$digest\",\"direction_id\":\"d-$n\",\"source_revision\":\"$digest\",\"dependency_lock_sha256\":\"$digest\",\"build_receipt_sha256\":\"$digest\",\"created_at\":\"2026-08-11T00:00:00Z\"}"
+    write_json "$WORK/receipts/$brief-capture.json" "{\"schema_version\":\"taste-capture-manifest/v1\",\"candidate_id\":\"$candidate\",\"candidate_source_revision\":\"$digest\",\"browser\":{\"adapter_id\":\"browser-capture\",\"adapter_receipt_path\":\"fixture\"},\"decoder\":{\"adapter_id\":\"png-decoder\",\"adapter_version\":\"fixture\",\"command_path\":\"fixture\",\"command_sha256\":\"$digest\"},\"required_routes\":[\"/r-$n\"],\"required_states\":[\"default\"],\"mobile_only_states\":[],\"captures\":[{\"capture_id\":\"cap-$n\",\"route\":\"/r-$n\",\"state\":\"default\",\"viewport\":\"desktop\",\"action_trace_sha256\":\"$digest\",\"viewport_css_px\":{\"width\":1440,\"height\":900},\"screenshot_path\":\"fixture\",\"screenshot_png_sha256\":\"$digest\",\"decoded_pixel_sha256\":\"$digest\",\"decoded_width\":1440,\"decoded_height\":900,\"dom_sha256\":\"$digest\",\"captured_at\":\"2026-08-11T00:00:00Z\"}]}"
     write_json "$WORK/receipts/$brief-hard.json" "{\"schema_version\":\"taste-hard-gate/v1\",\"candidate_id\":\"$candidate\",\"capture_manifest_sha256\":\"$digest\",\"task_results\":[{\"task_id\":\"task-$n\",\"capture_id\":\"cap-$n\",\"status\":\"pass\",\"trace_sha256\":\"$digest\"}],\"accessibility\":[{\"capture_id\":\"cap-$n\",\"ruleset\":\"fixture\",\"adapter_receipt_sha256\":\"$digest\",\"status\":\"pass\",\"manual_exception_ids\":[]}],\"state_coverage\":[{\"capture_id\":\"cap-$n\",\"status\":\"pass\"}],\"product_specificity\":{\"signature_test_sha256\":\"$digest\",\"status\":\"pass\"},\"overall\":\"PASS\"}"
     for b in $(seq 1 5); do
       a="machine-$n-$b-a"; b2="machine-$n-$b-b"
-      write_json "$WORK/receipts/cal-$a.json" "{\"schema_version\":\"taste-calibration/v1\",\"calibration_set_id\":\"human-ui-calibration/v1\",\"human_label_source\":\"pinned\",\"human_labelled_pairs\":24,\"calibration_manifest_sha256\":\"$digest\",\"judge_id\":\"$a\",\"judge_configuration\":{\"kind\":\"machine\",\"provider\":\"fixture\",\"model\":\"fixture\",\"model_version\":\"1\",\"system_prompt_sha256\":\"$digest\",\"sampling_sha256\":\"$digest\"},\"correct\":17,\"accuracy\":0.708333,\"wilson_lcb_95\":0.50,\"side_probe_n\":12,\"side_probe_exact_binomial_p\":0.05,\"mirror_probe_n\":8,\"mirror_contradictions\":0,\"result\":\"eligible\"}"
-      write_json "$WORK/receipts/cal-$b2.json" "$(cat "$WORK/receipts/cal-$a.json" | jq --arg id "$b2" '.judge_id=$id')"
+      write_json "$WORK/receipts/cal-$a.json" "{\"schema_version\":\"taste-calibration/v1\",\"calibration_set_id\":\"human-ui-calibration/v1\",\"human_label_source\":\"pinned\",\"human_labelled_pairs\":24,\"calibration_manifest_sha256\":\"$digest\",\"judge_id\":\"$a\",\"judge\":{\"id\":\"$a\",\"provider\":\"fixture\",\"model\":\"fixture\"},\"judge_configuration\":{\"kind\":\"machine\",\"provider\":\"fixture\",\"model\":\"fixture\",\"model_version\":\"1\",\"system_prompt_sha256\":\"$digest\",\"sampling_sha256\":\"$digest\"},\"correct\":17,\"accuracy\":0.708333,\"wilson_lcb_95\":0.50,\"side_probe_n\":12,\"side_probe_exact_binomial_p\":0.05,\"mirror_probe_n\":8,\"mirror_contradictions\":0,\"result\":\"eligible\"}"
+      write_json "$WORK/receipts/cal-$b2.json" "$(cat "$WORK/receipts/cal-$a.json" | jq --arg id "$b2" '.judge_id=$id | .judge.id=$id')"
       write_json "$WORK/receipts/$brief-group-$b.json" "{\"schema_version\":\"taste-mirrored-group/v1\",\"mirror_group_id\":\"mg-$n-$b\",\"brief_sha256\":\"$digest\",\"candidate_ids_escrow_sha256\":\"$digest\",\"pointwise_ballot_ids\":[\"pw-$n-$b-a\",\"pw-$n-$b-b\"],\"exposures\":[{\"ballot_id\":\"pair-$n-$b-a\",\"judge_id\":\"$a\",\"display_order\":\"A/B\",\"choice\":\"A\",\"canonical_choice\":\"$candidate\",\"independence_attestation_sha256\":\"$digest\",\"sealed_at\":\"2026-08-11T00:01:00Z\"},{\"ballot_id\":\"pair-$n-$b-b\",\"judge_id\":\"$b2\",\"display_order\":\"B/A\",\"choice\":\"B\",\"canonical_choice\":\"$candidate\",\"independence_attestation_sha256\":\"$digest\",\"sealed_at\":\"2026-08-11T00:01:00Z\"}],\"outcome\":\"resolved-$candidate\"}"
     done
     write_json "$WORK/receipts/$brief-review.json" "{\"schema_version\":\"taste-cross-brief-review/v1\",\"brief_id\":\"$brief\",\"status\":\"resolved\",\"determination\":\"clear\"}"
   done
-  write_json "$WORK/receipts/threat.json" '{"schema_version":"taste-threat-receipt/v1","status":"clean","prompt_injection":"clean","receipt_integrity":"clean","provenance":"clean","axis_results":{"genericness_review":"clear","quality_risk":"pass","context_fit":"pass","provenance_integrity":"clear"}}'
+  write_json "$WORK/receipts/threat.json" '{"schema_version":"taste-threat-receipt/v1","status":"clean","axis_results":{"genericness_review":"pass","quality_risk":"pass","context_fit":"pass","provenance_integrity":"pass"},"review":{"status":"not-required","scope":null,"attribution_claim":false},"reason_codes":[]}'
   write_json "$WORK/receipts/repair.json" '{"schema_version":"taste-repair-ledger/v1","status":"valid","sha256":"ledger-fixture"}'
   jq -n --arg root "$WORK" --arg candidate "$candidate" '{schema_version:"taste-evidence-manifest/v1",run_id:"fixture-run",protocol_version:"taste-protocol/v1",candidate_id:$candidate,briefs:[range(1;11)|{brief_lock:("receipts/brief-"+tostring+"-lock.json"),candidate:("receipts/brief-"+tostring+"-candidate.json"),capture:("receipts/brief-"+tostring+"-capture.json"),hard_gate:("receipts/brief-"+tostring+"-hard.json"),groups:[range(1;6)|"receipts/brief-"+($root|split("/")|last|if . == "" then "" else "" end)+""]} ]}' >/dev/null
   # The manifest is intentionally an index only; all eligibility and outcomes stay in receipts.
@@ -78,5 +78,6 @@ jq '.briefs[0].groups = .briefs[0].groups[0:4]' "$WORK/manifest.json" >"$WORK/fe
 jq 'del(.calibrations[0])' "$WORK/manifest.json" >"$WORK/missing-calibration.json"; expect_blocked missing-calibration "$WORK/missing-calibration.json"
 jq '.briefs[0].hard_gate = "receipts/missing.json"' "$WORK/manifest.json" >"$WORK/missing-hard-gate.json"; expect_blocked missing-hard-gate "$WORK/missing-hard-gate.json"
 jq '.threat_report = "receipts/missing-threat.json"' "$WORK/manifest.json" >"$WORK/missing-threat.json"; expect_blocked missing-threat "$WORK/missing-threat.json"
+sed 's/"run_id":"fixture-run"/"run_id":"fixture-run","run_id":"replayed"/' "$WORK/manifest.json" >"$WORK/duplicate-key.json"; expect_blocked duplicate-key "$WORK/duplicate-key.json"
 
 printf 'PASS: taste certification compiler\n'

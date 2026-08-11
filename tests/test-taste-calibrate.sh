@@ -18,7 +18,7 @@ make_input() {
     {
       schema_version: 1,
       calibration: {dataset_id: "human-ui-holdout-v1", partition: "held_out", label_provenance: "human-labeled"},
-      judge: {provider: "example-provider", model: "example-model"},
+      judge: {id: "judge-example-001", provider: "example-provider", model: "example-model"},
       units: [range(0; 24) | . as $index | (if ($index % 2) == 0 then 1 else 2 end) as $gold | {
         prompt: ("prompt-" + ($index | tostring)),
         brief: ("brief-" + ($index | tostring)),
@@ -49,6 +49,7 @@ test_eligible_receipt_uses_mirrored_prompt_brief_units() {
   test "$(jq -r '.side_probe_n >= 12 and .mirror_probe_n >= 8 and .mirror_contradictions < 2' "$OUTPUT_PATH")" = true || fail 'receipt must include passing side and mirror probes'
   awk -v value="$(jq -r '.wilson_lower_bound' "$OUTPUT_PATH")" 'BEGIN { exit !(value >= 0.50) }' || fail 'Wilson lower bound must be at least 0.50'
   test "$(jq -r '.judge.provider + "/" + .judge.model' "$OUTPUT_PATH")" = example-provider/example-model || fail 'receipt must bind provider/model identity'
+  test "$(jq -r '.judge_id' "$OUTPUT_PATH")" = judge-example-001 || fail 'receipt must bind the ballot judge id'
 }
 
 assert_rejected() {
@@ -110,6 +111,21 @@ test_rejects_leakage_self_attestation_and_nonnumeric_votes() {
   assert_rejected "$INPUT_PATH" "$OUTPUT_PATH"
 }
 
+test_rejects_duplicate_prompt_brief_units_and_duplicate_keys() {
+  INPUT_PATH="$TMPDIR_TEST/duplicate-units.json"
+  OUTPUT_PATH="$TMPDIR_TEST/duplicate-units-receipt.json"
+  make_input "$INPUT_PATH" 17
+  jq '.units += [.units[0]]' "$INPUT_PATH" > "$INPUT_PATH.next"
+  mv "$INPUT_PATH.next" "$INPUT_PATH"
+  assert_rejected "$INPUT_PATH" "$OUTPUT_PATH"
+
+  make_input "$INPUT_PATH" 17
+  input_text=$(<"$INPUT_PATH")
+  printf '%s\n' "${input_text/\"prompt-0\"/\"prompt-0\",\"prompt\":\"replayed\"}" > "$INPUT_PATH.next"
+  mv "$INPUT_PATH.next" "$INPUT_PATH"
+  assert_rejected "$INPUT_PATH" "$OUTPUT_PATH"
+}
+
 test_rejects_mirrors_that_do_not_reverse_the_side() {
   INPUT_PATH="$TMPDIR_TEST/side-inconsistent.json"
   OUTPUT_PATH="$TMPDIR_TEST/side-inconsistent-receipt.json"
@@ -133,6 +149,7 @@ test_rejects_insufficient_accuracy_even_with_a_valid_shape
 test_rejects_identity_drift_and_invalid_abstention
 test_allows_explicit_paired_abstention_without_counting_it_correct
 test_rejects_leakage_self_attestation_and_nonnumeric_votes
+test_rejects_duplicate_prompt_brief_units_and_duplicate_keys
 test_rejects_mirrors_that_do_not_reverse_the_side
 test_rejects_a_systematically_side_biased_judge
 printf 'PASS: test-taste-calibrate\n'

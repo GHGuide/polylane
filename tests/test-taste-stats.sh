@@ -77,6 +77,8 @@ run_bad '{"schema":"polylane.taste.ballots.v1","ballots":[{"brief_id":"one","vot
 run_bad '{"schema":"polylane.taste.ballots.v1","ballots":[{"brief_id":"one","vote":"candidate","weight":1e999}]}'
 run_bad '{"schema":"polylane.taste.ballots.v1","ballots":[{"brief_id":"one","vote":"candidate"}],"calibration":NaN}'
 run_bad '{"schema":"polylane.taste.ballots.v1","ballots":[{"brief_id":"one","vote":"candidate"}],"calibration":Infinity}'
+run_bad '{"schema":"polylane.taste.ballots.v1","schema":"polylane.taste.ballots.v1","ballots":[{"brief_id":"one","vote":"candidate"}]}'
+run_bad '{"schema":"polylane.taste.ballots.v1","ballots":[{"brief_id":"one","brief_id":"replayed","vote":"candidate"}]}'
 
 locale_output=$(printf '%s' "$valid_70" | LC_ALL=de_DE.UTF-8 "$STATS" aggregate 2>/dev/null || true)
 assert_eq "$locale_output" "$valid_70_output"

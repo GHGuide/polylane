@@ -13,12 +13,19 @@ invalid() {
 }
 
 aggregate() {
+  local ballot_json duplicate_paths
   command -v jq >/dev/null 2>&1 || {
     printf '%s\n' 'polylane-taste-stats.sh: jq is required' >&2
     exit 127
   }
 
-  if ! jq -ceS '
+  ballot_json=$(cat) || invalid
+  if ! duplicate_paths=$(printf '%s' "$ballot_json" | jq --stream -r 'select(length == 2) | .[0] | map(tostring) | join("\u001f")' 2>/dev/null | LC_ALL=C sort | uniq -d); then
+    invalid
+  fi
+  [ -z "$duplicate_paths" ] || invalid
+
+  if ! printf '%s' "$ballot_json" | jq -ceS '
     def reject: error("invalid ballots");
     if type != "object" then reject else . end
     | if (keys == ["ballots", "schema"]) then . else reject end
