@@ -92,3 +92,4 @@ ShellCheck evidence rather than relying on the recovery lane's handoff claim.
 
 DEFERRED: the ten-product blind human visual corpus remains external; it neither
 blocks nor substitutes for this hermetic installer and verdict-path evidence.
+POLYLANE-VERDICT: GO run=c36-verdict-path-20260811-a1
