@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c37-taste-research-20260811-a1",
   "started_at": 1786473118,
-  "updated_at": 1786474961,
-  "wall_s": 1843,
+  "updated_at": 1786474967,
+  "wall_s": 1849,
   "lanes": {
     "hci-rubric": {
       "launches": 1,
@@ -55,9 +55,9 @@
     "anti-homogenization": 87942,
     "threat-model": 71768,
     "red-team": 537942,
-    "integrator": 878601
+    "integrator": 878799
   },
-  "cleanup": "pending",
+  "cleanup": "warning",
   "events": [
     {
       "type": "initialized",
@@ -220,6 +220,65 @@
       "lane": "integrator",
       "at": 1786474961,
       "added": 9597141
+    },
+    {
+      "type": "cleanup",
+      "state": "warning",
+      "at": 1786474967
+    },
+    {
+      "type": "usage_capture",
+      "lane": "hci-rubric",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "human-corpus",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "judge-science",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "visual-feedback",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "design-practice",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "anti-homogenization",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "threat-model",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "red-team",
+      "at": 1786474967,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786474967,
+      "added": null
     }
   ],
   "usage": {

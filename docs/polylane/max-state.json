@@ -1517,9 +1517,9 @@
           "id": "m32.1",
           "text": "Synthesize primary research into a falsifiable visual-taste protocol and threat model",
           "weight": 140,
-          "status": "doing",
+          "status": "done",
           "cycle": 37,
-          "evidence": "cycle 37 research swarm planned"
+          "evidence": "integrator GO; promoted cycle 37"
         },
         {
           "id": "m32.2",

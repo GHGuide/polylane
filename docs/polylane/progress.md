@@ -2,23 +2,18 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 37 research integration
+## Cycle 37
 
-`m32.1` has a research-only GO in [RESEARCH](taste-certification/RESEARCH.md) and
-[PROTOCOL](taste-certification/PROTOCOL.md): no live corpus, render, human panel,
-calibration, or taste certificate was run. `m32.2`–`m32.5` and `c84`–`c90` remain
-open implementation/external-evidence work; runner-owned state promotion remains
-authoritative.
+subgoals: 87/92 done · criteria: 82/90 done · 92%
 
-## Cycle 36
-
-subgoals: 86/87 done · criteria: 82/83 done · 98%
-
-**Route:** `NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
+**Route:** `CONTINUE m32.2  Implement live rendering, blinded ballots, calibration, aggregation, and fail-closed taste certification`
 
 ## Open autonomous work
 
-- None
+- `m32.2` [open, w139] — Implement live rendering, blinded ballots, calibration, aggregation, and fail-closed taste certification
+- `m32.3` [open, w138] — Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts
+- `m32.4` [open, w137] — Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm
+- `m32.5` [open, w136] — Install both provider packages and certify the complete workflow end to end
 
 ## External/user evidence
 
@@ -113,10 +108,21 @@ subgoals: 86/87 done · criteria: 82/83 done · 98%
 - `c81` [done] — Focused runs can declare zero expected terminal gates while terminal runs default to one, keeping final efficiency proof, cleanup, report, and criterion state consistent
 - `c82` [done] — Reinstalling either provider package over a legacy or full-repository skill directory removes stale package artifacts and leaves both Codex discovery roots byte-identical to the current certified package
 - `c83` [done] — Every compiled integrator prompt writes its only current-run verdict to docs/verify-integration.md, keeps docs/status-integrator.md status-only, and fails preflight when that boundary is ambiguous
+- `c84` [open] — Visual promotion reads real browser-rendered desktop/mobile/state pixels with provenance and rejects missing, duplicate, stale, or synthetic-placeholder evidence
+- `c85` [open] — Taste judges are calibrated against openly licensed human-rated UI examples and weak or inconsistent judges cannot vote
+- `c86` [open] — Every comparison is identity-hidden, pointwise-before-pairwise, side-mirrored, independent, and checked for position bias and instruction leakage
+- `c87` [open] — A champion needs at least ten varied briefs, five eligible votes per brief, at least seventy percent preference, a positive confidence bound, and zero accessibility regression
+- `c88` [open] — UI builders explore divergent directions and rendered candidates, then perform at most two evidence-targeted repairs without forgetting the frozen goal or design lock
+- `c89` [open] — Taste scoring rewards product fit, hierarchy, typography, color, spatial rhythm, craftsmanship, originality, and coherent states while penalizing cross-brief template sameness
+- `c90` [open] — Claude and Codex packages ship the same taste contract and a fresh install passes focused, full, shell, capture, benchmark, and live workflow checks
 
 ## Acceptance checks
 
-- Total: 99
-- Pass: 99
+- Total: 104
+- Pass: 100
 - Fail: 0
-- Unchecked: 0
+- Unchecked: 4
+  - `m32.2` [unchecked] — tests/test-taste-certification.sh && tests/test-visual-capture.sh && shellcheck -S warning bin/polylane-taste.sh bin/polylane-visual-capture.sh
+  - `m32.3` [unchecked] — tests/test-visual-intelligence.sh && tests/test-visual-loop-integration.sh && tests/test-skill-parity.sh
+  - `m32.4` [unchecked] — bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == "TASTE-CERTIFIED" and .human_calibrated == true and .eligible_judges >= 5 and .briefs >= 10 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null
+  - `m32.5` [unchecked] — tests/run.sh && shellcheck -S warning bin/*.sh && tests/test-install.sh && tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse
