@@ -109,6 +109,7 @@ before=$(git -C "$REPO_ROOT" rev-parse HEAD)
 printf 'user edit\n' >> "$REPO_ROOT/README.md"
 promote_to_main; user_dirt_rc=$?
 assert_eq "user-dirt-blocks-promotion" "1" "$user_dirt_rc"
+assert_contains "user-dirt-records-exact-promotion-blocker" "unrelated user change: README.md" "${PROMOTION_FAILURE_REASON:-}"
 assert_eq "user-dirt-base-unchanged" "$before" "$(git -C "$REPO_ROOT" rev-parse HEAD)"
 assert_contains "user-dirt-survives-untouched" "user edit" "$(cat "$REPO_ROOT/README.md")"
 assert_eq "user-dirt-not-implicitly-staged" " M README.md" "$(git -C "$REPO_ROOT" status --porcelain)"
@@ -125,6 +126,7 @@ git -C "$REPO_ROOT" commit -am 'base conflict' -q
 conflict_before=$(git -C "$REPO_ROOT" rev-parse HEAD)
 promote_to_main; conflict_rc=$?
 assert_eq "merge-conflict-fails-transaction" "1" "$conflict_rc"
+assert_contains "merge-conflict-records-exact-promotion-blocker" "merge transaction failed" "${PROMOTION_FAILURE_REASON:-}"
 assert_eq "merge-conflict-base-ref-unchanged" "$conflict_before" "$(git -C "$REPO_ROOT" rev-parse HEAD)"
 assert_eq "merge-conflict-index-clean" "" "$(git -C "$REPO_ROOT" ls-files --unmerged)"
 assert_eq "merge-conflict-state-failed" "failed" "${PROMOTION_STATE:-}"

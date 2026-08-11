@@ -3565,9 +3565,63 @@ parse_repairability() {
   grep -Eq "$pat" "$f" 2>/dev/null && echo "NO" || echo "YES"
 }
 
+# contract_terminal_eligible : terminal ownership is derived from the current
+# target, not merely from a READY sentinel.  A focused recovery cycle can thus
+# promote without consuming a counterfeit terminal boundary.
+contract_terminal_eligible() {
+  local targets outside has_terminal
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  targets=$(jq -r '.target_subgoals | join(",")' "$MANIFEST") || return 1
+  has_terminal=$(jq -r --arg targets ",$targets," '
+    any((.accept // [])[];
+      (.tier // "focused") == "terminal"
+      and (.sid as $sid | ($targets | contains("," + $sid + ","))))
+  ' "$STATE_FILE") || return 1
+  [ "$has_terminal" = true ] || return 1
+  outside=$(jq -r --arg targets ",$targets," '
+    [.milestones[].subgoals[]
+      | select(.status=="open" or .status=="doing")
+      | .id as $sid
+      | select(($targets | contains("," + $sid + ",")) | not)]
+    | length
+  ' "$STATE_FILE") || return 1
+  [ "$outside" = 0 ]
+}
+
+# contract_focused_proof_key : this is intentionally an in-process READY
+# handoff receipt, not general acceptance memoization.  It binds one focused
+# pass to the committed, clean integrator tree and immutable selected checks.
+contract_focused_proof_key() {
+  local tip targets definitions clean
+  [ -d "${INT_WORKTREE:-}" ] || return 1
+  tip=$(git -C "$INT_WORKTREE" rev-parse HEAD 2>/dev/null) || return 1
+  clean=$(git -C "$INT_WORKTREE" status --porcelain 2>/dev/null) || return 1
+  [ -z "$clean" ] || return 1
+  targets=$(jq -c '.target_subgoals // []' "$MANIFEST" 2>/dev/null) || return 1
+  definitions=$(jq -c --argjson targets "$targets" '
+    [(.accept // [])[]
+      | select(.sid as $sid | any($targets[]; . == $sid))
+      | {sid, cmd, tier:(.tier // "focused"), key:(.key // ""), deps:(.deps // [])}]
+    | sort_by(.sid, .tier, .key, .cmd)
+  ' "$STATE_FILE" 2>/dev/null) || return 1
+  printf '%s|%s|%s\n' "$tip" "$(printf '%s' "$targets" | cksum | awk '{print $1}')" \
+    "$(printf '%s' "$definitions" | cksum | awk '{print $1}')"
+}
+
+contract_focused_proof_capture() {
+  FOCUSED_ACCEPTANCE_PROOF=$(contract_focused_proof_key) || { FOCUSED_ACCEPTANCE_PROOF=""; return 1; }
+}
+
+contract_focused_proof_matches() {
+  local key
+  [ -n "${FOCUSED_ACCEPTANCE_PROOF:-}" ] || return 1
+  key=$(contract_focused_proof_key) || return 1
+  [ "$key" = "$FOCUSED_ACCEPTANCE_PROOF" ]
+}
+
 # contract_acceptance_gate : run only this cycle's focused graders in the
-# integrator worktree. If these are the last autonomous subgoals, also run the
-# terminal suite once before promotion.
+# integrator worktree. A just-passed READY precheck may be consumed once when
+# its exact proof still matches; terminal mode runs only for eligible targets.
 report_acceptance_failures() {
   printf 'ACCEPTANCE-GATE: failed frozen checks:\n' >&2
   jq -r '(.accept // [])[] | select(.status=="fail") | "\(.sid): \(.cmd) [fail]"' \
@@ -3575,29 +3629,27 @@ report_acceptance_failures() {
 }
 
 contract_acceptance_gate() {
-  local verdict="${1:-GO}" terminal_counted="${2:-0}" targets outside terminal_targets
+  local verdict="${1:-GO}" terminal_counted="${2:-0}" reuse_focused="${3:-0}" targets outside terminal_targets
   local failure_root="$REPO_ROOT"
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 0
   targets=$(jq -r '.target_subgoals | join(",")' "$MANIFEST")
-  (
-    cd "$INT_WORKTREE"
-    export REPO="$PWD" REPO_ROOT="$PWD"
-    export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
-    export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
-    export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
-    export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
-    export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
-    "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
-      --cycle "$CYCLE" --targets "$targets" --focused
-  ) || { report_acceptance_failures; return 1; }
-  outside=$(jq -r --arg targets ",$targets," '
-    [.milestones[].subgoals[]
-      | select(.status=="open" or .status=="doing")
-      | .id as $sid
-      | select(($targets | contains("," + $sid + ",")) | not)]
-    | length
-  ' "$STATE_FILE")
-  if [ "$outside" = "0" ]; then
+  if [ "$reuse_focused" = 1 ] && contract_focused_proof_matches; then
+    FOCUSED_ACCEPTANCE_PROOF=""
+  else
+    FOCUSED_ACCEPTANCE_PROOF=""
+    (
+      cd "$INT_WORKTREE"
+      export REPO="$PWD" REPO_ROOT="$PWD"
+      export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
+      export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+      export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
+      export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
+      export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
+      "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+        --cycle "$CYCLE" --targets "$targets" --focused
+    ) || { report_acceptance_failures; return 1; }
+  fi
+  if contract_terminal_eligible; then
     if [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
       # External terminal checks require a human, physical device, independent
       # witness, or distribution authority. Re-running them locally cannot turn
@@ -3684,7 +3736,8 @@ contract_focused_acceptance_gate() {
     export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
       --cycle "$CYCLE" --targets "$targets" --focused
-  ) || { report_acceptance_failures; return 1; }
+  ) || { FOCUSED_ACCEPTANCE_PROOF=""; report_acceptance_failures; return 1; }
+  contract_focused_proof_capture || true
 }
 
 # contract_ready_verdict : READY means the current target is implementation-
@@ -3779,17 +3832,24 @@ merge_gate() {
         host_gate_failure "could not resolve the honest post-gate routing state" || true
         v="NO-GO"; VERDICT_REPAIRABLE="YES"
       else
-        run_stats terminal-gate
-        if ! write_efficiency_proof gate; then
-          host_gate_failure "efficiency proof failed at ${EFFICIENCY_GATE_PROOF:-unknown}; terminal gate is exhausted for this run" || true
-          v="NO-GO"; VERDICT_REPAIRABLE="NO"
-        elif contract_acceptance_gate "$host_verdict" 1; then
+        if contract_terminal_eligible; then
+          run_stats terminal-gate
+          if ! write_efficiency_proof gate; then
+            host_gate_failure "efficiency proof failed at ${EFFICIENCY_GATE_PROOF:-unknown}; terminal gate is exhausted for this run" || true
+            v="NO-GO"; VERDICT_REPAIRABLE="NO"
+          elif contract_acceptance_gate "$host_verdict" 1 1; then
+            v="$host_verdict"
+          else
+            # The coordinator owns one terminal attempt. A model repair cannot make
+            # that same attempt unused; it would only add a restart and a second gate.
+            host_gate_failure "frozen checks failed; terminal gate is exhausted for this run" || true
+            v="NO-GO"; VERDICT_REPAIRABLE="NO"
+          fi
+        elif contract_acceptance_gate "$host_verdict" 0 1; then
           v="$host_verdict"
         else
-          # The coordinator owns one terminal attempt. A model repair cannot make
-          # that same attempt unused; it would only add a restart and a second gate.
-          host_gate_failure "frozen checks failed; terminal gate is exhausted for this run" || true
-          v="NO-GO"; VERDICT_REPAIRABLE="NO"
+          host_gate_failure "focused checks changed before promotion; repair and hand off again" || true
+          v="NO-GO"; VERDICT_REPAIRABLE="YES"
         fi
       fi
     fi
@@ -4119,6 +4179,15 @@ promotion_add_owned_path() {
   PROMOTION_OWNED_PATHS+=("$path")
 }
 
+# Promotion diagnostics are durable report data, never shell or Markdown syntax.
+# Keep the exact blocker bounded and one-line so an unusual user filename cannot
+# turn a failed transaction into an opaque or malformed report.
+promotion_failure_reason_set() {
+  local reason="$1"
+  reason=$(printf '%s' "$reason" | tr '\r\n' '  ' | cut -c1-240)
+  PROMOTION_FAILURE_REASON="$reason"
+}
+
 promotion_require_owned_paths() {
   local path kind="$1"
   while IFS= read -r path; do
@@ -4128,6 +4197,7 @@ promotion_require_owned_paths() {
     elif [ "$kind" = untracked ] && runner_runtime_untracked_path "$path"; then
       :
     else
+      promotion_failure_reason_set "$kind path blocked promotion: unrelated user change: $path"
       echo "promote: refusing to stage unrelated user change: $path" >&2
       return 1
     fi
@@ -4140,13 +4210,14 @@ promotion_require_owned_paths() {
 # before the base ref can move.
 prepare_promotion_base() {
   PROMOTION_OWNED_PATHS=()
+  PROMOTION_FAILURE_REASON=""
   promotion_require_owned_paths tracked < <(git -C "$REPO_ROOT" diff --name-only) || return 1
   promotion_require_owned_paths tracked < <(git -C "$REPO_ROOT" diff --cached --name-only) || return 1
   promotion_require_owned_paths untracked < <(git -C "$REPO_ROOT" ls-files --others --exclude-standard) || return 1
   [ "${#PROMOTION_OWNED_PATHS[@]}" -gt 0 ] || return 0
-  run git -C "$REPO_ROOT" add -- "${PROMOTION_OWNED_PATHS[@]}" || return 1
+  run git -C "$REPO_ROOT" add -- "${PROMOTION_OWNED_PATHS[@]}" || { promotion_failure_reason_set "could not stage runner-owned promotion state"; return 1; }
   run git -C "$REPO_ROOT" commit --only -m "polylane: record runner state before promotion" -- \
-    "${PROMOTION_OWNED_PATHS[@]}"
+    "${PROMOTION_OWNED_PATHS[@]}" || { promotion_failure_reason_set "could not commit runner-owned promotion state"; return 1; }
 }
 
 # candidate_state_conflict_is_safe PATH : during a verified promotion the base
@@ -4245,6 +4316,7 @@ promote_to_main() {
       if ! resolve_verified_state_conflict; then
         git -C "$REPO_ROOT" merge --abort 2>/dev/null || true
         PROMOTION_STATE=failed
+        promotion_failure_reason_set "merge transaction failed while integrating $INT_BRANCH"
         echo "promote: merge FAILED — base restored, nothing merged or deleted. Resolve manually." >&2
         return 1
       fi
@@ -4517,7 +4589,7 @@ report_host_gate_failure() {
 }
 
 write_report() {
-  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" tmp i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state host_failure_detail="" host_failure_path="" failure_reason=""
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" tmp i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state host_failure_detail="" host_failure_path="" failure_reason="" promotion_failure_reason=""
   # dry-run must never touch the tree — print the intent, write nothing.
   if [ "${DRY_RUN:-0}" = "1" ]; then
     printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
@@ -4525,6 +4597,7 @@ write_report() {
   fi
   when=$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo "?")
   promotion_state="${PROMOTION_STATE:-not-attempted}"
+  promotion_failure_reason="${PROMOTION_FAILURE_REASON:-}"
   cleanup_state="${CLEANUP_STATE:-retained}"
   disk_guard || { echo "write_report: disk headroom is below the safety floor" >&2; return 1; }
   mkdir -p "$REPO_ROOT/docs" || return 1
@@ -4624,6 +4697,9 @@ write_report() {
       fi
     elif [ "$promotion_state" = failed ]; then
       echo "**${verdict}** — promotion did not complete. Nothing merged, nothing cleaned; the lane worktrees are retained for resolution and re-run."
+      if [ -n "$promotion_failure_reason" ]; then
+        printf 'Promotion blocker: %s.\n' "$promotion_failure_reason"
+      fi
     elif [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
       echo "**${verdict}** — integrator evidence is favorable, but promotion state is unknown. Nothing is claimed merged or cleaned; inspect the base and retained worktrees."
     elif [ -n "$host_failure_detail" ]; then
@@ -4648,6 +4724,8 @@ write_report() {
       echo "- Review the merged result, then \`git push\` to back it up."
     elif [ -n "$host_failure_detail" ]; then
       echo "- Read \`${host_failure_path}\` for the runner-owned gate failure; preserve the integrator's READY evidence and repair the host condition in a fresh run."
+    elif [ "$promotion_state" = failed ] && [ -n "$promotion_failure_reason" ]; then
+      printf '%s\n' "- Resolve the promotion blocker: $promotion_failure_reason. Preserve the verified branch, worktrees, and user data, then re-run."
     elif [ -n "${FAILED_LANES:-}" ]; then
       for i in "${!LANE_NAMES[@]}"; do
         lane_failed "${LANE_NAMES[$i]}" || continue

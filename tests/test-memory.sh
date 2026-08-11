@@ -121,6 +121,34 @@ POLYLANE_ACCEPT_FAILURE_PHASE="focused" \
   "$MEM" "$PASS_E" check-accept >/dev/null 2>&1
 assert_fail "accept-success-creates-no-durable-chatter" \
   test -e "$SUCCESS_ROOT/docs/polylane/host-gate-failures/accept-success.acceptance.jsonl"
+
+# A successful outer check owns its evidence boundary.  A nested test command
+# may deliberately exercise a failing fixture, but must never inherit authority
+# to write the outer runner's canonical record.
+NESTED_ROOT="$TEST_TMPDIR/accept-nested"; mkdir -p "$NESTED_ROOT"
+OUTER="$TEST_TMPDIR/outer.json"; INNER="$TEST_TMPDIR/inner.json"
+"$MEM" "$OUTER" init g >/dev/null; "$MEM" "$OUTER" add-milestone m1 M >/dev/null
+"$MEM" "$OUTER" add-subgoal m1 outer outer >/dev/null
+"$MEM" "$INNER" init g >/dev/null; "$MEM" "$INNER" add-milestone m1 M >/dev/null
+"$MEM" "$INNER" add-subgoal m1 inner inner >/dev/null
+"$MEM" "$INNER" add-accept inner false >/dev/null
+"$MEM" "$OUTER" add-accept outer "'$MEM' '$INNER' check-accept >/dev/null 2>&1 || true" >/dev/null
+POLYLANE_ACCEPT_FAILURE_ROOT="$NESTED_ROOT" \
+POLYLANE_ACCEPT_FAILURE_RUN_ID="accept-nested" \
+POLYLANE_ACCEPT_FAILURE_PHASE="focused" \
+  "$MEM" "$OUTER" check-accept >/dev/null
+assert_fail "accept-nested-fixture-cannot-write-outer-evidence" \
+  test -e "$NESTED_ROOT/docs/polylane/host-gate-failures/accept-nested.acceptance.jsonl"
+
+# Re-running a passing top-level phase clears its stale current-run record.
+STALE="$SUCCESS_ROOT/docs/polylane/host-gate-failures/accept-success.acceptance.jsonl"
+mkdir -p "$(dirname "$STALE")"
+printf '%s\n' '[{"run":"accept-success","phase":"focused","command":"false","return_code":1,"timestamp":"?","output_tail":"stale"}]' > "$STALE"
+POLYLANE_ACCEPT_FAILURE_ROOT="$SUCCESS_ROOT" \
+POLYLANE_ACCEPT_FAILURE_RUN_ID="accept-success" \
+POLYLANE_ACCEPT_FAILURE_PHASE="focused" \
+  "$MEM" "$PASS_E" check-accept >/dev/null
+assert_fail "accept-success-clears-stale-current-phase-evidence" test -e "$STALE"
 # flip the grader to pass -> check + met both clear
 B="$TEST_TMPDIR/accept-ok.json"
 "$MEM" "$B" init g >/dev/null; "$MEM" "$B" add-criterion c1 x >/dev/null

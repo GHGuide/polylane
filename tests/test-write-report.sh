@@ -59,6 +59,13 @@ write_report GO
 promotion_failed=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
 assert_contains "failed-promotion-report-does-not-claim-merge" "promotion did not complete" "$promotion_failed"
 assert_contains "failed-promotion-report-retains-worktrees" "Nothing merged, nothing cleaned" "$promotion_failed"
+PROMOTION_FAILURE_REASON='untracked path blocked promotion: literal $(touch promotion-reason-never-runs)'
+write_report HALTED
+promotion_reason=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
+assert_contains "failed-promotion-report-names-bounded-blocker" "untracked path blocked promotion" "$promotion_reason"
+assert_contains "failed-promotion-report-guides-blocker-recovery" "Resolve the promotion blocker" "$promotion_reason"
+assert_fail "failed-promotion-report-never-executes-blocker-text" test -e promotion-reason-never-runs
+PROMOTION_FAILURE_REASON=""
 if printf '%s' "$promotion_failed" | grep -qF -- "all lanes merged"; then fail "failed-promotion-report-no-false-success" "merge success was inferred from GO"; else pass "failed-promotion-report-no-false-success"; fi
 assert_eq "failed-promotion-ledger-is-nogo" "1" "$(jq -s '.[-1].nogo' "$TEST_TMPDIR/docs/polylane/spend-ledger.jsonl")"
 

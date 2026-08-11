@@ -111,7 +111,7 @@ EFFICIENCY_GATE_PROOF="$SAVED_EFFICIENCY_GATE_PROOF"
 RUN_ID=eff-1
 : > "$ENV_LOG"
 assert_ok "efficiency-acceptance-inherits-host-proof" contract_acceptance_gate GO 1
-assert_eq "efficiency-acceptance-exports-proof-twice" "2" "$(grep -cF "${EFFICIENCY_GATE_PROOF}|eff-1|" "$ENV_LOG")"
+assert_eq "efficiency-focused-only-acceptance-exports-proof-once" "1" "$(grep -cF "${EFFICIENCY_GATE_PROOF}|eff-1|" "$ENV_LOG")"
 SCRIPT_DIR="$REAL_SCRIPT_DIR"
 unset POLYLANE_TEST_ENV_LOG
 

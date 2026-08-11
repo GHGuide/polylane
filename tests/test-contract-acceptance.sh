@@ -100,4 +100,47 @@ assert_ok "accept-canonical-output-retains-current-run" jq -e '
 ' "$CANONICAL_FAILURE"
 unset RUN_ID
 
+# A focused-only target may be source-complete even with no remaining
+# autonomous work.  It must promote without inventing a terminal boundary.
+FOCUSED_STATE="$TEST_TMPDIR/focused-only.json"
+"$MEM" "$FOCUSED_STATE" init goal >/dev/null
+"$MEM" "$FOCUSED_STATE" add-milestone m1 build >/dev/null
+"$MEM" "$FOCUSED_STATE" add-subgoal m1 focused "focused only" >/dev/null
+"$MEM" "$FOCUSED_STATE" add-accept focused true >/dev/null
+printf '%s\n' '{"target_subgoals":["focused"]}' > "$MANIFEST"
+STATE_FILE="$FOCUSED_STATE"
+: > "$TERMINAL_LOG"
+assert_ok "accept-focused-only-target-promotes" contract_acceptance_gate GO
+assert_eq "accept-focused-only-target-never-counts-terminal" "0" "$(wc -l < "$TERMINAL_LOG" | tr -d ' ')"
+
+# READY may consume one just-passed focused proof only at the unchanged,
+# committed integrator tip.  A dirty tip invalidates it and reruns the command.
+REUSE="$TEST_TMPDIR/reuse"; REUSE_INT="$REUSE/int"; REUSE_LOG="$TEST_TMPDIR/reuse.log"
+mkdir -p "$REUSE_INT"
+git -C "$REUSE_INT" init -q -b main
+git -C "$REUSE_INT" config user.email test@example.invalid
+git -C "$REUSE_INT" config user.name test
+printf 'clean\n' > "$REUSE_INT/README.md"
+git -C "$REUSE_INT" add README.md && git -C "$REUSE_INT" commit -qm clean
+REUSE_STATE="$REUSE/state.json"; mkdir -p "$REUSE"
+"$MEM" "$REUSE_STATE" init goal >/dev/null
+"$MEM" "$REUSE_STATE" add-milestone m1 build >/dev/null
+"$MEM" "$REUSE_STATE" add-subgoal m1 s1 target >/dev/null
+"$MEM" "$REUSE_STATE" add-accept s1 "printf 'focused\\n' >> '$REUSE_LOG'" >/dev/null
+"$MEM" "$REUSE_STATE" add-accept s1 "printf 'terminal\\n' >> '$REUSE_LOG'" --tier terminal >/dev/null
+printf '%s\n' '{"target_subgoals":["s1"]}' > "$MANIFEST"
+STATE_FILE="$REUSE_STATE"; REPO_ROOT="$REUSE"; INT_WORKTREE="$REUSE_INT"; FOCUSED_ACCEPTANCE_PROOF=""
+: > "$REUSE_LOG"
+contract_focused_acceptance_gate; reuse_capture_rc=$?
+assert_eq "ready-focused-proof-captures-pass" "0" "$reuse_capture_rc"
+contract_acceptance_gate GO 1 1; reuse_rc=$?
+assert_eq "ready-focused-proof-reuses-unchanged-tip" "0" "$reuse_rc"
+assert_eq "ready-focused-proof-runs-focused-once" "1" "$(grep -c '^focused$' "$REUSE_LOG")"
+contract_focused_acceptance_gate; recapture_rc=$?
+assert_eq "ready-focused-proof-recaptures-before-mutation" "0" "$recapture_rc"
+printf 'dirty\n' >> "$REUSE_INT/README.md"
+contract_acceptance_gate GO 1 1; dirty_reuse_rc=$?
+assert_eq "ready-focused-proof-reruns-when-dirty" "0" "$dirty_reuse_rc"
+assert_eq "ready-focused-proof-dirty-reruns-focused" "3" "$(grep -c '^focused$' "$REUSE_LOG")"
+
 finish
