@@ -1,89 +1,55 @@
-# Cycle 32 integration verification
+# Cycle 33 integration verification
 
-Run: `c32-contract-drift-20260811-a1`
+Run: `c33-efficiency-contract-20260811-a1`
 
-## Exact-tip provenance
+## Exact-tip provenance and scope
 
-- Frozen base was `03421216f79131adb286b428911afe184c7bc8fe` on
-  `candidate/c32-contract-drift`; Cycle 31 remains NO-GO.
-- Builder repair commit `bf3d0c299840120a841b01682d249b9c7b4a62e0` and
-  current-run DONE status commit were present before integration. The exact final
-  builder tip `712e2f898cf4e21b202c8af6e6990455bffc5e06` was merged as
-  `63768426036f99c7c2b3bbee78c0ebc8af469c0f`.
-- The complete base-to-merge diff contains only four fixture expectation edits,
-  one prompt sentence, and builder evidence/status. `git diff --name-only -- bin`
-  returned no path, so production Bash is unchanged.
-- Integration evidence and post-cycle records were committed as
-  `febf429b9ae567f896ce8d1f231f04047a00666b`. Before this final marker
-  transaction, `git status --short` contained only runner-owned
-  `.polylane-prompt.txt`.
+- Frozen base: `e4df63d7f5903c73629d0ab7e8eddea2edf427cb`.
+- Builder DONE tip: `619f4dec64e7a7592262d78107fe50a0cb9dc2bb`.
+- Builder implementation: `62b9453afd482ff1b0855840a4f080d4e66d9782`.
+- Exact-tip merge: `fe4f8c18f9a180ab0c20d435e9c5f2e8e854b890`.
 
-The physical source worktree is
-`/Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c32-integrator`.
-The coordination/control root is
-`/Users/leonardo/Downloads/polylane-c32/.polylane/runtime/c32-contract-drift-20260811-a1`.
-Source review and checks stayed in the former; relay, inbox, and refinement state
-stayed in the latter.
+The complete base diff contains one production change,
+`bin/polylane-efficiency.sh`, two focused test changes, and the builder's evidence
+and status. No production file besides the efficiency helper changed. No runner,
+terminal acceptance, installer, doctor rehearsal, deployment, publication, push,
+or external action was changed or invoked.
 
-## Independent diff review
+## Independent contract review
 
-No correctness, security, performance, or maintainability blocker was found.
-The repair changes assertions and prompt clarity without weakening runtime:
+The old helper was executed from the frozen base against a manifest declaring
+`expected_terminal_gates: 0` and matching complete-cleanup stats. Capture returned
+`1`, wrote `Status: FAIL`, recorded `Terminal gates: 0`, and named only
+`terminal_gates=0` as its failure.
 
-- `load_manifest` still passes the integrator worktree and every lane worktree
-  through `abs_worktree`, then builds each `LANE_POLLSPEC` from that canonical
-  lane value.
-- `int-worktree`, `lane0-worktree`, `lane0-pollspec`, and `lane1-pollspec` now
-  expect paths rooted at the fixture project's absolute `$PROJ`; no assertion
-  substitutes the integrator cwd or a hard-coded host path.
-- Block G contains `only coordinator-owned terminal checks remain` exactly once.
-  `superpowers:using-superpowers`, the frozen generic skill stack sentinel, is
-  absent. The terminal boundary remains coordinator-owned.
-- `references/prompt-blocks.md` is 18,995 bytes, up from 18,948: a 47-byte
-  addition. The 19/19 prompt-economy contract and 14/14 orchestration contract,
-  including over-budget rejection, prove that the compact prompt remains inside
-  its frozen mechanical admission contract.
+The repaired helper reads an explicitly present terminal-gate expectation as a
+non-negative JSON integer and defaults an absent field to `1`. Capture compares
+the actual count to that expectation and records both. Verification requires
+exactly one terminal-gate line and accepts only legacy exact
+`Terminal gates: 1` or a numeric `actual / expected` line whose values match.
+Thus focused zero passes only as `0 / 0`; terminal default passes as `1 / 1`;
+ordinary mismatches, duplicate or malformed proof lines, and string, negative,
+fractional, boolean, or null configuration values fail. The terminal default and
+coordinator ownership are unchanged. The implementation uses Bash 3.2-compatible
+syntax and portable project conventions.
 
-The change introduces no executable path, loop, input parser, external action,
-credential flow, or mutable runtime state.
+## Frozen focused acceptance
 
-## Focused results
+The matrix ran once through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- …` at source
+fingerprint `3526517000:5817`:
 
-The frozen matrix ran once through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"` after exact-tip
-merge and complete-diff review:
-
-- `bash tests/test-load-manifest.sh` — 30 pass, 0 fail;
-- `bash tests/test-prompt-economy.sh` — 19 pass, 0 fail;
-- `bash tests/test-abs-prompt.sh` — 6 pass, 0 fail;
+- `bash tests/test-efficiency-canary.sh` — 36 pass, 0 fail.
+- `bash tests/test-write-report.sh` — 55 pass, 0 fail.
+- `bash tests/test-manifest-validation.sh` — 29 pass, 0 fail.
 - `bash tests/test-orchestration-contract.sh` — 14 pass, 0 fail.
+- `shellcheck -S warning bin/polylane-efficiency.sh bin/polylane-run.sh` — pass.
 
-The four retained logs are
-`.polylane/check-cache/integrator/3699034007-122.output`,
-`2881796738-123.output`, `1942568877-119.output`, and
-`2790844805-131.output`; each records `CHECK-CACHE: PASS` for source
-`3743065850:7384`. Cached `git diff --check` passed, and after the owned evidence
-was staged, cached `git diff --cached --check` passed at source
-`950915092:17234`. The failed first whitespace attempt exposed and removed four
-extra EOF blank lines before commit; it is not counted as product acceptance.
-
-No terminal suite, complete ShellCheck, installer, doctor rehearsal, promotion,
-deployment, publication, push, or external action ran. The refinement queue
-returned `[]`, so there was no eligible item to propose or decline.
-
-## Canonical telemetry
-
-The canonical file
-`/Users/leonardo/Downloads/polylane-c32/docs/polylane/run-stats.json` records:
-
-- `terminal-contract-repair`: one launch, zero restarts;
-- `integrator`: one launch, zero restarts;
-- zero supervisor restarts;
-- zero terminal gates.
-
-The run ID is exact. Cleanup remains runner-owned and token state remains unknown;
-neither is falsely presented as completed or zero. The final relay and durable
-inbox contained no request addressed to the integrator.
+No full suite, complete production ShellCheck, installer, doctor rehearsal, or
+terminal-tier command ran. The refinement queue contained one eligible context
+compaction item; exactly one real `decline` recorded that the injected packet
+preserved the frozen goal, ownership, runtime roots, skill records, and evidence,
+with no distinct context-loss repair indicated.
 
 ## Skill receipts
 
@@ -91,20 +57,6 @@ SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claud
 
 SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
 
-SKILL-EVIDENCE: engineering:code-review — helped: the structured review tied all
-four assertions to `$PROJ`, checked the still-canonical runtime path flow, and
-confirmed that the prompt-only sentence does not weaken terminal ownership.
+SKILL-EVIDENCE: engineering:code-review — helped: the complete base diff audit confirmed the production delta is confined to the helper, preserves the default one-gate terminal boundary, fails closed on the frozen malformed inputs and proofs, and remains Bash 3.2 compatible.
 
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: the final
-gate required exact-tip ancestry, fresh cached counts, prompt-byte and negative
-contracts, canonical zero-restart/zero-terminal telemetry, and a clean owned tree
-before permitting GO.
-
-## Final verdict
-
-The two frozen Cycle 32 contract drifts are repaired with focused local proof and
-the required zero-restart, zero-terminal runtime. This verdict does not rewrite
-Cycle 31's terminal NO-GO and does not certify older autonomous subgoals. Fresh
-Cycle 33 owns terminal certification.
-
-POLYLANE-VERDICT: GO run=c32-contract-drift-20260811-a1
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: the exact merged tip was checked with the frozen cached matrix, canonical runtime counters, relay/inbox state, and clean-tree gate before any final verdict.
