@@ -38,4 +38,23 @@ POLYLANE_MIN_DISK_GB=0 POLYLANE_SESSION=vtest POLYLANE_AGENT_CMD=true \
   "$RUN" "$TEST_TMPDIR/good.json" --dry-run >/dev/null 2>&1
 assert_eq "good-manifest-rc0" "0" "$?"
 
+# Efficiency configuration is validated at the certificate helper boundary so a
+# malformed focused contract cannot be coerced into a passing proof.
+EFF="$(cd "$(dirname "$RUNNER")" && pwd)/polylane-efficiency.sh"
+EFF_STATS="$TEST_TMPDIR/eff-stats.json"
+printf '%s\n' '{"run_id":"eff-config","wall_s":1,"lanes":{},"supervisor_restarts":0,"terminal_gates":1,"tokens":1,"token_state":"known","cleanup":"complete"}' > "$EFF_STATS"
+efficiency_dies() {
+  local value="$1" name="$2" manifest="$TEST_TMPDIR/eff-$2.json" out rc
+  printf '{"run_id":"eff-config","lanes":[],"efficiency_canary":{"expected_terminal_gates":%s}}' "$value" > "$manifest"
+  out=$("$EFF" capture --manifest "$manifest" --stats "$EFF_STATS" --proof "$TEST_TMPDIR/eff-$2-proof.md" --phase final 2>&1); rc=$?
+  assert_eq "$name-rc2" "2" "$rc"
+  assert_contains "$name-msg" "invalid expected_terminal_gates" "$out"
+}
+
+efficiency_dies '"0"' "expected-terminal-gates-string"
+efficiency_dies '-1' "expected-terminal-gates-negative"
+efficiency_dies '1.5' "expected-terminal-gates-fraction"
+efficiency_dies 'true' "expected-terminal-gates-boolean"
+efficiency_dies 'null' "expected-terminal-gates-null"
+
 finish
