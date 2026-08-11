@@ -7,12 +7,14 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
 Cycle 37 taste-certification research: [plan](cycle-37-plan.md) ·
-[research scope](taste-certification/RESEARCH-SCOPE.md). Eight file-isolated Codex
-research lanes independently cover HCI aesthetics, human calibration data, judge
-reliability, rendered-feedback loops, elite design practice, anti-homogenization,
-threats, and adversarial falsification. The integrator must produce a traceable
-`RESEARCH.md` and executable `PROTOCOL.md`; implementation and the real ten-brief
-benchmark remain open until later cycles.
+[research scope](taste-certification/RESEARCH-SCOPE.md) ·
+[research synthesis](taste-certification/RESEARCH.md) ·
+[executable protocol](taste-certification/PROTOCOL.md) ·
+[council](cycle-37-council.md) · [digest](cycle-37-digest.md) ·
+[questions](cycle-37-questions.md). Eight file-isolated research lanes were merged
+into a falsifiable, provider-neutral protocol. `m32.1` is GO for research only:
+implementation, pinned corpus acquisition, real browser evidence, human calibration,
+human ballots, and the ten-brief certificate remain open for later cycles.
 
 Cycle 36 verdict-path recovery: [plan](cycle-36-plan.md) ·
 [research](cycle-36-research.md) · [skill suggestions](cycle-36-suggestions.md) ·
