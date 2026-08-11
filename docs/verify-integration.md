@@ -1,57 +1,130 @@
-# Cycle 29 integration verification
+# Cycle 30 integration verification
 
-Run: `c29-active-scope-20260811-a1`
+Run: `c30-gate-truth-20260811-a1` · branch: `lane/c30-integrator`.
 
-## Exact-tip provenance and review
+## Exact-tip provenance
 
-- Frozen recovered source: `cf60d3c1646dc6a7ae3f76a636be423cef91e9a1`.
-- Integrator pre-merge tip: `940f6f69ce460366d61391998bbe8138ed21a69e`.
-- Exact builder handoff: `7c24295ba86a8942b959b8016b9d4e5c6aeddd6d`, whose first line is `STATUS: active-scope DONE run=c29-active-scope-20260811-a1`; implementation parent: `0eb2b88fcdf381d121ed25671743a8c53532bce9`.
-- The handoff hash was merged with `git merge --ff-only 7c24295ba86a8942b959b8016b9d4e5c6aeddd6d`. The integrator inspected the complete `940f6f6..7c24295` diff across all 17 changed files and queried Graphify for the changed runtime symbols before targeted source reads.
-- Cycle 28 remains the immutable truthful HALTED run recorded at `/Users/leonardo/Downloads/polylane-c28/docs/polylane-report.md`; its eight restarts, zero terminal gates, and lack of promotion are not rewritten.
+- Frozen base: `ad01fe70e7e748bfe24afb839ae3d164baf3f7ab`.
+- Final builder status tip: `1e8f8cc96e259f31776528e5c3f981e8430ea676`.
+- Builder implementation parent:
+  `c9e37c7376d7ff0ebf22a9018318e3ef63effbe9`.
+- Exact-tip merge commit:
+  `520b7477eb6a686354f913a712758bdec9af5ddb`.
+- Verified implementation/evidence parent for this marker-last handoff:
+  `9882e4585bbc9edebd3923a56aad79b40bdd8bfc`.
+
+The builder's current-run DONE marker and evidence were read before merge. Its
+complete base diff was reviewed across memory, runner, documentation, and six
+regression files. The final builder tip is an ancestor of the integrator branch.
+Cycle 29's `9df16a3` source remains historical recovery input; its immutable outcome
+is still HALTED and is not claimed as GO.
 
 ## Independent contract review
 
-1. **Active work:** `lane_active_command` now streams raw log lines through a type-safe JSON reducer, tracks overlapping command IDs, ignores non-JSON and non-item structured warnings, and clears stale IDs at new or terminal turn boundaries. `material_progress_stalled` returns before changing fingerprint, command baseline, churn count, or replan state while any ID is active. After every ID settles, the unchanged 12-check/20-command bounded churn policy still fires.
-2. **Source roots:** manifest-relative builder and integrator worktrees are anchored to the project root and existing paths resolve through `pwd -P`. Missing or empty worktree fields remain `null`/empty until required-field validation rather than becoming plausible project paths. `pane_cmd` canonicalizes again before staging, `cd`, and exporting `POLYLANE_SOURCE_ROOT`, so the exported source root is an absolute physical worktree even when the manifest path is relative or shell-escaped.
-3. **Terminal scope:** only a clean, committed, exact-HEAD, exact current-run DONE handoff with no mapped live worker can become terminal scope evidence. Its real `SCOPE-VIOLATION` output is bounded and stored once; `health_check` marks it failed without retry, repair, respawn, or worktree mutation. Dirty, uncommitted, stale, live, and integrator trees remain outside this fail-fast path.
-4. **Planned writes:** `write_plan_contract: 1` requires every builder to provide non-empty, unique exact paths. Preflight rejects absent, absolute, traversal, globbed, duplicate, and out-of-scope paths before worktree/tmux launch. Manifest ownership globs remain newline-delimited data until the intentional matcher, so checkout files cannot pathname-expand `src/**` before scope admission, overlap review, or final lane checking. Manifests without the opt-in remain compatible. Runtime compilation removes any authored `PLANNED-WRITES` line, injects exactly one current lane boundary, and lint now rejects zero or duplicate boundaries when enabled.
-5. **Finite live-turn policy:** low/medium/high/xhigh defaults remain 300/900/1800/3600 seconds. The default finite hard cap is 14,400 seconds; `POLYLANE_LIVE_WEDGE_HARD_SECONDS` remains operator-extensible, and an explicit 7,200-second requested window is not silently clamped.
+### Terminal eligibility
 
-Independent review repaired five bounded seams: canonical replacement/exact-once lint for the compiled planned-write boundary; streaming, type-safe active-command reduction for mixed logs; newline-preserved ownership glob matching; preservation of missing worktree fields until validation; and one inherited trailing-whitespace failure in builder evidence. No frozen target, acceptance, retry budget, terminal gate, installer, or deployment behavior was weakened.
+`contract_terminal_eligible` requires a terminal-tier check for a current target
+and no open/doing autonomous subgoal outside that target. READY evaluates this
+before `run_stats terminal-gate` and terminal proof generation. A focused-only
+fixture therefore completes focused acceptance and can promote with no terminal
+execution, proof, or telemetry. A truly eligible target enters the boundary once,
+counts before proof, and passes the already-counted flag into acceptance so it is
+not charged twice. The focused-only and real-terminal paths both passed direct
+runner regressions.
 
-## Focused cached evidence
+### Evidence isolation and lifecycle
 
-Every matrix ran through `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- <command>`; unchanged expensive checks were not repeated. The one invalid test-harness assertion was replaced, then only matrices containing that changed test were rerun on the new fingerprint.
+The top-level checker retains failure authority while `_accept_run` clears all
+three `POLYLANE_ACCEPT_FAILURE_*` variables from child commands. Nested intentional
+failures therefore cannot escape into the owner run. A fresh top-level phase removes
+only same-run/same-phase stale records before selection; a true selected failure
+then atomically writes a bounded record with exact command, return code, timestamp,
+and tail. Regular-file, symlink, nonce, run, and phase guards remain fail-closed.
+The memory and acceptance fixtures proved nested isolation, current failure
+retention, and successful stale-record removal.
 
-- `m24.1`: manifest validation 19, Cycle 13 contract 56, scout 30, orchestration contract 14, dry-run purity 11; all pass.
-- `m24.2`: marker normalization 20, lane DONE 27, live DONE/scope/prompt boundary 15, scope 29; all pass on the corrected test fingerprint.
-- `m24.3`: memory 60, acceptance contract 23, verdict repair 53, report writing 51; all pass.
-- `m25.1`: wedge 31, runtime recovery 26, pane-error classification 16; all pass.
-- `m25.2`: report writing 51 and runtime recovery 26; all pass.
-- `m25.3`: run-stats concurrency/resume/usage script, report writing 51, efficiency canary 25; all pass.
-- `m25.4`: agent adapter 53, prompt compiler 16, orchestration contract 14, prompt lint 32; all pass.
-- `m26.1`: progress guard 21 and wedge 31; all pass.
-- `m26.2`: agent adapter 53, prompt compiler 16, prompt lint 32; all pass.
-- `m26.3`: live DONE 15, runtime recovery 26, report writing 51; all pass.
-- `m26.4`: scope 29, manifest validation 19, orchestration contract 14; all pass.
+### One-use focused proof
 
-Changed scripts `bin/polylane-run.sh`, `bin/polylane-scope.sh`, and `bin/polylane-promptlint.sh` pass `bash -n` and `shellcheck -S warning`. `git diff --check 940f6f69ce460366d61391998bbe8138ed21a69e` passes for the complete integrated worktree. The terminal full suite, terminal acceptance, doctor rehearsal, installers, push, deployment, publication, and external action were not run.
+The receipt is process-local and consumed once. Its key binds the exact committed
+integrator HEAD, target set, and selected acceptance `sid/cmd/tier/key/deps`
+definitions. Tree cleanliness uses the existing narrow completed-lane boundary:
+an exact byte-identical runner `.polylane-prompt.txt` and a verified sibling graph
+link are scratch, while a tampered prompt or any other tracked/untracked path is
+dirt. Regression fixtures proved one unchanged reuse and forced reruns for source
+dirt, a new clean commit, and an acceptance-command mutation. This also closes the
+final relay request that normal prompt transport must not permanently disable reuse.
 
-## Runtime and process evidence
+### Promotion and report truth
 
-Canonical runner state is `/Users/leonardo/Downloads/polylane-c29/docs/polylane/run-stats.json` with `run_id=c29-active-scope-20260811-a1`. It records exactly `active-scope: launches=1,restarts=0`, `integrator: launches=1,restarts=0`, `supervisor_restarts=0`, and `terminal_gates=0`; cleanup remains pending for the runner. Worktree-local `run-stats.json` copies are stale Cycle 23 artifacts and were excluded. The runtime relay and durable inbox had no request addressed to the integrator at review time. The refinement queue returned `[]`, so there were no eligible items requiring a `propose` or `decline` decision.
+Promotion's allowlist was not broadened. Unrelated tracked or untracked user data
+stays unstaged, unchanged, and blocks before the base moves. Merge failure restores
+the base ref and index and retains the verified branch/worktrees. The exact blocker
+is reduced to one bounded line and rendered only through `printf`; regression data
+containing both `$(...)` and backticks remained literal and executed nothing. HALTED
+output names the blocker and gives preservation/retry guidance.
 
-## Skill receipts
+## Frozen focused matrices
 
-SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
+Every matrix ran through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- <command>`.
+After the final relay repair changed source, every matrix was run fresh on source
+fingerprint `2880044635:20328`.
 
-SKILL-EVIDENCE: engineering:code-review — helped: the correctness, security, and performance review found conflicting planned-write boundaries, a type-fragile active-command reducer, cwd-driven ownership-glob expansion, and missing worktree fields normalized before validation.
+| ID | Frozen command | Result |
+| --- | --- | --- |
+| m24.1 | manifest validation, Cycle 13 contract, scout, orchestration, dry-run purity | PASS |
+| m24.2 | status normalization, lane DONE, live DONE, scope | PASS |
+| m24.3 | memory, contract acceptance, verdict repair, report | PASS: 62/38/57/55 assertions |
+| m25.1 | wedge, runtime recovery, pane error | PASS |
+| m25.2 | report, runtime recovery | PASS |
+| m25.3 | run stats, report, efficiency canary | PASS |
+| m25.4 | agent adapter, prompt compiler, orchestration, prompt lint | PASS |
+| m26.1 | progress guard, wedge | PASS |
+| m26.2 | agent adapter, prompt compiler, prompt lint | PASS |
+| m26.3 | live DONE, runtime recovery, report | PASS |
+| m26.4 | scope, manifest validation, orchestration | PASS |
+| m27.1 | contract acceptance, run stats | PASS |
+| m27.2 | memory, contract acceptance | PASS: 62/38 assertions |
+| m27.3 | promotion transaction, report | PASS: 29/55 assertions |
+| m27.4 | contract acceptance, efficiency canary | PASS: 38/25 assertions |
 
-SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
+No full suite, terminal acceptance, doctor rehearsal, installer, parity certificate,
+push, deployment, publication, or external action ran.
 
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: a combined final diff check caught inherited trailing whitespace, and an unsupported test assertion was rejected as evidence even though the harness summary incorrectly remained green.
+## Syntax, lint, whitespace, and telemetry
 
-Cycle 29 is source-ready only. `m24.4`, `m25.5`, `c66`, and `c71` remain open for the fresh Cycle 30 process and its runner-owned terminal suite, parity, installers, and live GO/NO-GO rehearsal.
+- `bash -n` passed for both changed production scripts and every changed shell test.
+- `shellcheck -S warning bin/polylane-memory.sh bin/polylane-run.sh` passed, matching
+  the repository's authoritative `bin/*.sh` ShellCheck scope. An exploratory wider
+  probe over test fixtures emitted their existing sourced-function/data-token fixture
+  warnings; it was not substituted for or represented as the project lint gate.
+- `git diff --check` passed on the final pre-handoff implementation/evidence tree.
+- Canonical `/Users/leonardo/Downloads/polylane-c30/docs/polylane/run-stats.json`
+  is nonce-matched and records `gate-truth launches=1 restarts=0`,
+  `integrator launches=1 restarts=0`, `supervisor_restarts=0`, and
+  `terminal_gates=0`. Ignored worktree copies belong to Cycle 23 and were rejected
+  as stale evidence.
+- The refinement queue returned `[]`; there were no eligible items, so no proposal
+  or decline command was valid.
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c29-active-scope-20260811-a1
+## Skill receipts and evidence
+
+SKILL-READ: 936987158-4285 | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | plugin-cache
+
+SKILL-READ: 1896692335-3646 | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | plugin-cache
+
+SKILL-EVIDENCE: 936987158-4285 — helped: the isolation/race/report-truth review
+found that byte-identical runner prompt scratch made the proof receipt unusable;
+the bounded clean-tree helper and regression now distinguish scratch from real dirt.
+
+SKILL-EVIDENCE: 1896692335-3646 — helped: fresh post-repair execution of all 15
+matrices, exact ancestry, syntax/lint/whitespace checks, and nonce-matched zero-gate
+telemetry preceded the verdict.
+
+## Final verdict
+
+Cycle 30's frozen focused source and evidence are green with two launches, zero
+restarts, and zero terminal gates. The separate Cycle 31 terminal certificate remains
+untouched and owns all terminal work.
+
+POLYLANE-VERDICT: GO run=c30-gate-truth-20260811-a1
