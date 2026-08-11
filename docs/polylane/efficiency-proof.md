@@ -1,14 +1,13 @@
 # polylane efficiency proof
 
-- Run: c32-contract-drift-20260811-a1
+- Run: c33-efficiency-contract-20260811-a1
 - Phase: final
-- Status: FAIL
-- Wall seconds: 792 / 7200
+- Status: PASS
+- Wall seconds: 945 / 7200
 - Launches: 2 / 2
 - Restarts: 0 / 0
-- Terminal gates: 0
+- Terminal gates: 0 / 0
 - Cleanup: complete
-- Tokens: 2311496 (known)
+- Tokens: 3416675 (known)
 - Unexpected launches: 0
 - Manual intervention policy: forbidden
-- Failures: terminal_gates=0

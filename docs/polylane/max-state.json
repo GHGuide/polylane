@@ -558,14 +558,14 @@
       "id": "c80",
       "text": "Manifest tests assert the absolute physical-worktree contract and builder prompts explicitly reserve terminal checks for the coordinator",
       "weight": 111,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c81",
       "text": "Focused runs can declare zero expected terminal gates while terminal runs default to one, keeping final efficiency proof, cleanup, report, and criterion state consistent",
       "weight": 112,
-      "status": "open",
+      "status": "done",
       "score": 0
     }
   ],
@@ -1412,9 +1412,9 @@
           "id": "m29.1",
           "text": "Make efficiency certificates grade the manifest-declared terminal-gate count and preserve backward-compatible terminal proof verification",
           "weight": 112,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 33,
+          "evidence": "integrator GO; promoted cycle 33"
         }
       ]
     }
@@ -1713,6 +1713,12 @@
       "kind": "learning",
       "text": "Cycle 32 focused GO cleaned successfully but final efficiency hard-required one terminal gate, creating a false cleanup warning and leaving c80 open",
       "meta": "report cleanup=complete versus warning text; efficiency proof terminal_gates=0"
+    },
+    {
+      "cycle": 34,
+      "kind": "decision",
+      "text": "Run one fresh zero-retry terminal certificate over every remaining autonomous subgoal after Cycle 33 repaired focused efficiency truth",
+      "meta": "default expected_terminal_gates=1; exactly two launches; one terminal event"
     }
   ],
   "accept": [

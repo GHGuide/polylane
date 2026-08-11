@@ -2,71 +2,11 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-Cycle 33 merged exact repair tip
-`619f4dec64e7a7592262d78107fe50a0cb9dc2bb`. The efficiency helper now
-grades manifest-declared terminal gates, defaults a missing field to one, and
-verifies both current actual/expected and legacy exact-one proofs fail-closed. The
-cached frozen matrix passes with exactly two launches, zero restarts, and zero
-terminal gates. `m29.1`, `c80`, and `c81` remain runner-owned durable updates until
-promotion, complete cleanup, and the final `0 / 0` proof are recorded.
-
 ## Cycle 33
 
-Integrator recommendation: focused `GO` eligibility for
-`c33-efficiency-contract-20260811-a1`; no terminal command was run.
+subgoals: 57/85 done · criteria: 57/81 done · 68%
 
-**Next:** fresh terminal certification from a new process using the default
-one-gate contract.
-
-Cycle 32 merged exact repair tip `712e2f898cf4e21b202c8af6e6990455bffc5e06`.
-Four manifest fixtures now assert the absolute physical-worktree contract and Block
-G restores the one compact coordinator-owned-terminal phrase. The cached frozen
-matrix passes with exactly two launches, zero restarts, and zero terminal gates.
-Durable goal and criterion state remains pre-promotion; older autonomous subgoals
-were outside this focused target.
-
-## Cycle 32
-
-Focused verdict: `GO` for `c32-contract-drift-20260811-a1`; Cycle 31 remains
-terminal NO-GO.
-
-**Next:** fresh Cycle 33 terminal certification.
-
-Cycle 31 merged exact audit tip `cff6ec32f988726471af51a9622f9cba53b56aa9`,
-independently verified the retained repairs, and handed a clean tree to the runner.
-The one terminal gate then found four stale relative-worktree assertions and one
-missing compact prompt phrase. Nothing was promoted, cleaned, or installed.
-
-## Cycle 31
-
-Terminal verdict: `NO-GO` for `c31-terminal-cert-20260811-a1`; the earlier READY
-handoff is historical eligibility, not Cycle 31 GO.
-
-**Next:** Cycle 32 repairs the two bounded contract drifts; installation remains
-withheld until a later fresh terminal GO.
-
-Cycle 30 focused recovery merged exact builder tip
-`1e8f8cc96e259f31776528e5c3f981e8430ea676`. The source now gates terminal
-counting on real current-target work, isolates nested evidence, invalidates changed
-focused proof, reports exact promotion blockers without staging user data, keeps
-efficiency proof path/nonce exports atomic, and makes the shared zero repair cap apply
-to integrator waves unless explicitly overridden. The focused gate passes, but canonical
-telemetry records one integrator restart and zero terminal gates. Cycle 30 is therefore
-NO-GO and Cycle 29 remains HALTED. The durable state below remains pre-promotion.
-
-## Cycle 30
-
-Focused run verdict: `NO-GO` for `c30-gate-truth-20260811-a1`; engineering green,
-frozen zero-restart runtime criterion failed.
-
-**Next:** Cycle 31 terminal certification for `m24.4`, `m25.5`, `c66`, and `c71`
-remains the one-gate destination after a fresh zero-restart handoff of this repair.
-
-## Cycle 28
-
-subgoals: 55/79 done · criteria: 55/75 done · 71%
-
-**Route:** `CONTINUE m26.1  Make the material-progress guard preserve demonstrably active commands and replan only completed command churn`
+**Route:** `CONTINUE m27.1  Gate terminal counting and execution on real current-target terminal work`
 
 ## Open autonomous work
 
@@ -93,6 +33,10 @@ subgoals: 55/79 done · criteria: 55/75 done · 71%
 - `m26.2` [open, w105] — Canonicalize every lane source root to an absolute physical worktree path before pane export
 - `m26.3` [open, w104] — Fail a completed out-of-scope handoff once with its exact reason instead of spending retry and repair budgets
 - `m26.4` [open, w103] — Require and mechanically validate a planned write-set against lane ownership for newly generated manifests
+- `m27.1` [open, w110] — Gate terminal counting and execution on real current-target terminal work
+- `m27.2` [open, w109] — Isolate nested acceptance commands from outer failure evidence and clear successful stale artifacts
+- `m27.3` [open, w108] — Persist exact promotion blockers into HALTED reports and recovery guidance
+- `m27.4` [open, w107] — Reuse focused READY proof only across an immutable exact-tip boundary
 
 ## External/user evidence
 
@@ -179,13 +123,19 @@ subgoals: 55/79 done · criteria: 55/75 done · 71%
 - `c73` [open] — POLYLANE_SOURCE_ROOT is always an absolute physical lane worktree path even when the manifest uses a relative worktree
 - `c74` [open] — A completed scope violation halts once with the offending paths and never consumes retry or repair budgets
 - `c75` [open] — Every newly generated lane declares planned writes and preflight rejects any planned path outside own_globs
+- `c76` [open] — READY consumes a terminal gate only for an eligible current target with terminal-tier acceptance and no outside autonomous work
+- `c77` [open] — Nested acceptance commands cannot inherit canonical failure-evidence authority and successful top-level checks leave no stale failure artifact
+- `c78` [open] — Every failed promotion reports its exact bounded blocker while preserving all user data and verified worktrees
+- `c79` [open] — An unchanged READY boundary reuses focused proof once while any source or acceptance mutation invalidates it
+- `c80` [done] — Manifest tests assert the absolute physical-worktree contract and builder prompts explicitly reserve terminal checks for the coordinator
+- `c81` [done] — Focused runs can declare zero expected terminal gates while terminal runs default to one, keeping final efficiency proof, cleanup, report, and criterion state consistent
 
 ## Acceptance checks
 
-- Total: 90
-- Pass: 67
+- Total: 97
+- Pass: 69
 - Fail: 0
-- Unchecked: 23
+- Unchecked: 28
   - `m21.1` [unchecked] — bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh
   - `m21.2` [unchecked] — bash tests/test-workers.sh && bash tests/test-worker-canonical-state.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-promptlint.sh && bash tests/test-skill-delivery.sh && bash tests/test-promptopt.sh
   - `m21.3` [unchecked] — tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse
@@ -200,6 +150,7 @@ subgoals: 55/79 done · criteria: 55/75 done · 71%
   - `m24.1` [unchecked] — bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh && bash tests/test-dryrun-pure.sh
   - `m24.2` [unchecked] — bash tests/test-status-marker-normalization.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-scope.sh
   - `m24.3` [unchecked] — bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-write-report.sh
+  - `m24.4` [unchecked] — POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
   - `m25.1` [unchecked] — bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh && bash tests/test-pane-errored.sh
   - `m25.2` [unchecked] — bash tests/test-write-report.sh && bash tests/test-runtime-recovery.sh
   - `m25.3` [unchecked] — bash tests/test-run-stats.sh && bash tests/test-write-report.sh && bash tests/test-efficiency-canary.sh
@@ -209,3 +160,7 @@ subgoals: 55/79 done · criteria: 55/75 done · 71%
   - `m26.2` [unchecked] — bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-promptlint.sh
   - `m26.3` [unchecked] — bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-write-report.sh
   - `m26.4` [unchecked] — bash tests/test-scope.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh
+  - `m27.1` [unchecked] — bash tests/test-contract-acceptance.sh && bash tests/test-run-stats.sh
+  - `m27.2` [unchecked] — bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh
+  - `m27.3` [unchecked] — bash tests/test-promotion-transaction.sh && bash tests/test-write-report.sh
+  - `m27.4` [unchecked] — bash tests/test-contract-acceptance.sh && bash tests/test-efficiency-canary.sh

@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c33-efficiency-contract-20260811-a1",
   "started_at": 1786462629,
-  "updated_at": 1786463544,
-  "wall_s": 915,
+  "updated_at": 1786463575,
+  "wall_s": 946,
   "lanes": {
     "efficiency-contract-repair": {
       "launches": 1,
@@ -20,9 +20,9 @@
   "token_state": "known",
   "usage_offsets": {
     "efficiency-contract-repair": 115981,
-    "integrator": 412315
+    "integrator": 412673
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -61,6 +61,23 @@
       "lane": "integrator",
       "at": 1786463544,
       "added": 2332499
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786463574
+    },
+    {
+      "type": "usage_capture",
+      "lane": "efficiency-contract-repair",
+      "at": 1786463575,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786463575,
+      "added": null
     }
   ],
   "usage": {
