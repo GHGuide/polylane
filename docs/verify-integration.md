@@ -95,7 +95,7 @@ The required refinement queue returned `[]`, leaving no eligible decision item.
 
 After the implementation/evidence commit, `git status --short` contained only the
 runner-owned `.polylane-prompt.txt` and `graphify-out` scratch paths. The exact
-evidence commit is `637fa7d66f842365e070fac837236299541465be`; executable source remains identical
+evidence commit is `637fa7d38e57714f9cb6507c3595dbfd831bd7c6`; executable source remains identical
 to the focused-tested `cff6ec32f988726471af51a9622f9cba53b56aa9` tip.
 
 ## Skill receipts
