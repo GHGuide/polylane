@@ -497,6 +497,34 @@
       "weight": 98,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c72",
+      "text": "A long in-progress command cannot trigger material-progress replanning or a worker restart",
+      "weight": 106,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c73",
+      "text": "POLYLANE_SOURCE_ROOT is always an absolute physical lane worktree path even when the manifest uses a relative worktree",
+      "weight": 105,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c74",
+      "text": "A completed scope violation halts once with the offending paths and never consumes retry or repair budgets",
+      "weight": 104,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c75",
+      "text": "Every newly generated lane declares planned writes and preflight rejects any planned path outside own_globs",
+      "weight": 103,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1243,6 +1271,44 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m26",
+      "text": "Active-work and scope-plan truth",
+      "subgoals": [
+        {
+          "id": "m26.1",
+          "text": "Make the material-progress guard preserve demonstrably active commands and replan only completed command churn",
+          "weight": 106,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m26.2",
+          "text": "Canonicalize every lane source root to an absolute physical worktree path before pane export",
+          "weight": 105,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m26.3",
+          "text": "Fail a completed out-of-scope handoff once with its exact reason instead of spending retry and repair budgets",
+          "weight": 104,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m26.4",
+          "text": "Require and mechanically validate a planned write-set against lane ownership for newly generated manifests",
+          "weight": 103,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1515,6 +1581,12 @@
       "kind": "attempt",
       "text": "Repair long-turn supervision, failure attribution, cached-token accounting, and source/control-root clarity before a fresh terminal certification.",
       "meta": "run=c28-watchdog-truth-20260810-a1; focused only; expected launches=2 restarts=0 terminal_gates=0"
+    },
+    {
+      "cycle": 28,
+      "kind": "learning",
+      "text": "Cycle 28 truthfully HALTED: a healthy long regression command triggered the material-progress usage guard, producing eight restarts; the completed tip then failed scope because bin/polylane-promptlint.sh was required by the prompt but omitted from own_globs.",
+      "meta": "run=c28-watchdog-truth-20260810-a1;tip=cf60d3c1646dc6a7ae3f76a636be423cef91e9a1"
     }
   ],
   "accept": [
@@ -2674,6 +2746,46 @@
         "codex/SKILL.md",
         "references/*.md"
       ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.1",
+      "cmd": "bash tests/test-progress-guard.sh && bash tests/test-wedge.sh",
+      "tier": "focused",
+      "key": "active-command-progress",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.2",
+      "cmd": "bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-promptlint.sh",
+      "tier": "focused",
+      "key": "absolute-source-root",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.3",
+      "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-write-report.sh",
+      "tier": "focused",
+      "key": "scope-fail-fast",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.4",
+      "cmd": "bash tests/test-scope.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh",
+      "tier": "focused",
+      "key": "planned-write-set",
+      "status": "unchecked",
+      "deps": [],
       "fp": "",
       "regressed_cycle": null
     }

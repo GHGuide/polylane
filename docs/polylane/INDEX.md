@@ -6,6 +6,13 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 29 active/scope recovery: [plan](cycle-29-plan.md) ·
+[research](cycle-29-research.md) · [skill suggestions](cycle-29-suggestions.md).
+Cycle 28 remains a truthful HALTED run after eight lane restarts and one exact
+scope rejection. Its completed worker tip is preserved as Cycle 29's source base;
+Cycle 29 repairs active-command progress, absolute source roots, fail-fast scope
+handling, and planned-write preflight. Cycle 30 owns fresh terminal certification.
+
 Cycle 27 repair READY handoff: [plan](cycle-27-plan.md) ·
 [research](cycle-27-research.md) · [skill suggestions](cycle-27-suggestions.md) ·
 [council](cycle-27-council.md) · [digest](cycle-27-digest.md) ·
