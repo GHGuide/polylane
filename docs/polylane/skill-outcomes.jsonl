@@ -46,3 +46,7 @@
 
 {"lane":"terminal-contract-repair","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the two specified"}
 
+{"lane":"efficiency-contract-repair","domain":"test","skill":"superpowers:systematic-debugging","outcome":"helped","why":" isolated the contradiction to the literal capture/verify terminal-gate branches after reproducing complete cleanup with zero gates."}
+
+{"lane":"efficiency-contract-repair","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the focused `0 / 0` and malformed configuration assertions failed before the helper change, then passed with the minimal manifest-driven implementation."}
+

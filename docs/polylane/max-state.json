@@ -3010,7 +3010,7 @@
       "cmd": "bash tests/test-efficiency-canary.sh && bash tests/test-write-report.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh && shellcheck -S warning bin/polylane-efficiency.sh bin/polylane-run.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

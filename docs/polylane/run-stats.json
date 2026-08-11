@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "run_id": "c32-contract-drift-20260811-a1",
-  "started_at": 1786461507,
-  "updated_at": 1786462299,
-  "wall_s": 792,
+  "run_id": "c33-efficiency-contract-20260811-a1",
+  "started_at": 1786462629,
+  "updated_at": 1786463544,
+  "wall_s": 915,
   "lanes": {
-    "terminal-contract-repair": {
+    "efficiency-contract-repair": {
       "launches": 1,
       "restarts": 0
     },
@@ -16,75 +16,58 @@
   },
   "supervisor_restarts": 0,
   "terminal_gates": 0,
-  "tokens": 2311496,
+  "tokens": 3416675,
   "token_state": "known",
   "usage_offsets": {
-    "terminal-contract-repair": 85178,
-    "integrator": 213350
+    "efficiency-contract-repair": 115981,
+    "integrator": 412315
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786461507
+      "at": 1786462629
     },
     {
       "type": "usage_capture",
-      "lane": "terminal-contract-repair",
-      "at": 1786461531,
+      "lane": "efficiency-contract-repair",
+      "at": 1786462651,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "terminal-contract-repair",
-      "at": 1786461531
+      "lane": "efficiency-contract-repair",
+      "at": 1786462651
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786461796,
+      "at": 1786463027,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786461796
+      "at": 1786463027
     },
     {
       "type": "usage_capture",
-      "lane": "terminal-contract-repair",
-      "at": 1786462274,
-      "added": 651696
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786462274,
-      "added": 1659800
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786462299
-    },
-    {
-      "type": "usage_capture",
-      "lane": "terminal-contract-repair",
-      "at": 1786462299,
-      "added": null
+      "lane": "efficiency-contract-repair",
+      "at": 1786463544,
+      "added": 1084176
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786462299,
-      "added": null
+      "at": 1786463544,
+      "added": 2332499
     }
   ],
   "usage": {
-    "input_tokens": 2284192,
-    "cached_input_tokens": 2150656,
-    "uncached_input_tokens": 133536,
-    "output_tokens": 27304,
-    "reasoning_output_tokens": 11289
+    "input_tokens": 3384172,
+    "cached_input_tokens": 3228416,
+    "uncached_input_tokens": 155756,
+    "output_tokens": 32503,
+    "reasoning_output_tokens": 15253
   }
 }

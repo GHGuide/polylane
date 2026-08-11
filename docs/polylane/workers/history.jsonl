@@ -95,3 +95,7 @@
 {"event":"capsule","id":"capsule:integrator:9","worker":"integrator","version":9,"cycle":32,"seq":95,"at":"2026-08-11T15:18:32Z"}
 {"event":"capsule","id":"capsule:terminal-contract-repair:2","worker":"terminal-contract-repair","version":2,"cycle":32,"seq":96,"at":"2026-08-11T15:23:15Z"}
 {"event":"capsule","id":"capsule:integrator:10","worker":"integrator","version":10,"cycle":32,"seq":97,"at":"2026-08-11T15:31:14Z"}
+{"event":"capsule","id":"capsule:efficiency-contract-repair:1","worker":"efficiency-contract-repair","version":1,"cycle":33,"seq":98,"at":"2026-08-11T15:37:13Z"}
+{"event":"capsule","id":"capsule:integrator:11","worker":"integrator","version":11,"cycle":33,"seq":99,"at":"2026-08-11T15:37:13Z"}
+{"event":"capsule","id":"capsule:efficiency-contract-repair:2","worker":"efficiency-contract-repair","version":2,"cycle":33,"seq":100,"at":"2026-08-11T15:43:46Z"}
+{"event":"capsule","id":"capsule:integrator:12","worker":"integrator","version":12,"cycle":33,"seq":101,"at":"2026-08-11T15:52:24Z"}

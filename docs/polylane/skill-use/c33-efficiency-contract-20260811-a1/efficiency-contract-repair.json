@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "efficiency-contract-repair",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c33-efficiency-contract-repair/docs/verify-efficiency-contract-repair.md",
+  "helped": [
+    {
+      "id": "superpowers:systematic-debugging",
+      "effect": " isolated the contradiction to the literal capture/verify terminal-gate branches after reproducing complete cleanup with zero gates."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the focused `0 / 0` and malformed configuration assertions failed before the helper change, then passed with the minimal manifest-driven implementation."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}
