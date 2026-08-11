@@ -2,6 +2,20 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
+Cycle 31 merged exact audit tip `cff6ec32f988726471af51a9622f9cba53b56aa9` and
+independently verified the retained repairs. All 27 open/doing autonomous subgoals
+are in the current manifest, four own terminal-tier acceptance, and all 24 focused
+entries pass through the integrator cache. Pre-handoff telemetry is exactly two
+launches, zero restarts, and zero terminal gates. Durable goal and criterion state
+remains pre-promotion until the runner completes the terminal boundary.
+
+## Cycle 31
+
+Integrator verdict: `READY-FOR-HOST-GATE` for
+`c31-terminal-cert-20260811-a1`; terminal success and GO remain unclaimed.
+
+**Next:** local Claude/Codex installation follows only after host GO.
+
 Cycle 30 focused recovery merged exact builder tip
 `1e8f8cc96e259f31776528e5c3f981e8430ea676`. The source now gates terminal
 counting on real current-target work, isolates nested evidence, invalidates changed

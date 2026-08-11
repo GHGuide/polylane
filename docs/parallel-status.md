@@ -1,14 +1,15 @@
-# Cycle 30 integration status — focused repair NO-GO
+# Cycle 31 integration status — READY handoff
 
-Run: `c30-gate-truth-20260811-a1` · branch: `lane/c30-integrator` · exact builder
-tip: `1e8f8cc96e259f31776528e5c3f981e8430ea676`.
+Run: `c31-terminal-cert-20260811-a1` · branch: `lane/c31-integrator` · exact
+builder tip: `cff6ec32f988726471af51a9622f9cba53b56aa9`.
 
 | Lane | Runtime | Integrated result |
 | --- | --- | --- |
-| gate-truth | one launch, zero restarts | final DONE tip merged; gate eligibility, evidence isolation, proof reuse, promotion reason, docs, and regressions reviewed |
-| integrator | one launch, one restart | the first marker failed the real focused wrapper; the retry repaired half-exported efficiency proof context and reverified the focused gate |
+| terminal-certification-audit | one launch, zero restarts | final DONE tip merged; immutable source, target inventory, terminal route, provider/installer surface, and focused smoke evidence audited |
+| integrator | one launch, zero restarts | retained repairs independently reviewed; all 24 current focused entries and changed-shell checks passed through the integrator cache |
 
-Canonical telemetry records one integrator restart, zero supervisor restarts, and
-zero terminal gates. The engineering repair is focused-green, but the frozen runtime
-criterion requires zero restarts, so Cycle 30 is NO-GO. Cycle 29 remains HALTED and
-no terminal command ran. This file is post-cycle evidence only, never live IPC.
+Canonical pre-handoff telemetry records zero supervisor restarts and zero terminal
+gates. All 27 open/doing autonomous subgoals are current targets and four have
+terminal-tier acceptance. The runner alone owns the terminal suite, promotion,
+cleanup, final proof, criteria finalization, and GO/NO-GO report. Cycle 30 remains
+NO-GO. This file is post-cycle evidence only, never live IPC.

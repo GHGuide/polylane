@@ -6,6 +6,17 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 31 terminal handoff READY: [plan](cycle-31-plan.md) ·
+[research](cycle-31-research.md) · [skill suggestions](cycle-31-suggestions.md) ·
+[council](cycle-31-council.md) · [digest](cycle-31-digest.md) ·
+[questions](cycle-31-questions.md) · [integration verification](../verify-integration.md).
+Exact audit tip `cff6ec32f988726471af51a9622f9cba53b56aa9` is merged. All 24
+target-scoped focused entries and bounded changed-shell checks pass, while canonical
+telemetry records one builder launch, one integrator launch, zero restarts, and zero
+terminal gates. All 27 current autonomous subgoals are targeted and four own terminal
+acceptance. The runner now owns the sole terminal boundary and final verdict; Cycle 30
+remains NO-GO.
+
 Cycle 29 active/scope recovery HALTED after its READY handoff: [plan](cycle-29-plan.md) ·
 [research](cycle-29-research.md) · [skill suggestions](cycle-29-suggestions.md) ·
 [council](cycle-29-council.md) · [digest](cycle-29-digest.md) ·
