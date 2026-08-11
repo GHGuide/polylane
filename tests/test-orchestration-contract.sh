@@ -2,6 +2,7 @@
 # Contract v2 prevents an apparently valid Codex run from launching with no
 # durable route, acceptance, skill kits, prompt discipline, or cycle artifacts.
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
+# shellcheck source=../bin/polylane-run.sh
 . "$RUNNER"
 
 command -v jq >/dev/null 2>&1 || { pass "contract-skipped-no-jq"; finish; exit 0; }
@@ -50,7 +51,7 @@ EXTERNAL-EVIDENCE: keep physical-only proof external; continue autonomous work.
 VERIFY: run the focused contract checks before the verdict sentinel.
 Write docs/verify-integration.md ending POLYLANE-VERDICT: GO run=run-1.
 Finish STATUS: integrator DONE run=run-1.
-POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file and integrator verdict, force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-integrator.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
 PROMPT
 printf '# cycle plan\n' > "$P/docs/polylane/cycle-1-plan.md"
 printf '# index\n' > "$P/docs/polylane/INDEX.md"
@@ -143,11 +144,13 @@ MANIFEST="$BAD"; load_manifest
 assert_rc "codex-legacy-rejected" 2 preflight_contract
 AGENT=claude
 assert_rc "prime-hybrid-legacy-rejected" 2 preflight_contract
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 AGENT=codex
 
 mkdir -p "$P/.polylane/wt/builder"
 RESUME=1
 assert_ok "codex-existing-legacy-resume-grandfathered" preflight_contract
+# shellcheck disable=SC2034 # consumed by functions sourced from polylane-run.sh
 RESUME=0
 
 MANIFEST="$P/.polylane/run.json"; load_manifest

@@ -15,6 +15,15 @@ cp -R "$SOURCE_REPO/." "$REPO/"
 mkdir -p "$REPO/benchmarks"
 printf 'cycle-9 benchmark fixture\n' > "$REPO/benchmarks/install-sentinel.txt"
 
+# Reinstall over a legacy/full-package shape. The current package must replace
+# this directory atomically enough that no obsolete root or duplicate engine is
+# left discoverable after a successful install.
+CODEX_DEST="$REPO/.codex/skills/polylane"
+mkdir -p "$CODEX_DEST/bin"
+printf 'obsolete codex root artifact\n' > "$CODEX_DEST/LEGACY-PACKAGE.txt"
+printf '#!/usr/bin/env bash\necho obsolete codex engine\n' > "$CODEX_DEST/bin/polylane-run.sh"
+chmod +x "$CODEX_DEST/bin/polylane-run.sh"
+
 (cd "$REPO" && ./codex/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-codex-skill" test -f "$REPO/.codex/skills/polylane/SKILL.md"
 assert_ok "install-codex-runner" test -x "$REPO/.codex/skills/polylane/scripts/polylane-run.sh"
@@ -39,6 +48,8 @@ assert_ok "install-codex-soak" test -x "$REPO/.codex/skills/polylane/scripts/pol
 assert_ok "install-codex-domain-reference" test -s "$REPO/.codex/skills/polylane/references/evidence-driven-domain-autonomy.md"
 assert_ok "install-codex-lifecycle-helper" test -x "$REPO/.codex/skills/polylane/scripts/polylane-hooks.sh"
 assert_ok "install-codex-lifecycle-fragment" test -f "$REPO/.codex/skills/polylane/assets/hooks/codex-hooks.json"
+assert_ok "install-codex-no-legacy-root" test '!' -e "$CODEX_DEST/LEGACY-PACKAGE.txt"
+assert_ok "install-codex-no-legacy-engine" test '!' -e "$CODEX_DEST/bin/polylane-run.sh"
 assert_ok "install-codex-skill-eval-corpus" test -f "$REPO/.codex/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 assert_ok "install-codex-skill-evals-runnable" \
   "$REPO/.codex/skills/polylane/scripts/polylane-skill-evolve.sh" validate \
@@ -52,6 +63,12 @@ if grep -qE 'claude --model|AskUserQuestion|Claude memory' "$REPO/.codex/skills/
 else
   pass "install-codex-no-claude-contract"
 fi
+
+CLAUDE_DEST="$REPO/.claude/skills/polylane"
+mkdir -p "$CLAUDE_DEST/scripts"
+printf 'obsolete claude root artifact\n' > "$CLAUDE_DEST/LEGACY-PACKAGE.txt"
+printf '#!/usr/bin/env bash\necho obsolete claude engine\n' > "$CLAUDE_DEST/scripts/polylane-run.sh"
+chmod +x "$CLAUDE_DEST/scripts/polylane-run.sh"
 
 (cd "$REPO" && ./claude-code/install.sh --repo) >/dev/null 2>&1
 assert_ok "install-claude-skill" test -f "$REPO/.claude/skills/polylane/SKILL.md"
@@ -73,6 +90,8 @@ assert_ok "install-claude-soak" test -x "$REPO/.claude/skills/polylane/bin/polyl
 assert_ok "install-claude-domain-reference" test -s "$REPO/.claude/skills/polylane/references/evidence-driven-domain-autonomy.md"
 assert_ok "install-claude-lifecycle-helper" test -x "$REPO/.claude/skills/polylane/bin/polylane-hooks.sh"
 assert_ok "install-claude-lifecycle-fragment" test -f "$REPO/.claude/skills/polylane/assets/hooks/claude-settings.json"
+assert_ok "install-claude-no-legacy-root" test '!' -e "$CLAUDE_DEST/LEGACY-PACKAGE.txt"
+assert_ok "install-claude-no-legacy-engine" test '!' -e "$CLAUDE_DEST/scripts/polylane-run.sh"
 assert_ok "install-claude-skill-eval-corpus" test -f "$REPO/.claude/skills/polylane/benchmarks/skill-evolution/polylane/evals.json"
 assert_ok "install-claude-skill-evals-runnable" \
   "$REPO/.claude/skills/polylane/bin/polylane-skill-evolve.sh" validate \
@@ -81,5 +100,18 @@ assert_ok "install-claude-skill-evals-runnable" \
 C_CORE=$(cksum "$REPO/.codex/skills/polylane/scripts/polylane-run.sh" | awk '{print $1 ":" $2}')
 CL_CORE=$(cksum "$REPO/.claude/skills/polylane/bin/polylane-run.sh" | awk '{print $1 ":" $2}')
 assert_eq "install-shared-core-identical" "$C_CORE" "$CL_CORE"
+
+# A supported full-clone Claude install may be run from its own destination.
+# The installer must stage from that source before replacing it, never delete
+# the running clone out from under itself.
+CLONE_HOME="$TEST_TMPDIR/claude-clone-home"
+CLONE_DEST="$CLONE_HOME/.claude/skills/polylane"
+mkdir -p "$CLONE_DEST"
+cp -R "$SOURCE_REPO/." "$CLONE_DEST/"
+printf 'obsolete clone root artifact\n' > "$CLONE_DEST/LEGACY-PACKAGE.txt"
+assert_ok "install-claude-source-equals-destination" \
+  env HOME="$CLONE_HOME" bash "$CLONE_DEST/claude-code/install.sh" --user
+assert_ok "install-claude-source-equals-destination-survives" test -x "$CLONE_DEST/bin/polylane-run.sh"
+assert_ok "install-claude-source-equals-destination-clean" test '!' -e "$CLONE_DEST/LEGACY-PACKAGE.txt"
 
 finish

@@ -160,7 +160,7 @@ parallelism as theater or reopen a recorded failed approach.
 
 Each prompt must state the goal, project profile, lane ownership, selected installed
 skills, focused test cadence, scoped staging, `docs/verify-<lane>.md`, the exact
-completion marker `STATUS: <lane> DONE run=<RUN_ID>`, and POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. Route expensive repeated checks
+completion marker `STATUS: <lane> DONE run=<RUN_ID>`, and builder POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. For an integrator, only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-<lane>.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit. Route expensive repeated checks
 through:
 
 ```bash
@@ -176,9 +176,10 @@ a subcommand. Global skill changes remain proposals to
 `bin/polylane-skill-evolve.sh`, not edits to an active skill.
 
 Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored,
-commit it, and exit immediately. Integrator final handoff: write its current-run
-status and integrator verdict, force-add ignored handoff files, commit them, and exit
-immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
+commit it, and exit immediately. Integrator final handoff: write the only current-run
+verdict sentinel as the final line of `docs/verify-integration.md`; write
+`docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both
+handoff files if ignored, commit them, and exit immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
 
 Use `orchestration_contract: 2`, validate scope and prompts, then run doctor and the
 supervisor. Surface only the truthful watch command, `tmux attach -t <session>`.

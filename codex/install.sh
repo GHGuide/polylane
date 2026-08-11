@@ -23,7 +23,7 @@ case "${1:-}" in
   *) echo "usage: install.sh [--user|--agents|--repo]" >&2; exit 2 ;;
 esac
 
-install_one() {
+build_one() {
   local dest="$1"
   mkdir -p "$dest/scripts"
   # Codex owns a standalone product contract. The runner remains shared, but Codex
@@ -60,6 +60,48 @@ install_one() {
   test -s "$dest/references/cycle-13-integration.md" || { echo "install: cycle 13 integration reference missing" >&2; exit 1; }
   test -s "$dest/references/evidence-driven-domain-autonomy.md" || { echo "install: domain autonomy reference missing" >&2; exit 1; }
   test -s "$dest/assets/hooks/codex-hooks.json" || { echo "install: Codex lifecycle fragment missing" >&2; exit 1; }
+}
+
+install_one() {
+  local dest="$1" parent name stage backup
+  parent="$(dirname "$dest")"
+  name="$(basename "$dest")"
+  backup=""
+  mkdir -p "$parent"
+  stage="$(mktemp -d "$parent/.${name}.staging.XXXXXX")" || {
+    echo "install: could not create staging package for $dest" >&2
+    return 1
+  }
+
+  # Build and validate away from the active package. This keeps a legacy install
+  # usable if copying any current artifact fails, including source == destination.
+  if ! build_one "$stage"; then
+    rm -rf "$stage"
+    return 1
+  fi
+
+  if [ -e "$dest" ] || [ -L "$dest" ]; then
+    backup="$(mktemp -d "$parent/.${name}.backup.XXXXXX")" || {
+      rm -rf "$stage"
+      echo "install: could not reserve rollback path for $dest" >&2
+      return 1
+    }
+    rmdir "$backup"
+    if ! mv "$dest" "$backup"; then
+      rm -rf "$stage"
+      echo "install: could not preserve existing package at $dest" >&2
+      return 1
+    fi
+  fi
+
+  if ! mv "$stage" "$dest"; then
+    rm -rf "$stage"
+    if [ -n "$backup" ] && ! mv "$backup" "$dest"; then
+      echo "install: replacement failed and rollback failed; preserved package is $backup" >&2
+    fi
+    return 1
+  fi
+  [ -z "$backup" ] || rm -rf "$backup"
   echo "installed Codex skill -> $dest"
 }
 

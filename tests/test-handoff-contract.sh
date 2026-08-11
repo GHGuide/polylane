@@ -8,7 +8,10 @@ LINT="$ROOT/bin/polylane-promptlint.sh"
 make_tmpdir
 
 contract='POLYLANE-RUNTIME-FINALIZE:'
-ordered='POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file'
+ordered='immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file'
+integrator_finalize='only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md'
+integrator_handoff='Integrator final handoff: write the only current-run'
+integrator_status='with only its DONE marker and no verdict'
 for f in references/prompt-blocks.md references/lane-template.md references/planning.md SKILL.md codex/SKILL.md; do
   body=$(cat "$ROOT/$f")
   assert_contains "handoff-contract-advertised-$f" "$contract" "$body"
@@ -17,6 +20,9 @@ for f in references/prompt-blocks.md references/lane-template.md references/plan
   assert_contains "handoff-contract-scoped-add-$f" "git add <your files>" "$body"
   assert_contains "handoff-contract-builder-form-$f" "Builder final handoff:" "$body"
   assert_contains "handoff-contract-integrator-form-$f" "Integrator final handoff:" "$body"
+  assert_contains "handoff-contract-integrator-canonical-verdict-$f" "$integrator_finalize" "$body"
+  assert_contains "handoff-contract-integrator-status-only-$f" "$integrator_handoff" "$body"
+  assert_contains "handoff-contract-integrator-verdict-free-status-$f" "$integrator_status" "$body"
 done
 
 assert_contains "handoff-contract-refinement-queue" \

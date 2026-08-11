@@ -47,6 +47,7 @@ lint_one() {
       grep -qF "POLYLANE-RUNTIME-DONE: write docs/status-$lane.md" "$f" || miss="$miss runtime-done-path"
       grep -qF 'never write a POLYLANE-VERDICT line in docs/status-' "$f" || miss="$miss runtime-status-forbids-verdict"
       grep -qF 'only verdict sentinel as the final line of docs/verify-integration.md' "$f" || miss="$miss runtime-verdict-path"
+      integrator_verdict_boundary_canonical "$f" || miss="$miss contradictory-verdict-boundary"
     else
       grep -qF "POLYLANE-RUNTIME-DONE: write only docs/status-$lane.md;" "$f" || miss="$miss runtime-done-path"
     fi
@@ -83,6 +84,18 @@ builder_status_paths_canonical() {
   for path in $paths; do
     [ "$path" = "$canonical" ] || return 1
   done
+}
+
+# The status handoff is intentionally verdict-free.  Reject both the historical
+# generic wording and an explicit second sentinel destination before launch.
+integrator_verdict_boundary_canonical() {
+  local f="$1"
+  grep -qiE '(current-run )?status( file)? and (its |the )?integrator verdict' "$f" && return 1
+  if grep -ivE 'never write a POLYLANE-VERDICT line in docs/status-' "$f" |
+    grep -qiE 'write[^.]*POLYLANE-VERDICT[^.]*in docs/status-'; then
+    return 1
+  fi
+  return 0
 }
 
 runtime_exact_once() {
