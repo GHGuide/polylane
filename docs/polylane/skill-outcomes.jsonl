@@ -58,3 +58,7 @@
 
 {"lane":"install-upgrade","domain":"test","skill":"superpowers:verification-before-completion","outcome":"helped","why":" the dirty fixtures were run red before the repair, and the focused checks below were run after the staged replacement implementation."}
 
+{"lane":"verdict-path-recovery","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c36-verdict-path-recovery/docs/verify-verdict-path-recovery.md"}
+
+{"lane":"verdict-path-recovery","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c36-verdict-path-recovery/docs/verify-verdict-path-recovery.md"}
+

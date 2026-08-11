@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "run_id": "c35-install-upgrade-20260811-a1",
-  "started_at": 1786466329,
-  "updated_at": 1786466990,
-  "wall_s": 661,
+  "run_id": "c36-verdict-path-20260811-a1",
+  "started_at": 1786467490,
+  "updated_at": 1786468724,
+  "wall_s": 1234,
   "lanes": {
-    "install-upgrade": {
+    "verdict-path-recovery": {
       "launches": 1,
       "restarts": 0
     },
@@ -16,70 +16,58 @@
   },
   "supervisor_restarts": 0,
   "terminal_gates": 0,
-  "tokens": 1306127,
+  "tokens": 4333767,
   "token_state": "known",
   "usage_offsets": {
-    "install-upgrade": 69626,
-    "integrator": 865982
+    "verdict-path-recovery": 314072,
+    "integrator": 1148745
   },
   "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786466329
+      "at": 1786467490
     },
     {
       "type": "usage_capture",
-      "lane": "install-upgrade",
-      "at": 1786466349,
+      "lane": "verdict-path-recovery",
+      "at": 1786467509,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "install-upgrade",
-      "at": 1786466349
+      "lane": "verdict-path-recovery",
+      "at": 1786467509
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786466625,
+      "at": 1786468319,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786466625
+      "at": 1786468319
     },
     {
       "type": "usage_capture",
-      "lane": "install-upgrade",
-      "at": 1786466988,
-      "added": 659838
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786466988,
-      "added": 646289
-    },
-    {
-      "type": "usage_capture",
-      "lane": "install-upgrade",
-      "at": 1786466990,
-      "added": null
+      "lane": "verdict-path-recovery",
+      "at": 1786468724,
+      "added": 2780383
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786466990,
-      "added": null
+      "at": 1786468724,
+      "added": 1553384
     }
   ],
   "usage": {
-    "input_tokens": 1282395,
-    "cached_input_tokens": 1116160,
-    "uncached_input_tokens": 166235,
-    "output_tokens": 23732,
-    "reasoning_output_tokens": 10059
+    "input_tokens": 4294590,
+    "cached_input_tokens": 3987456,
+    "uncached_input_tokens": 307134,
+    "output_tokens": 39177,
+    "reasoning_output_tokens": 17811
   }
 }

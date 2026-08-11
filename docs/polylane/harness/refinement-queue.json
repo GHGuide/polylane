@@ -2,9 +2,17 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 15,
-    "latest_cycle": 34,
-    "latest_evidence": "bounded packets built for run c34-terminal-cert-20260811-a1",
+    "observation_count": 16,
+    "latest_cycle": 35,
+    "latest_evidence": "bounded packets built for run c35-install-upgrade-20260811-a1",
+    "required_action": "propose-or-decline"
+  },
+  {
+    "subject": "integrator",
+    "kind": "no-go",
+    "observation_count": 7,
+    "latest_cycle": 35,
+    "latest_evidence": "integrator verdict UNKNOWN in run c35-install-upgrade-20260811-a1",
     "required_action": "propose-or-decline"
   }
 ]

@@ -3080,7 +3080,7 @@
       "cmd": "bash tests/test-install-fresh.sh && bash tests/test-installers.sh && bash tests/test-doctor-agent.sh",
       "tier": "focused",
       "key": "install-upgrade",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -3090,7 +3090,7 @@
       "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-promptlint.sh && bash tests/test-handoff-contract.sh && bash tests/test-orchestration-contract.sh && bash tests/test-marker-contract.sh && bash tests/test-skill-parity.sh",
       "tier": "focused",
       "key": "integrator-verdict-path",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

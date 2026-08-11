@@ -107,3 +107,7 @@
 {"event":"capsule","id":"capsule:integrator:15","worker":"integrator","version":15,"cycle":35,"seq":107,"at":"2026-08-11T16:38:54Z"}
 {"event":"capsule","id":"capsule:install-upgrade:2","worker":"install-upgrade","version":2,"cycle":35,"seq":108,"at":"2026-08-11T16:43:44Z"}
 {"event":"capsule","id":"capsule:integrator:16","worker":"integrator","version":16,"cycle":35,"seq":109,"at":"2026-08-11T16:49:48Z"}
+{"event":"capsule","id":"capsule:verdict-path-recovery:1","worker":"verdict-path-recovery","version":1,"cycle":36,"seq":110,"at":"2026-08-11T16:58:14Z"}
+{"event":"capsule","id":"capsule:integrator:17","worker":"integrator","version":17,"cycle":36,"seq":111,"at":"2026-08-11T16:58:14Z"}
+{"event":"capsule","id":"capsule:verdict-path-recovery:2","worker":"verdict-path-recovery","version":2,"cycle":36,"seq":112,"at":"2026-08-11T17:11:58Z"}
+{"event":"capsule","id":"capsule:integrator:18","worker":"integrator","version":18,"cycle":36,"seq":113,"at":"2026-08-11T17:18:44Z"}
