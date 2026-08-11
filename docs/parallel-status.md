@@ -1,14 +1,14 @@
-# Cycle 34 integration status — terminal-gate handoff
+# Cycle 36 integration status — focused verdict-path recovery
 
-Run: `c34-terminal-cert-20260811-a1` · branch: `lane/c34-integrator` ·
-exact audit tip: `2e065fb84a8e42a25cd6c0e061caf62f93024bd6`.
+Run: `c36-verdict-path-20260811-a1` · branch: `lane/c36-integrator` ·
+exact recovery tip: `5b4d921ada8f13b7c9dbd49e5159c107a5642ae5`.
 
 | Lane | Runtime | Integrated result |
 | --- | --- | --- |
-| terminal-certification-audit | one launch, zero restarts | evidence-only audit of retained repairs, target inventory, provider/install surfaces, and the untouched host boundary |
-| integrator | one launch, zero restarts | exact tip merged as `0a95ef4957677fec15fab3697f110d00b74e70d6`; complete audit diff reviewed; all target-scoped focused checks passed |
+| verdict-path-recovery | nonce-matched DONE | exact Cycle 35 staged installer import plus role-aware compiled handoff and focused regressions |
+| integrator | focused integration | exact tip merged; complete 16-file base diff reviewed; m30.1/m31.1 evidence, syntax, ShellCheck, markers, and provider parity passed |
 
-Canonical pre-handoff telemetry records zero supervisor restarts and zero terminal
-gates. The integrator ran no terminal command. The runner owns the one real host
-gate, promotion, cleanup, final `1 / 1` proof, criteria finalization, and report.
-This file is post-cycle evidence only, never live IPC.
+The integrator ran no terminal command, live user-package install, push, or
+publication. This focused recovery does not consume a terminal gate or modify
+runner-owned promotion, cleanup, state finalization, or report authority. This file
+is post-cycle evidence only, never live IPC.

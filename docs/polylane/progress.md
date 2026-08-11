@@ -2,15 +2,18 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 34
+## Cycle 36
 
-subgoals: 84/85 done · criteria: 80/81 done · 98%
+subgoals: 84/87 done · criteria: 80/83 done · 96%
 
-**Route:** `NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
+**Route:** `FOCUSED-RECOVERY m30.1,m31.1; NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
 
 ## Open autonomous work
 
-- None
+- `m30.1` — Reinstalling either provider package over a legacy or full-repository
+  skill directory removes stale artifacts and preserves byte-identical Codex roots
+- `m31.1` — Compiled integrator prompts use the canonical verification-file
+  sentinel and a status-only integrator marker
 
 ## External/user evidence
 
@@ -103,10 +106,12 @@ subgoals: 84/85 done · criteria: 80/81 done · 98%
 - `c79` [done] — An unchanged READY boundary reuses focused proof once while any source or acceptance mutation invalidates it
 - `c80` [done] — Manifest tests assert the absolute physical-worktree contract and builder prompts explicitly reserve terminal checks for the coordinator
 - `c81` [done] — Focused runs can declare zero expected terminal gates while terminal runs default to one, keeping final efficiency proof, cleanup, report, and criterion state consistent
+- `c82` [open] — Reinstalling either provider package over a legacy or full-repository skill directory removes stale package artifacts and leaves both Codex discovery roots byte-identical to the current certified package
+- `c83` [open] — Every compiled integrator prompt writes its only current-run verdict to docs/verify-integration.md, keeps docs/status-integrator.md status-only, and fails preflight when that boundary is ambiguous
 
 ## Acceptance checks
 
-- Total: 97
-- Pass: 97
+- Total: 83
+- Pass: 80
 - Fail: 0
-- Unchecked: 0
+- Unchecked: 3
