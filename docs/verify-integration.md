@@ -60,3 +60,21 @@ SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/
 SKILL-EVIDENCE: engineering:code-review — helped: the complete base diff audit confirmed the production delta is confined to the helper, preserves the default one-gate terminal boundary, fails closed on the frozen malformed inputs and proofs, and remains Bash 3.2 compatible.
 
 SKILL-EVIDENCE: superpowers:verification-before-completion — helped: the exact merged tip was checked with the frozen cached matrix, canonical runtime counters, relay/inbox state, and clean-tree gate before any final verdict.
+
+## Canonical telemetry, clean tree, and verdict
+
+Immediately before handoff, canonical stats for the current run recorded wall
+time `398`, one `efficiency-contract-repair` launch, one `integrator` launch, zero
+restarts for both lanes, zero supervisor restarts, zero terminal gates, and truthful
+unknown token state. Cleanup remained `pending`, as required before the runner's
+promotion and final cleanup phase; this integrator does not claim that the runner's
+final `0 / 0` proof already exists.
+
+The final runtime relay and durable inbox had no requests addressed to the
+integrator. The unchanged frozen matrix returned cached PASS at the exact handoff
+tip. Pre-marker `git status --short` contained only runner-owned
+`.polylane-prompt.txt`; no owned implementation or evidence change remained. The
+final marker commit contains only this verdict update and the ignored integrator
+status file.
+
+POLYLANE-VERDICT: GO run=c33-efficiency-contract-20260811-a1
