@@ -108,6 +108,7 @@ for i in $(seq 1 19); do
   printf '{"type":"item.completed","item":{"id":"cmd-%s","type":"command_execution","status":"completed"}}\n' "$i"
 done >> "$REPO_ROOT/docs/lane-logs/builder.log"
 printf '%s\n' 'provider warning: retained raw pane line' >> "$REPO_ROOT/docs/lane-logs/builder.log"
+printf '%s\n' '{"type":"provider.warning","item":"retained structured warning"}' >> "$REPO_ROOT/docs/lane-logs/builder.log"
 assert_ok "progress-mixed-log-keeps-active-command" lane_active_command builder
 # A stale command from an interrupted turn must not suppress a later turn
 # forever. The next turn starts fresh and contributes only its own command ID.

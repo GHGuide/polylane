@@ -2,6 +2,16 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
+Cycle 29 integration note: exact active-scope tip
+`7c24295ba86a8942b959b8016b9d4e5c6aeddd6d` is merged and every frozen
+`m24.1`–`m24.3`, `m25.1`–`m25.4`, and `m26.1`–`m26.4` focused matrix passes.
+Independent review repaired five bounded seams; changed-script Bash syntax,
+ShellCheck, and the combined diff are clean. Canonical evidence records one builder
+launch, one integrator launch, zero lane or supervisor restarts, and zero terminal
+gates. No terminal gate or durable state finalization occurs in Cycle 29, so the
+mechanically generated totals below remain authoritative. `m24.4`, `m25.5`, `c66`,
+and `c71` remain open for fresh certificate `c30-terminal-cert-20260811-a1`.
+
 ## Cycle 28
 
 subgoals: 55/79 done · criteria: 55/75 done · 71%

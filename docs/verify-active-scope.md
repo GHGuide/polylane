@@ -1,6 +1,6 @@
 # Cycle 29 active-scope verification
 
-Run: `c29-active-scope-20260811-a1`  
+Run: `c29-active-scope-20260811-a1`
 Base evidence: recovered Cycle 28 tip `cf60d3c1646dc6a7ae3f76a636be423cef91e9a1`; Cycle 28 remains a truthful HALTED run with its eight recorded lane restarts unchanged.
 
 ## Witnesses, root causes, and red/green proof

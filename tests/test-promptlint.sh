@@ -71,6 +71,10 @@ POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 POLYLANE_WRITE_PLAN_CONTRA
 printf '%s\n' 'PLANNED-WRITES: docs/status-x.md, src/x.' >> "$RUNTIME_GOOD"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 POLYLANE_WRITE_PLAN_CONTRACT=1 assert_ok \
   "lint-runtime-write-plan-accepts-boundary" lint_one "$RUNTIME_GOOD" x false builder
+cp "$RUNTIME_GOOD" "$TEST_TMPDIR/runtime-duplicate-write-plan.txt"
+printf '%s\n' 'PLANNED-WRITES: stale/outside.md.' >> "$TEST_TMPDIR/runtime-duplicate-write-plan.txt"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 POLYLANE_WRITE_PLAN_CONTRACT=1 assert_fail \
+  "lint-runtime-write-plan-rejects-duplicate-boundary" lint_one "$TEST_TMPDIR/runtime-duplicate-write-plan.txt" x false builder
 grep -v 'POLYLANE-RUNTIME-ROOTS:' "$RUNTIME_GOOD" > "$TEST_TMPDIR/runtime-no-roots.txt"
 POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
   "lint-runtime-requires-source-control-roots-contract" lint_one "$TEST_TMPDIR/runtime-no-roots.txt" x false builder

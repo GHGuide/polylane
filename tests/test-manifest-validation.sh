@@ -23,6 +23,8 @@ dies() {
 
 dies "{\"base\":\"main\",$INT,\"lanes\":[]}" "no lanes" "empty-lanes"
 dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\"}]}" "missing a required field" "null-fields"
+dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "missing a required field" "missing-lane-worktree"
+dies '{"base":"main","integrator":{"name":"i","model":"m","effort":"x","branch":"lane/i","prompt_file":"p"},"lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"/tmp/a","prompt_file":"p","own_globs":["x"]}]}' "is missing in the manifest" "missing-integrator-worktree"
 dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]},{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/b\",\"worktree\":\"/tmp/b\",\"prompt_file\":\"p\",\"own_globs\":[\"y\"]}]}" "duplicate lane name" "dup-name"
 dies "{\"base\":\"main\",$INT,\"lanes\":[{\"name\":\"a; touch /tmp/x\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "unsafe chars" "unsafe-name"
 dies "{\"base\":\"main\",\"session\":\"bad session;name\",$INT,\"lanes\":[{\"name\":\"a\",\"model\":\"m\",\"effort\":\"h\",\"branch\":\"lane/a\",\"worktree\":\"/tmp/a\",\"prompt_file\":\"p\",\"own_globs\":[\"x\"]}]}" "session has unsafe chars" "unsafe-session"

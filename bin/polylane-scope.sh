@@ -12,7 +12,7 @@ set -euo pipefail
 
 # shellcheck disable=SC2254  # $g is DELIBERATELY a glob pattern here — that's the matcher
 _match() { local p="$1" g="${2//\*\*/*}"; case "$p" in $g) return 0 ;; *) return 1 ;; esac; }
-path_in_any() { local p="$1"; shift; local g rc=1; for g in "$@"; do if _match "$p" "$g"; then rc=0; break; fi; done; return $rc; }
+path_in_any() ( local p="$1"; shift; local g rc=1; set -f; for g in "$@"; do if _match "$p" "$g"; then rc=0; break; fi; done; return $rc; )
 # _pair_overlap GLOB GLOB : 0 iff a path exists matching BOTH. Walks path segments —
 # ** absorbs all remaining segments; * matches one; a literal must fnmatch the other
 # side. Catches cross-wildcard collisions a single all-*→X witness misses
@@ -36,13 +36,36 @@ _pair_overlap() {
     i=$((i + 1))
   done
 }
-globs_overlap() {                        # 0 iff some path could match BOTH glob sets
+globs_overlap() (                        # 0 iff some path could match BOTH glob sets
   local setA="$1" setB="$2" ga gb
+  set -f
   for ga in $setA; do for gb in $setB; do _pair_overlap "$ga" "$gb" && return 0; done; done
+  return 1
+)
+
+_lane_globs() { jq -r --arg n "$2" '.lanes[] | select(.name==$n) | .own_globs[]?' "$1"; }
+
+# Keep manifest glob records newline-delimited until the intentional `case`
+# matcher. Flattening and then expanding an unquoted list lets the caller's cwd
+# rewrite src/** into real checkout paths before scope sees the declared glob.
+path_in_lane_globs() {
+  local mf="$1" lane="$2" path="$3" glob
+  while IFS= read -r glob; do
+    [ -n "$glob" ] && _match "$path" "$glob" && return 0
+  done < <(_lane_globs "$mf" "$lane")
   return 1
 }
 
-_lane_globs() { jq -r --arg n "$2" '.lanes[] | select(.name==$n) | .own_globs[]?' "$1"; }
+lane_globs_overlap() {
+  local mf="$1" lane_a="$2" lane_b="$3" ga gb
+  while IFS= read -r ga; do
+    [ -n "$ga" ] || continue
+    while IFS= read -r gb; do
+      [ -n "$gb" ] && _pair_overlap "$ga" "$gb" && return 0
+    done < <(_lane_globs "$mf" "$lane_b")
+  done < <(_lane_globs "$mf" "$lane_a")
+  return 1
+}
 
 # check_write_plan MANIFEST : opt-in contract for generated plans.  Exact planned
 # writes are deliberately narrower than ownership globs: a planner must name a
@@ -62,7 +85,7 @@ planned_write_safe() {
 }
 
 check_write_plan() {
-  local mf="$1" contract names lane globs writes path dup rc=0
+  local mf="$1" contract names lane writes path dup rc=0
   command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
   contract=$(jq -r 'if has("write_plan_contract") then .write_plan_contract else 0 end' "$mf") || return 2
   case "$contract" in
@@ -87,12 +110,11 @@ check_write_plan() {
       echo "SCOPE-WRITE-PLAN: lane '$lane' repeats planned write '$dup'" >&2
       rc=2
     fi
-    globs=$(_lane_globs "$mf" "$lane" | tr '\n' ' ')
     while IFS= read -r path; do
       if ! planned_write_safe "$path"; then
         echo "SCOPE-WRITE-PLAN: lane '$lane' has unsafe planned write '$path'" >&2
         rc=2
-      elif ! path_in_any "$path" $globs; then
+      elif ! path_in_lane_globs "$mf" "$lane" "$path"; then
         echo "SCOPE-WRITE-PLAN: lane '$lane' planned write is out of scope '$path'" >&2
         rc=2
       fi
@@ -104,7 +126,7 @@ EOF
 }
 
 check_static() {
-  local mf="$1" names i j a b ga gb rc=0
+  local mf="$1" names i j a b ga rc=0
   command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
   names=$(jq -r '.lanes[].name' "$mf")
   for a in $names; do
@@ -118,8 +140,7 @@ check_static() {
     j=$((i + 1))
     while [ "$j" -le "$#" ]; do
       a=$(eval "echo \${$i}"); b=$(eval "echo \${$j}")
-      ga=$(_lane_globs "$mf" "$a" | tr '\n' ' '); gb=$(_lane_globs "$mf" "$b" | tr '\n' ' ')
-      if globs_overlap "$ga" "$gb"; then
+      if lane_globs_overlap "$mf" "$a" "$b"; then
         echo "SCOPE-OVERLAP: lanes '$a' and '$b' can both match a path (own_globs collide)" >&2; rc=2
       fi
       j=$((j + 1))
@@ -161,10 +182,9 @@ check_status_markers() {
 
 check_lane() {
   local mf="$1" lane="$2"; shift 2
-  local globs p rc=0
-  globs=$(_lane_globs "$mf" "$lane" | tr '\n' ' ')
+  local p rc=0
   for p in "$@"; do
-    path_in_any "$p" $globs || { echo "SCOPE-VIOLATION: lane '$lane' wrote out-of-scope path '$p'" >&2; rc=2; }
+    path_in_lane_globs "$mf" "$lane" "$p" || { echo "SCOPE-VIOLATION: lane '$lane' wrote out-of-scope path '$p'" >&2; rc=2; }
   done
   return $rc
 }

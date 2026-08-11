@@ -77,11 +77,14 @@ DELEGATION: forbidden.
 CHECK-CACHE: use $PWD/.polylane/check-cache/builder.
 EXTERNAL-EVIDENCE: none.
 VERIFY: verify then STATUS: builder DONE run=live-run.
+PLANNED-WRITES: stale/outside.md. This authored boundary must be replaced.
 EOF
 inject_runtime_prompt_contract "$SOURCE" builder "$RUNTIME"
 assert_eq "runtime-finalize-injected-once" "1" "$(grep -c '^POLYLANE-RUNTIME-FINALIZE:' "$RUNTIME" || true)"
 assert_eq "runtime-write-plan-boundary-injected-once" "1" "$(grep -c '^PLANNED-WRITES:' "$RUNTIME" || true)"
 assert_contains "runtime-write-plan-boundary-is-current-lane" "docs/status-builder.md" "$(grep '^PLANNED-WRITES:' "$RUNTIME")"
+assert_eq "runtime-write-plan-boundary-replaces-authored-stale-value" "0" \
+  "$(grep -cF 'stale/outside.md' "$RUNTIME" || true)"
 assert_ok "runtime-finalize-promptopt-strict" "$SCRIPT_DIR/../bin/polylane-promptopt.sh" check "$RUNTIME"
 assert_ok "runtime-finalize-promptlint-strict" \
   env POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 \

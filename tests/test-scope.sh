@@ -78,4 +78,22 @@ for bad in missing absolute traversal glob duplicate outside; do
   assert_fail "scope-write-plan-rejects-$bad" "$SCOPE" check-static "$TEST_TMPDIR/write-plan-$bad.json"
 done
 
+# Declared globs are data, not cwd-relative shell expansions. Exercise every
+# production consumer from a checkout containing paths that would expand src/**.
+EXPAND_ROOT="$TEST_TMPDIR/glob-expansion"
+mkdir -p "$EXPAND_ROOT/src/a"
+: > "$EXPAND_ROOT/src/a/existing.txt"
+cat > "$EXPAND_ROOT/write-plan.json" <<'JSON'
+{"write_plan_contract":1,"lanes":[{"name":"a","own_globs":["src/**"],"planned_writes":["src/new/file.txt"]}]}
+JSON
+cat > "$EXPAND_ROOT/overlap.json" <<'JSON'
+{"lanes":[{"name":"a","own_globs":["src/**"]},{"name":"b","own_globs":["src/a/**"]}]}
+JSON
+SCOPE_START="$PWD"
+cd "$EXPAND_ROOT"
+assert_ok "scope-cwd-glob-does-not-break-write-plan" "$SCOPE" check-static "$EXPAND_ROOT/write-plan.json"
+assert_ok "scope-cwd-glob-does-not-break-check-lane" "$SCOPE" check-lane "$EXPAND_ROOT/write-plan.json" a "src/new/file.txt"
+assert_fail "scope-cwd-glob-does-not-hide-overlap" "$SCOPE" check-static "$EXPAND_ROOT/overlap.json"
+cd "$SCOPE_START"
+
 finish

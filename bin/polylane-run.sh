@@ -543,6 +543,9 @@ abs_project_path() {
 # later git worktree operation still receives one unambiguous path.
 abs_worktree() {
   local path
+  case "$1" in
+    ''|null) printf '%s' "$1"; return 0 ;;
+  esac
   path=$(abs_project_path "$1")
   if [ -d "$path" ]; then
     (cd "$path" && pwd -P)
@@ -672,7 +675,8 @@ inject_runtime_prompt_contract() {
     sed -e '/^POLYLANE-RUNTIME-RELAY:/d' \
       -e '/^POLYLANE-RUNTIME-ROOTS:/d' \
       -e '/^POLYLANE-RUNTIME-FINALIZE:/d' \
-      -e '/^POLYLANE-RUNTIME-DONE:/d' "$input"
+      -e '/^POLYLANE-RUNTIME-DONE:/d' \
+      -e '/^PLANNED-WRITES:/d' "$input"
     printf '\nPOLYLANE-RUNTIME-RELAY: at start and immediately before completion run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; handle requests addressed to %s. docs/parallel-status.md is post-cycle evidence only, never the live relay.\n' "$name"
     printf 'POLYLANE-RUNTIME-ROOTS: source edits/tests/Graphify use "$POLYLANE_SOURCE_ROOT" (query `${POLYLANE_SOURCE_ROOT:-$PWD}/graphify-out/q.py`); coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".\n'
     if [ "${WRITE_PLAN_CONTRACT:-$(jq -r 'if .write_plan_contract == 1 then 1 else 0 end' "${MANIFEST:-/dev/null}" 2>/dev/null || printf 0)}" = "1" ]; then
@@ -3091,18 +3095,21 @@ checkpoint_lane() {
 lane_active_command() {
   local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log"
   [ -f "$log" ] || return 1
-  jq -R -s -e '
-    split("\n") | map(try fromjson catch null) | map(select(type == "object")) |
-    reduce .[] as $event ({};
-      ($event.item.id // "") as $id |
+  jq -R -n -e '
+    reduce inputs as $line ({};
+      ($line | try fromjson catch null) as $event |
+      if (($event | type) != "object") then .
+      else ($event | if ((.item? | type) == "object") then .item else {} end) as $item |
+      ($item.id // "") as $id |
       if (($event.type == "turn.started") or ($event.type == "turn.completed") or
           ($event.type == "turn.failed") or ($event.type == "error")) then {}
-      elif (($event.type == "item.started") and ($event.item.type == "command_execution") and ($id | type == "string") and ($id != "")) then .[$id] = true
+      elif (($event.type == "item.started") and ($item.type == "command_execution") and ($id | type == "string") and ($id != "")) then .[$id] = true
       elif (($id | type == "string") and ($id != "") and (has($id)) and
             (($event.type == "item.completed") or ($event.type == "item.failed") or
-             ($event.item.status == "completed") or ($event.item.status == "failed") or
-             ($event.item.status == "cancelled"))) then del(.[$id])
+             ($item.status == "completed") or ($item.status == "failed") or
+             ($item.status == "cancelled"))) then del(.[$id])
       else . end
+      end
     ) | length > 0
   ' "$log" >/dev/null 2>&1
 }

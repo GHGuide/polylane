@@ -1,0 +1,5 @@
+# Cycle 29 digest
+
+Cycle 29 merged exact active-scope handoff `7c24295ba86a8942b959b8016b9d4e5c6aeddd6d`, independently reviewed its full diff, and repaired five narrow integration seams: compiled planned-write boundaries are canonical and exact-once, active-command reduction is streaming and type-safe for mixed logs, ownership globs cannot expand against the checkout, missing worktree fields survive until validation, and inherited verification is whitespace-clean. Every frozen `m24.1`–`m24.3`, `m25.1`–`m25.4`, and `m26.1`–`m26.4` focused matrix passes through the integrator cache; changed scripts pass Bash syntax and ShellCheck, the combined diff is clean, and canonical telemetry truthfully records one builder launch, one integrator launch, zero lane or supervisor restarts, and zero terminal gates. Cycle 28 remains HALTED, and Cycle 29 is READY-FOR-HOST-GATE rather than GO.
+
+Next: `c30-terminal-cert-20260811-a1` — run the fresh Cycle 30 one-gate certificate for the full suite, parity, installers, both live rehearsal routes, promotion, report, and cleanup.

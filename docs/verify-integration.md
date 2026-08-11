@@ -1,104 +1,55 @@
-# Cycle 27 integration verification
+# Cycle 29 integration verification
 
-Run: `c27-gate-repair-20260810-a1`
+Run: `c29-active-scope-20260811-a1`
 
-## Exact-tip provenance
+## Exact-tip provenance and review
 
-The asserted builder tip
-`013534eef494976e66826d39e3fd2c9a845c60e8` was read directly from
-`lane/c27-gate-repair`, including its committed `docs/verify-gate-repair.md` and
-`docs/status-gate-repair.md`, then merged by exact object as merge commit
-`ed550a4`. The moving branch name and the base branch were not merged.
+- Frozen recovered source: `cf60d3c1646dc6a7ae3f76a636be423cef91e9a1`.
+- Integrator pre-merge tip: `940f6f69ce460366d61391998bbe8138ed21a69e`.
+- Exact builder handoff: `7c24295ba86a8942b959b8016b9d4e5c6aeddd6d`, whose first line is `STATUS: active-scope DONE run=c29-active-scope-20260811-a1`; implementation parent: `0eb2b88fcdf381d121ed25671743a8c53532bce9`.
+- The handoff hash was merged with `git merge --ff-only 7c24295ba86a8942b959b8016b9d4e5c6aeddd6d`. The integrator inspected the complete `940f6f6..7c24295` diff across all 17 changed files and queried Graphify for the changed runtime symbols before targeted source reads.
+- Cycle 28 remains the immutable truthful HALTED run recorded at `/Users/leonardo/Downloads/polylane-c28/docs/polylane-report.md`; its eight restarts, zero terminal gates, and lack of promotion are not rewritten.
 
-## Independent trust-boundary review
+## Independent contract review
 
-- Optional integrator kits share one `kit_active` predicate between preflight and
-  prompt compilation. An absent or empty role selection is a compatibility no-op;
-  partial content arms strict cardinality, installed-resolution, canonical path,
-  source, fingerprint, duplicate-path, and four-skill validation. Empty, partial,
-  complete, and stale-fingerprint cases pass.
-- Marker normalization permits only a two-path HEAD commit with the exact runner
-  subject, one regular current-run source, the canonical destination, identical
-  blobs, and no ambiguous candidate. Only that proven deleted source is filtered
-  from ordinary completed-branch ownership checks. Stale nonce, symlink, dirty,
-  ambiguous, fabricated-subject, extra-commit-path, and ordinary out-of-scope
-  cases remain rejected.
-- Review found one real cross-lane defect in the builder tip: acceptance execution
-  rebound `REPO_ROOT` to the integrator worktree before selecting the failure-log
-  root. The bounded seam repair snapshots the canonical root before the subshell.
-  The actual focused gate now proves output lands in the canonical project and not
-  in the disposable checkout.
-- Failed acceptance output is same-directory temporary-file + rename atomic JSON
-  data. A one-line configured tail proves the bound; shell-special output is never
-  executed; successful checks create no record. Host evidence and reports link a
-  regular non-symlink record only when every entry carries the current run ID. A
-  same-filename stale-run record is rejected.
-- Virtual dry-run panes skip real tmux tagging and reach the normal preview return;
-  real launches still call the fail-closed tagging helper.
+1. **Active work:** `lane_active_command` now streams raw log lines through a type-safe JSON reducer, tracks overlapping command IDs, ignores non-JSON and non-item structured warnings, and clears stale IDs at new or terminal turn boundaries. `material_progress_stalled` returns before changing fingerprint, command baseline, churn count, or replan state while any ID is active. After every ID settles, the unchanged 12-check/20-command bounded churn policy still fires.
+2. **Source roots:** manifest-relative builder and integrator worktrees are anchored to the project root and existing paths resolve through `pwd -P`. Missing or empty worktree fields remain `null`/empty until required-field validation rather than becoming plausible project paths. `pane_cmd` canonicalizes again before staging, `cd`, and exporting `POLYLANE_SOURCE_ROOT`, so the exported source root is an absolute physical worktree even when the manifest path is relative or shell-escaped.
+3. **Terminal scope:** only a clean, committed, exact-HEAD, exact current-run DONE handoff with no mapped live worker can become terminal scope evidence. Its real `SCOPE-VIOLATION` output is bounded and stored once; `health_check` marks it failed without retry, repair, respawn, or worktree mutation. Dirty, uncommitted, stale, live, and integrator trees remain outside this fail-fast path.
+4. **Planned writes:** `write_plan_contract: 1` requires every builder to provide non-empty, unique exact paths. Preflight rejects absent, absolute, traversal, globbed, duplicate, and out-of-scope paths before worktree/tmux launch. Manifest ownership globs remain newline-delimited data until the intentional matcher, so checkout files cannot pathname-expand `src/**` before scope admission, overlap review, or final lane checking. Manifests without the opt-in remain compatible. Runtime compilation removes any authored `PLANNED-WRITES` line, injects exactly one current lane boundary, and lint now rejects zero or duplicate boundaries when enabled.
+5. **Finite live-turn policy:** low/medium/high/xhigh defaults remain 300/900/1800/3600 seconds. The default finite hard cap is 14,400 seconds; `POLYLANE_LIVE_WEDGE_HARD_SECONDS` remains operator-extensible, and an explicit 7,200-second requested window is not silently clamped.
 
-## Fresh focused evidence
+Independent review repaired five bounded seams: canonical replacement/exact-once lint for the compiled planned-write boundary; streaming, type-safe active-command reduction for mixed logs; newline-preserved ownership glob matching; preservation of missing worktree fields until validation; and one inherited trailing-whitespace failure in builder evidence. No frozen target, acceptance, retry budget, terminal gate, installer, or deployment behavior was weakened.
 
-The frozen matrices were launched once under the integrator cache cadence, and
-their retained per-test cache entries were reused rather than repeating unchanged
-expensive checks.
+## Focused cached evidence
 
-- `m24.1`: the frozen manifest, Cycle 13, scout, orchestration, and dry-run matrix
-  passed **124/124** assertions.
-- `m24.2`: the frozen normalization, lane-done, live lane-done, and scope matrix
-  passed **78/78** assertions.
-- `m24.3`: the frozen memory, contract-acceptance, verdict-repair, and report matrix
-  passed **183/183** assertions, including the canonical-root seam regression.
-- Adjacent efficiency-canary, graph-authority, and graph-shadow tests passed
-  **133/133** assertions.
-- `shellcheck -S warning bin/polylane-run.sh bin/polylane-scout.sh
-  bin/polylane-memory.sh` passed with zero output.
-- `git diff --check` passed. The full suite, terminal acceptance, installers,
-  parity certification, and doctor rehearsal were deliberately not run.
+Every matrix ran through `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- <command>`; unchanged expensive checks were not repeated. The one invalid test-harness assertion was replaced, then only matrices containing that changed test were rerun on the new fingerprint.
 
-## Runtime telemetry and identity
+- `m24.1`: manifest validation 19, Cycle 13 contract 56, scout 30, orchestration contract 14, dry-run purity 11; all pass.
+- `m24.2`: marker normalization 20, lane DONE 27, live DONE/scope/prompt boundary 15, scope 29; all pass on the corrected test fingerprint.
+- `m24.3`: memory 60, acceptance contract 23, verdict repair 53, report writing 51; all pass.
+- `m25.1`: wedge 31, runtime recovery 26, pane-error classification 16; all pass.
+- `m25.2`: report writing 51 and runtime recovery 26; all pass.
+- `m25.3`: run-stats concurrency/resume/usage script, report writing 51, efficiency canary 25; all pass.
+- `m25.4`: agent adapter 53, prompt compiler 16, orchestration contract 14, prompt lint 32; all pass.
+- `m26.1`: progress guard 21 and wedge 31; all pass.
+- `m26.2`: agent adapter 53, prompt compiler 16, prompt lint 32; all pass.
+- `m26.3`: live DONE 15, runtime recovery 26, report writing 51; all pass.
+- `m26.4`: scope 29, manifest validation 19, orchestration contract 14; all pass.
 
-Canonical `docs/polylane/run-stats.json` for this nonce records builder
-`gate-repair` launches=1/restarts=0, integrator launches=1/restarts=0,
-supervisor_restarts=0, and terminal_gates=0. Tmux pane tags bind pane 0 to the
-builder worktree and pane 1 to this integrator worktree under the same run ID.
-Worker capsules retain both identities as active. The canonical manifest targets
-only `m24.1`–`m24.3`; both compiled prompts contain their exact selected-skill
-records and final relay/inbox/marker contracts. The scoped relay and inbox were
-empty at start. The refinement queue returned `[]`, so no item was eligible for a
-decision.
+Changed scripts `bin/polylane-run.sh`, `bin/polylane-scope.sh`, and `bin/polylane-promptlint.sh` pass `bash -n` and `shellcheck -S warning`. `git diff --check 940f6f69ce460366d61391998bbe8138ed21a69e` passes for the complete integrated worktree. The terminal full suite, terminal acceptance, doctor rehearsal, installers, push, deployment, publication, and external action were not run.
 
-## Graphify audit
+## Runtime and process evidence
 
-The existing `graphify-out/q.py` was queried directly before targeted repair reads;
-no Graphify skill body was read and the graph was not rebuilt. It located
-`validate_kits`, `_accept_run`, `normalize_status_marker`, `new_pane`,
-`launch_panes`, `contract_acceptance_gate`, `host_gate_failure`,
-`report_host_gate_failure`, and `write_report`. The staged graph predates new
-`kit_active` and `lane_completion_scope_valid` nodes and reported no relationship
-edges for the repair nodes, so source and focused tests—not absent graph edges—are
-the trust evidence.
+Canonical runner state is `/Users/leonardo/Downloads/polylane-c29/docs/polylane/run-stats.json` with `run_id=c29-active-scope-20260811-a1`. It records exactly `active-scope: launches=1,restarts=0`, `integrator: launches=1,restarts=0`, `supervisor_restarts=0`, and `terminal_gates=0`; cleanup remains pending for the runner. Worktree-local `run-stats.json` copies are stale Cycle 23 artifacts and were excluded. The runtime relay and durable inbox had no request addressed to the integrator at review time. The refinement queue returned `[]`, so there were no eligible items requiring a `propose` or `decline` decision.
 
 ## Skill receipts
 
 SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
 
-SKILL-EVIDENCE: engineering:code-review — helped: the independent correctness and
-trust-boundary pass found that acceptance output was rooted to the disposable
-integrator checkout, leading to the canonical-root seam repair and regression.
+SKILL-EVIDENCE: engineering:code-review — helped: the correctness, security, and performance review found conflicting planned-write boundaries, a type-fragile active-command reducer, cwd-driven ownership-glob expansion, and missing worktree fields normalized before validation.
 
 SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
 
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: required fresh
-124/78/183 focused evidence, 133 adjacent assertions, clean ShellCheck, and direct
-telemetry inspection before any READY claim while preserving terminal_gates=0.
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: a combined final diff check caught inherited trailing whitespace, and an unsupported test assertion was rejected as evidence even though the harness summary incorrectly remained green.
 
-The final machine verdict is intentionally reserved for the last handoff commit
-after the final live relay, durable inbox, focused-evidence, and commit-scope checks.
-
-## Final verdict
-
-The exact repair source, independent seam repair, focused evidence, runtime identity,
-and zero-terminal-gate telemetry satisfy the Cycle 27 handoff contract. Fresh-process
-terminal certification remains open as `m24.4` for Cycle 28.
-
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c27-gate-repair-20260810-a1
+Cycle 29 is source-ready only. `m24.4`, `m25.5`, `c66`, and `c71` remain open for the fresh Cycle 30 process and its runner-owned terminal suite, parity, installers, and live GO/NO-GO rehearsal.

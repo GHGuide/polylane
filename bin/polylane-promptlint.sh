@@ -13,7 +13,7 @@ set -euo pipefail
 
 # required token -> human label. A prompt must contain each (case-insensitive).
 lint_one() {
-  local f="$1" lane="${2:-$(basename "$1" .txt)}" prime_hybrid="${3:-false}" role="${4:-builder}" miss=""
+  local f="$1" lane="${2:-$(basename "$1" .txt)}" prime_hybrid="${3:-false}" role="${4:-builder}" miss="" planned_count
   [ -s "$f" ] || { echo "PROMPT-LINT: $lane empty-or-missing $f"; return 6; }
   grep -qiE 'GOAL|/goal' "$f"        || miss="$miss objective(GOAL)"
   grep -q   'ULTIMATE-GOAL:' "$f"    || miss="$miss ultimate-goal"
@@ -48,7 +48,9 @@ lint_one() {
     runtime_finalize_contract "$f" "$role" || miss="$miss runtime-finalize-contract"
     runtime_exact_once "$f" || miss="$miss duplicate-runtime-contract"
     if [ "${POLYLANE_WRITE_PLAN_CONTRACT:-0}" = "1" ] && [ "$role" = builder ]; then
-      grep -qE '^PLANNED-WRITES: [^[:space:]]' "$f" || miss="$miss planned-write-boundary"
+      planned_count=$(grep -c '^PLANNED-WRITES:' "$f" || true)
+      [ "$planned_count" -eq 1 ] && grep -qE '^PLANNED-WRITES: [^[:space:]]' "$f" ||
+        miss="$miss planned-write-boundary-exact-once"
     fi
     grep -qiE 'polylane-refine\.sh[^[:alnum:]_-]+propose-or-decline' "$f" && miss="$miss fictional-refine-subcommand"
     if [ "$role" = builder ]; then

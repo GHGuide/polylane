@@ -1,16 +1,10 @@
-# Cycle 27 integration status — READY for fresh certification
+# Cycle 29 integration status — READY for fresh Cycle 30 certification
 
-Run: `c27-gate-repair-20260810-a1` · branch: `lane/c27-integrator` ·
-Cycle 26 integrated base: `d8b94176f0a1272f76018e85696c300c633f6484`.
+Run: `c29-active-scope-20260811-a1` · branch: `lane/c29-integrator` · exact builder tip: `7c24295ba86a8942b959b8016b9d4e5c6aeddd6d`.
 
-| Lane | Exact tip | Integrated result |
+| Lane | Exact result | Integration evidence |
 | --- | --- | --- |
-| gate-repair | `013534eef494976e66826d39e3fd2c9a845c60e8` | merged exactly; empty-kit, marker-normalization, dry-run, and durable failure-output repairs pass |
-| integrator | current branch | repaired the canonical failure-output root seam; frozen matrices pass 124/78/183 and adjacent runtime/graph checks pass 133/133 |
+| active-scope | one launch, zero restarts, DONE at exact tip `7c24295` | active-command recovery, absolute source roots, terminal scope handling, planned-write contract, and inherited repairs merged |
+| integrator | one launch, zero restarts | complete diff reviewed; five bounded seams repaired; every frozen focused matrix and changed-script check passes |
 
-Canonical stats at inspection record exactly one builder launch and one integrator
-launch, zero lane or supervisor restarts, zero terminal gates, and pending cleanup.
-Changed-script ShellCheck is clean. This repair source is READY for promotion, but
-Cycle 27 deliberately did not certify GO: a fresh Cycle 28 process owns the one
-terminal gate, full matrix, installers, parity, and live rehearsal. This document is
-post-cycle evidence only, never live IPC.
+Canonical telemetry records zero supervisor restarts and zero terminal gates. Cycle 28 remains HALTED and unchanged. Cycle 29 is READY for the host boundary but is not GO: the full suite, parity, installers, and live GO/NO-GO rehearsal remain reserved for the fresh Cycle 30 process. This file is post-cycle evidence only, never live IPC.
