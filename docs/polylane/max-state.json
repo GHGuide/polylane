@@ -1525,9 +1525,9 @@
           "id": "m32.2",
           "text": "Implement live rendering, blinded ballots, calibration, aggregation, and fail-closed taste certification",
           "weight": 139,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 38,
+          "evidence": "cycle 38 implementation swarm planned"
         },
         {
           "id": "m32.3",
