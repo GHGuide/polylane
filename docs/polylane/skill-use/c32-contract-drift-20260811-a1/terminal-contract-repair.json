@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "terminal-contract-repair",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c32-terminal-contract-repair/docs/verify-terminal-contract-repair.md",
+  "helped": [
+    {
+      "id": "superpowers:systematic-debugging",
+      "effect": " direct inspection"
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the two specified"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

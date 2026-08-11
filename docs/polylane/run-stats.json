@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "run_id": "c23-terminal-cert-20260809-a1",
-  "started_at": 1786308291,
-  "updated_at": 1786309579,
-  "wall_s": 1288,
+  "run_id": "c32-contract-drift-20260811-a1",
+  "started_at": 1786461507,
+  "updated_at": 1786462274,
+  "wall_s": 767,
   "lanes": {
-    "terminal-fixture-audit": {
+    "terminal-contract-repair": {
       "launches": 1,
       "restarts": 0
     },
@@ -15,61 +15,59 @@
     }
   },
   "supervisor_restarts": 0,
-  "terminal_gates": 1,
-  "tokens": 1588854,
+  "terminal_gates": 0,
+  "tokens": 2311496,
   "token_state": "known",
   "usage_offsets": {
-    "terminal-fixture-audit": 280604,
-    "integrator": 352735
+    "terminal-contract-repair": 85178,
+    "integrator": 213350
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786308291
+      "at": 1786461507
     },
     {
       "type": "usage_capture",
-      "lane": "terminal-fixture-audit",
-      "at": 1786308296,
+      "lane": "terminal-contract-repair",
+      "at": 1786461531,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "terminal-fixture-audit",
-      "at": 1786308296
+      "lane": "terminal-contract-repair",
+      "at": 1786461531
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786308638,
+      "at": 1786461796,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1786308638
+      "at": 1786461796
     },
     {
       "type": "usage_capture",
-      "lane": "terminal-fixture-audit",
-      "at": 1786309237,
-      "added": 1588854
+      "lane": "terminal-contract-repair",
+      "at": 1786462274,
+      "added": 651696
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1786309237,
-      "added": null
-    },
-    {
-      "type": "terminal_gate",
-      "at": 1786309265
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786309579
+      "at": 1786462274,
+      "added": 1659800
     }
-  ]
+  ],
+  "usage": {
+    "input_tokens": 2284192,
+    "cached_input_tokens": 2150656,
+    "uncached_input_tokens": 133536,
+    "output_tokens": 27304,
+    "reasoning_output_tokens": 11289
+  }
 }

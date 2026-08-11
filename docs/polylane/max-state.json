@@ -2966,7 +2966,7 @@
       "cmd": "bash tests/test-load-manifest.sh && bash tests/test-prompt-economy.sh && bash tests/test-abs-prompt.sh && bash tests/test-orchestration-contract.sh",
       "tier": "focused",
       "key": "terminal-contract-drift",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [
         "bin/polylane-run.sh",
         "references/prompt-blocks.md",
@@ -2975,7 +2975,7 @@
         "tests/test-abs-prompt.sh",
         "tests/test-orchestration-contract.sh"
       ],
-      "fp": "",
+      "fp": "2638469736",
       "regressed_cycle": null
     }
   ]

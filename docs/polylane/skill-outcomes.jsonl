@@ -42,3 +42,7 @@
 
 {"lane":"terminal-fixture-audit","domain":"report","skill":"superpowers:verification-before-completion","outcome":"helped","why":" kept the"}
 
+{"lane":"terminal-contract-repair","domain":"test","skill":"superpowers:systematic-debugging","outcome":"helped","why":" direct inspection"}
+
+{"lane":"terminal-contract-repair","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the two specified"}
+
