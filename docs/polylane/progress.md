@@ -4,39 +4,13 @@ Generated mechanically from `max-state.json`. Conversation summaries are not aut
 
 ## Cycle 34
 
-subgoals: 57/85 done · criteria: 57/81 done · 68%
+subgoals: 84/85 done · criteria: 80/81 done · 98%
 
-**Route:** `CONTINUE m27.1  Gate terminal counting and execution on real current-target terminal work`
+**Route:** `NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
 
 ## Open autonomous work
 
-- `m21.1` [open, w82] — Replace cwd-only pane discovery with nonce-bound pane identity and prove observer, supervisor, resume, and recovery behavior
-- `m21.2` [open, w81] — Scope durable worker inbox events to the active run, enforce the exact inbox prompt contract, and make Graphify query infrastructure context-free
-- `m21.3` [open, w80] — Integrate all seams and complete a fresh zero-intervention terminal certification with live observability and transcript token evidence
-- `m21.4` [open, w83] — Make documented custom intensity metadata a true no-remap path and preserve explicit CLI preset behavior
-- `m22.1` [open, w90] — Make commit-clean marker-last handoff and refinement decision syntax mechanical in every builder and integrator prompt
-- `m22.2` [open, w89] — Reject completion while an agent is live and keep reflexion or usage-replan prompts strict-contract valid
-- `m22.3` [open, w88] — Integrate Cycle 24 and 25 fixes and complete one fresh zero-restart terminal certification
-- `m23.1` [open, w96] — Make integrator repair admission strict-scalar safe and transactional so a failed repair cannot mutate terminal evidence or HEAD
-- `m23.2` [open, w95] — Guarantee every terminal NO-GO publishes one fresh report and is never mistaken for a supervisor-recoverable crash
-- `m23.3` [open, w94] — Complete a fresh zero-restart one-gate certification and install the verified Claude and Codex skill variants
-- `m24.1` [open, w97] — Make optional integrator skill kits truthful and keep virtual dry-run panes free of real tmux tagging
-- `m24.2` [open, w10] — Make exact status-marker normalization compatible with strict lane scope
-- `m24.3` [open, w9] — Persist bounded exact acceptance-failure output in host evidence and reports
-- `m24.4` [open, w10] — Prove the repaired source in a fresh zero-restart one-gate terminal run
-- `m25.1` [open, w102] — Replace the short check-count live-turn watchdog with an effort-scaled time-based hard cap that protects active inference and still recovers a genuine freeze
-- `m25.2` [open, w101] — Persist exact per-lane failure reasons and render truthful HALTED rows and recovery guidance
-- `m25.3` [open, w100] — Separate cached and uncached Codex usage in durable telemetry and reports without breaking legacy totals or resume offsets
-- `m25.4` [open, w99] — Expose distinct source and control roots to every pane and compiled prompt so Graphify and file work stay lane-local while coordination stays canonical
-- `m25.5` [open, w98] — Certify the recovered terminal and watchdog source from one fresh zero-restart one-gate process
-- `m26.1` [open, w106] — Make the material-progress guard preserve demonstrably active commands and replan only completed command churn
-- `m26.2` [open, w105] — Canonicalize every lane source root to an absolute physical worktree path before pane export
-- `m26.3` [open, w104] — Fail a completed out-of-scope handoff once with its exact reason instead of spending retry and repair budgets
-- `m26.4` [open, w103] — Require and mechanically validate a planned write-set against lane ownership for newly generated manifests
-- `m27.1` [open, w110] — Gate terminal counting and execution on real current-target terminal work
-- `m27.2` [open, w109] — Isolate nested acceptance commands from outer failure evidence and clear successful stale artifacts
-- `m27.3` [open, w108] — Persist exact promotion blockers into HALTED reports and recovery guidance
-- `m27.4` [open, w107] — Reuse focused READY proof only across an immutable exact-tip boundary
+- None
 
 ## External/user evidence
 
@@ -104,63 +78,35 @@ subgoals: 57/85 done · criteria: 57/81 done · 68%
 - `c54` [done] — Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph
 - `c55` [done] — Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence
 - `c56` [done] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion
-- `c57` [open] — Live pane identity survives cwd drift, retained worker context cannot import stale-run instructions, and Graphify navigation avoids loading the full skill body into every builder
-- `c58` [open] — Manifest intensity custom preserves explicitly baked model and effort settings while a CLI intensity remains the only operation that remaps them
-- `c59` [open] — A worker cannot be accepted DONE before its agent exits, its owned changes and evidence are committed, and every repair prompt still satisfies strict scalar contracts
-- `c60` [open] — A fresh private-tmux run proves pane-local identity, run-scoped inbox context, custom policy preservation, zero lane or supervisor restarts, exactly one terminal gate, and complete cleanup
-- `c61` [open] — Repair prompt admission preserves exact scalar contracts and any admission failure leaves current-run verdict, status, and branch tip untouched
-- `c62` [open] — A terminal NO-GO or GO always writes one current-run report; the supervisor never revives completed evidence; a fresh certification has zero restarts and one terminal gate
-- `c63` [open] — Empty integrator kits remain compatible while armed kits enforce immutable trusted records
-- `c64` [open] — Runner-owned marker normalization cannot bypass or be broken by completed-branch scope
-- `c65` [open] — A host-gate failure preserves enough bounded output to diagnose without rerunning the terminal suite
-- `c66` [open] — A fresh process completes with two launches, zero restarts, one terminal gate, and green live rehearsals
-- `c67` [open] — A live in-flight agent turn receives an effort-scaled time-based silence allowance and remains finitely recoverable without the old false-restart window
-- `c68` [open] — Every failed lane retains and reports its exact bounded terminal reason instead of being misclassified as a transient provider error
-- `c69` [open] — Codex usage telemetry separates total, cached, uncached, output, and reasoning tokens while preserving resumable no-double-count accounting
-- `c70` [open] — Every pane and compiled prompt distinguish its writable source worktree from canonical orchestration state and address Graphify through the source root
-- `c71` [open] — A fresh post-watchdog process certifies all recovered repairs with two launches, zero restarts, one terminal gate, complete cleanup, and live GO and NO-GO rehearsals
-- `c72` [open] — A long in-progress command cannot trigger material-progress replanning or a worker restart
-- `c73` [open] — POLYLANE_SOURCE_ROOT is always an absolute physical lane worktree path even when the manifest uses a relative worktree
-- `c74` [open] — A completed scope violation halts once with the offending paths and never consumes retry or repair budgets
-- `c75` [open] — Every newly generated lane declares planned writes and preflight rejects any planned path outside own_globs
-- `c76` [open] — READY consumes a terminal gate only for an eligible current target with terminal-tier acceptance and no outside autonomous work
-- `c77` [open] — Nested acceptance commands cannot inherit canonical failure-evidence authority and successful top-level checks leave no stale failure artifact
-- `c78` [open] — Every failed promotion reports its exact bounded blocker while preserving all user data and verified worktrees
-- `c79` [open] — An unchanged READY boundary reuses focused proof once while any source or acceptance mutation invalidates it
+- `c57` [done] — Live pane identity survives cwd drift, retained worker context cannot import stale-run instructions, and Graphify navigation avoids loading the full skill body into every builder
+- `c58` [done] — Manifest intensity custom preserves explicitly baked model and effort settings while a CLI intensity remains the only operation that remaps them
+- `c59` [done] — A worker cannot be accepted DONE before its agent exits, its owned changes and evidence are committed, and every repair prompt still satisfies strict scalar contracts
+- `c60` [done] — A fresh private-tmux run proves pane-local identity, run-scoped inbox context, custom policy preservation, zero lane or supervisor restarts, exactly one terminal gate, and complete cleanup
+- `c61` [done] — Repair prompt admission preserves exact scalar contracts and any admission failure leaves current-run verdict, status, and branch tip untouched
+- `c62` [done] — A terminal NO-GO or GO always writes one current-run report; the supervisor never revives completed evidence; a fresh certification has zero restarts and one terminal gate
+- `c63` [done] — Empty integrator kits remain compatible while armed kits enforce immutable trusted records
+- `c64` [done] — Runner-owned marker normalization cannot bypass or be broken by completed-branch scope
+- `c65` [done] — A host-gate failure preserves enough bounded output to diagnose without rerunning the terminal suite
+- `c66` [done] — A fresh process completes with two launches, zero restarts, one terminal gate, and green live rehearsals
+- `c67` [done] — A live in-flight agent turn receives an effort-scaled time-based silence allowance and remains finitely recoverable without the old false-restart window
+- `c68` [done] — Every failed lane retains and reports its exact bounded terminal reason instead of being misclassified as a transient provider error
+- `c69` [done] — Codex usage telemetry separates total, cached, uncached, output, and reasoning tokens while preserving resumable no-double-count accounting
+- `c70` [done] — Every pane and compiled prompt distinguish its writable source worktree from canonical orchestration state and address Graphify through the source root
+- `c71` [done] — A fresh post-watchdog process certifies all recovered repairs with two launches, zero restarts, one terminal gate, complete cleanup, and live GO and NO-GO rehearsals
+- `c72` [done] — A long in-progress command cannot trigger material-progress replanning or a worker restart
+- `c73` [done] — POLYLANE_SOURCE_ROOT is always an absolute physical lane worktree path even when the manifest uses a relative worktree
+- `c74` [done] — A completed scope violation halts once with the offending paths and never consumes retry or repair budgets
+- `c75` [done] — Every newly generated lane declares planned writes and preflight rejects any planned path outside own_globs
+- `c76` [done] — READY consumes a terminal gate only for an eligible current target with terminal-tier acceptance and no outside autonomous work
+- `c77` [done] — Nested acceptance commands cannot inherit canonical failure-evidence authority and successful top-level checks leave no stale failure artifact
+- `c78` [done] — Every failed promotion reports its exact bounded blocker while preserving all user data and verified worktrees
+- `c79` [done] — An unchanged READY boundary reuses focused proof once while any source or acceptance mutation invalidates it
 - `c80` [done] — Manifest tests assert the absolute physical-worktree contract and builder prompts explicitly reserve terminal checks for the coordinator
 - `c81` [done] — Focused runs can declare zero expected terminal gates while terminal runs default to one, keeping final efficiency proof, cleanup, report, and criterion state consistent
 
 ## Acceptance checks
 
 - Total: 97
-- Pass: 69
+- Pass: 97
 - Fail: 0
-- Unchecked: 28
-  - `m21.1` [unchecked] — bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh
-  - `m21.2` [unchecked] — bash tests/test-workers.sh && bash tests/test-worker-canonical-state.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-promptlint.sh && bash tests/test-skill-delivery.sh && bash tests/test-promptopt.sh
-  - `m21.3` [unchecked] — tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse
-  - `m21.4` [unchecked] — bash tests/test-model-policy.sh && bash tests/test-intensity.sh
-  - `m22.1` [unchecked] — bash tests/test-handoff-contract.sh && bash tests/test-promptlint.sh && bash tests/test-orchestration-contract.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-skill-parity.sh
-  - `m22.2` [unchecked] — bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-progress-guard.sh && bash tests/test-promptopt.sh
-  - `m22.3` [unchecked] — bash tests/test-handoff-contract.sh && bash tests/test-lane-done-live.sh && bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh && bash tests/test-workers.sh && bash tests/test-worker-run-scope.sh && bash tests/test-model-policy.sh && bash tests/test-intensity.sh
-  - `m22.3` [unchecked] — POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-  - `m23.1` [unchecked] — bash tests/test-verdict-repair.sh && bash tests/test-promptopt.sh && bash tests/test-runtime-recovery.sh
-  - `m23.2` [unchecked] — bash tests/test-write-report.sh && bash tests/test-supervisor.sh && bash tests/test-session-resume.sh && bash tests/test-clear-markers.sh
-  - `m23.3` [unchecked] — bash tests/test-run-stats.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh
-  - `m24.1` [unchecked] — bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh && bash tests/test-dryrun-pure.sh
-  - `m24.2` [unchecked] — bash tests/test-status-marker-normalization.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-scope.sh
-  - `m24.3` [unchecked] — bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-write-report.sh
-  - `m24.4` [unchecked] — POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-  - `m25.1` [unchecked] — bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh && bash tests/test-pane-errored.sh
-  - `m25.2` [unchecked] — bash tests/test-write-report.sh && bash tests/test-runtime-recovery.sh
-  - `m25.3` [unchecked] — bash tests/test-run-stats.sh && bash tests/test-write-report.sh && bash tests/test-efficiency-canary.sh
-  - `m25.4` [unchecked] — bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-orchestration-contract.sh && bash tests/test-promptlint.sh
-  - `m25.5` [unchecked] — POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-  - `m26.1` [unchecked] — bash tests/test-progress-guard.sh && bash tests/test-wedge.sh
-  - `m26.2` [unchecked] — bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-promptlint.sh
-  - `m26.3` [unchecked] — bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-write-report.sh
-  - `m26.4` [unchecked] — bash tests/test-scope.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh
-  - `m27.1` [unchecked] — bash tests/test-contract-acceptance.sh && bash tests/test-run-stats.sh
-  - `m27.2` [unchecked] — bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh
-  - `m27.3` [unchecked] — bash tests/test-promotion-transaction.sh && bash tests/test-write-report.sh
-  - `m27.4` [unchecked] — bash tests/test-contract-acceptance.sh && bash tests/test-efficiency-canary.sh
+- Unchecked: 0

@@ -397,161 +397,161 @@
       "id": "c57",
       "text": "Live pane identity survives cwd drift, retained worker context cannot import stale-run instructions, and Graphify navigation avoids loading the full skill body into every builder",
       "weight": 80,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c58",
       "text": "Manifest intensity custom preserves explicitly baked model and effort settings while a CLI intensity remains the only operation that remaps them",
       "weight": 81,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c59",
       "text": "A worker cannot be accepted DONE before its agent exits, its owned changes and evidence are committed, and every repair prompt still satisfies strict scalar contracts",
       "weight": 90,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c60",
       "text": "A fresh private-tmux run proves pane-local identity, run-scoped inbox context, custom policy preservation, zero lane or supervisor restarts, exactly one terminal gate, and complete cleanup",
       "weight": 89,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c61",
       "text": "Repair prompt admission preserves exact scalar contracts and any admission failure leaves current-run verdict, status, and branch tip untouched",
       "weight": 96,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c62",
       "text": "A terminal NO-GO or GO always writes one current-run report; the supervisor never revives completed evidence; a fresh certification has zero restarts and one terminal gate",
       "weight": 95,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c63",
       "text": "Empty integrator kits remain compatible while armed kits enforce immutable trusted records",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c64",
       "text": "Runner-owned marker normalization cannot bypass or be broken by completed-branch scope",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c65",
       "text": "A host-gate failure preserves enough bounded output to diagnose without rerunning the terminal suite",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c66",
       "text": "A fresh process completes with two launches, zero restarts, one terminal gate, and green live rehearsals",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c67",
       "text": "A live in-flight agent turn receives an effort-scaled time-based silence allowance and remains finitely recoverable without the old false-restart window",
       "weight": 102,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c68",
       "text": "Every failed lane retains and reports its exact bounded terminal reason instead of being misclassified as a transient provider error",
       "weight": 101,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c69",
       "text": "Codex usage telemetry separates total, cached, uncached, output, and reasoning tokens while preserving resumable no-double-count accounting",
       "weight": 100,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c70",
       "text": "Every pane and compiled prompt distinguish its writable source worktree from canonical orchestration state and address Graphify through the source root",
       "weight": 99,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c71",
       "text": "A fresh post-watchdog process certifies all recovered repairs with two launches, zero restarts, one terminal gate, complete cleanup, and live GO and NO-GO rehearsals",
       "weight": 98,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c72",
       "text": "A long in-progress command cannot trigger material-progress replanning or a worker restart",
       "weight": 106,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c73",
       "text": "POLYLANE_SOURCE_ROOT is always an absolute physical lane worktree path even when the manifest uses a relative worktree",
       "weight": 105,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c74",
       "text": "A completed scope violation halts once with the offending paths and never consumes retry or repair budgets",
       "weight": 104,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c75",
       "text": "Every newly generated lane declares planned writes and preflight rejects any planned path outside own_globs",
       "weight": 103,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c76",
       "text": "READY consumes a terminal gate only for an eligible current target with terminal-tier acceptance and no outside autonomous work",
       "weight": 110,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c77",
       "text": "Nested acceptance commands cannot inherit canonical failure-evidence authority and successful top-level checks leave no stale failure artifact",
       "weight": 109,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c78",
       "text": "Every failed promotion reports its exact bounded blocker while preserving all user data and verified worktrees",
       "weight": 108,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c79",
       "text": "An unchanged READY boundary reuses focused proof once while any source or acceptance mutation invalidates it",
       "weight": 107,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
@@ -1140,33 +1140,33 @@
           "id": "m21.1",
           "text": "Replace cwd-only pane discovery with nonce-bound pane identity and prove observer, supervisor, resume, and recovery behavior",
           "weight": 82,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m21.2",
           "text": "Scope durable worker inbox events to the active run, enforce the exact inbox prompt contract, and make Graphify query infrastructure context-free",
           "weight": 81,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m21.3",
           "text": "Integrate all seams and complete a fresh zero-intervention terminal certification with live observability and transcript token evidence",
           "weight": 80,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m21.4",
           "text": "Make documented custom intensity metadata a true no-remap path and preserve explicit CLI preset behavior",
           "weight": 83,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         }
       ]
     },
@@ -1178,25 +1178,25 @@
           "id": "m22.1",
           "text": "Make commit-clean marker-last handoff and refinement decision syntax mechanical in every builder and integrator prompt",
           "weight": 90,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m22.2",
           "text": "Reject completion while an agent is live and keep reflexion or usage-replan prompts strict-contract valid",
           "weight": 89,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m22.3",
           "text": "Integrate Cycle 24 and 25 fixes and complete one fresh zero-restart terminal certification",
           "weight": 88,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         }
       ]
     },
@@ -1208,25 +1208,25 @@
           "id": "m23.1",
           "text": "Make integrator repair admission strict-scalar safe and transactional so a failed repair cannot mutate terminal evidence or HEAD",
           "weight": 96,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m23.2",
           "text": "Guarantee every terminal NO-GO publishes one fresh report and is never mistaken for a supervisor-recoverable crash",
           "weight": 95,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m23.3",
           "text": "Complete a fresh zero-restart one-gate certification and install the verified Claude and Codex skill variants",
           "weight": 94,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         }
       ]
     },
@@ -1238,33 +1238,33 @@
           "id": "m24.1",
           "text": "Make optional integrator skill kits truthful and keep virtual dry-run panes free of real tmux tagging",
           "weight": 97,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m24.2",
           "text": "Make exact status-marker normalization compatible with strict lane scope",
           "weight": 10,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m24.3",
           "text": "Persist bounded exact acceptance-failure output in host evidence and reports",
           "weight": 9,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m24.4",
           "text": "Prove the repaired source in a fresh zero-restart one-gate terminal run",
           "weight": 10,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         }
       ]
     },
@@ -1276,41 +1276,41 @@
           "id": "m25.1",
           "text": "Replace the short check-count live-turn watchdog with an effort-scaled time-based hard cap that protects active inference and still recovers a genuine freeze",
           "weight": 102,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m25.2",
           "text": "Persist exact per-lane failure reasons and render truthful HALTED rows and recovery guidance",
           "weight": 101,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m25.3",
           "text": "Separate cached and uncached Codex usage in durable telemetry and reports without breaking legacy totals or resume offsets",
           "weight": 100,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m25.4",
           "text": "Expose distinct source and control roots to every pane and compiled prompt so Graphify and file work stay lane-local while coordination stays canonical",
           "weight": 99,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m25.5",
           "text": "Certify the recovered terminal and watchdog source from one fresh zero-restart one-gate process",
           "weight": 98,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         }
       ]
     },
@@ -1322,33 +1322,33 @@
           "id": "m26.1",
           "text": "Make the material-progress guard preserve demonstrably active commands and replan only completed command churn",
           "weight": 106,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m26.2",
           "text": "Canonicalize every lane source root to an absolute physical worktree path before pane export",
           "weight": 105,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m26.3",
           "text": "Fail a completed out-of-scope handoff once with its exact reason instead of spending retry and repair budgets",
           "weight": 104,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m26.4",
           "text": "Require and mechanically validate a planned write-set against lane ownership for newly generated manifests",
           "weight": 103,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         }
       ]
     },
@@ -1360,33 +1360,33 @@
           "id": "m27.1",
           "text": "Gate terminal counting and execution on real current-target terminal work",
           "weight": 110,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m27.2",
           "text": "Isolate nested acceptance commands from outer failure evidence and clear successful stale artifacts",
           "weight": 109,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m27.3",
           "text": "Persist exact promotion blockers into HALTED reports and recovery guidance",
           "weight": 108,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         },
         {
           "id": "m27.4",
           "text": "Reuse focused READY proof only across an immutable exact-tip boundary",
           "weight": 107,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
         }
       ]
     },

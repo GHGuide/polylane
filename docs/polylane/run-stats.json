@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c34-terminal-cert-20260811-a1",
   "started_at": 1786463778,
-  "updated_at": 1786465224,
-  "wall_s": 1446,
+  "updated_at": 1786465910,
+  "wall_s": 2132,
   "lanes": {
     "terminal-certification-audit": {
       "launches": 1,
@@ -22,7 +22,7 @@
     "terminal-certification-audit": 265641,
     "integrator": 722200
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -65,6 +65,23 @@
     {
       "type": "terminal_gate",
       "at": 1786465224
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786465909
+    },
+    {
+      "type": "usage_capture",
+      "lane": "terminal-certification-audit",
+      "at": 1786465910,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786465910,
+      "added": null
     }
   ],
   "usage": {
