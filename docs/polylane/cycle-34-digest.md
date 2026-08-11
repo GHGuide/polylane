@@ -9,4 +9,3 @@ terminal-tier acceptance. The runner alone now owns the one real host gate; this
 handoff does not claim GO.
 
 Next: local Claude/Codex installation follows only after host GO.
-

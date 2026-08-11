@@ -10,4 +10,3 @@
 Deeper next-round option: after host GO and local provider installation, run a
 disposable stranger-first clone across one software and one non-software project,
 binding every artifact to the promoted source and measuring first-run friction.
-
