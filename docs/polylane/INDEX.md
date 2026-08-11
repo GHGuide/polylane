@@ -6,16 +6,28 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
-Cycle 31 terminal handoff READY: [plan](cycle-31-plan.md) ·
+Cycle 32 focused contract repair GO: [plan](cycle-32-plan.md) ·
+[research](cycle-32-research.md) · [skill suggestions](cycle-32-suggestions.md) ·
+[council](cycle-32-council.md) · [digest](cycle-32-digest.md) ·
+[questions](cycle-32-questions.md) · [integration verification](../verify-integration.md).
+Exact repair tip `712e2f898cf4e21b202c8af6e6990455bffc5e06` is merged. Four
+fixture assertions now match the absolute physical-worktree contract and Block G
+contains the compact coordinator-owned-terminal phrase exactly once. The frozen
+focused matrix passes with one builder launch, one integrator launch, zero restarts,
+and zero terminal gates. Cycle 31 remains terminal NO-GO; Cycle 33 owns fresh
+terminal certification.
+
+Cycle 31 terminal run NO-GO: [plan](cycle-31-plan.md) ·
 [research](cycle-31-research.md) · [skill suggestions](cycle-31-suggestions.md) ·
 [council](cycle-31-council.md) · [digest](cycle-31-digest.md) ·
-[questions](cycle-31-questions.md) · [integration verification](../verify-integration.md).
+[questions](cycle-31-questions.md).
 Exact audit tip `cff6ec32f988726471af51a9622f9cba53b56aa9` is merged. All 24
 target-scoped focused entries and bounded changed-shell checks pass, while canonical
 telemetry records one builder launch, one integrator launch, zero restarts, and zero
 terminal gates. All 27 current autonomous subgoals are targeted and four own terminal
-acceptance. The runner now owns the sole terminal boundary and final verdict; Cycle 30
-remains NO-GO.
+acceptance. The runner-owned terminal gate then found four stale relative-path fixture
+expectations and one missing prompt phrase, so Cycle 31 remains NO-GO and nothing was
+promoted or cleaned.
 
 Cycle 29 active/scope recovery HALTED after its READY handoff: [plan](cycle-29-plan.md) ·
 [research](cycle-29-research.md) · [skill suggestions](cycle-29-suggestions.md) ·

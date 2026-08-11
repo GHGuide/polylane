@@ -2,19 +2,32 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-Cycle 31 merged exact audit tip `cff6ec32f988726471af51a9622f9cba53b56aa9` and
-independently verified the retained repairs. All 27 open/doing autonomous subgoals
-are in the current manifest, four own terminal-tier acceptance, and all 24 focused
-entries pass through the integrator cache. Pre-handoff telemetry is exactly two
-launches, zero restarts, and zero terminal gates. Durable goal and criterion state
-remains pre-promotion until the runner completes the terminal boundary.
+Cycle 32 merged exact repair tip `712e2f898cf4e21b202c8af6e6990455bffc5e06`.
+Four manifest fixtures now assert the absolute physical-worktree contract and Block
+G restores the one compact coordinator-owned-terminal phrase. The cached frozen
+matrix passes with exactly two launches, zero restarts, and zero terminal gates.
+Durable goal and criterion state remains pre-promotion; older autonomous subgoals
+were outside this focused target.
+
+## Cycle 32
+
+Focused verdict: `GO` for `c32-contract-drift-20260811-a1`; Cycle 31 remains
+terminal NO-GO.
+
+**Next:** fresh Cycle 33 terminal certification.
+
+Cycle 31 merged exact audit tip `cff6ec32f988726471af51a9622f9cba53b56aa9`,
+independently verified the retained repairs, and handed a clean tree to the runner.
+The one terminal gate then found four stale relative-worktree assertions and one
+missing compact prompt phrase. Nothing was promoted, cleaned, or installed.
 
 ## Cycle 31
 
-Integrator verdict: `READY-FOR-HOST-GATE` for
-`c31-terminal-cert-20260811-a1`; terminal success and GO remain unclaimed.
+Terminal verdict: `NO-GO` for `c31-terminal-cert-20260811-a1`; the earlier READY
+handoff is historical eligibility, not Cycle 31 GO.
 
-**Next:** local Claude/Codex installation follows only after host GO.
+**Next:** Cycle 32 repairs the two bounded contract drifts; installation remains
+withheld until a later fresh terminal GO.
 
 Cycle 30 focused recovery merged exact builder tip
 `1e8f8cc96e259f31776528e5c3f981e8430ea676`. The source now gates terminal

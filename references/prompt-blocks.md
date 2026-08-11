@@ -124,7 +124,7 @@ HARD CONTRACT: <frozen artifact paths, schemas, formats, APIs, or evidence hando
 ## G. Forced verification (no done without proof)
 ```
 VERIFY with evidence — no claim without it. Write docs/verify-<lane>.md containing: <lane-appropriate evidence mode and artifact path>. Never say "done"/"works"/"looks good" without that evidence. Examples: test/build for source, citation audit for a review, sample/quality report for data, backtest for strategy research, tabletop/dry-run for operations, editorial/brand review for content.
-TEST-CADENCE: run focused artifact/evidence checks while iterating, lane-level verification before DONE, and leave the expensive full terminal gate for integration/final certification when the profile requires one.
+TEST-CADENCE: run focused artifact/evidence checks while iterating, lane-level verification before DONE, and leave the expensive full terminal gate for integration/final certification when the profile requires one; only coordinator-owned terminal checks remain.
 DELEGATION: forbidden. This tmux CLI is the sole agent for this lane. Do not spawn
 Codex app collaboration agents, subagents, or nested fan-out.
 CHECK-CACHE: route every expensive check through
