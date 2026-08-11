@@ -2,15 +2,12 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-Cycle 29 integration note: exact active-scope tip
-`7c24295ba86a8942b959b8016b9d4e5c6aeddd6d` is merged and every frozen
-`m24.1`–`m24.3`, `m25.1`–`m25.4`, and `m26.1`–`m26.4` focused matrix passes.
-Independent review repaired five bounded seams; changed-script Bash syntax,
-ShellCheck, and the combined diff are clean. Canonical evidence records one builder
-launch, one integrator launch, zero lane or supervisor restarts, and zero terminal
-gates. No terminal gate or durable state finalization occurs in Cycle 29, so the
-mechanically generated totals below remain authoritative. `m24.4`, `m25.5`, `c66`,
-and `c71` remain open for fresh certificate `c30-terminal-cert-20260811-a1`.
+Cycle 29 source tip `9df16a33c51ccbb210247c51fc9bbb1207d256ed`
+passed every focused matrix with two launches and zero restarts, but the host run
+ended HALTED. A nested test polluted canonical failure evidence, promotion refused
+the unrelated path, and telemetry recorded one phantom terminal gate. Nothing was
+promoted or cleaned. Cycle 30 repairs gate truth and re-verifies the focused source
+with zero terminal gates; Cycle 31 owns fresh terminal certification.
 
 ## Cycle 28
 

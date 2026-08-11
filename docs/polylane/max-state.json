@@ -525,6 +525,34 @@
       "weight": 103,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c76",
+      "text": "READY consumes a terminal gate only for an eligible current target with terminal-tier acceptance and no outside autonomous work",
+      "weight": 110,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c77",
+      "text": "Nested acceptance commands cannot inherit canonical failure-evidence authority and successful top-level checks leave no stale failure artifact",
+      "weight": 109,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c78",
+      "text": "Every failed promotion reports its exact bounded blocker while preserving all user data and verified worktrees",
+      "weight": 108,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c79",
+      "text": "An unchanged READY boundary reuses focused proof once while any source or acceptance mutation invalidates it",
+      "weight": 107,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1309,6 +1337,44 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m27",
+      "text": "Hermetic host-gate and promotion truth",
+      "subgoals": [
+        {
+          "id": "m27.1",
+          "text": "Gate terminal counting and execution on real current-target terminal work",
+          "weight": 110,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m27.2",
+          "text": "Isolate nested acceptance commands from outer failure evidence and clear successful stale artifacts",
+          "weight": 109,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m27.3",
+          "text": "Persist exact promotion blockers into HALTED reports and recovery guidance",
+          "weight": 108,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m27.4",
+          "text": "Reuse focused READY proof only across an immutable exact-tip boundary",
+          "weight": 107,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1587,6 +1653,18 @@
       "kind": "learning",
       "text": "Cycle 28 truthfully HALTED: a healthy long regression command triggered the material-progress usage guard, producing eight restarts; the completed tip then failed scope because bin/polylane-promptlint.sh was required by the prompt but omitted from own_globs.",
       "meta": "run=c28-watchdog-truth-20260810-a1;tip=cf60d3c1646dc6a7ae3f76a636be423cef91e9a1"
+    },
+    {
+      "cycle": 29,
+      "kind": "learning",
+      "text": "Cycle 29 HALTED after nested acceptance evidence polluted the canonical root and promotion refused the exact path",
+      "meta": "source=docs/polylane/cycle-29-outcome.md;tip=9df16a33c51ccbb210247c51fc9bbb1207d256ed"
+    },
+    {
+      "cycle": 30,
+      "kind": "decision",
+      "text": "Repair gate truth in a zero-terminal focused cycle before fresh certification",
+      "meta": "target=m27.1,m27.2,m27.3,m27.4;next=Cycle 31 terminal"
     }
   ],
   "accept": [
@@ -2786,6 +2864,63 @@
       "key": "planned-write-set",
       "status": "unchecked",
       "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.1",
+      "cmd": "bash tests/test-contract-acceptance.sh && bash tests/test-run-stats.sh",
+      "tier": "focused",
+      "key": "target-terminal-eligibility",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-contract-acceptance.sh",
+        "tests/test-run-stats.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.2",
+      "cmd": "bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh",
+      "tier": "focused",
+      "key": "accept-evidence-hermetic",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-memory.sh",
+        "bin/polylane-run.sh",
+        "tests/test-memory.sh",
+        "tests/test-contract-acceptance.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.3",
+      "cmd": "bash tests/test-promotion-transaction.sh && bash tests/test-write-report.sh",
+      "tier": "focused",
+      "key": "promotion-failure-report",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-promotion-transaction.sh",
+        "tests/test-write-report.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.4",
+      "cmd": "bash tests/test-contract-acceptance.sh && bash tests/test-efficiency-canary.sh",
+      "tier": "focused",
+      "key": "focused-proof-snapshot",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-contract-acceptance.sh",
+        "tests/test-efficiency-canary.sh"
+      ],
       "fp": "",
       "regressed_cycle": null
     }
