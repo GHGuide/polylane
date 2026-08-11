@@ -10,7 +10,7 @@ usage() {
 
 capture() {
   local manifest="" stats="" proof="" phase="" expected actual max_restarts restarts
-  local max_wall wall gates cleanup tokens token_state manifest_run stats_run status="PASS" reasons="" tmp
+  local max_wall wall gates expected_gates cleanup tokens token_state manifest_run stats_run status="PASS" reasons="" tmp
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --manifest) manifest="${2:-}"; shift 2 ;;
@@ -32,6 +32,15 @@ capture() {
   expected=$(jq -r '(.efficiency_canary.expected_launches // ((.lanes | length) + 1))' "$manifest")
   max_restarts=$(jq -r '(.efficiency_canary.max_restarts // 0)' "$manifest")
   max_wall=$(jq -r '(.efficiency_canary.max_wall_s // 1800)' "$manifest")
+  expected_gates=$(jq -er '
+    (if (.efficiency_canary | has("expected_terminal_gates"))
+     then .efficiency_canary.expected_terminal_gates
+     else 1
+     end)
+    | select(type == "number" and . >= 0 and floor == .)
+  ' "$manifest") || {
+    echo "polylane-efficiency: invalid expected_terminal_gates" >&2; return 2;
+  }
   actual=$(jq -r '[.lanes[]?.launches] | add // 0' "$stats")
   restarts=$(jq -r '(([.lanes[]?.restarts] | add // 0) + (.supervisor_restarts // 0))' "$stats")
   wall=$(jq -r '.wall_s // 0' "$stats")
@@ -51,8 +60,8 @@ capture() {
   if [ "$restarts" -gt "$max_restarts" ] 2>/dev/null; then
     status="FAIL"; reasons="$reasons restarts=$restarts>$max_restarts"
   fi
-  if [ "$gates" -ne 1 ] 2>/dev/null; then
-    status="FAIL"; reasons="$reasons terminal_gates=$gates"
+  if [ "$gates" -ne "$expected_gates" ] 2>/dev/null; then
+    status="FAIL"; reasons="$reasons terminal_gates=$gates/$expected_gates"
   fi
   if [ "$wall" -gt "$max_wall" ] 2>/dev/null; then
     status="FAIL"; reasons="$reasons wall_s=$wall>$max_wall"
@@ -78,7 +87,7 @@ capture() {
     echo "- Wall seconds: $wall / $max_wall"
     echo "- Launches: $actual / $expected"
     echo "- Restarts: $restarts / $max_restarts"
-    echo "- Terminal gates: $gates"
+    echo "- Terminal gates: $gates / $expected_gates"
     echo "- Cleanup: $cleanup"
     if [ "$tokens" = unknown ]; then
       echo "- Tokens: unknown"
@@ -94,7 +103,7 @@ capture() {
 }
 
 verify() {
-  local proof="" phase="" run_id=""
+  local proof="" phase="" run_id="" gate_lines gate_contract
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --proof) proof="${2:-}"; shift 2 ;;
@@ -105,7 +114,17 @@ verify() {
   done
   [ -s "$proof" ] || return 1
   grep -qF -- '- Status: PASS' "$proof" || return 1
-  grep -qF -- '- Terminal gates: 1' "$proof" || return 1
+  gate_lines=$(grep -c '^\- Terminal gates:' "$proof" || true)
+  [ "$gate_lines" = 1 ] || return 1
+  if grep -qxF -- '- Terminal gates: 1' "$proof"; then
+    : # Backward-compatible terminal proof format.
+  elif grep -qxE -- '- Terminal gates: [0-9]+ / [0-9]+' "$proof"; then
+    gate_contract=$(sed -n 's/^- Terminal gates: \([0-9][0-9]*\) \/ \([0-9][0-9]*\)$/\1 \2/p' "$proof")
+    set -- $gate_contract
+    [ "$#" = 2 ] && [ "$1" -eq "$2" ] 2>/dev/null || return 1
+  else
+    return 1
+  fi
   grep -qF -- '- Unexpected launches: 0' "$proof" || return 1
   [ -z "$run_id" ] || grep -qF -- "- Run: $run_id" "$proof" || return 1
   [ -z "$phase" ] || grep -qF -- "- Phase: $phase" "$proof"

@@ -2,6 +2,22 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
+Cycle 33 merged exact repair tip
+`619f4dec64e7a7592262d78107fe50a0cb9dc2bb`. The efficiency helper now
+grades manifest-declared terminal gates, defaults a missing field to one, and
+verifies both current actual/expected and legacy exact-one proofs fail-closed. The
+cached frozen matrix passes with exactly two launches, zero restarts, and zero
+terminal gates. `m29.1`, `c80`, and `c81` remain runner-owned durable updates until
+promotion, complete cleanup, and the final `0 / 0` proof are recorded.
+
+## Cycle 33
+
+Integrator recommendation: focused `GO` eligibility for
+`c33-efficiency-contract-20260811-a1`; no terminal command was run.
+
+**Next:** fresh terminal certification from a new process using the default
+one-gate contract.
+
 Cycle 32 merged exact repair tip `712e2f898cf4e21b202c8af6e6990455bffc5e06`.
 Four manifest fixtures now assert the absolute physical-worktree contract and Block
 G restores the one compact coordinator-owned-terminal phrase. The cached frozen

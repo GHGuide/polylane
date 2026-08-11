@@ -6,6 +6,17 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 33 focused efficiency-contract handoff: [plan](cycle-33-plan.md) ·
+[research](cycle-33-research.md) · [skill suggestions](cycle-33-suggestions.md) ·
+[council](cycle-33-council.md) · [digest](cycle-33-digest.md) ·
+[questions](cycle-33-questions.md) · [integration verification](../verify-integration.md).
+Exact repair tip `619f4dec64e7a7592262d78107fe50a0cb9dc2bb` is merged. The
+certificate now distinguishes focused `0 / 0` from the backward-compatible terminal
+default `1 / 1`, and malformed or mismatched proofs fail closed. The frozen focused
+matrix passes with one builder launch, one integrator launch, zero restarts, and zero
+terminal gates. The runner owns promotion, final cleanup proof, durable state, and
+the later fresh terminal certification.
+
 Cycle 32 focused contract repair GO: [plan](cycle-32-plan.md) ·
 [research](cycle-32-research.md) · [skill suggestions](cycle-32-suggestions.md) ·
 [council](cycle-32-council.md) · [digest](cycle-32-digest.md) ·
