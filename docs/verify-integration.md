@@ -128,3 +128,5 @@ restarts, and zero terminal gates. The separate Cycle 31 terminal certificate re
 untouched and owns all terminal work.
 
 POLYLANE-VERDICT: GO run=c30-gate-truth-20260811-a1
+
+ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.

@@ -1,131 +1,132 @@
-# Cycle 13 integration verification
+# Cycle 30 integration verification
 
-Run: `c13-perfection-20260808` on `lane/c13-integrator`.
+Run: `c30-gate-truth-20260811-a1` · branch: `lane/c30-integrator`.
 
-## Integrated tips and cross-lane repairs
+## Exact-tip provenance
 
-All current builder tips are ancestors of this branch and merged cleanly:
+- Frozen base: `ad01fe70e7e748bfe24afb839ae3d164baf3f7ab`.
+- Final builder status tip: `1e8f8cc96e259f31776528e5c3f981e8430ea676`.
+- Builder implementation parent:
+  `c9e37c7376d7ff0ebf22a9018318e3ef63effbe9`.
+- Exact-tip merge commit:
+  `520b7477eb6a686354f913a712758bdec9af5ddb`.
+- Verified implementation/evidence parent for this marker-last handoff:
+  `9882e4585bbc9edebd3923a56aad79b40bdd8bfc`.
 
-| Lane | Tip | Integrator merge |
+The builder's current-run DONE marker and evidence were read before merge. Its
+complete base diff was reviewed across memory, runner, documentation, and six
+regression files. The final builder tip is an ancestor of the integrator branch.
+Cycle 29's `9df16a3` source remains historical recovery input; its immutable outcome
+is still HALTED and is not claimed as GO.
+
+## Independent contract review
+
+### Terminal eligibility
+
+`contract_terminal_eligible` requires a terminal-tier check for a current target
+and no open/doing autonomous subgoal outside that target. READY evaluates this
+before `run_stats terminal-gate` and terminal proof generation. A focused-only
+fixture therefore completes focused acceptance and can promote with no terminal
+execution, proof, or telemetry. A truly eligible target enters the boundary once,
+counts before proof, and passes the already-counted flag into acceptance so it is
+not charged twice. The focused-only and real-terminal paths both passed direct
+runner regressions.
+
+### Evidence isolation and lifecycle
+
+The top-level checker retains failure authority while `_accept_run` clears all
+three `POLYLANE_ACCEPT_FAILURE_*` variables from child commands. Nested intentional
+failures therefore cannot escape into the owner run. A fresh top-level phase removes
+only same-run/same-phase stale records before selection; a true selected failure
+then atomically writes a bounded record with exact command, return code, timestamp,
+and tail. Regular-file, symlink, nonce, run, and phase guards remain fail-closed.
+The memory and acceptance fixtures proved nested isolation, current failure
+retention, and successful stale-record removal.
+
+### One-use focused proof
+
+The receipt is process-local and consumed once. Its key binds the exact committed
+integrator HEAD, target set, and selected acceptance `sid/cmd/tier/key/deps`
+definitions. Tree cleanliness uses the existing narrow completed-lane boundary:
+an exact byte-identical runner `.polylane-prompt.txt` and a verified sibling graph
+link are scratch, while a tampered prompt or any other tracked/untracked path is
+dirt. Regression fixtures proved one unchanged reuse and forced reruns for source
+dirt, a new clean commit, and an acceptance-command mutation. This also closes the
+final relay request that normal prompt transport must not permanently disable reuse.
+
+### Promotion and report truth
+
+Promotion's allowlist was not broadened. Unrelated tracked or untracked user data
+stays unstaged, unchanged, and blocks before the base moves. Merge failure restores
+the base ref and index and retains the verified branch/worktrees. The exact blocker
+is reduced to one bounded line and rendered only through `printf`; regression data
+containing both `$(...)` and backticks remained literal and executed nothing. HALTED
+output names the blocker and gives preservation/retry guidance.
+
+## Frozen focused matrices
+
+Every matrix ran through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- <command>`.
+After the final relay repair changed source, every matrix was run fresh on source
+fingerprint `2880044635:20328`.
+
+| ID | Frozen command | Result |
 | --- | --- | --- |
-| model policy | `a6ca9885f138e0f8d527b234d7132f2403f24662` | `32671e0` |
-| skill intelligence | `822a7659d8519ab8d973c891331f372bd5415e12` | `d035768` |
-| prompt compiler | `c0d8ca11723c556f94ec1cd50a27c402e9db946e` | `2149afb` |
-| lifecycle hooks | `1cf08fd585c285938d1f7f6051ae515e90f3b122` | `6f1531a` |
+| m24.1 | manifest validation, Cycle 13 contract, scout, orchestration, dry-run purity | PASS |
+| m24.2 | status normalization, lane DONE, live DONE, scope | PASS |
+| m24.3 | memory, contract acceptance, verdict repair, report | PASS: 62/38/57/55 assertions |
+| m25.1 | wedge, runtime recovery, pane error | PASS |
+| m25.2 | report, runtime recovery | PASS |
+| m25.3 | run stats, report, efficiency canary | PASS |
+| m25.4 | agent adapter, prompt compiler, orchestration, prompt lint | PASS |
+| m26.1 | progress guard, wedge | PASS |
+| m26.2 | agent adapter, prompt compiler, prompt lint | PASS |
+| m26.3 | live DONE, runtime recovery, report | PASS |
+| m26.4 | scope, manifest validation, orchestration | PASS |
+| m27.1 | contract acceptance, run stats | PASS |
+| m27.2 | memory, contract acceptance | PASS: 62/38 assertions |
+| m27.3 | promotion transaction, report | PASS: 29/55 assertions |
+| m27.4 | contract acceptance, efficiency canary | PASS: 38/25 assertions |
 
-The runner compiles launch-only prompt copies before panes exist, checks their
-frozen contracts again, and leaves authored prompts untouched. The compiler
-also accepts the historical inline `OWN: … FORBIDDEN: …` boundary. The live
-rehearsal fixtures now include the required `VERIFY:` contract and isolate
-their temporary tmux server from an inherited client socket; the latter cannot
-be exercised on this host because it denies new UNIX sockets.
+No full suite, terminal acceptance, doctor rehearsal, installer, parity certificate,
+push, deployment, publication, or external action ran.
 
-Model-policy refresh now restores the prior runtime setting atomically if a
-new policy is invalid. Legacy manifests with explicit custom models/effort and
-no intensity or availability list retain their existing behavior; declared
-availability still receives strict validation.
+## Syntax, lint, whitespace, and telemetry
 
-## Executed evidence
+- `bash -n` passed for both changed production scripts and every changed shell test.
+- `shellcheck -S warning bin/polylane-memory.sh bin/polylane-run.sh` passed, matching
+  the repository's authoritative `bin/*.sh` ShellCheck scope. An exploratory wider
+  probe over test fixtures emitted their existing sourced-function/data-token fixture
+  warnings; it was not substituted for or represented as the project lint gate.
+- `git diff --check` passed on the final pre-handoff implementation/evidence tree.
+- Canonical `/Users/leonardo/Downloads/polylane-c30/docs/polylane/run-stats.json`
+  is nonce-matched and records `gate-truth launches=1 restarts=0`,
+  `integrator launches=1 restarts=0`, `supervisor_restarts=0`, and
+  `terminal_gates=0`. Ignored worktree copies belong to Cycle 23 and were rejected
+  as stale evidence.
+- The refinement queue returned `[]`; there were no eligible items, so no proposal
+  or decline command was valid.
 
-Focused acceptance, through the required cache:
+## Skill receipts and evidence
 
-```sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- \
-  bash bin/polylane-memory.sh "$PWD/docs/polylane/max-state.json" check-accept \
-  --cycle 13 --targets m13.1,m13.2,m13.3,m13.4,m13.5 --focused
-```
+SKILL-READ: 936987158-4285 | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | plugin-cache
 
-All five focused acceptance records passed. The hermetic vague-brief journey
-in `bash tests/test-cycle-13-contract.sh` passed 38/0: recommended discovery
-answers, plan/manifest, both providers' policy/skill/prompt/hook contracts,
-simulated GO close, emergent questions, and `CONTINUE` routing. Focused
-installer and semantic-parity checks passed 34/0 and 43/0 respectively.
+SKILL-READ: 1896692335-3646 | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | plugin-cache
 
-The current terminal command was run after the final source repair, without a
-stale source cache result:
+SKILL-EVIDENCE: 936987158-4285 — helped: the isolation/race/report-truth review
+found that byte-identical runner prompt scratch made the proof receipt unusable;
+the bounded clean-tree helper and regression now distinguish scratch from real dirt.
 
-```sh
-bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- \
-  env POLYLANE_MIN_DISK_GB=0 bash bin/polylane-memory.sh \
-  "$PWD/docs/polylane/max-state.json" check-accept --cycle 13 \
-  --targets m13.5 --only-terminal
-```
+SKILL-EVIDENCE: 1896692335-3646 — helped: fresh post-repair execution of all 15
+matrices, exact ancestry, syntax/lint/whitespace checks, and nonce-matched zero-gate
+telemetry preceded the verdict.
 
-Its frozen command was:
+## Final verdict
 
-```sh
-POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && \
-  bash tests/test-skill-parity.sh && \
-  POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
-```
+Cycle 30's frozen focused source and evidence are green with two launches, zero
+restarts, and zero terminal gates. The separate Cycle 31 terminal certificate remains
+untouched and owns all terminal work.
 
-Results before the live rehearsal: full suite **1778 pass, 0 fail, 96 test
-files**; full `bin/*.sh` ShellCheck clean; skill parity **43 pass, 0 fail**.
-The GO rehearsal then failed with `ready=0 promoted=0 terminal_gates=0
-cleaned=0 leaks=1` because tmux reported `Operation not permitted` creating
-its UNIX socket under the managed host's temporary directory. The doctor stops
-at that failed GO case, so its NO-GO case was not started and is not claimed.
-This is a real terminal failure, so c30–c34 are implemented and
-focused-verified but their terminal close is intentionally not claimed.
+POLYLANE-VERDICT: GO run=c30-gate-truth-20260811-a1
 
-## Observable policy, prompt, skill, and hook evidence
-
-Policy examples are emitted before launch. A Claude balanced manifest resolves
-builder `claude-sonnet-5/high`; mechanical is clamped to medium; security to
-`claude-opus-4-8/high`; and integrator to `claude-fable-5/xhigh`. With Codex
-performance plus a CLI override, builder resolves `gpt-5.6-sol/high`,
-mechanical `gpt-5.6-terra/medium`, security `gpt-5.6-terra/high`, and
-integrator `gpt-5.6-sol/xhigh`.
-
-The frozen prompt fixture changed from 991 bytes / 331 compatibility estimate
-to 957 bytes / 319 after compiling: one repeated 34-byte non-contract line
-was removed and the contracts compared equal. These are local deterministic
-estimates, not provider token or quality claims.
-
-Metadata recommendations enter planning/scouting only; builder prompts receive
-only selected kits. `use-audit` records helped, unused, or hurt receipts under
-`docs/polylane/skill-use/<run>/<lane>.json` and the outcome ledger; a missing
-verify file is explicitly `unused`, not inferred helped. Project admission is
-still authorization, quarantine, audit, measurable benchmark, pin, install,
-and rollback gated.
-
-Both installed packages carry project-scoped hook fragments. The Codex
-SessionStart output includes `hookSpecificOutput.additionalContext`; the stop
-path emits a structured `block` decision requesting one continuation when the
-exact marker/evidence is absent. Claude emits the same capped context in
-`systemMessage`. Hooks remain optional defense in depth; the supervisor stays
-the runtime authority.
-
-## Lifecycle, refinements, and external boundary
-
-The durable worker inbox was read and all historical acknowledgements were
-recorded. Eligible refinement decisions are explicit in
-`docs/polylane/harness/refinement-decisions.jsonl`: declined
-`context:compaction:7` (no demonstrated context-loss regression) and
-`integrator:no-go:2` (historical c12 event, no new local defect). No promotion
-was claimed from either.
-
-`c28`, the historical ten-product rendered visual comparison, remains external
-and open. It does not block independent cycle-13 engineering and has not been
-converted to PASS by prose. Because the terminal criterion remains open, the
-current mechanical route is `CONTINUE m13.1`; it is a retry route, not evidence
-that the terminal or external boundary has passed.
-
-## Skill-evidence scores
-
-SKILL-EVIDENCE: polylane — helped: used the context packet, durable inbox,
-refinement queue/decisions, cache routing, and cycle routing mechanics.
-
-SKILL-EVIDENCE: engineering:code-review — unused: no resolved kit path was
-provided for this integrator run.
-
-SKILL-EVIDENCE: superpowers:verification-before-completion — unused: no
-resolved kit path was provided for this integrator run.
-
-SKILL-EVIDENCE: operations:risk-assessment — unused: no resolved kit path was
-provided for this integrator run.
-
-SKILL-EVIDENCE: engineering:testing-strategy — unused: no resolved kit path
-was provided for this integrator run.
-
-POLYLANE-VERDICT: NO-GO run=c13-perfection-20260808
+ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.
