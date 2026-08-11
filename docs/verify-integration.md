@@ -119,3 +119,4 @@ SKILL-EVIDENCE: design:research-synthesis — helped: merged eight lanes into ex
 SKILL-EVIDENCE: engineering:code-review — helped: found the malformed parenthesized DOI during the reachability audit and checked the closed-contract failure paths for identity, provenance, and stale evidence.
 
 SKILL-EVIDENCE: engineering:testing-strategy — helped: turned each red-team false pass and final-relay risk into negative fixture requirements, explicit transition outcomes, and a staged implementation map.
+POLYLANE-VERDICT: GO run=c37-taste-research-20260811-a1
