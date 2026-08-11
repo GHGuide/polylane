@@ -117,3 +117,5 @@ canonical telemetry, and clean-tree proof before the READY marker.
 
 The source is eligible for the one real runner-owned terminal gate. No terminal
 success, promotion, cleanup, criteria finalization, or GO is claimed here.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c31-terminal-cert-20260811-a1
