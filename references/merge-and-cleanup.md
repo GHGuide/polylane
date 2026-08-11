@@ -21,7 +21,11 @@ Environment variables the runner honors:
 - `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default 2).
 - `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES` — health checks and transient retries (default: scan every 15 s, 3 retries, then reflect-and-repair).
 - `POLYLANE_SEED_VERIFY` — seconds after launch before checking that seeded commands actually started (default 2).
-- `POLYLANE_INTEGRATOR_REPAIRS` — autonomous repairs after NO-GO/UNKNOWN (default 3).
+- `POLYLANE_MAX_REPAIRS` — shared lane repair cap and the integrator fallback cap;
+  `0` disables both unless the dedicated integrator override is present.
+- `POLYLANE_INTEGRATOR_REPAIRS` — explicit autonomous integrator repair cap after
+  NO-GO/UNKNOWN. It wins over `POLYLANE_MAX_REPAIRS`; when both are unset, the
+  integrator retains its legacy default of 3.
 
 Run it ONLY after the integrator's GO on a **re-merge of current branch HEADs** (not a stale prior GO). If NO-GO, don't run cleanup.
 

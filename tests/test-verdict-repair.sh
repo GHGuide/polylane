@@ -53,6 +53,22 @@ POLYLANE_INTEGRATOR_REPAIRS=2
 assert_fail "repair-exhaustion-fails" gate_with_repairs
 assert_eq "repair-cap-exact" "2" "$(grep -c '^repair$' "$LOG")"
 
+# The shared zero-repair policy must also stop integrator repair waves unless a
+# dedicated override was explicitly supplied.
+: > "$LOG"
+MERGES=0
+unset POLYLANE_INTEGRATOR_REPAIRS VERDICT_REPAIRABLE
+POLYLANE_MAX_REPAIRS=0
+assert_fail "repair-shared-zero-stops-integrator-wave" gate_with_repairs
+assert_eq "repair-shared-zero-spawns-none" "0" "$(grep -c '^repair$' "$LOG")"
+
+: > "$LOG"
+MERGES=0
+POLYLANE_INTEGRATOR_REPAIRS=1
+assert_fail "repair-explicit-integrator-override-still-applies" gate_with_repairs
+assert_eq "repair-explicit-integrator-override-wins" "1" "$(grep -c '^repair$' "$LOG")"
+unset POLYLANE_MAX_REPAIRS
+
 : > "$LOG"
 MERGES=0
 merge_gate() {

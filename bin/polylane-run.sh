@@ -79,7 +79,12 @@ ENV:
   POLYLANE_MAX_REPAIRS      Reflexion repairs before a lane is failed: once retries
                             are exhausted the lane respawns with a "reflect on your
                             prior transcript, then take a DIFFERENT approach" prompt
-                            instead of failing outright (default 1; 0 disables)
+                            instead of failing outright (default 1; 0 disables).
+                            Also caps integrator gate repairs unless the dedicated
+                            POLYLANE_INTEGRATOR_REPAIRS override is set.
+  POLYLANE_INTEGRATOR_REPAIRS
+                            Dedicated integrator gate-repair cap. When unset, inherits
+                            POLYLANE_MAX_REPAIRS; when both are unset, defaults to 3.
   POLYLANE_MIN_DISK_GB      free-space floor in GB (default 2). Preflight ABORTS below
                             it; a run that dips below it mid-flight HALTS gracefully
                             (worktrees intact, resumable) instead of ENOSPC-crashing.
@@ -3647,6 +3652,19 @@ report_acceptance_failures() {
     "$STATE_FILE" >&2 || true
 }
 
+# Keep the host efficiency proof path and its run nonce atomic in every nested
+# acceptance process. A focused-only GO has no host proof; exporting only its
+# current nonce would make a nested canary validate an inherited/default proof
+# against the wrong run.
+contract_export_efficiency_context() {
+  if [ -n "${EFFICIENCY_GATE_PROOF:-}" ]; then
+    export POLYLANE_EFFICIENCY_PROOF="$EFFICIENCY_GATE_PROOF"
+    export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+  else
+    unset POLYLANE_EFFICIENCY_PROOF POLYLANE_EXPECTED_RUN_ID
+  fi
+}
+
 contract_acceptance_gate() {
   local verdict="${1:-GO}" terminal_counted="${2:-0}" reuse_focused="${3:-0}" targets outside terminal_targets
   local failure_root="$REPO_ROOT"
@@ -3659,8 +3677,7 @@ contract_acceptance_gate() {
     (
       cd "$INT_WORKTREE"
       export REPO="$PWD" REPO_ROOT="$PWD"
-      export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
-      export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+      contract_export_efficiency_context
       export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
       export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
       export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
@@ -3693,8 +3710,7 @@ contract_acceptance_gate() {
         (
           cd "$INT_WORKTREE"
           export REPO="$PWD" REPO_ROOT="$PWD"
-          export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
-          export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+          contract_export_efficiency_context
           export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
           export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
           export POLYLANE_ACCEPT_FAILURE_PHASE="terminal"
@@ -3717,8 +3733,7 @@ contract_acceptance_gate() {
       (
           cd "$INT_WORKTREE"
           export REPO="$PWD" REPO_ROOT="$PWD"
-          export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
-          export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
+          contract_export_efficiency_context
           export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
           export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
           export POLYLANE_ACCEPT_FAILURE_PHASE="terminal"
@@ -4050,7 +4065,9 @@ graph_authority_reconcile_verifier_repair() {
 # terminal NO-GO. No report is written between attempts, so the supervisor cannot
 # mistake council feedback for legitimate completion.
 gate_with_repairs() {
-  local attempt=0 max="${POLYLANE_INTEGRATOR_REPAIRS:-3}"
+  # One explicit integrator policy wins. Otherwise the shared repair ceiling is
+  # authoritative; only a run with neither setting retains the legacy default.
+  local attempt=0 max="${POLYLANE_INTEGRATOR_REPAIRS:-${POLYLANE_MAX_REPAIRS:-3}}"
   while :; do
     graph_authority_require verifier "run verifier gate attempt $attempt" || return 1
     if domain_grade_gate && merge_gate; then

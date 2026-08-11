@@ -17,15 +17,16 @@ nested fixture failures into canonical evidence, and correctly refused the resul
 unrelated path at promotion. Nothing merged or cleaned. Cycle 30 repairs that gate
 truth; Cycle 31 owns the fresh terminal certificate.
 
-Cycle 30 gate-truth recovery GO: [plan](cycle-30-plan.md) ·
+Cycle 30 gate-truth recovery NO-GO: [plan](cycle-30-plan.md) ·
 [research](cycle-30-research.md) · [skill suggestions](cycle-30-suggestions.md) ·
 [council](cycle-30-council.md) · [digest](cycle-30-digest.md) ·
 [questions](cycle-30-questions.md) · [integration verification](../verify-integration.md).
-Exact builder tip `1e8f8cc96e259f31776528e5c3f981e8430ea676` is merged. All
-15 inherited/new focused matrices pass, and canonical telemetry records one builder
-launch, one integrator launch, zero lane/supervisor restarts, and zero terminal gates.
-Cycle 29 remains HALTED. Cycle 31 separately owns the full terminal certificate,
-installers, parity, live rehearsals, one real terminal gate, promotion, and cleanup.
+Exact builder tip `1e8f8cc96e259f31776528e5c3f981e8430ea676` is merged. The retry
+repaired a half-exported efficiency proof context and the full focused gate passes,
+but canonical telemetry records one integrator restart. The frozen zero-restart
+criterion makes this run NO-GO; zero terminal gates were consumed. Cycle 29 remains
+HALTED. Cycle 31 separately owns the full terminal certificate, installers, parity,
+live rehearsals, one real terminal gate, promotion, and cleanup after a fresh handoff.
 
 Cycle 27 repair READY handoff: [plan](cycle-27-plan.md) ·
 [research](cycle-27-research.md) · [skill suggestions](cycle-27-suggestions.md) ·

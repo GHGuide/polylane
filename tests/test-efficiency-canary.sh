@@ -107,6 +107,13 @@ assert_ok "efficiency-focused-precheck-runs-without-proof-context" contract_focu
 assert_eq "efficiency-focused-precheck-exports-no-half-context" \
   "||$STATE_FILE check-accept --cycle 21 --targets s1 --focused" "$(cat "$ENV_LOG")"
 
+# A final GO without terminal work also has no host gate proof. Its focused
+# acceptance child must not inherit a stale proof or receive a nonce alone.
+: > "$ENV_LOG"
+assert_ok "efficiency-focused-only-go-runs-without-proof-context" contract_acceptance_gate GO
+assert_eq "efficiency-focused-only-go-exports-no-half-context" \
+  "||$STATE_FILE check-accept --cycle 21 --targets s1 --focused" "$(cat "$ENV_LOG")"
+
 EFFICIENCY_GATE_PROOF="$SAVED_EFFICIENCY_GATE_PROOF"
 RUN_ID=eff-1
 : > "$ENV_LOG"

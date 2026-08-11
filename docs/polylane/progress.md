@@ -3,20 +3,21 @@
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
 Cycle 30 focused recovery merged exact builder tip
-`1e8f8cc96e259f31776528e5c3f981e8430ea676`. Every inherited and new focused
-matrix passes, and canonical telemetry records two launches, zero restarts, and zero
-terminal gates. The source now gates terminal counting on real current-target work,
-isolates nested acceptance evidence, invalidates focused proof on boundary changes,
-and reports exact promotion blockers without staging user data. Cycle 29 remains
-HALTED. Cycle 31 owns fresh terminal certification; the durable state below remains
-pre-promotion and is not rewritten by this focused evidence summary.
+`1e8f8cc96e259f31776528e5c3f981e8430ea676`. The source now gates terminal
+counting on real current-target work, isolates nested evidence, invalidates changed
+focused proof, reports exact promotion blockers without staging user data, keeps
+efficiency proof path/nonce exports atomic, and makes the shared zero repair cap apply
+to integrator waves unless explicitly overridden. The focused gate passes, but canonical
+telemetry records one integrator restart and zero terminal gates. Cycle 30 is therefore
+NO-GO and Cycle 29 remains HALTED. The durable state below remains pre-promotion.
 
 ## Cycle 30
 
-Focused source verdict: `GO` for `c30-gate-truth-20260811-a1`.
+Focused run verdict: `NO-GO` for `c30-gate-truth-20260811-a1`; engineering green,
+frozen zero-restart runtime criterion failed.
 
-**Next:** fresh Cycle 31 terminal certification for `m24.4`, `m25.5`, `c66`, and
-`c71`, with exactly one runner-owned terminal gate.
+**Next:** Cycle 31 terminal certification for `m24.4`, `m25.5`, `c66`, and `c71`
+remains the one-gate destination after a fresh zero-restart handoff of this repair.
 
 ## Cycle 28
 

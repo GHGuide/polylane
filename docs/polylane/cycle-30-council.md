@@ -18,16 +18,27 @@
   `m26.1`–`m26.4`, and new `m27.1`–`m27.4` focused matrices passed through the
   integrator cache. Changed shell syntax, production-script ShellCheck, and diff
   whitespace checks passed.
+- Recovery seam: the first real focused wrapper exposed a half context: final
+  focused-only GO exported `POLYLANE_EXPECTED_RUN_ID` without a matching host
+  efficiency proof. Nested canaries then rejected a stale/default proof. The retry
+  now exports proof path and nonce atomically and its regression/full focused gate pass.
+- Repair policy: an explicit `POLYLANE_INTEGRATOR_REPAIRS` cap wins; otherwise
+  integrator repair waves inherit `POLYLANE_MAX_REPAIRS`, with the legacy default
+  retained only when neither is set. The zero-shared-cap and explicit-override paths
+  are regression-tested.
 - Runtime: canonical stats record one `gate-truth` launch, one integrator launch,
-  zero lane restarts, zero supervisor restarts, and zero terminal gates.
+  **one integrator restart**, zero supervisor restarts, and zero terminal gates.
 
 ## Decision
 
-Emit GO for focused recovery run `c30-gate-truth-20260811-a1`. This decision
-repairs Cycle 29's gate-truth lifecycle but does not rewrite Cycle 29's immutable
-HALTED outcome and does not consume or certify any terminal boundary.
+Emit NO-GO for focused recovery run `c30-gate-truth-20260811-a1`. The source-level
+gate-truth and efficiency-context repairs are green, but the preserved auto-retry is
+a canonical integrator restart and the frozen runtime criterion requires zero. This
+does not rewrite Cycle 29's immutable HALTED outcome and does not consume or certify
+any terminal boundary.
 
-Cycle 31 remains a separate fresh process and exclusively owns `m24.4`, `m25.5`,
-`c66`, `c71`, the full suite, complete `bin/*.sh` ShellCheck, provider parity,
-fresh installers, both live doctor rehearsal outcomes, the one real terminal gate,
-promotion, final report, and cleanup.
+The repaired tip must be carried into a fresh zero-restart process before promotion.
+Cycle 31 terminal certification remains separate and exclusively owns `m24.4`,
+`m25.5`, `c66`, `c71`, the full suite, complete `bin/*.sh` ShellCheck, provider
+parity, fresh installers, both live doctor rehearsal outcomes, the one real terminal
+gate, promotion, final report, and cleanup.

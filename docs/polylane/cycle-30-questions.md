@@ -1,6 +1,6 @@
 # Cycle 30 emergent questions
 
-These questions are informational and do not broaden Cycle 30 or block the fresh
+These questions are informational and do not broaden Cycle 30 or consume the fresh
 Cycle 31 terminal certificate.
 
 1. Should focused-proof receipts remain process-local after Cycle 31?
@@ -25,3 +25,10 @@ Cycle 31 terminal certificate.
      checker.
    - Go deeper next round: model nested checker trees and interrupted atomic writes
      before increasing implementation complexity.
+4. Should acceptance context be represented as one structured capability?
+   - Recommended: keep the repaired atomic proof-path/run-nonce export until another
+     split-context defect appears; the bounded helper and regression cover every
+     terminal child and focused-only GO.
+   - Alternative: replace the two variables with one versioned JSON capability path.
+   - Go deeper next round: fault resume immediately before and after host proof
+     creation and verify that no stale capability crosses the process boundary.
