@@ -574,6 +574,13 @@
       "weight": 120,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c83",
+      "text": "Every compiled integrator prompt writes its only current-run verdict to docs/verify-integration.md, keeps docs/status-integrator.md status-only, and fails preflight when that boundary is ambiguous",
+      "weight": 125,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1438,6 +1445,20 @@
           "evidence": ""
         }
       ]
+    },
+    {
+      "id": "m31",
+      "text": "Integrator verdict-path truth",
+      "subgoals": [
+        {
+          "id": "m31.1",
+          "text": "Make runtime prompt compilation role-aware and prove the canonical two-file integrator handoff end to end",
+          "weight": 126,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1746,6 +1767,12 @@
       "kind": "decision",
       "text": "Repair stale installed-package upgrades with one focused builder and no terminal gate",
       "meta": "post-Cycle-34 installed-path audit found obsolete duplicate engine files"
+    },
+    {
+      "cycle": 36,
+      "kind": "attempt",
+      "text": "Recover Cycle 35 installer repair and eliminate role-ambiguous integrator verdict destinations with a red-first compiled-prompt contract",
+      "meta": "live c35 GO-in-status / UNKNOWN-in-gate reproduction"
     }
   ],
   "accept": [
@@ -3053,6 +3080,16 @@
       "cmd": "bash tests/test-install-fresh.sh && bash tests/test-installers.sh && bash tests/test-doctor-agent.sh",
       "tier": "focused",
       "key": "install-upgrade",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m31.1",
+      "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-promptlint.sh && bash tests/test-handoff-contract.sh && bash tests/test-orchestration-contract.sh && bash tests/test-marker-contract.sh && bash tests/test-skill-parity.sh",
+      "tier": "focused",
+      "key": "integrator-verdict-path",
       "status": "unchecked",
       "deps": [],
       "fp": "",

@@ -43,7 +43,13 @@ lint_one() {
     grep -qF 'coordination/workers/harness use "$POLYLANE_PROJECT_ROOT".' "$f" || miss="$miss runtime-control-root-contract"
     grep -qF 'COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"' "$f" || miss="$miss runtime-relay-command"
     grep -qF 'docs/parallel-status.md is post-cycle evidence only, never the live relay.' "$f" || miss="$miss runtime-relay-boundary"
-    grep -qF "POLYLANE-RUNTIME-DONE: write only docs/status-$lane.md;" "$f" || miss="$miss runtime-done-path"
+    if [ "$role" = integrator ]; then
+      grep -qF "POLYLANE-RUNTIME-DONE: write docs/status-$lane.md" "$f" || miss="$miss runtime-done-path"
+      grep -qF 'never write a POLYLANE-VERDICT line in docs/status-' "$f" || miss="$miss runtime-status-forbids-verdict"
+      grep -qF 'only verdict sentinel as the final line of docs/verify-integration.md' "$f" || miss="$miss runtime-verdict-path"
+    else
+      grep -qF "POLYLANE-RUNTIME-DONE: write only docs/status-$lane.md;" "$f" || miss="$miss runtime-done-path"
+    fi
     grep -qF "STATUS: $lane DONE run=" "$f" || miss="$miss runtime-done-marker"
     runtime_finalize_contract "$f" "$role" || miss="$miss runtime-finalize-contract"
     runtime_exact_once "$f" || miss="$miss duplicate-runtime-contract"
@@ -94,7 +100,7 @@ runtime_finalize_contract() {
   line=$(grep -F 'POLYLANE-RUNTIME-FINALIZE:' "$f" || true)
   [ -n "$line" ] || return 1
   case "$line" in
-    *'final relay and durable inbox read'*'handle all addressed autonomous work'*'run focused verification'*'scope-stage every owned changed or new file'*'commit implementation and evidence'*'git status --short'*'.polylane-prompt.txt'*'graphify-out'*'current-run status file'*'force-add ignored status files with `git add -f`'*'commit that final handoff, and immediately exit'*'No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.') : ;;
+    *'final relay and durable inbox read'*'handle all addressed autonomous work'*'run focused verification'*'scope-stage every owned changed or new file'*'commit implementation and evidence'*'git status --short'*'.polylane-prompt.txt'*'graphify-out'*'commit that final handoff, and immediately exit'*'No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.') : ;;
     *) return 1 ;;
   esac
   printf '%s\n' "$line" | grep -qF 'final relay and durable inbox read' || return 1
@@ -105,13 +111,15 @@ runtime_finalize_contract() {
   printf '%s\n' "$line" | grep -qF 'git status --short' || return 1
   printf '%s\n' "$line" | grep -qF '.polylane-prompt.txt' || return 1
   printf '%s\n' "$line" | grep -qF 'graphify-out' || return 1
-  printf '%s\n' "$line" | grep -qF 'force-add ignored status files with `git add -f`' || return 1
   printf '%s\n' "$line" | grep -qF 'commit that final handoff, and immediately exit' || return 1
   printf '%s\n' "$line" | grep -qF 'No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.' || return 1
   if [ "$role" = integrator ]; then
-    printf '%s\n' "$line" | grep -qF 'integrator verdict' || return 1
+    printf '%s\n' "$line" | grep -qF 'only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md' || return 1
+    printf '%s\n' "$line" | grep -qF 'with only its DONE marker and no verdict' || return 1
+    printf '%s\n' "$line" | grep -qF 'force-add both handoff files with `git add -f`' || return 1
   else
     printf '%s\n' "$line" | grep -qF 'current-run status file' || return 1
+    printf '%s\n' "$line" | grep -qF 'force-add the ignored status file with `git add -f`' || return 1
   fi
 }
 

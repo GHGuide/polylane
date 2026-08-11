@@ -90,6 +90,39 @@ assert_ok "runtime-finalize-promptlint-strict" \
   env POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 \
   "$SCRIPT_DIR/../bin/polylane-promptlint.sh" lint "$RUNTIME" builder false builder
 
+# Integrator completion has two distinct files: the gate reads the verdict only
+# from verify-integration.md, while status-integrator.md carries only DONE.  The
+# compiler must name both destinations explicitly so its late runtime block cannot
+# redirect a valid verdict into the status file (the Cycle 35 live NO-GO).
+INTEGRATOR_SOURCE="$TEST_TMPDIR/integrator-source.prompt"
+INTEGRATOR_RUNTIME="$TEST_TMPDIR/integrator-runtime.prompt"
+cat > "$INTEGRATOR_SOURCE" <<'EOF'
+ULTIMATE-GOAL: ship safely.
+CURRENT-SUBGOAL: prove finality.
+GOAL: finish integration.
+OWN: runtime files.
+FORBIDDEN: unrelated files.
+PREDEFINED-SKILLS: engineering:debug
+LANE-SPECIFIC-SKILLS: engineering:debug
+Read only the named kit once.
+TEST-CADENCE: focused first.
+DELEGATION: forbidden.
+CHECK-CACHE: use $PWD/.polylane/check-cache/integrator.
+EXTERNAL-EVIDENCE: none.
+VERIFY: write docs/verify-integration.md ending POLYLANE-VERDICT: GO run=live-run.
+STATUS: integrator DONE run=live-run.
+EOF
+inject_runtime_prompt_contract "$INTEGRATOR_SOURCE" integrator "$INTEGRATOR_RUNTIME" integrator
+assert_contains "runtime-integrator-verdict-has-canonical-path" \
+  "write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md" \
+  "$(cat "$INTEGRATOR_RUNTIME")"
+assert_contains "runtime-integrator-status-forbids-verdict" \
+  "never write a POLYLANE-VERDICT line in docs/status-integrator.md" \
+  "$(cat "$INTEGRATOR_RUNTIME")"
+assert_ok "runtime-integrator-promptlint-strict" \
+  env POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 \
+  "$SCRIPT_DIR/../bin/polylane-promptlint.sh" lint "$INTEGRATOR_RUNTIME" integrator false integrator
+
 # Recovery addenda preserve, rather than append, the strict scalar contracts.
 REPAIR="$TEST_TMPDIR/repair.prompt"
 build_repair_prompt "$SOURCE" builder 2 > "$REPAIR"

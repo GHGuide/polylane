@@ -83,3 +83,10 @@ appropriate evidence, live canaries, and a real self-run.
 - c82 Reinstalling either provider package over a legacy/full-repository skill directory
   removes stale package artifacts, preserves no obsolete duplicate engine, and leaves the
   two Codex discovery roots byte-identical to the current certified package.
+
+## Integrator verdict-path truth (cycle 36)
+
+- c83 Every compiled integrator prompt unambiguously writes its only current-run verdict
+  sentinel as the final line of `docs/verify-integration.md`, keeps
+  `docs/status-integrator.md` status-only, and is rejected before launch if that two-file
+  boundary is absent or contradictory.

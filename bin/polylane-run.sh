@@ -660,14 +660,14 @@ prompt_budget_check() {
     }
 }
 
-# inject_runtime_prompt_contract INPUT NAME OUTPUT : add the runner-owned facts
+# inject_runtime_prompt_contract INPUT NAME OUTPUT [ROLE] : add runner-owned facts
 # that an authored/optimized prompt cannot safely infer. This is intentionally
 # applied AFTER semantic optimization and selected-skill delivery: it gives every
 # provider and role the exact live relay command and canonical DONE path, even if
 # a hand-authored prompt merely says "read coordination" or names a near-miss
 # marker. The source prompt remains immutable.
 inject_runtime_prompt_contract() {
-  local input="$1" name="$2" output="$3" marker planned=""
+  local input="$1" name="$2" output="$3" role="${4:-builder}" marker planned=""
   if [ -n "${RUN_ID:-}" ]; then
     marker="STATUS: $name DONE run=$RUN_ID"
   else
@@ -688,8 +688,13 @@ inject_runtime_prompt_contract() {
       planned=$(jq -r --arg lane "$name" '.lanes[] | select(.name==$lane) | .planned_writes | join(", ")' "$MANIFEST" 2>/dev/null || true)
       [ -n "$planned" ] && printf 'PLANNED-WRITES: only %s. Do not write outside this current planned boundary.\n' "$planned"
     fi
-    printf 'POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file (and, for an integrator, its integrator verdict), force-add ignored status files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.\n'
-    printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
+    if [ "$role" = integrator ]; then
+      printf 'POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-%s.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.\n' "$name"
+      printf 'POLYLANE-RUNTIME-DONE: write docs/status-%s.md with first line exactly `%s`; never write a POLYLANE-VERDICT line in docs/status-%s.md; keep the only verdict sentinel as the final line of docs/verify-integration.md.\n' "$name" "$marker" "$name"
+    else
+      printf 'POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.\n'
+      printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
+    fi
   } > "$output"
 }
 
@@ -734,7 +739,7 @@ compile_prompt() {
     mv "$selected" "$tmp"
   fi
   runtime=$(mktemp "$dir/.${name}.runtime.XXXXXX") || { rm -f "$tmp"; return 1; }
-  if ! inject_runtime_prompt_contract "$tmp" "$name" "$runtime"; then
+  if ! inject_runtime_prompt_contract "$tmp" "$name" "$runtime" "$role"; then
     rm -f "$tmp" "$runtime"
     echo "PROMPT-COMPILE: $name runtime-contract injection failed" >&2
     return 1
