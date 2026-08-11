@@ -581,6 +581,55 @@
       "weight": 125,
       "status": "done",
       "score": 0
+    },
+    {
+      "id": "c84",
+      "text": "Visual promotion reads real browser-rendered desktop/mobile/state pixels with provenance and rejects missing, duplicate, stale, or synthetic-placeholder evidence",
+      "weight": 140,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c85",
+      "text": "Taste judges are calibrated against openly licensed human-rated UI examples and weak or inconsistent judges cannot vote",
+      "weight": 139,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c86",
+      "text": "Every comparison is identity-hidden, pointwise-before-pairwise, side-mirrored, independent, and checked for position bias and instruction leakage",
+      "weight": 138,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c87",
+      "text": "A champion needs at least ten varied briefs, five eligible votes per brief, at least seventy percent preference, a positive confidence bound, and zero accessibility regression",
+      "weight": 137,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c88",
+      "text": "UI builders explore divergent directions and rendered candidates, then perform at most two evidence-targeted repairs without forgetting the frozen goal or design lock",
+      "weight": 136,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c89",
+      "text": "Taste scoring rewards product fit, hierarchy, typography, color, spatial rhythm, craftsmanship, originality, and coherent states while penalizing cross-brief template sameness",
+      "weight": 135,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c90",
+      "text": "Claude and Codex packages ship the same taste contract and a fresh install passes focused, full, shell, capture, benchmark, and live workflow checks",
+      "weight": 134,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1459,6 +1508,52 @@
           "evidence": "integrator GO; promoted cycle 36"
         }
       ]
+    },
+    {
+      "id": "m32",
+      "text": "Research-backed visual taste certification",
+      "subgoals": [
+        {
+          "id": "m32.1",
+          "text": "Synthesize primary research into a falsifiable visual-taste protocol and threat model",
+          "weight": 140,
+          "status": "doing",
+          "cycle": 37,
+          "evidence": "cycle 37 research swarm planned"
+        },
+        {
+          "id": "m32.2",
+          "text": "Implement live rendering, blinded ballots, calibration, aggregation, and fail-closed taste certification",
+          "weight": 139,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.3",
+          "text": "Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts",
+          "weight": 138,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.4",
+          "text": "Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm",
+          "weight": 137,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.5",
+          "text": "Install both provider packages and certify the complete workflow end to end",
+          "weight": 136,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
     }
   ],
   "log": [
@@ -1773,6 +1868,12 @@
       "kind": "attempt",
       "text": "Recover Cycle 35 installer repair and eliminate role-ambiguous integrator verdict destinations with a red-first compiled-prompt contract",
       "meta": "live c35 GO-in-status / UNKNOWN-in-gate reproduction"
+    },
+    {
+      "cycle": 37,
+      "kind": "decision",
+      "text": "Taste certification is empirical: human-calibrated rendered comparisons, confidence, and accessibility veto; no prose-only or self-scored pass.",
+      "meta": ""
     }
   ],
   "accept": [
@@ -3091,6 +3192,56 @@
       "tier": "focused",
       "key": "integrator-verdict-path",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.1",
+      "cmd": "test -s docs/polylane/taste-certification/RESEARCH.md && test -s docs/polylane/taste-certification/PROTOCOL.md && rg -qi 'human[- ]rated|human label' docs/polylane/taste-certification/RESEARCH.md && rg -qi 'pointwise.*pairwise|pairwise.*pointwise' docs/polylane/taste-certification/PROTOCOL.md && rg -qi 'position bias|side.*mirror' docs/polylane/taste-certification/PROTOCOL.md",
+      "tier": "focused",
+      "key": "taste-research",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.2",
+      "cmd": "tests/test-taste-certification.sh && tests/test-visual-capture.sh && shellcheck -S warning bin/polylane-taste.sh bin/polylane-visual-capture.sh",
+      "tier": "focused",
+      "key": "taste-engine",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.3",
+      "cmd": "tests/test-visual-intelligence.sh && tests/test-visual-loop-integration.sh && tests/test-skill-parity.sh",
+      "tier": "focused",
+      "key": "taste-contract",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4",
+      "cmd": "bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == \"TASTE-CERTIFIED\" and .human_calibrated == true and .eligible_judges >= 5 and .briefs >= 10 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null",
+      "tier": "focused",
+      "key": "taste-live-corpus",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.5",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh && tests/test-install.sh && tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "taste-terminal",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

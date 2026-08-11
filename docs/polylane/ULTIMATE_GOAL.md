@@ -90,3 +90,22 @@ appropriate evidence, live canaries, and a real self-run.
   sentinel as the final line of `docs/verify-integration.md`, keeps
   `docs/status-integrator.md` status-only, and is rejected before launch if that two-file
   boundary is absent or contradictory.
+
+## Research-backed taste certification (cycles 37+)
+
+- c84 Visual promotion reads real browser-rendered desktop/mobile/state pixels with
+  provenance and rejects missing, duplicate, stale, or synthetic-placeholder evidence.
+- c85 Taste judges are calibrated against openly licensed human-rated UI examples;
+  weak or internally inconsistent judges cannot vote on a champion.
+- c86 Every comparison is identity-hidden, pointwise-before-pairwise, side-mirrored,
+  independent, and checked for position bias and instruction leakage.
+- c87 A champion needs at least ten varied briefs, five eligible votes per brief,
+  at least seventy percent preference, a positive confidence bound, and zero
+  accessibility regression.
+- c88 UI builders explore divergent directions and rendered candidates, then perform
+  at most two evidence-targeted repairs without forgetting the frozen goal or design lock.
+- c89 Taste scoring rewards product fit, hierarchy, typography, color, spatial rhythm,
+  craftsmanship, originality, and coherent states while penalizing cross-brief template
+  sameness.
+- c90 Claude and Codex packages ship the same taste contract and a fresh install passes
+  focused, full, shell, capture, benchmark, and live workflow checks.
