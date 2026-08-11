@@ -53,3 +53,5 @@ SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/
 SKILL-EVIDENCE: superpowers:verification-before-completion — helped: a combined final diff check caught inherited trailing whitespace, and an unsupported test assertion was rejected as evidence even though the harness summary incorrectly remained green.
 
 Cycle 29 is source-ready only. `m24.4`, `m25.5`, `c66`, and `c71` remain open for the fresh Cycle 30 process and its runner-owned terminal suite, parity, installers, and live GO/NO-GO rehearsal.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c29-active-scope-20260811-a1
