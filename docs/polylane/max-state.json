@@ -553,6 +553,13 @@
       "weight": 107,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c80",
+      "text": "Manifest tests assert the absolute physical-worktree contract and builder prompts explicitly reserve terminal checks for the coordinator",
+      "weight": 111,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1370,6 +1377,20 @@
           "id": "m27.4",
           "text": "Reuse focused READY proof only across an immutable exact-tip boundary",
           "weight": 107,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
+    },
+    {
+      "id": "m28",
+      "text": "Cycle 32 — terminal contract-drift repair",
+      "subgoals": [
+        {
+          "id": "m28.1",
+          "text": "Align manifest path assertions and compact builder terminal-ownership wording with the shipped runtime contracts",
+          "weight": 111,
           "status": "open",
           "cycle": null,
           "evidence": ""
@@ -2936,6 +2957,23 @@
         "bin/polylane-run.sh",
         "tests/test-contract-acceptance.sh",
         "tests/test-efficiency-canary.sh"
+      ],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m28.1",
+      "cmd": "bash tests/test-load-manifest.sh && bash tests/test-prompt-economy.sh && bash tests/test-abs-prompt.sh && bash tests/test-orchestration-contract.sh",
+      "tier": "focused",
+      "key": "terminal-contract-drift",
+      "status": "unchecked",
+      "deps": [
+        "bin/polylane-run.sh",
+        "references/prompt-blocks.md",
+        "tests/test-load-manifest.sh",
+        "tests/test-prompt-economy.sh",
+        "tests/test-abs-prompt.sh",
+        "tests/test-orchestration-contract.sh"
       ],
       "fp": "",
       "regressed_cycle": null

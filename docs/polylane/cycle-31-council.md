@@ -17,8 +17,14 @@
 
 ## Decision
 
-Hand the clean exact committed source to the runner-owned terminal gate. This is
-READY, not GO. Cycle 30's one-restart NO-GO remains immutable. The runner alone
-owns the one terminal boundary, full suite, complete production ShellCheck,
-provider parity, installers, live rehearsals, promotion, cleanup, final proof,
-criteria finalization, and report.
+The clean exact committed source was handed to the runner-owned terminal gate.
+The gate counted exactly once, but both distinct terminal commands failed because
+`tests/run.sh` ended at 2,444 pass / 5 fail. Four failures in
+`test-load-manifest.sh` still expected relative worktree paths after the runtime
+contract intentionally made them absolute; one failure in
+`test-prompt-economy.sh` found that the optimized prompt source had lost its exact
+coordinator-owned-terminal sentence. Emit NO-GO. Nothing was promoted or cleaned,
+and Cycle 30's one-restart NO-GO remains immutable.
+
+Cycle 32 repairs only these two contract drifts under focused acceptance. A later
+fresh process must own terminal certification; this consumed Cycle 31's only gate.
