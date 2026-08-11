@@ -560,6 +560,13 @@
       "weight": 111,
       "status": "open",
       "score": 0
+    },
+    {
+      "id": "c81",
+      "text": "Focused runs can declare zero expected terminal gates while terminal runs default to one, keeping final efficiency proof, cleanup, report, and criterion state consistent",
+      "weight": 112,
+      "status": "open",
+      "score": 0
     }
   ],
   "milestones": [
@@ -1391,6 +1398,20 @@
           "id": "m28.1",
           "text": "Align manifest path assertions and compact builder terminal-ownership wording with the shipped runtime contracts",
           "weight": 111,
+          "status": "done",
+          "cycle": 32,
+          "evidence": "integrator GO; promoted cycle 32"
+        }
+      ]
+    },
+    {
+      "id": "m29",
+      "text": "Cycle 33 — focused efficiency and cleanup truth",
+      "subgoals": [
+        {
+          "id": "m29.1",
+          "text": "Make efficiency certificates grade the manifest-declared terminal-gate count and preserve backward-compatible terminal proof verification",
+          "weight": 112,
           "status": "open",
           "cycle": null,
           "evidence": ""
@@ -1686,6 +1707,12 @@
       "kind": "decision",
       "text": "Repair gate truth in a zero-terminal focused cycle before fresh certification",
       "meta": "target=m27.1,m27.2,m27.3,m27.4;next=Cycle 31 terminal"
+    },
+    {
+      "cycle": 33,
+      "kind": "learning",
+      "text": "Cycle 32 focused GO cleaned successfully but final efficiency hard-required one terminal gate, creating a false cleanup warning and leaving c80 open",
+      "meta": "report cleanup=complete versus warning text; efficiency proof terminal_gates=0"
     }
   ],
   "accept": [
@@ -2976,6 +3003,16 @@
         "tests/test-orchestration-contract.sh"
       ],
       "fp": "2638469736",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m29.1",
+      "cmd": "bash tests/test-efficiency-canary.sh && bash tests/test-write-report.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh && shellcheck -S warning bin/polylane-efficiency.sh bin/polylane-run.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
       "regressed_cycle": null
     }
   ]

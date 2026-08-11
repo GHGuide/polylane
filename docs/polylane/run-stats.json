@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c32-contract-drift-20260811-a1",
   "started_at": 1786461507,
-  "updated_at": 1786462274,
-  "wall_s": 767,
+  "updated_at": 1786462299,
+  "wall_s": 792,
   "lanes": {
     "terminal-contract-repair": {
       "launches": 1,
@@ -22,7 +22,7 @@
     "terminal-contract-repair": 85178,
     "integrator": 213350
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -61,6 +61,23 @@
       "lane": "integrator",
       "at": 1786462274,
       "added": 1659800
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786462299
+    },
+    {
+      "type": "usage_capture",
+      "lane": "terminal-contract-repair",
+      "at": 1786462299,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1786462299,
+      "added": null
     }
   ],
   "usage": {
