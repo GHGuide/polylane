@@ -1,95 +1,122 @@
-# Cycle 36 integration verification — verdict-path recovery
+# Cycle 37 integration verification
 
-Run: `c36-verdict-path-20260811-a1`
+Run: `c37-taste-research-20260811-a1`
+Scope: research integration for `m32.1`; no implementation, benchmark, render,
+human label, human panel, calibration, external action, or taste certificate is
+claimed.
 
-## Skill receipts
+## Inputs independently checked
+
+- Cycle 37 plan and research scope; frozen `m32.1` `taste-research` command.
+- All eight lane reports and verification records from `lane/c37-hci-rubric`,
+  `lane/c37-human-corpus`, `lane/c37-judge-science`, `lane/c37-visual-feedback`,
+  `lane/c37-design-practice`, `lane/c37-anti-homogenization`,
+  `lane/c37-threat-model`, and `lane/c37-red-team`.
+- Canonical relay, including the 50-source/49-evidence registry update, the
+  independent anti-pattern four-axis correction, and the incumbent-preserving
+  visual-loop controls.
+- Final relay follow-ups: the 32-source corpus audit (separate cleared executable
+  core and non-pooled fidelity/taste/grounding/function tracks), multimodal judge
+  guardrails (cross-family/atomic/staged/abstaining diagnostics), and the
+  prompt-as-sampled-unit preference-study analysis (20-brief target, 100-brief
+  manifest capacity, Davidson/Thurstone/cluster-uncertainty extension).
+- Refinement queue: both eligible records were declined once with a documented
+  no-new-local-repair rationale; the queue was then empty.
+
+## Merge evidence
+
+`RESEARCH.md` has an explicit eight-lane merge table. `PROTOCOL.md` implements
+the corresponding state machine and versioned contracts for briefs/references,
+candidate IDs, live browser captures, hard gates, pointwise records, calibration,
+mirrored ballots, exclusions, aggregation/confidence, sameness axes, repairs,
+and labels. It resolves the direction-count and mirror/isolation tensions in
+`cycle-37-council.md`, by source strength and operational falsifiability rather
+than majority wording.
+
+## Exact verification commands
+
+```bash
+git diff --check
+test -s docs/polylane/taste-certification/RESEARCH.md
+test -s docs/polylane/taste-certification/PROTOCOL.md
+rg -qi 'human[- ]rated|human label' docs/polylane/taste-certification/RESEARCH.md
+rg -qi 'pointwise.*pairwise|pairwise.*pointwise' docs/polylane/taste-certification/PROTOCOL.md
+rg -qi 'position bias|side.*mirror' docs/polylane/taste-certification/PROTOCOL.md
+rg -n 'MACHINE_EVALUATED|HUMAN_CALIBRATED_MACHINE|HUMAN_CERTIFIED|NOT-CERTIFIED|UNKNOWN' docs/polylane/taste-certification/PROTOCOL.md
+rg -n '1440|390|five eligible|0\.70|Wilson|accessibility|two.*repair|genericness_review|provenance_integrity' docs/polylane/taste-certification/PROTOCOL.md
+```
+
+The frozen focused command is run once through the required check cache during
+final verification. URL validation uses the bibliography URL list in
+`RESEARCH.md`, accepts ordinary 2xx/3xx responses and records known automated
+client access-restriction responses separately; a network failure is recorded,
+never silently removed from the bibliography.
+
+Final frozen `m32.1` `taste-research` command: **PASS** through
+`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"`; its cached
+receipt records the two required artifacts, human-rated/label evidence, the
+pointwise-before-pairwise contract, and the side/mirror position-bias control.
+
+Observed integration checks before the final focused command: `git diff --check`
+passed; every eight-lane merge key and named red-team contract scenario was
+present; post-relay corpus/judge/statistical controls were present. Read-only URL
+validation checked 31 unique bibliography URLs over 7 domains: 23 returned
+2xx/3xx, 8 DOI endpoints returned access-restricted 403, and none was missing.
+The check initially exposed a parenthesized DOI extraction defect; the URL was
+encoded, then the full validation reran with zero failures.
+
+Final relay review also identified a potentially confusing `candidate_id` concern
+in the capture example. The contract now explicitly distinguishes the single root
+`candidate_id` from `candidate_source_revision`; all 16 fenced JSON examples were
+parsed with `jq --stream` and had no duplicate object-key paths.
+
+## Red-team result
+
+The protocol was challenged against the reproduced header-only PNG,
+arbitrary-reference-byte, duplicate self-scored corpus, static-state theater,
+desktop-as-mobile, caller-supplied judge pass, accessibility-veto, ballot
+correlation, side bias, calibration leakage, identity/prompt injection,
+cherry-picking, repair-reset, goal-drift, cross-run receipt, and common-motif
+false-positive cases. Each has a defined `NOT-CERTIFIED`, `UNKNOWN`, invalidation,
+or `REPLAN` transition. Same-family self-judging, strict mirrored machine
+abstention, visual prompt-injection transfer, and judge-debate inflation were
+also added as machine-diagnostic failures. In particular, appearance never
+establishes AI authorship, copying, bad taste, or provenance.
+
+## Unresolved limits
+
+- The live corpus acquisition, licences/checksums, raw-label joins, and held-out
+  split remain unperformed external evidence.
+- Browser/decoder/OCR/accessibility adapters, their host integrity, and exact
+  perceptual thresholds are future implementation/policy work.
+- Human identity, consent, independence, representative coverage, assistive-tech
+  experience, semantic product fit, and IP/non-copying are external review scopes.
+- All stated policy thresholds require future preregistered calibration; no number
+  is presented as a universal human-taste law.
+
+## Next implementation carve
+
+Implement only the contract parser/event-chain validator and negative fixtures
+first; then declared capture/adapters, corpus importer, ballot packager,
+aggregator, cross-brief review, and repair controller in the sequence specified
+by `PROTOCOL.md`. Do not implement a certificate issuer or claim live evidence
+until each prerequisite slice and its external receipts pass.
+
+## Selected-skill receipt and evidence
+
+SKILL-READ: deep-research | /Users/leonardo/.agents/skills/deep-research/SKILL.md | 3883242303-4343
+
+SKILL-READ: design:research-synthesis | /Users/leonardo/.codex/plugins/cache/claude-cowork/design/1.2.0/skills/research-synthesis/SKILL.md | 335799056-3014
 
 SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
 
-SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
+SKILL-READ: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | 2811424084-1279
 
-## Exact recovery provenance and review
+SKILL-EVIDENCE: deep-research — helped: separated primary HCI/dataset/standard support from preprint, first-party-practice, and external evidence limits, then kept URLs traceable.
 
-- The integrator began at `50e8c8816375b28338326bec6ca16cae9cea15be`.
-  Recovery tip `5b4d921ada8f13b7c9dbd49e5159c107a5642ae5` is its direct descendant,
-  and its nonce-matched DONE handoff is
-  `STATUS: verdict-path-recovery DONE run=c36-verdict-path-20260811-a1`.
-- The exact recovery tip was merged into this owned integrator branch with
-  `git merge --no-edit`; the resulting current source tip is
-  `5b4d921ada8f13b7c9dbd49e5159c107a5642ae5`.
-- The complete base diff was reviewed: 16 files, 319 insertions, and 48
-  deletions. `git diff --check` found no whitespace errors. The review found no
-  credential, injection, path-traversal, replacement-rollback, race, or
-  unbounded-work defect. The initially suspicious provider prompt-block surface
-  is included in the recovery and now names the same two-file boundary as every
-  other provider-facing contract.
+SKILL-EVIDENCE: design:research-synthesis — helped: merged eight lanes into explicit themes and resolved the direction-count and mirrored-isolation tensions without flattening their limits.
 
-## m30.1 installer recovery
+SKILL-EVIDENCE: engineering:code-review — helped: found the malformed parenthesized DOI during the reachability audit and checked the closed-contract failure paths for identity, provenance, and stale evidence.
 
-`claude-code/install.sh` and `codex/install.sh` are byte-for-byte identical to
-the retained Cycle 35 installer implementation at `028a4bb`. Both build and
-validate a sibling staged package before replacing a legacy destination, retain a
-rollback path until replacement succeeds, remove stale top-level artifacts, and
-keep Codex's two discovery roots package-identical. The fresh hermetic coverage
-also exercises Claude's source-equals-destination installation path; no live user
-package was installed.
-
-## m31.1 canonical verdict boundary
-
-The compiler invokes the role-aware finalization contract for representative
-builder and integrator prompts. Builders retain a status-only handoff. Integrator
-prompts require their sole current-run sentinel in this verification file and a
-verdict-free `docs/status-integrator.md`. Strict lint rejects both a missing
-boundary and an explicit second status-file destination. Provider prompt blocks,
-planning references, the Claude skill, and the Codex skill now advertise the same
-boundary.
-
-## Fresh focused verification
-
-All expensive commands ran once through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"` at source
-fingerprint `1030742184:8088`:
-
-- `test-install-fresh.sh` — 42 pass, 0 fail; and `test-installers.sh` — 57
-  pass, 0 fail.
-- `test-lane-done-live.sh` — 18 pass, 0 fail, including the canonical integrator
-  path and verdict-free status assertions.
-- `test-promptlint.sh` — 35 pass, 0 fail; strict runtime lint accepts the
-  canonical integrator boundary and rejects missing or contradictory forms.
-- `test-handoff-contract.sh` — 58 pass, 0 fail; every provider-facing contract
-  carries the two-file handoff rule.
-- `test-orchestration-contract.sh` — 14 pass, 0 fail. Its valid preflight
-  compiles the representative builder and integrator prompts and checks the
-  role-specific contracts before launch.
-- `bash -n` passed all nine changed shell files; warning-level ShellCheck passed
-  the same set. `bin/polylane-markers.sh check-docs references/` passed silently.
-- `test-skill-parity.sh` — 59 pass, 0 fail, confirming the Claude and Codex
-  provider contracts remain aligned.
-
-No full suite, terminal doctor rehearsal, live user-package install, push,
-publication, terminal gate, promotion, or cleanup ran in this focused recovery.
-
-## Continual-harness decision
-
-The required queue returned two eligible items. Exactly one real decline was
-recorded for each: `decline:context:compaction:16` preserves the bounded-packet
-protocol because no compaction-specific defect appeared, and
-`decline:integrator:no-go:7` records that this independent m30.1/m31.1 recovery
-does not justify a separate continual-harness change.
-
-## Skill evidence
-
-SKILL-EVIDENCE: engineering:code-review — helped: the complete 16-file base-diff
-review caught the provider prompt-block trust-boundary surface and verified that
-its merged wording, the parser contract, and every advertised provider surface
-agree without widening the canonical parser.
-
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: it required
-fresh observed installer, compiled-prompt, strict-lint, parity, syntax, and
-ShellCheck evidence rather than relying on the recovery lane's handoff claim.
-
-## DEFERRED
-
-DEFERRED: the ten-product blind human visual corpus remains external; it neither
-blocks nor substitutes for this hermetic installer and verdict-path evidence.
-POLYLANE-VERDICT: GO run=c36-verdict-path-20260811-a1
+SKILL-EVIDENCE: engineering:testing-strategy — helped: turned each red-team false pass and final-relay risk into negative fixture requirements, explicit transition outcomes, and a staged implementation map.
+POLYLANE-VERDICT: GO run=c37-taste-research-20260811-a1

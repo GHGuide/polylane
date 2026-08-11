@@ -2,6 +2,14 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
+## Cycle 37 research integration
+
+`m32.1` has a research-only GO in [RESEARCH](taste-certification/RESEARCH.md) and
+[PROTOCOL](taste-certification/PROTOCOL.md): no live corpus, render, human panel,
+calibration, or taste certificate was run. `m32.2`–`m32.5` and `c84`–`c90` remain
+open implementation/external-evidence work; runner-owned state promotion remains
+authoritative.
+
 ## Cycle 36
 
 subgoals: 86/87 done · criteria: 82/83 done · 98%
