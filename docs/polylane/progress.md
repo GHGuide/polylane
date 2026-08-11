@@ -2,12 +2,21 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-Cycle 29 source tip `9df16a33c51ccbb210247c51fc9bbb1207d256ed`
-passed every focused matrix with two launches and zero restarts, but the host run
-ended HALTED. A nested test polluted canonical failure evidence, promotion refused
-the unrelated path, and telemetry recorded one phantom terminal gate. Nothing was
-promoted or cleaned. Cycle 30 repairs gate truth and re-verifies the focused source
-with zero terminal gates; Cycle 31 owns fresh terminal certification.
+Cycle 30 focused recovery merged exact builder tip
+`1e8f8cc96e259f31776528e5c3f981e8430ea676`. Every inherited and new focused
+matrix passes, and canonical telemetry records two launches, zero restarts, and zero
+terminal gates. The source now gates terminal counting on real current-target work,
+isolates nested acceptance evidence, invalidates focused proof on boundary changes,
+and reports exact promotion blockers without staging user data. Cycle 29 remains
+HALTED. Cycle 31 owns fresh terminal certification; the durable state below remains
+pre-promotion and is not rewritten by this focused evidence summary.
+
+## Cycle 30
+
+Focused source verdict: `GO` for `c30-gate-truth-20260811-a1`.
+
+**Next:** fresh Cycle 31 terminal certification for `m24.4`, `m25.5`, `c66`, and
+`c71`, with exactly one runner-owned terminal gate.
 
 ## Cycle 28
 

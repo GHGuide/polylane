@@ -122,6 +122,9 @@ git -C "$REUSE_INT" config user.email test@example.invalid
 git -C "$REUSE_INT" config user.name test
 printf 'clean\n' > "$REUSE_INT/README.md"
 git -C "$REUSE_INT" add README.md && git -C "$REUSE_INT" commit -qm clean
+REUSE_PROMPT="$REUSE/compiled-prompt.txt"
+printf 'authoritative runtime prompt\n' > "$REUSE_PROMPT"
+cp "$REUSE_PROMPT" "$REUSE_INT/.polylane-prompt.txt"
 REUSE_STATE="$REUSE/state.json"; mkdir -p "$REUSE"
 "$MEM" "$REUSE_STATE" init goal >/dev/null
 "$MEM" "$REUSE_STATE" add-milestone m1 build >/dev/null
@@ -130,9 +133,11 @@ REUSE_STATE="$REUSE/state.json"; mkdir -p "$REUSE"
 "$MEM" "$REUSE_STATE" add-accept s1 "printf 'terminal\\n' >> '$REUSE_LOG'" --tier terminal >/dev/null
 printf '%s\n' '{"target_subgoals":["s1"]}' > "$MANIFEST"
 STATE_FILE="$REUSE_STATE"; REPO_ROOT="$REUSE"; INT_WORKTREE="$REUSE_INT"; FOCUSED_ACCEPTANCE_PROOF=""
+INT_NAME=integrator; INT_PROMPT="$REUSE_PROMPT"
 : > "$REUSE_LOG"
 contract_focused_acceptance_gate; reuse_capture_rc=$?
 assert_eq "ready-focused-proof-captures-pass" "0" "$reuse_capture_rc"
+assert_ok "ready-focused-proof-accepts-identical-runner-prompt" test -n "$FOCUSED_ACCEPTANCE_PROOF"
 contract_acceptance_gate GO 1 1; reuse_rc=$?
 assert_eq "ready-focused-proof-reuses-unchanged-tip" "0" "$reuse_rc"
 assert_eq "ready-focused-proof-runs-focused-once" "1" "$(grep -c '^focused$' "$REUSE_LOG")"
@@ -142,5 +147,26 @@ printf 'dirty\n' >> "$REUSE_INT/README.md"
 contract_acceptance_gate GO 1 1; dirty_reuse_rc=$?
 assert_eq "ready-focused-proof-reruns-when-dirty" "0" "$dirty_reuse_rc"
 assert_eq "ready-focused-proof-dirty-reruns-focused" "3" "$(grep -c '^focused$' "$REUSE_LOG")"
+
+# Returning to a clean tree is not enough when the committed tip changed.
+# Likewise, acceptance definitions are part of the receipt even when HEAD and
+# the worktree remain unchanged.
+git -C "$REUSE_INT" restore README.md
+contract_focused_acceptance_gate; head_capture_rc=$?
+assert_eq "ready-focused-proof-recaptures-before-head-change" "0" "$head_capture_rc"
+printf 'new tip\n' > "$REUSE_INT/tip.txt"
+git -C "$REUSE_INT" add tip.txt && git -C "$REUSE_INT" commit -qm 'new tip'
+contract_acceptance_gate GO 1 1; head_reuse_rc=$?
+assert_eq "ready-focused-proof-reruns-when-head-changes" "0" "$head_reuse_rc"
+assert_eq "ready-focused-proof-head-change-reruns-focused" "5" "$(grep -c '^focused$' "$REUSE_LOG")"
+contract_focused_acceptance_gate; definition_capture_rc=$?
+assert_eq "ready-focused-proof-recaptures-before-definition-change" "0" "$definition_capture_rc"
+jq --arg cmd "printf 'focused-definition\\n' >> '$REUSE_LOG'" \
+  '(.accept[] | select((.tier // "focused") == "focused") | .cmd) = $cmd' \
+  "$REUSE_STATE" > "$REUSE_STATE.tmp"
+mv "$REUSE_STATE.tmp" "$REUSE_STATE"
+contract_acceptance_gate GO 1 1; definition_reuse_rc=$?
+assert_eq "ready-focused-proof-reruns-when-definition-changes" "0" "$definition_reuse_rc"
+assert_eq "ready-focused-proof-definition-change-runs-new-command" "1" "$(grep -c '^focused-definition$' "$REUSE_LOG")"
 
 finish

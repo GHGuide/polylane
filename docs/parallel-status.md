@@ -1,10 +1,13 @@
-# Cycle 29 integration status — READY for fresh Cycle 30 certification
+# Cycle 30 integration status — focused GO
 
-Run: `c29-active-scope-20260811-a1` · branch: `lane/c29-integrator` · exact builder tip: `7c24295ba86a8942b959b8016b9d4e5c6aeddd6d`.
+Run: `c30-gate-truth-20260811-a1` · branch: `lane/c30-integrator` · exact builder
+tip: `1e8f8cc96e259f31776528e5c3f981e8430ea676`.
 
-| Lane | Exact result | Integration evidence |
+| Lane | Runtime | Integrated result |
 | --- | --- | --- |
-| active-scope | one launch, zero restarts, DONE at exact tip `7c24295` | active-command recovery, absolute source roots, terminal scope handling, planned-write contract, and inherited repairs merged |
-| integrator | one launch, zero restarts | complete diff reviewed; five bounded seams repaired; every frozen focused matrix and changed-script check passes |
+| gate-truth | one launch, zero restarts | final DONE tip merged; gate eligibility, evidence isolation, proof reuse, promotion reason, docs, and regressions reviewed |
+| integrator | one launch, zero restarts | complete base diff reviewed; exact-HEAD and acceptance-definition invalidation assertions added; all 15 frozen focused matrices pass |
 
-Canonical telemetry records zero supervisor restarts and zero terminal gates. Cycle 28 remains HALTED and unchanged. Cycle 29 is READY for the host boundary but is not GO: the full suite, parity, installers, and live GO/NO-GO rehearsal remain reserved for the fresh Cycle 30 process. This file is post-cycle evidence only, never live IPC.
+Canonical telemetry records zero supervisor restarts and zero terminal gates. Cycle
+29 remains HALTED and no terminal command ran in Cycle 30. Cycle 31 owns the separate
+fresh terminal certificate. This file is post-cycle evidence only, never live IPC.

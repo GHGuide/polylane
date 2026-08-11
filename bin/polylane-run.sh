@@ -3588,15 +3588,34 @@ contract_terminal_eligible() {
   [ "$outside" = 0 ]
 }
 
+# contract_focused_worktree_clean : use the same narrow scratch boundary as a
+# completed lane. The runner's byte-identical prompt transport and verified
+# sibling graph link are not source mutations; tampered scratch and every other
+# tracked/untracked path still invalidate proof reuse.
+contract_focused_worktree_clean() {
+  local dirty runtime_prompt expected_prompt
+  dirty=$(git -C "$INT_WORKTREE" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null) || return 1
+  if shared_graph_link_owned "$INT_WORKTREE"; then
+    dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
+  fi
+  runtime_prompt=$(pane_runtime_prompt_path "$INT_WORKTREE")
+  expected_prompt=$(lane_prompt_get "${INT_NAME:-integrator}")
+  if [ -f "$runtime_prompt" ] && [ ! -L "$runtime_prompt" ] &&
+     [ -n "$expected_prompt" ] && [ -f "$expected_prompt" ] &&
+     cmp -s "$runtime_prompt" "$expected_prompt"; then
+    dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? .polylane-prompt.txt"')
+  fi
+  [ -z "$dirty" ]
+}
+
 # contract_focused_proof_key : this is intentionally an in-process READY
 # handoff receipt, not general acceptance memoization.  It binds one focused
-# pass to the committed, clean integrator tree and immutable selected checks.
+# pass to the committed, source-clean integrator tree and immutable selected checks.
 contract_focused_proof_key() {
-  local tip targets definitions clean
+  local tip targets definitions
   [ -d "${INT_WORKTREE:-}" ] || return 1
   tip=$(git -C "$INT_WORKTREE" rev-parse HEAD 2>/dev/null) || return 1
-  clean=$(git -C "$INT_WORKTREE" status --porcelain 2>/dev/null) || return 1
-  [ -z "$clean" ] || return 1
+  contract_focused_worktree_clean || return 1
   targets=$(jq -c '.target_subgoals // []' "$MANIFEST" 2>/dev/null) || return 1
   definitions=$(jq -c --argjson targets "$targets" '
     [(.accept // [])[]
