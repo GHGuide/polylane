@@ -28,8 +28,56 @@ human evidence; and make no more than two evidence-targeted repairs while
 preserving the best eligible incumbent. Ten varied briefs and five complete
 eligible mirrored ballot groups per brief are floors, not a statistical claim
 that this sample represents all users. The release threshold is a pooled human
-preference rate of at least 70% and a two-sided 95% Wilson lower bound strictly
-above 0.50, alongside a majority win in at least seven briefs.
+preference rate of at least **0.70** (70%) and a two-sided 95% Wilson lower bound
+strictly above 0.50, alongside a majority win in at least seven briefs.
+
+## Cycle 40 live-boundary update
+
+Cycles 39–40 turned the protocol above from a design into a partially live
+harness. This section states exactly which live facts are now established and
+which remain future or external; the rest of this document is the standing
+research synthesis behind the protocol.
+
+**Primary corpus and its honest acquisition path.** The primary calibration
+source stays Miniukovich & Figl's released homepage-evaluation corpus — 3,156
+full-page homepages across commercial banking, e-commerce, and universities, with
+raw and filtered aggregate ratings from 3,319 sessions on a `[-3,3]` scale, with
+compliance filtering, within-participant standardization, and per-page
+aggregation [9,10,11]. The three Dataverse deposits declare CC0 1.0. Acquisition
+must be described truthfully: a direct Dataverse API call currently returns an AWS
+**WAF** `202` challenge, but a real Chrome session completes the challenge and a
+same-context API request then returns dataset id `6830013`, release version `4.0`,
+1,074 files, and a byte-exact download of a canary file (`ratings.avg.fashion.txt`).
+Cycle 40 productizes that path as an explicit, versioned, hash-receipted **browser
+adapter** (`source-live`); it does not bypass, spoof, or hide the WAF, and it never
+substitutes fixture bytes for a blocked download. A blocked corpus yields a precise
+external-evidence receipt, not a fabricated dataset.
+
+**TASTE is a separate, secondary, pinned audit.** The TASTE release (Hugging Face
+`purvanshi/TASTE`, repository SHA `731a7f588d433214c6d864d2e9f47978d91aed6b`) —
+14,460 evaluator ranking rows over 644 images, five evaluators per group, with
+dimensions including preference, typography, color harmony, and visual hierarchy —
+is an orthogonal secondary audit. It is **never** a silent substitute for a failed
+primary corpus: each source keeps its own provenance, scale, split, and receipt,
+and a source substitution is a new manifest version, not a repaired result.
+
+**Claim ceiling this cycle.** The retained live controls — pointwise before
+pairwise, hidden candidate/provider identity, mirrored side order across different
+sessions, a frozen human-label holdout, exact side-bias and contradiction screens,
+multiple provider/model configurations, abstention on insufficient evidence, and a
+Wilson lower bound — govern a **machine** panel whose sessions are correlated
+diagnostics, not independent humans. The strongest honest label attainable without
+recruited deciding people is `HUMAN_CALIBRATED_MACHINE` with `human_certified:false`.
+`HUMAN_CERTIFIED` remains external and unreached.
+
+**Frozen thresholds (no post-result change).** Study target 20 briefs, hard floor
+10; at least 7 brief wins; pooled preference at least 0.70; Wilson lower bound above
+0.50; at least five complete mirrored groups per brief; zero accessibility
+regressions; at most two evidence-targeted repairs. The primary split is 180
+calibration + 72 held-out pages, stratified 60/24 per domain; judge eligibility is
+24 deterministic mirrored pairs, at least 17 correct, Wilson lower bound at least
+0.50, side-probe `p >= 0.05`, and fewer than two mirror contradictions. None of
+these may shrink after results.
 
 ## Method and scope
 
@@ -237,13 +285,20 @@ no current script is declared a certificate.
 
 ## Limits and external evidence
 
-No live external action, corpus download, browser capture, human label, panel,
-benchmark, calibration, accessibility review, or trade-dress review occurred in
-this research cycle. The primary corpus is a selected future input, not acquired
-evidence. Source access, dataset licences, browser/decoder/OCR/a11y adapters,
-human consent/identity/independence, IP determination, and population
-representativeness are future receipts or external review. A result with any one
-missing item must receive the lower honest label or `NOT-CERTIFIED`.
+This document's synthesis (§§Evidence synthesis) recruited no humans, ran no
+model panel, and issued no certificate. Cycle 40 changes only the acquisition and
+adapter boundary: the primary-corpus browser-acquisition path is validated
+(WAF-challenge Chrome session, dataset id `6830013` v`4.0`, byte-exact canary; see
+the Cycle-40 live-boundary update), and the fail-closed validator/compiler chain
+is live in the tree. Still, no recruited human panel supplied deciding ballots, so
+`HUMAN_CERTIFIED` cannot be claimed. These remain explicitly external or `UNKNOWN`:
+**host integrity**, **panel identity/independence/collusion**, **population
+coverage**, **IP/trade-dress** non-infringement, **manual accessibility**
+(assistive-technology experience), and **actual human certification**. Dataset
+licences bind only the primary CC0 releases and the separately pinned TASTE
+repository; browser/decoder/OCR/a11y/model adapters are Cycle-40 live deliverables,
+not yet merged here. A result with any one missing item must receive the lower
+honest label or `NOT-CERTIFIED`.
 
 ## Stable bibliography
 
@@ -279,10 +334,10 @@ missing item must receive the lower honest label or `NOT-CERTIFIED`.
 
 ## Skill receipts
 
+Cycle 40 lane `protocol-live` selected kit (read once, in listed order):
+
 SKILL-READ: deep-research | /Users/leonardo/.agents/skills/deep-research/SKILL.md | 3883242303-4343
 
-SKILL-READ: design:research-synthesis | /Users/leonardo/.codex/plugins/cache/claude-cowork/design/1.2.0/skills/research-synthesis/SKILL.md | 335799056-3014
+SKILL-READ: engineering:documentation | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/documentation/SKILL.md | 177552282-1507
 
-SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
-
-SKILL-READ: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | 2811424084-1279
+SKILL-READ: legal:compliance-check | /Users/leonardo/.codex/plugins/cache/claude-cowork/legal/1.3.0/skills/compliance-check/SKILL.md | 1175060322-14694

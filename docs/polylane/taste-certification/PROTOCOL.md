@@ -2,30 +2,101 @@
 
 ## Status and scope
 
-This is an executable specification for a future provider-neutral implementation.
-It creates no browser render, human label, panel, benchmark, calibration result,
-or certificate in Cycle 37. A missing adapter, receipt, field, or predicate is
-an evidence failure, not permission to approximate the result. The coordinator
-uses Bash 3.2, `jq`, `git`, a declared SHA-256 command, and explicitly declared
-browser/decoder/OCR/accessibility adapters; it must never install or fetch an
-adapter silently.
+This is a provider-neutral specification with a **live fail-closed validator
+core** already in the tree and a set of **live adapters frozen for Cycle 40**
+but not yet merged here. Cycle 37 wrote no code; Cycle 39 shipped the fail-closed
+receipt/validator/compiler chain (`bin/polylane-taste*.sh`); Cycle 40 builds the
+real acquisition, capture, judge, and ballot-v2 adapters in sibling lanes. This
+document tracks that exact boundary — see §0 for what is live now, what is a
+Cycle-40 deliverable, and what stays external — and never approximates a result
+across it. A missing adapter, receipt, field, or predicate is an evidence
+failure, not permission to substitute. The coordinator core is Bash 3.2, `jq`,
+`git`, and a declared SHA-256 command; every browser/decoder/OCR/accessibility/
+model adapter is explicitly declared, versioned, and hash-receipted, and is never
+installed or fetched silently.
 
 `HUMAN_CERTIFIED` is deliberately difficult: it is a claim about a closed,
-immutable evidence chain for actual rendered briefs. It is not a compliment for
-a screenshot or an attribute of a model.
+immutable evidence chain of deciding ballots from **recruited** isolated humans
+over actual rendered briefs. No such panel exists yet, so no run in or before
+Cycle 40 can attain it; the strongest honest label the live machine panel reaches
+is `HUMAN_CALIBRATED_MACHINE` with `human_certified:false`. `HUMAN_CERTIFIED` is
+not a compliment for a screenshot or an attribute of a model.
+
+## 0. Live boundary — what is real, what is frozen, what stays external
+
+The single most load-bearing fact in this document: the certification chain is
+**live and fail-closed over receipts**, but on **fixture-grade** evidence until
+the Cycle-40 live adapters land. The tiers below never collapse into each other.
+
+**Live now (in this tree, Cycle-39 close).** Pure Bash 3.2 + jq validators and
+compilers. None renders a browser, acquires a dataset, runs a model, or recruits
+a person; each stamps `classification:"fixture"` (or `fixture_only:true`) on its
+output.
+
+| Producer | Command | Emits / enforces | Grade |
+|---|---|---|---|
+| `bin/polylane-taste.sh` | `certify MANIFEST CERT [ROOT]` | `taste-certificate/v1` from `taste-evidence-manifest/v1` (always `fixture_only:true`, `production:false`); `taste-certificate/v2` from `taste-evidence-manifest/v2` (production compiler; `fixture_only` stays true unless every ballot receipt is `taste-ballot-validation/v2` with `fixture_only:false`) | v1 fixture; v2 production-shaped, fixture-flagged in this tree |
+| `bin/polylane-taste-ballot.sh` | `validate GROUP PW_DIR CAL OUT` | `taste-ballot-validation/v1`, `classification:"fixture"`, `fixture_only:true`, `human_certified:false` | fixture validator |
+| `bin/polylane-taste-stats.sh` | `aggregate [out] < ballots` | `polylane.taste.stats.v1`, `classification:"fixture"`, brief is the sample unit | fixture aggregator |
+| `bin/polylane-taste-calibrate.sh` | `<cal-input> <eligibility-receipt>` | `taste-calibration/v1`, `classification:"fixture"` | fixture judge-eligibility |
+| `bin/polylane-taste-corpus.sh` | corpus validate | `taste-corpus-receipt/v1`, `status:"VALIDATED"`, `classification:"fixture"` | fixture corpus validator |
+| `bin/polylane-taste-pixels.sh` | pixel verify | `taste-pixels-receipt/v1` | fixture pixel verifier |
+| `bin/polylane-taste-a11y.sh` | a11y adapter | `taste-adapter-receipt/v1` feeding `taste-hard-gate/v1` | fixture a11y receipt |
+| `bin/polylane-taste-stimulus.sh` | stimulus/escrow | `taste-stimulus-*/v1`, `taste-stimulus-scan-receipt/v1` | fixture anonymizer |
+| `bin/polylane-taste-threat.sh` | threat scan | `taste-threat-receipt/v1` | fixture threat scan |
+| `bin/polylane-taste-memory.sh` | taste memory | bounded, evidence-scoped advisory memory | post-promotion only |
+
+The v2 compiler additionally requires the `subject_revision` to be the integrator
+HEAD or a proven ancestor with only declared evidence commits after it, and it
+content-addresses every artifact and screenshot in the manifest closure.
+
+**Frozen for Cycle 40 (not in this tree; sibling lanes build them in parallel).**
+Each is an explicit, versioned, hash-receipted adapter external to the Bash core;
+a missing adapter is `UNKNOWN`/failure, never a fixture fallback. Do not describe
+any of these as live in this tree until its lane merges.
+
+| Cycle-40 lane | Adds |
+|---|---|
+| `source-live` | browser-backed Dataverse acquisition (see §4.3), three-domain split, TASTE secondary receipt, one-file canary |
+| `calibration-live` | production calibration input/receipt v2 binding images, source labels, mirrored raw responses, parser/invocation hashes, judge identity |
+| `judge-claude` / `judge-codex` | isolated provider-native visual-judge adapters with model, prompt, image, output-schema, raw-response, timing, exit receipts |
+| `judge-runner` | campaign sharding, unique session IDs, retry/abstain, no shared ballot channel, deterministic parsing |
+| `ballot-live` | **production `taste-ballot-validation/v2`** producer (`fixture_only:false`) recomputing every group, raw response, orientation, pointwise, calibration, capture, escrow binding |
+| `browser-live` | real Chrome/Playwright capture over frozen route/state/viewport/action matrices, offline enforcement, full receipts |
+| `decode-live` | real PNG→RGBA decoder with dimensions, payload, provenance, duplicate/perceptual evidence |
+| `a11y-live` | pinned accessibility engine with keyboard/focus/reflow/contrast/target/motion evidence and fail-closed receipts |
+| `task-live` | replayable per-brief action/state/task oracle and hard-gate compiler |
+| `corpus-20` | frozen twenty-brief study corpus, task scripts, categories, acceptance facts, licence/offline rules |
+| `prompts-live` | immutable baseline/current prompt compiler, literal goal, reference/design locks, no candidate self-verdict |
+| `generate-live` | isolated fixed-model build runner, source/build receipts, replay, no-network output checks |
+| `study-live` | study freeze/compiler, calibration-v2 + ballot-v2 certificate support, declared evidence closure, statistics, negative attacks |
+
+The deferred `taste-live-integrator` merges the fifteen tips and records one real
+primary-corpus canary plus one real Claude and one real Codex visual-judge smoke.
+
+**Stays external / `UNKNOWN` (never provable in software).** Recruited deciding
+humans (hence no `HUMAN_CERTIFIED` in Cycle 40), panel identity/independence/
+collusion, host integrity, IP/trade-dress non-infringement, manual
+assistive-technology experience, and population coverage. Each remains a
+mandatory `external_limitations` entry.
 
 ## 1. Claim labels
 
 | Label | Preconditions | Meaning | Forbidden statement |
 |---|---|---|---|
 | `MACHINE_EVALUATED` | Valid real-render evidence and eligible machine diagnostics, but no actual deciding human ballot requirement met. | A pinned machine configuration evaluated the bundle. | “human preference” or “certified.” |
+| _(reserved)_ | — | `MACHINE_EVALUATED` is a design-ladder rung the **live compiler never emits**: `polylane-taste.sh` derives only `HUMAN_CERTIFIED`, `HUMAN_CALIBRATED_MACHINE`, or `NOT-CERTIFIED` (with a `TASTE-CERTIFIED`/`NOT-CERTIFIED` status). It is documented for the ladder, not yet a producer output. | — |
 | `HUMAN_CALIBRATED_MACHINE` | `MACHINE_EVALUATED` plus a frozen machine configuration passes the held-out human-labelled calibration predicate. | The configuration was calibrated against that specified held-out set. | “human-certified” or a claim about a changed configuration/new population. |
 | `HUMAN_CERTIFIED` | All gates in §§2–10, including deciding isolated human ballots, pass. | The candidate won under this named corpus, panel, and protocol. | “universally better,” “accessible for everyone,” “not AI-made,” or “non-infringing.” |
 | `NOT-CERTIFIED` | Any failed hard gate. | This manifest cannot make a certification claim. | A negative claim about the UI's intrinsic quality. |
 | `UNKNOWN` / `INCONCLUSIVE` | A required external receipt, qualification, or evidence item is absent/ambiguous. | The protocol cannot decide. | A pass by inference or substitution. |
 
 The label generator derives the label from ballot provenance and gates; no caller,
-model, or release note supplies it as an input.
+model, or release note supplies it as an input. In the live compiler this is
+`polylane-taste.sh`: a v2 certificate is `HUMAN_CERTIFIED` only when every calibrated
+judge configuration is `kind:"human"`, otherwise `HUMAN_CALIBRATED_MACHINE`; any
+failed reason code makes it `NOT-CERTIFIED`. Because Cycle 40 recruits no deciding
+humans, `HUMAN_CALIBRATED_MACHINE` is the ceiling this cycle can reach.
 
 ## Threshold registry: rationale and failure behaviour
 
@@ -334,20 +405,40 @@ gate. Failed gates are `NOT-CERTIFIED`; unavailable required evidence is
   "candidate_id": "stimulus-opaque-a",
   "brief_sha256": "<sha256>",
   "capture_manifest_sha256": "<sha256>",
-  "scores_1_to_7": {"product_fit":5,"hierarchy":5,"typography":5,"color_imagery":5,"spatial_rhythm":5,"simplicity":5,"expressiveness":5,"craftsmanship":5,"originality":5,"state_coherence":5,"interaction_feedback":5},
-  "observations": [{"criterion":"hierarchy","capture_id":"cap-1","region_or_state":"header","severity":"medium","brief_clause":"task-1","reason":"observable and brief-specific","proposed_change":"bounded"}],
+  "scores_1_to_7": {"product_fit":5,"hierarchy":5,"typography":5,"color":5,"spatial_rhythm":5,"craftsmanship":5,"originality":5,"state_coherence":5},
+  "observations": [
+    {"criterion":"product_fit","capture_id":"cap-1","region_or_state":"header","brief_clause":"task-1","reason":"observable and brief-specific"},
+    {"criterion":"hierarchy","capture_id":"cap-1","region_or_state":"header","brief_clause":"task-1","reason":"observable and brief-specific"},
+    {"criterion":"typography","capture_id":"cap-1","region_or_state":"body","brief_clause":"task-1","reason":"observable and brief-specific"},
+    {"criterion":"color","capture_id":"cap-1","region_or_state":"body","brief_clause":"task-1","reason":"observable and brief-specific"},
+    {"criterion":"spatial_rhythm","capture_id":"cap-1","region_or_state":"body","brief_clause":"task-1","reason":"observable and brief-specific"},
+    {"criterion":"craftsmanship","capture_id":"cap-1","region_or_state":"body","brief_clause":"task-1","reason":"observable and brief-specific"},
+    {"criterion":"originality","capture_id":"cap-1","region_or_state":"body","brief_clause":"task-1","reason":"observable and brief-specific"},
+    {"criterion":"state_coherence","capture_id":"cap-1","region_or_state":"success","brief_clause":"task-1","reason":"observable and brief-specific"}
+  ],
   "identity_visible": false,
   "prior_ballots_visible": false,
+  "injection_detected": false,
+  "judge_discussion": false,
+  "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
   "sealed_at": "2026-08-11T00:00:00Z"
 }
 ```
 
 Scores are anchored diagnostic observations, not a compensatory composite.
-Each candidate is displayed alone under the same brief and complete evidence
-bundle. Reasons must name a capture/state/region and brief clause; generic
-adjectives are invalid. The pairwise control remains disabled until both
-candidate records are immutable. This preserves evidence when both choices are
-poor and stops comparison from erasing product/task context.
+The live validator `polylane-taste-ballot.sh` enforces exactly **eight**
+`taste-pointwise/v1` dimensions — `product_fit`, `hierarchy`, `typography`,
+`color`, `spatial_rhythm`, `craftsmanship`, `originality`, `state_coherence` —
+each an integer 1–7, with one observation per dimension (eight total) naming a
+`capture_id`, `region_or_state`, `brief_clause`, and `reason`. It requires
+`identity_visible`, `prior_ballots_visible`, `injection_detected`, and
+`judge_discussion` all false, and a `record_sha256` that matches the record body.
+Earlier drafts listed eleven dimensions; the live producer enforces the eight
+named above and this document tracks it. Each candidate is displayed alone under the same brief and
+complete evidence bundle. Reasons must name a capture/state/region and brief
+clause; generic adjectives are invalid. The pairwise control remains disabled
+until both candidate records are immutable. This preserves evidence when both
+choices are poor and stops comparison from erasing product/task context.
 
 ### 7.2 Calibration and judge eligibility
 
@@ -607,24 +698,76 @@ transferred to another lock.
 
 ## 11. Certificate and failure contracts
 
+`polylane-taste.sh` compiles two certificate shapes, selected by manifest schema.
+
+**v1 — fixture compatibility (always fixture-grade).** A `taste-evidence-manifest/v1`
+compiles this and is *never* production evidence: `fixture_only` is hard-coded
+`true` and `production` `false`. Exact shape:
+
 ```json
 {
-  "schema_version":"taste-certificate/v1",
-  "run_id":"taste-run-opaque",
-  "protocol_version":"taste-protocol/v1",
-  "evidence_manifest_sha256":"<sha256>",
-  "claim_label":"HUMAN_CERTIFIED|HUMAN_CALIBRATED_MACHINE|MACHINE_EVALUATED|NOT-CERTIFIED|UNKNOWN",
-  "briefs":10,
-  "eligible_human_mirrored_groups_per_brief":{"brief-opaque-001":5},
-  "brief_wins":7,
-  "preference_rate":0.70,
-  "confidence_lower":0.500001,
-  "accessibility_regressions":0,
-  "calibration_receipts_sha256":["<sha256>"],
-  "cross_brief_review_status":"resolved",
-  "repair_ledger_sha256":"<sha256>",
-  "external_limitations":["panel identity assurance scope", "population coverage scope"],
-  "verdict_reason_codes":[]
+  "schema_version": "taste-certificate/v1",
+  "run_id": "taste-run-opaque",
+  "protocol_version": "taste-protocol/v1",
+  "evidence_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "status": "NOT-CERTIFIED",
+  "claim_label": "NOT-CERTIFIED",
+  "fixture_only": true,
+  "production": false,
+  "human_calibrated": false,
+  "human_certified": false,
+  "briefs": 10,
+  "eligible_human_mirrored_groups_per_brief": {"brief-opaque-001": 5},
+  "brief_wins": 7,
+  "preference_rate": 0.70,
+  "confidence_lower": 0.500001,
+  "accessibility_regressions": 0,
+  "repair_ledger_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "external_limitations": ["panel identity and host assurance remain externally scoped", "v1 shape-only evidence is fixture-grade and can never satisfy a production runner gate"],
+  "verdict_reason_codes": []
+}
+```
+
+**v2 — production compiler.** A `taste-evidence-manifest/v2` compiles this. Every
+referenced artifact is a safe, regular, duplicate-key-free, SHA-256-matched file;
+every validator receipt is hash-bound to its raw input; and `subject_revision`
+must be the integrator HEAD or a proven ancestor with only declared evidence
+commits after it. `claim_label` is derived (§1), never supplied. `fixture_only`
+is `false` **only** when every ballot receipt is `taste-ballot-validation/v2` with
+`fixture_only:false` — the Cycle-40 `ballot-live` deliverable, absent from this
+tree — so a v2 certificate compiled here is still `fixture_only:true`.
+
+```json
+{
+  "schema_version": "taste-certificate/v2",
+  "run_id": "taste-run-opaque",
+  "protocol_version": "taste-protocol/v1",
+  "candidate_id": "cand-opaque-a",
+  "subject_revision": "0000000000000000000000000000000000000000",
+  "goal_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "design_lock_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "evidence_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "evidence_chain_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "validator_chain_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "status": "NOT-CERTIFIED",
+  "required_claim": "HUMAN_CALIBRATED_MACHINE",
+  "claim_label": "NOT-CERTIFIED",
+  "fixture_only": true,
+  "human_calibrated": false,
+  "human_certified": false,
+  "briefs": 10,
+  "brief_wins": 7,
+  "briefs_lost": [],
+  "groups_per_brief": {"brief-opaque-001": 5},
+  "eligible_judges": 2,
+  "unique_judge_configurations": 2,
+  "preference_rate": 0.70,
+  "wilson_lower_bound": 0.500001,
+  "accessibility_regressions": 0,
+  "repair_count": 0,
+  "repair_ledger_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "external_limitations": ["panel identity, host integrity, and population coverage remain externally scoped", "validator receipts prove hash-bound chain closure, not a live rendered benchmark"],
+  "verdict_reason_codes": []
 }
 ```
 
@@ -632,13 +775,19 @@ The final receipt closes over the exact expected set of brief locks, candidates,
 captures, hard gates, calibration records, ballot groups, exclusion reasons,
 aggregation algorithm, review determinations, and repair ledger. Extra,
 missing, cross-run, stale, or digest-mismatched assets are `NOT-CERTIFIED`.
-`external_limitations` cannot be empty when any claim relies on human identity,
-panel independence, IP/non-copying, host trust, population coverage, or manual
-assistive-technology review.
+`external_limitations` is never empty: v1/v2 both bake in the panel-identity,
+host-integrity, and population-coverage scopes, because every real claim relies on
+human identity, panel independence, IP/non-copying, host trust, population
+coverage, or manual assistive-technology review.
 
-## 12. Required future implementation map (no source is written in this cycle)
+## 12. Producer map — live slices and their Cycle-40 live adapters
 
-| Slice | Future deliverable | Verification before advancing |
+Each slice's fail-closed **validator/compiler is live in this tree** (§0 table);
+what Cycle 40 adds is the **live adapter** that feeds it real (non-fixture)
+evidence. The "Verification" column is the negative-fixture bar every slice
+already holds. Do not read the "live adapter" column as merged here.
+
+| Slice | Deliverable (validator live now; live adapter is Cycle-40) | Verification (negative fixtures fail closed) |
 |---|---|---|
 | Contract parser | Versioned JSON schemas, canonical serialization, digest/event-chain validator. | Missing/unknown/changed field and non-monotonic event fixtures fail closed. |
 | Capture adapters | Declared browser capture, image decoder, DOM/action trace, comparison, OCR adapters. | Header-only PNG, text-as-PNG, stale commit, resized desktop/mobile, duplicate state, wrong viewport, and adapter swap regressions fail. |
@@ -666,10 +815,10 @@ reason without silently repairing input or lowering a threshold.
 
 ## 14. Skill receipts
 
+Cycle 40 lane `protocol-live` selected kit (read once, in listed order):
+
 SKILL-READ: deep-research | /Users/leonardo/.agents/skills/deep-research/SKILL.md | 3883242303-4343
 
-SKILL-READ: design:research-synthesis | /Users/leonardo/.codex/plugins/cache/claude-cowork/design/1.2.0/skills/research-synthesis/SKILL.md | 335799056-3014
+SKILL-READ: engineering:documentation | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/documentation/SKILL.md | 177552282-1507
 
-SKILL-READ: engineering:code-review | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/code-review/SKILL.md | 936987158-4285
-
-SKILL-READ: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | 2811424084-1279
+SKILL-READ: legal:compliance-check | /Users/leonardo/.codex/plugins/cache/claude-cowork/legal/1.3.0/skills/compliance-check/SKILL.md | 1175060322-14694
