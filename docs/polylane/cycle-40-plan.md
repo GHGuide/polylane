@@ -2,7 +2,7 @@
 
 Run: `c40-live-harness-20260812-a3`
 Target: `m32.4a`
-Base: `codex/taste-certification` at the committed Cycle 39 close plus preflight repairs `93269ca` and `da5a95c`
+Base: `codex/taste-certification` at the committed Cycle 39 close, preflight repairs `93269ca` and `da5a95c`, and the reconstructed Cycle 39 research ledger
 Mode: autonomous, high-assurance, file-isolated Claude Code lanes in tmux
 
 Attempt `a1` stopped before worktree, branch, tmux, or worker side effects when the
