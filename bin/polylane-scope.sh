@@ -183,21 +183,27 @@ EOF
 }
 
 check_static() {
-  local mf="$1" names i j a b ga rc=0 members
+  local mf="$1" names i j a b ga gb rc=0 members lane_count
+  local -a lane_names lane_glob_sets
   command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
   names=$(jq -r '.lanes[].name' "$mf")
   members=" $(_candidate_members "$mf" | tr '\n' ' ') "
   for a in $names; do
     ga=$(_lane_globs "$mf" "$a" | tr '\n' ' ')
     [ -n "${ga// /}" ] || { echo "SCOPE-EMPTY: lane '$a' has no own_globs" >&2; rc=2; }
+    lane_names[${#lane_names[@]}]="$a"
+    lane_glob_sets[${#lane_glob_sets[@]}]="$ga"
   done
-  # unordered pairs
-  set -- $names
-  i=1
-  while [ "$i" -le "$#" ]; do
+  # Unordered pairs. Load each lane's globs once above: re-running jq inside
+  # lane_globs_overlap for every glob/pair created hundreds of process
+  # substitutions and crashes macOS Bash 3.2 around a production-sized carve.
+  lane_count=${#lane_names[@]}
+  i=0
+  while [ "$i" -lt "$lane_count" ]; do
     j=$((i + 1))
-    while [ "$j" -le "$#" ]; do
-      a=$(eval "echo \${$i}"); b=$(eval "echo \${$j}")
+    while [ "$j" -lt "$lane_count" ]; do
+      a="${lane_names[$i]}"; b="${lane_names[$j]}"
+      ga="${lane_glob_sets[$i]}"; gb="${lane_glob_sets[$j]}"
       # Two members of the exclusive candidate group are ALLOWED to overlap —
       # that is the whole point of the same-base tournament. check_candidate_group
       # (below) confines that overlap to the declared group globs. Any other pair,
@@ -206,7 +212,7 @@ check_static() {
         *" $a "*)
           case "$members" in *" $b "*) j=$((j + 1)); continue ;; esac ;;
       esac
-      if lane_globs_overlap "$mf" "$a" "$b"; then
+      if globs_overlap "$ga" "$gb"; then
         echo "SCOPE-OVERLAP: lanes '$a' and '$b' can both match a path (own_globs collide)" >&2; rc=2
       fi
       j=$((j + 1))

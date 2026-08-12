@@ -96,4 +96,40 @@ assert_ok "scope-cwd-glob-does-not-break-check-lane" "$SCOPE" check-lane "$EXPAN
 assert_fail "scope-cwd-glob-does-not-hide-overlap" "$SCOPE" check-static "$EXPAND_ROOT/overlap.json"
 cd "$SCOPE_START"
 
+# A production-sized carve must not exhaust Bash 3.2's process-substitution job
+# table.  The old static gate re-ran jq for every glob in every lane pair; fifteen
+# five-glob lanes plus their write plan crossed the macOS Bash threshold and died
+# with SIGTRAP (rc 133) before any worker could launch.
+jq -n '{
+  write_plan_contract: 1,
+  lanes: [range(0; 15) as $lane | {
+    name: "stress-\($lane)",
+    own_globs: [range(0; 5) as $glob | "stress/\($lane)/g\($glob)/**"],
+    planned_writes: [range(0; 7) as $write |
+      "stress/\($lane)/g\($write % 5)/file-\($write).txt"]
+  }]
+}' > "$TEST_TMPDIR/production-size.json"
+assert_ok "scope-static-production-size-no-sigtrap" \
+  "$SCOPE" check-static "$TEST_TMPDIR/production-size.json"
+
+# Pin the root cause as well as the symptom. Each lane's globs may be loaded once
+# for the pairwise gate (plus once per planned write in the existing write-plan
+# validator), but never once per glob/pair combination. The latter created 700+
+# process substitutions in one Bash process and made SIGTRAP timing-dependent.
+SCOPE_GLOB_CALLS="$TEST_TMPDIR/scope-glob-calls"
+: > "$SCOPE_GLOB_CALLS"
+_lane_globs() {
+  printf x >> "$SCOPE_GLOB_CALLS"
+  jq -r --arg n "$2" '.lanes[] | select(.name==$n) | .own_globs[]?' "$1"
+}
+assert_ok "scope-static-production-size-instrumented" \
+  check_static "$TEST_TMPDIR/production-size.json"
+scope_glob_call_count=$(wc -c < "$SCOPE_GLOB_CALLS" | tr -d ' ')
+if [ "$scope_glob_call_count" -le 150 ]; then
+  pass "scope-static-bounds-manifest-glob-loads"
+else
+  fail "scope-static-bounds-manifest-glob-loads" \
+    "expected at most 150 lane-glob loads, got $scope_glob_call_count"
+fi
+
 finish
