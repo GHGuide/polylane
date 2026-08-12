@@ -18900,10 +18900,10 @@
   "support_basis": "compliant-sessions",
   "tolerance": 0.01,
   "verification": {
-    "expected_finite_values": 6168,
+    "expected_finite_values": 6196,
     "max_abs_error": 0.004141,
     "mismatched_values": 0,
     "unverified_values": 0,
-    "verified_values": 6168
+    "verified_values": 6196
   }
 }

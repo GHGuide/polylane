@@ -260,10 +260,15 @@ join_and_decide() { # WORK COMPLIANT_FILE DOMAIN SOURCE_ID [SAMPLES_DIM]
         }
       }
       for (i = 1; i <= nsv; i++) {
-        if (sv_train[i]) continue  # training values standardize the basis only
         s = sv_sess[i]
         if (compliant_mode && !(s in comp)) continue
         k = sv_stim[i] SUBSEP sv_dim[i]
+        if (sv_train[i]) {
+          # Training values never build records, but they do verify the
+          # published aggregates of training stimuli.
+          if (compliant_mode) { ztsum[k] += (sv_val[i] - smean[s]) / ssd[s]; tsup[k]++ }
+          continue
+        }
         sup[k]++
         if (compliant_mode) {
           z = (sv_val[i] - smean[s]) / ssd[s]
@@ -276,6 +281,29 @@ join_and_decide() { # WORK COMPLIANT_FILE DOMAIN SOURCE_ID [SAMPLES_DIM]
         }
       }
       nrec = 0; nexcl = 0; nver = 0; nmisv = 0; maxerr = 0; nexp = 0; nunver = 0
+      # Source-fidelity verification runs FIRST over EVERY finite published
+      # value — including finite siblings of NA rows, training-only stimuli
+      # (recomputed from training values), and stimuli later excluded for any
+      # eligibility reason. Coverage gaps and mismatches both poison the
+      # global claim.
+      if (compliant_mode) {
+        for (a = 1; a <= nagg; a++) {
+          stim = aggstim[a]
+          for (j = 1; j <= ndims; j++) {
+            if (!((stim, dima[j]) in aggval)) continue
+            nexp++
+            k = stim SUBSEP dima[j]
+            if (sup[k] + 0 > 0) rec = zsum[k] / sup[k]
+            else if (tsup[k] + 0 > 0) rec = ztsum[k] / tsup[k]
+            else { nunver++; continue }
+            d = rec - aggval[stim, dima[j]]
+            if (d < 0) d = -d
+            nver++
+            if (d > maxerr) maxerr = d
+            if (d > tol) { nmisv++; mismstim[stim] = 1 }
+          }
+        }
+      }
       for (a = 1; a <= nagg; a++) {
         stim = aggstim[a]
         if (stim in nf) { reason = "nonfinite-aggregate" }
@@ -287,33 +315,14 @@ join_and_decide() { # WORK COMPLIANT_FILE DOMAIN SOURCE_ID [SAMPLES_DIM]
             if (minsup < 0 || c < minsup) minsup = c
           }
           if (total == 0) reason = "missing-raw-join"
+          else if (compliant_mode && (stim in mismstim)) reason = "aggregate-mismatch"
           else {
-            # Source-fidelity verification runs FIRST and covers every finite
-            # joined value regardless of eligibility; only afterwards may
-            # weak-support exclude the stimulus.
-            if (compliant_mode) {
-              mism = 0
-              for (j = 1; j <= ndims; j++) {
-                k = stim SUBSEP dima[j]
-                if (!((stim, dima[j]) in aggval)) continue
-                nexp++
-                if (sup[k] + 0 == 0) { nunver++; continue }
-                d = zsum[k] / sup[k] - aggval[stim, dima[j]]
-                if (d < 0) d = -d
-                nver++
-                if (d > maxerr) maxerr = d
-                if (d > tol) { nmisv++; mism = 1 }
-              }
-              if (mism) reason = "aggregate-mismatch"
-            }
             # With a declared label dimension the support floor applies to that
             # dimension (pairs and selection consume >=5 of its samples); the
             # legacy gate stays min-over-all-dimensions. The floor itself never
             # changes.
-            if (reason == "") {
-              if (samples_dim != "" && sup[stim, samples_dim] + 0 < min_support) reason = "weak-support"
-              else if (samples_dim == "" && minsup < min_support) reason = "weak-support"
-            }
+            if (samples_dim != "" && sup[stim, samples_dim] + 0 < min_support) reason = "weak-support"
+            else if (samples_dim == "" && minsup < min_support) reason = "weak-support"
           }
         }
         if (reason != "") {
@@ -418,8 +427,23 @@ cmd_sessions() {
   ' "$demo" || exit 1
   : >>"$work/false.txt"
 
-  awk -F'\t' 'NR == 1 { next } { sub(/\r$/, ""); if ($6 != "") print $6 }' "$raw" \
-    | LC_ALL=C sort -u >"$work/rawsess.txt"
+  # The raw sessionId column binds by header name, never by position.
+  awk -F'\t' '
+    function die(msg) { print "TASTE-RATINGS-INVALID: " msg > "/dev/stderr"; exit 1 }
+    NR == 1 {
+      sub(/\r$/, "")
+      for (i = 1; i <= NF; i++)
+        if ($i == "sessionId") { if (si) die("duplicate sessionId column in raw file"); si = i }
+      if (!si) die("raw header missing column: sessionId")
+      hdrn = NF
+      next
+    }
+    {
+      sub(/\r$/, "")
+      if ($0 == "" || NF != hdrn) die("malformed raw row " NR)
+      if ($si !~ /^[A-Za-z0-9][A-Za-z0-9._-]*$/) die("invalid raw sessionId at row " NR ": " $si)
+      print $si
+    }' "$raw" | LC_ALL=C sort -u >"$work/rawsess.txt" || exit 1
 
   LC_ALL=C sort -u "$work/false.txt" >"$work/false-sorted.txt"
   LC_ALL=C comm -12 "$work/false-sorted.txt" "$work/rawsess.txt" >"$work/list.txt"

@@ -10,7 +10,7 @@
   },
   "kind": "receipt",
   "min_support_required": 5,
-  "output_sha256": "fafb10a77d8d09529627b6501e6e2fff964f0579491fd8ca4ecf722729cb0455",
+  "output_sha256": "b1a42ea833c47fb131d278f33362e941e85e9a402ecedf7365ce4c853bb186e8",
   "records": 340,
   "row_stats": {
     "nonfinite_rows": 0,
@@ -22,14 +22,14 @@
   "support_basis": "compliant-sessions",
   "tolerance": 0.01,
   "tool": {
-    "fingerprint": "1697937e927db84d160e89414865a8aa2d7ef76dd935933d6c6f63fde802c1dd",
+    "fingerprint": "212c6944ae3f9d230f9f51001d2aa1957a81e609611353ff621392a1b3b8dd09",
     "id": "polylane-taste-ratings"
   },
   "verification": {
-    "expected_finite_values": 6336,
+    "expected_finite_values": 6354,
     "max_abs_error": 0.000000,
     "mismatched_values": 0,
     "unverified_values": 0,
-    "verified_values": 6336
+    "verified_values": 6354
   }
 }

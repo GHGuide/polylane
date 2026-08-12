@@ -591,4 +591,52 @@ expect_fail_reason "susCheat" \
 expect_fail_reason "no compliant sessions" \
   "$RATINGS" sessions --demographics "$TMP/demo/none.txt" --raw "$B/raw.txt" --out "$TMP/demo/x.txt"
 
+# --- 27. verification covers finite siblings of NA rows ----------------------
+mkdir -p "$TMP/nasib"
+cp "$B/raw.txt" "$TMP/nasib/raw.txt"
+{ printf '%s\n' "$AGG_HDR"
+  printf 's1\t%s\t%s\t%s\tNA\t%s\t%s\n' $Z $Z $Z $Z $Z
+  printf 's2\t-%s\t-%s\t-%s\t-%s\t-%s\t-%s\n' $Z $Z $Z $Z $Z $Z
+} >"$TMP/nasib/agg.txt"
+assert_ok norm "$TMP/nasib/raw.txt" "$TMP/nasib/agg.txt" "$TMP/out27.json" \
+  --compliant-sessions "$B/sessions.txt" --samples AE
+jq -e '.verification.expected_finite_values == 11
+       and .verification.verified_values == 11
+       and .verification.unverified_values == 0' "$TMP/out27.json" >/dev/null \
+  || { echo "FAIL NA-sibling cells must be verified: $(jq -c .verification "$TMP/out27.json")" >&2; exit 1; }
+ASSERTIONS=$((ASSERTIONS + 1))
+
+# --- 28. training-stimulus aggregate cells are verified via training values --
+mkdir -p "$TMP/traincell"
+cp "$TMP/train-basis/raw.txt" "$TMP/traincell/raw.txt"
+{ cat "$TMP/train-basis/agg.txt"
+  printf 't1\tNA\tNA\tNA\t0\tNA\tNA\n'
+} >"$TMP/traincell/agg.txt"
+assert_ok norm "$TMP/traincell/raw.txt" "$TMP/traincell/agg.txt" "$TMP/out28.json" \
+  --compliant-sessions "$TMP/train-basis/sessions.txt" --samples AE
+jq -e '.verification.expected_finite_values == 13
+       and .verification.verified_values == 13
+       and .verification.mismatched_values == 0' "$TMP/out28.json" >/dev/null \
+  || { echo "FAIL training-stimulus cell must be verified: $(jq -c .verification "$TMP/out28.json")" >&2; exit 1; }
+ASSERTIONS=$((ASSERTIONS + 1))
+expect_eq 2 "$(jq '.records | length' "$TMP/out28.json")" "training stimulus still never a record"
+# a mismatched training-stimulus cell poisons the claim
+{ cat "$TMP/train-basis/agg.txt"
+  printf 't1\tNA\tNA\tNA\t0.5\tNA\tNA\n'
+} >"$TMP/traincell/agg-bad.txt"
+expect_fail_reason "aggregate verification failed" \
+  norm "$TMP/traincell/raw.txt" "$TMP/traincell/agg-bad.txt" "$TMP/out28b.json" \
+  --compliant-sessions "$TMP/train-basis/sessions.txt" --samples AE
+
+# --- 29. sessions subcommand binds raw sessionId by header name --------------
+mkdir -p "$TMP/reord"
+awk -F'\t' 'BEGIN{OFS="\t"} {print $6,$1,$2,$3,$4,$5}' "$B/raw.txt" >"$TMP/reord/raw.txt"
+assert_ok "$RATINGS" sessions --demographics "$TMP/demo/demo.txt" --raw "$TMP/reord/raw.txt" \
+  --out "$TMP/reord/list.txt"
+expect_eq "sess1
+sess2" "$(cat "$TMP/reord/list.txt")" "reordered raw header still binds sessionId"
+awk -F'\t' 'BEGIN{OFS="\t"} NR==1{$6="sessionIdX"} {print}' "$B/raw.txt" >"$TMP/reord/nosess.txt"
+expect_fail_reason "raw header missing column: sessionId" \
+  "$RATINGS" sessions --demographics "$TMP/demo/demo.txt" --raw "$TMP/reord/nosess.txt" --out "$TMP/reord/x.txt"
+
 echo "ok - $ASSERTIONS assertions"

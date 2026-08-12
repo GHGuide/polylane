@@ -9945,10 +9945,10 @@
   "support_basis": "compliant-sessions",
   "tolerance": 0.01,
   "verification": {
-    "expected_finite_values": 3282,
+    "expected_finite_values": 3315,
     "max_abs_error": 0.000000,
     "mismatched_values": 0,
     "unverified_values": 0,
-    "verified_values": 3282
+    "verified_values": 3315
   }
 }
