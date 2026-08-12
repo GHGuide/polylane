@@ -3450,6 +3450,28 @@ lane_terminal_turn() {
   printf '%s' "$last" | grep -qE '"type":"(turn\.completed|turn\.failed|error)"'
 }
 
+# pane_claude_idle_prompt IDX : 0 iff a live Claude Code process is sitting at
+# its empty interactive input after a completed turn. Claude keeps the process
+# alive after `end_turn`, so PID liveness alone cannot distinguish useful work
+# from an agent that silently returned without producing any durable output.
+# During inference the same blank prompt is painted, but the footer contains
+# "esc to interrupt". Requiring Claude's mode footer and rejecting that active
+# affordance avoids shortening legitimate xhigh turns. Approval/onboarding menus
+# do not have a blank standalone prompt line and are handled by their own gates.
+pane_claude_idle_prompt() {
+  local idx="$1" txt tail
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  tail=$(printf '%s\n' "$txt" | tail -n 14)
+  printf '%s' "$tail" | grep -qF 'shift+tab to cycle' || return 1
+  printf '%s' "$tail" | grep -qiF 'esc to interrupt' && return 1
+  printf '%s\n' "$tail" | grep -qE '^[[:space:]]*❯[[:space:] ]*$'
+}
+
+lane_terminal_or_idle() {
+  lane_terminal_turn "$1" || pane_claude_idle_prompt "$2"
+}
+
 # lane_live_wedge_seconds NAME : effort-scaled grace in elapsed seconds. Legacy
 # check-count configuration is converted through the current health interval so
 # it remains extension-compatible; the hard cap keeps recovery finite.
@@ -3510,7 +3532,7 @@ pane_wedged() {
   local name="$1" idx="$2" h prev cnt limit
   if pane_agent_live "$idx"; then
     lane_active_command "$name" && return 1
-    if lane_terminal_turn "$name"; then
+    if lane_terminal_or_idle "$name" "$idx"; then
       h=$(lane_durable_activity_hash "$name")
     else
       h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
@@ -3524,7 +3546,7 @@ pane_wedged() {
   wedge_hash_set "$name" "$h"; wedge_cnt_set "$name" "$cnt"
   limit="${POLYLANE_WEDGE_CHECKS:-4}"
   if pane_agent_live "$idx"; then
-    lane_terminal_turn "$name" || limit=$(lane_live_wedge_checks "$name")
+    lane_terminal_or_idle "$name" "$idx" || limit=$(lane_live_wedge_checks "$name")
   fi
   [ "$cnt" -ge "$limit" ]
 }
@@ -3679,7 +3701,7 @@ health_check() {
     elif pane_retryable_error "$idx"; then why="a transient error after agent exit"
     elif pane_dead "$idx"; then why="a dead pane ($(agent_selected) exited)"
     elif pane_wedged "$name" "$idx"; then
-      if pane_agent_live "$idx" && ! lane_terminal_turn "$name"; then
+      if pane_agent_live "$idx" && ! lane_terminal_or_idle "$name" "$idx"; then
         why="a wedged live turn (quiet for $(lane_live_wedge_seconds "$name")s)"
       else
         why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-4} * ${POLYLANE_HEALTH_INTERVAL:-15} ))s)"

@@ -48,6 +48,29 @@ printf '%s\n' '{"type":"error","message":"provider failed"}' >> "$REPO_ROOT/docs
 assert_ok "latest-error-is-terminal" lane_terminal_turn a
 rm -f "$REPO_ROOT/docs/lane-logs/a.log"
 
+# Claude Code keeps its process alive after an `end_turn`. Its idle screen and
+# its in-flight screen both paint a blank prompt, but only the active turn offers
+# "esc to interrupt". Classify the former as terminal so it gets the normal
+# bounded recovery window; never shorten a legitimate high-effort turn.
+FAKE_PANE_TXT='· Churning… (almost done thinking with xhigh effort)
+─────────────────────────────────────────────────────────────
+❯
+─────────────────────────────────────────────────────────────
+  accept edits on (shift+tab to cycle) · esc to interrupt'
+assert_fail "active-claude-turn-is-not-idle" pane_claude_idle_prompt 0
+FAKE_PANE_TXT='✻ Sautéed for 13s
+─────────────────────────────────────────────────────────────
+❯
+─────────────────────────────────────────────────────────────
+  accept edits on (shift+tab to cycle)'
+assert_ok "claude-end-turn-at-input-is-idle" pane_claude_idle_prompt 0
+
+# A quoted glyph or approval choice is not an empty Claude input surface.
+FAKE_PANE_TXT='Do you want to proceed?
+❯ 1. Yes
+  2. No'
+assert_fail "approval-menu-is-not-idle-input" pane_claude_idle_prompt 0
+
 # Regression: the append-only transcript can retain an old agent_message while
 # a high-effort Codex turn is still live. It is progress, not a turn boundary,
 # so the real classifier must keep the long live-turn grace rather than restart
@@ -176,6 +199,23 @@ wedge_cnt_set a 6
 pane_wedged a 0; rcHighBounded=$?
 assert_eq "quiet-high-effort-live-turn-hard-cap-still-recovers" "0" "$rcHighBounded"
 unset POLYLANE_LIVE_WEDGE_HARD_SECONDS
+
+# Exact live incident: Claude returned `end_turn` to an empty prompt without a
+# DONE marker. Even though its process remains alive and the structured Codex
+# transcript has no turn boundary, the UI classifier must select the short
+# terminal-turn window instead of waiting the xhigh one-hour silence cap.
+LANE_WHASH=(); LANE_WCNT=()
+POLYLANE_HEALTH_INTERVAL=15
+POLYLANE_WEDGE_CHECKS=4
+FAKE_PANE_TXT='✻ Sautéed for 13s
+─────────────────────────────────────────────────────────────
+❯
+─────────────────────────────────────────────────────────────
+  accept edits on (shift+tab to cycle)'
+pane_wedged a 0; :
+wedge_cnt_set a 3
+pane_wedged a 0; rcClaudeIdle=$?
+assert_eq "live-claude-end-turn-recovers-at-60s" "0" "$rcClaudeIdle"
 FAKE_AGENT_LIVE=0
 
 # --- 3. respawn resets the wedge window --------------------------------------
