@@ -80,4 +80,43 @@ both cycle16-skill-admission 'changed fingerprint|never recommended, armed, or a
 both cycle16-action-receipt 'action-preview|receipt hash|altered payload'
 both cycle16-handoff 'Profile-specific final handoffs|bundle-grade'
 
+# --- Codex-native authoritative taste contract ------------------------------
+# The cycle-39 rendered-tournament / taste-memory obligations are added to the
+# shared reference + Claude skill by other lanes (visual-doc-contract,
+# taste-memory, tournament-engine, claude-contract). Codex is a STANDALONE
+# contract, so it must carry them natively NOW and never regress. These assert on
+# codex/SKILL.md only; the integrator promotes each to both() once the frozen
+# Claude skill lands the matching clause (see docs/verify-codex-parity.md).
+# Prose wraps across lines, so match a whitespace-flattened copy.
+CODEX_FLAT="$(tr '\n' ' ' < "$CODEX" | tr -s ' ')"
+codex_only() {
+  local name="$1" pat="$2"
+  printf '%s' "$CODEX_FLAT" | grep -qiE -e "$pat" || { fail "codex-authoritative-$name" "missing from codex/SKILL.md"; return; }
+  pass "codex-authoritative-$name"
+}
+codex_only candidate-count 'at least three divergent candidates|three divergent candidates'
+codex_only locked-base      'from one locked base'
+codex_only hard-gates       'deterministic hard gates'
+codex_only calibrated-blind 'calibrated blind mirrored judging'
+codex_only incumbent        'incumbent best-so-far'
+codex_only machine-label    'SELECTED_NOT_CERTIFIED'
+codex_only human-label      'TASTE-CERTIFIED|human_certified'
+codex_only global-benchmark '>=10 varied-brief|10 varied-brief global'
+codex_only taste-memory     'bounded, evidence-scoped taste memory|bounded .*taste memory'
+
+# Provider-native command rules: Codex must forbid importing Claude launch syntax,
+# model ids, or memory helpers, and must name its own native surface. A red here
+# means the Codex skill drifted toward Claude assumptions.
+codex_only native-syntax    'Codex-native launch syntax'
+codex_only native-no-claude 'do not import Claude|never import Claude'
+codex_only native-model     'Codex-supported model ids|Codex-only model'
+# Leak guard: a Claude slash command as a standalone token, a claude-* model id, or
+# the ~/.claude memory root. Path helpers like scripts/polylane-*.sh are legitimate,
+# so the slash-command form must be whitespace-delimited (not preceded by a path).
+if grep -qiE '(^|[[:space:]])/(polylane|lanes)([[:space:]]|$)|claude-(opus|sonnet|haiku|fable|[0-9])|~/\.claude' "$CODEX"; then
+  fail "codex-no-claude-launch" "codex/SKILL.md leaked a Claude slash command, model id, or memory root"
+else
+  pass "codex-no-claude-launch"
+fi
+
 finish

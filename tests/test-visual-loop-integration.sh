@@ -60,6 +60,41 @@ reference staged-evidence 'desktop.*mobile'
 reference originality 'emoji-as-product-art|generic stock gradients'
 reference certification '70%'
 reference certification-record 'visual certification record|VISUAL-CERTIFICATION'
+# The authoritative gate must stay provider-neutral in delivery but identical in
+# obligation: same admission gate, native syntax per platform.
+reference provider-native 'Codex receives direct native instructions|native.*(instruction|syntax)'
+reference blind-judging 'without seeing each other.?s verdicts|blind decisive comparisons'
+reference incumbent 'current (visual )?champion'
+reference candidate-count 'three directions|three .*candidates'
+
+# The Codex skill is installed and standalone: it must carry the cycle-39
+# rendered-tournament / taste-memory obligations natively (other lanes add the
+# same to the shared reference + Claude skill; the integrator reconciles).
+CODEX_FLAT="$(tr '\n' ' ' < "$CODEX" | tr -s ' ')"
+codex_native() {
+  local name="$1" pat="$2"
+  printf '%s' "$CODEX_FLAT" | grep -qiE -e "$pat" || { fail "visual-codex-native-$name" "missing from installed Codex skill"; return; }
+  pass "visual-codex-native-$name"
+}
+codex_native candidate-count 'at least three divergent candidates'
+codex_native hard-gates      'deterministic hard gates'
+codex_native calibrated-blind 'calibrated blind mirrored judging'
+codex_native incumbent       'incumbent best-so-far'
+codex_native labels          'SELECTED_NOT_CERTIFIED'
+codex_native global-cert     '10 varied-brief global'
+codex_native taste-memory    'bounded, evidence-scoped taste memory'
+
+# Every installed doc link in the Codex skill must resolve from the package root:
+# the `../references/` source form 404s once SKILL.md and references/ are siblings.
+CODEX_PKG="$(dirname "$CODEX")"
+link_fail=0
+for link in $(grep -oE '\]\(([a-zA-Z0-9._/-]+\.md)\)' "$CODEX" | sed 's/](//; s/)//'); do
+  case "$link" in
+    /*|*..*) fail "visual-codex-link-$link" "escapes package root"; link_fail=1 ;;
+    *) test -f "$CODEX_PKG/$link" || { fail "visual-codex-link-$link" "unresolved"; link_fail=1; } ;;
+  esac
+done
+[ "$link_fail" -eq 0 ] && pass "visual-codex-links-resolve"
 
 # The installed reference is the executable consumer boundary: a UI lane must be
 # able to leave one durable record that joins the lock, state captures, independent
