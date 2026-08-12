@@ -20,6 +20,15 @@ assert_fail() {
   ASSERTIONS=$((ASSERTIONS + 1))
 }
 
+expect_eq() {
+  if [ "$1" = "$2" ]; then
+    ASSERTIONS=$((ASSERTIONS + 1))
+  else
+    echo "FAIL ${3:-assertion}: expected [$1] got [$2]" >&2
+    exit 1
+  fi
+}
+
 write_manifest() {
   manifest_path=$1
   cat >"$manifest_path" <<'JSON'
@@ -66,5 +75,48 @@ assert_fail "$CORPUS" validate "$TMPDIR_CORPUS/ambiguous-rights.json"
 
 jq '.records[0].trusted = true' "$MANIFEST" >"$TMPDIR_CORPUS/trust-boolean.json"
 assert_fail "$CORPUS" validate "$TMPDIR_CORPUS/trust-boolean.json"
+
+# --- Strict schema: unknown keys and duplicate keys fail closed ----------
+jq '.injected_flag = "production"' "$MANIFEST" >"$TMPDIR_CORPUS/unknown-key.json"
+assert_fail "$CORPUS" validate "$TMPDIR_CORPUS/unknown-key.json"
+printf '%s\n' '{"format_version":1,"format_version":1,"sources":[],"records":[]}' >"$TMPDIR_CORPUS/dupkey.json"
+assert_fail "$CORPUS" validate "$TMPDIR_CORPUS/dupkey.json"
+
+# --- Receipt-producing mode (Cycle 39) -----------------------------------
+RECEIPT="$TMPDIR_CORPUS/corpus-receipt.json"
+RECEIPT2="$TMPDIR_CORPUS/corpus-receipt2.json"
+CORPUS_FP=$(shasum -a 256 "$CORPUS" | awk '{print $1}')
+MANIFEST_SHA=$(shasum -a 256 "$MANIFEST" | awk '{print $1}')
+rm -f "$RECEIPT"
+assert_ok "$CORPUS" receipt "$MANIFEST" holdout 2 fixed-seed "$RECEIPT"
+expect_eq taste-corpus-receipt/v1 "$(jq -r .schema_version "$RECEIPT")" schema
+expect_eq VALIDATED "$(jq -r .status "$RECEIPT")" status
+expect_eq fixture "$(jq -r .classification "$RECEIPT")" classification
+expect_eq "$MANIFEST_SHA" "$(jq -r .input_sha256 "$RECEIPT")" input-hash
+expect_eq "$MANIFEST_SHA" "$(jq -r .inputs.corpus_manifest_sha256 "$RECEIPT")" manifest-hash-named
+expect_eq polylane-taste-corpus "$(jq -r '.validator.id' "$RECEIPT")" validator-id
+expect_eq "$CORPUS_FP" "$(jq -r '.validator.fingerprint' "$RECEIPT")" validator-fingerprint
+expect_eq holdout "$(jq -r '.sample.split' "$RECEIPT")" sample-split
+expect_eq 2 "$(jq -r '.sample.count' "$RECEIPT")" sample-count
+expect_eq 2 "$(jq -r '.sample.ids | length' "$RECEIPT")" sample-ids
+expect_eq 2 "$(jq -r '.sample.asset_sha256 | length' "$RECEIPT")" sample-hashes
+expect_eq fixed-seed "$(jq -r '.sample.seed' "$RECEIPT")" sample-seed
+expect_eq true "$(jq -r '.separation.balanced' "$RECEIPT")" separation-balanced
+expect_eq 6 "$(jq -r '.human_labels.records' "$RECEIPT")" human-labels
+expect_eq 2 "$(jq -r '.provenance.sources | length' "$RECEIPT")" provenance-sources
+expect_eq 0 "$(jq -r '.reason_codes | length' "$RECEIPT")" reason-codes
+expect_eq "" "$(jq --stream -r 'select(length==2)|.[0]|map(tostring)|join(".")' "$RECEIPT" | LC_ALL=C sort | uniq -d)" no-dup-keys
+
+# Determinism: same split/count/seed → identical deterministic sample binding.
+"$CORPUS" receipt "$MANIFEST" holdout 2 fixed-seed "$RECEIPT2"
+expect_eq "$(jq -cS .sample.ids "$RECEIPT")" "$(jq -cS .sample.ids "$RECEIPT2")" deterministic-ids
+expect_eq "$(jq -r .sample.sample_sha256 "$RECEIPT")" "$(jq -r .sample.sample_sha256 "$RECEIPT2")" deterministic-sample-hash
+
+# Fail-closed: invalid corpus yields no receipt (no partial output).
+rm -f "$RECEIPT"
+assert_fail "$CORPUS" receipt "$TMPDIR_CORPUS/unbalanced.json" holdout 2 fixed-seed "$RECEIPT"
+[ ! -e "$RECEIPT" ] || { echo "FAIL: partial receipt written on invalid corpus" >&2; exit 1; }
+ASSERTIONS=$((ASSERTIONS + 1))
+assert_fail "$CORPUS" receipt "$TMPDIR_CORPUS/unknown-key.json" holdout 2 fixed-seed "$RECEIPT"
 
 echo "PASS test-taste-corpus assertions=$ASSERTIONS"

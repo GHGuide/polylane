@@ -106,7 +106,8 @@ validate_exposures() {
 }
 
 validate() {
-  local group="$1" pointwise_dir="$2" calibration="$3" out="$4" id hash file candidates brief tmp
+  local group="$1" pointwise_dir="$2" calibration="$3" out="$4" id hash file candidates brief tmp \
+        validator_fp capture_sha first_pw
   regular_json_without_duplicate_keys "$group" || die "invalid group JSON"
   regular_json_without_duplicate_keys "$calibration" || die "invalid calibration JSON"
   [ -d "$pointwise_dir" ] && [ ! -L "$pointwise_dir" ] || die "invalid pointwise directory"
@@ -118,10 +119,45 @@ validate() {
     validate_pointwise "$file" "$id" "$hash" "$brief" "$candidates" || die "invalid pointwise ballot: $id"
   done < <(jq -r '.pointwise_ballot_ids[] as $id | [$id,.pointwise_sha256[$id]] | @tsv' "$group")
   validate_exposures "$group" "$pointwise_dir" "$calibration" || die "invalid mirrored exposures or calibration"
+  # The receipt content-addresses every input: raw group, escrow, capture
+  # manifest, each pointwise record, and the calibration file.  classification
+  # is validator-derived "fixture": judge eligibility here is a self-declared
+  # taste-ballot-calibration/v1 list, not a production-calibrated receipt chain,
+  # so this validation can never mint a production ballot.
+  validator_fp=$(sha256_file "${BASH_SOURCE[0]}") || die "no SHA-256 command available"
+  first_pw=$(jq -r '.pointwise_ballot_ids[0]' "$group")
+  capture_sha=$(jq -r '.capture_manifest_sha256' "$pointwise_dir/$first_pw.json")
   mkdir -p "$(dirname "$out")"
   tmp=$(mktemp "${out}.tmp.XXXXXX") || return 1
-  jq -n --arg group_sha256 "$(sha256_file "$group")" --arg group_id "$(jq -r .mirror_group_id "$group")" --arg brief_sha256 "$(jq -r .brief_sha256 "$group")" --arg winner "$(jq -r '.exposures[0].canonical_choice' "$group")" \
-    '{schema_version:"taste-ballot-validation/v1",status:"eligible",fixture_only:true,human_certified:false,mirror_group_id:$group_id,brief_sha256:$brief_sha256,winner:$winner,group_sha256:$group_sha256}' > "$tmp" && mv "$tmp" "$out"
+  jq -n \
+    --arg group_sha256 "$(sha256_file "$group")" \
+    --arg calibration_sha256 "$(sha256_file "$calibration")" \
+    --arg capture_manifest_sha256 "$capture_sha" \
+    --arg validator_fp "$validator_fp" \
+    --slurpfile group "$group" '
+    ($group[0]) as $g | {
+      schema_version:"taste-ballot-validation/v1",
+      receipt_version:"polylane.taste.ballot-receipt.v1",
+      status:"eligible",
+      classification:"fixture",
+      fixture_only:true,
+      human_certified:false,
+      mirror_group_id:$g.mirror_group_id,
+      brief_sha256:$g.brief_sha256,
+      winner:($g.exposures[0].canonical_choice),
+      group_sha256:$group_sha256,
+      input_sha256:$group_sha256,
+      inputs:{
+        group_sha256:$group_sha256,
+        calibration_sha256:$calibration_sha256,
+        candidate_ids_escrow_sha256:$g.candidate_ids_escrow_sha256,
+        capture_manifest_sha256:$capture_manifest_sha256,
+        pointwise_sha256:$g.pointwise_sha256
+      },
+      judges:[$g.exposures[].judge_id],
+      validator:{id:"polylane-taste-ballot",fingerprint:$validator_fp},
+      reason_codes:[]
+    }' > "$tmp" && mv "$tmp" "$out"
 }
 
 main() {

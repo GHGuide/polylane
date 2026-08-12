@@ -158,17 +158,46 @@ sameness_triggered() {
   ' "$1" >/dev/null 2>&1
 }
 
+# The receipt binds the full input manifest and every inspected artifact
+# (captures and receipt payloads) so a shape-compatible forgery cannot slot
+# into the certificate chain.  classification is validator-derived "fixture":
+# a real production threat scan needs production-classified inputs this hermetic
+# cycle does not authorize.  It is written atomically on both clean and blocked
+# outcomes so a failure fails closed downstream with its input recorded.
 write_receipt() {
-  local manifest="$1" output="$2" status="$3" genericness="$4" quality="$5" context="$6" provenance="$7" review="$8" reasons="$9"
+  local manifest="$1" output="$2" status="$3" genericness="$4" quality="$5" context="$6" provenance="$7" review="$8" reasons="$9" \
+        manifest_sha validator_fp now tmp
+  manifest_sha=$(sha256_file "$manifest") || return 1
+  validator_fp=$(sha256_file "${BASH_SOURCE[0]}") || return 1
+  now=${TASTE_NOW:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
   mkdir -p "$(dirname "$output")"
+  tmp=$(mktemp "${output}.tmp.XXXXXX") || return 1
   jq -n --arg schema_version "taste-threat-receipt/v1" --arg status "$status" \
     --arg genericness "$genericness" --arg quality "$quality" --arg context "$context" \
     --arg provenance "$provenance" --arg review "$review" --argjson reasons "$reasons" \
-    '{schema_version:$schema_version, status:$status,
+    --arg manifest_sha "$manifest_sha" --arg validator_fp "$validator_fp" --arg now "$now" \
+    --slurpfile manifest "$manifest" '
+    ($manifest[0]) as $m | {
+      schema_version:$schema_version,
+      receipt_version:"polylane.taste.threat-receipt.v1",
+      status:$status,
+      classification:"fixture",
+      validator:{id:"polylane-taste-threat", fingerprint:$validator_fp},
+      executed_at:$now,
+      input_sha256:$manifest_sha,
+      inputs:{
+        threat_manifest_sha256:$manifest_sha,
+        capture_sha256:[$m.captures[].sha256],
+        receipt_payload_sha256:[$m.receipts[].payload_sha256]
+      },
+      subject:{source_root:$m.source_root},
       axis_results:{genericness_review:$genericness, quality_risk:$quality,
         context_fit:$context, provenance_integrity:$provenance},
       review:{status:$review, scope:(if $review == "CROSS_BRIEF_REVIEW" then "blinded-human-review" else null end),
-        attribution_claim:false}, reason_codes:$reasons}' > "$output"
+        attribution_claim:false},
+      reason_codes:$reasons
+    }' > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$output"
 }
 
 check() {
