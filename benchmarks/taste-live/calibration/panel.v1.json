@@ -1,0 +1,225 @@
+{
+  "schema_version": "polylane.taste.panel/v1",
+  "panel_id": "taste-machine-panel-v1",
+  "run_id": "c41-source-calibration-20260812-a1",
+  "created_utc": "2026-08-12T21:16:59Z",
+  "claim": {
+    "ceiling": "HUMAN_CALIBRATED_MACHINE",
+    "ceiling_semantics": "The strongest claim any slot in this panel can ever support is that a machine judge, under this exact frozen configuration, reproduced human-authored held-out labels well enough to clear the preregistered floors. No slot output is a human ballot, a human rating, or human certification, and no combination of slots upgrades the claim.",
+    "forbidden_claims": [
+      "human_certified",
+      "human ballot",
+      "human replication",
+      "independent human panel"
+    ],
+    "eligibility_authority": "Eligibility, availability, and observed versions are runtime facts. Only taste-calibration/v2 receipts produced by the calibration campaign and independently recomputed by the calibration audit can make a slot eligible. This static file cannot make, imply, or pre-approve any eligibility decision for any slot."
+  },
+  "runtime_observed_fields": [
+    "cli_version",
+    "model_version",
+    "cli_binary_path",
+    "invocation_adapter_sha256",
+    "session_id",
+    "response_hashes",
+    "abstentions"
+  ],
+  "calibration_reference": {
+    "pairs_required": 24,
+    "correct_min": 17,
+    "wilson_lower_min": 0.50,
+    "side_probe_p_min": 0.05,
+    "mirror_contradiction_max": 1,
+    "authority": "Frozen in the cycle-41 research lock before any model output; recomputed only by the calibration-audit lane. Restated here for reference; this file decides nothing."
+  },
+  "abstention_policy": {
+    "recorded_classes": [
+      "cli_unavailable",
+      "auth_unavailable",
+      "timeout",
+      "schema_invalid_response",
+      "provider_refusal",
+      "challenge_or_captcha",
+      "ambiguous"
+    ],
+    "rules": [
+      "An abstention is recorded with its class and the hash of the raw evidence; it is never converted into a vote and never counts as a correct unit.",
+      "A paired primary/mirror abstention removes the pair from the correct count; it does not shrink the 24-pair requirement for eligibility.",
+      "A slot whose CLI, auth, or model is unavailable at runtime abstains for the whole campaign; the correct verdict for an insufficient panel is EXTERNAL-EVIDENCE-OPEN, never a fixture substitute.",
+      "Silent retry past the bounded retry class is forbidden; a retry-exhausted unit is an abstention with class recorded."
+    ]
+  },
+  "correlation": {
+    "families": {
+      "anthropic-claude": {
+        "slots": [
+          "slot-claude-fable-5",
+          "slot-claude-opus-5",
+          "slot-claude-sonnet-5"
+        ],
+        "limitation": "All three slots share one vendor, one training lineage, one CLI, and one frozen system prompt. Their agreement is strongly correlated and must never be reported as three independent opinions or as replication."
+      },
+      "openai-gpt": {
+        "slots": [
+          "slot-codex-gpt-5-codex-high",
+          "slot-codex-gpt-5-high",
+          "slot-codex-gpt-5-medium"
+        ],
+        "limitation": "All three slots share one vendor, one CLI, and one frozen system prompt; slot-codex-gpt-5-high and slot-codex-gpt-5-medium differ only in reasoning effort over the same base model and are near-duplicates. Their agreement must never be reported as independent replication."
+      }
+    },
+    "distinct_family_count": 2,
+    "limitations": [
+      "Five or more eligible slots does not mean five independent opinions: the panel spans exactly two provider families, so at most two family-level viewpoints exist.",
+      "Cross-family agreement is the only signal in this panel that carries any independence weight, and even that is weakened by shared web-scale training data, shared benchmark exposure, and shared aesthetic conventions between vendors.",
+      "Same-family slots may fail in the same direction at the same time (shared refusal behaviour, shared visual blind spots, shared prompt-injection susceptibility); family-level error correlation is not measured by eligibility and stays unknown.",
+      "This panel measures agreement with a fixed human-labeled corpus from one 2016-2018 screenshot methodology; calibration transfer to other visual domains is unverified.",
+      "Eligibility thresholds are per-slot; no threshold in this protocol tests or certifies between-slot independence."
+    ]
+  },
+  "slots": [
+    {
+      "slot_id": "slot-claude-fable-5",
+      "judge_id": "judge-panel-claude-fable-5",
+      "session_namespace": "taste-panel-v1/claude-fable-5",
+      "session_rule": "Runtime mints a fresh unique session id under this namespace for every work unit; session reuse across work units invalidates the receipt.",
+      "provider": "anthropic",
+      "family": "anthropic-claude",
+      "adapter": "polylane-taste-judge-claude",
+      "adapter_path": "bin/polylane-taste-judge-claude.sh",
+      "cli": "claude",
+      "model": "claude-fable-5",
+      "config": {
+        "argv_template": "claude/print/json/plan/safe/v2",
+        "timeout_seconds": 180
+      },
+      "system_prompt_path": "benchmarks/taste-live/prompts/judge-claude-system.md",
+      "system_prompt_sha256": "cc73f6c03c905286ee7c8462a7b4d9f9e66773ba083f517e7c08f0011bf8c19c",
+      "response_schema_path": "docs/polylane/taste-certification/live-harness/judge-response-schema.json",
+      "response_schema_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+      "response_schema_version": "taste-judge-response/v1",
+      "sampling_canonical": "cli=claude;argv_template=claude/print/json/plan/safe/v2;temperature=provider-default;output=json;timeout=180",
+      "sampling_sha256": "9325f31dbbe9fc7ceaa2ed97f5e7e112552600c57e127f8dd9a6febdd2f3289d"
+    },
+    {
+      "slot_id": "slot-claude-opus-5",
+      "judge_id": "judge-panel-claude-opus-5",
+      "session_namespace": "taste-panel-v1/claude-opus-5",
+      "session_rule": "Runtime mints a fresh unique session id under this namespace for every work unit; session reuse across work units invalidates the receipt.",
+      "provider": "anthropic",
+      "family": "anthropic-claude",
+      "adapter": "polylane-taste-judge-claude",
+      "adapter_path": "bin/polylane-taste-judge-claude.sh",
+      "cli": "claude",
+      "model": "claude-opus-5",
+      "config": {
+        "argv_template": "claude/print/json/plan/safe/v2",
+        "timeout_seconds": 180
+      },
+      "system_prompt_path": "benchmarks/taste-live/prompts/judge-claude-system.md",
+      "system_prompt_sha256": "cc73f6c03c905286ee7c8462a7b4d9f9e66773ba083f517e7c08f0011bf8c19c",
+      "response_schema_path": "docs/polylane/taste-certification/live-harness/judge-response-schema.json",
+      "response_schema_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+      "response_schema_version": "taste-judge-response/v1",
+      "sampling_canonical": "cli=claude;argv_template=claude/print/json/plan/safe/v2;temperature=provider-default;output=json;timeout=180",
+      "sampling_sha256": "9325f31dbbe9fc7ceaa2ed97f5e7e112552600c57e127f8dd9a6febdd2f3289d"
+    },
+    {
+      "slot_id": "slot-claude-sonnet-5",
+      "judge_id": "judge-panel-claude-sonnet-5",
+      "session_namespace": "taste-panel-v1/claude-sonnet-5",
+      "session_rule": "Runtime mints a fresh unique session id under this namespace for every work unit; session reuse across work units invalidates the receipt.",
+      "provider": "anthropic",
+      "family": "anthropic-claude",
+      "adapter": "polylane-taste-judge-claude",
+      "adapter_path": "bin/polylane-taste-judge-claude.sh",
+      "cli": "claude",
+      "model": "claude-sonnet-5",
+      "config": {
+        "argv_template": "claude/print/json/plan/safe/v2",
+        "timeout_seconds": 180
+      },
+      "system_prompt_path": "benchmarks/taste-live/prompts/judge-claude-system.md",
+      "system_prompt_sha256": "cc73f6c03c905286ee7c8462a7b4d9f9e66773ba083f517e7c08f0011bf8c19c",
+      "response_schema_path": "docs/polylane/taste-certification/live-harness/judge-response-schema.json",
+      "response_schema_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+      "response_schema_version": "taste-judge-response/v1",
+      "sampling_canonical": "cli=claude;argv_template=claude/print/json/plan/safe/v2;temperature=provider-default;output=json;timeout=180",
+      "sampling_sha256": "9325f31dbbe9fc7ceaa2ed97f5e7e112552600c57e127f8dd9a6febdd2f3289d"
+    },
+    {
+      "slot_id": "slot-codex-gpt-5-codex-high",
+      "judge_id": "judge-panel-codex-gpt-5-codex-high",
+      "session_namespace": "taste-panel-v1/codex-gpt-5-codex-high",
+      "session_rule": "Runtime mints a fresh unique session id under this namespace for every work unit; session reuse across work units invalidates the receipt.",
+      "provider": "openai",
+      "family": "openai-gpt",
+      "adapter": "polylane-taste-judge-codex",
+      "adapter_path": "bin/polylane-taste-judge-codex.sh",
+      "cli": "codex",
+      "model": "gpt-5-codex",
+      "config": {
+        "subcommand": "exec",
+        "sandbox": "read-only",
+        "reasoning_effort": "high",
+        "timeout_seconds": 120
+      },
+      "system_prompt_path": "benchmarks/taste-live/prompts/judge-codex-system.md",
+      "system_prompt_sha256": "f4495f70549c1bc4af510b6761f9f6da5fce358a5d81ac122fca834f85c4c853",
+      "response_schema_path": "docs/polylane/taste-certification/live-harness/judge-response-schema.json",
+      "response_schema_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+      "response_schema_version": "taste-judge-response/v1",
+      "sampling_canonical": "cli=codex;subcommand=exec;sandbox=read-only;ephemeral=1;ignore-user-config=1;ignore-rules=1;reasoning_effort=high;timeout=120",
+      "sampling_sha256": "62336a013b568a5f462a0551b93f189cf4b7adbc3314adf8d098da86bf200665"
+    },
+    {
+      "slot_id": "slot-codex-gpt-5-high",
+      "judge_id": "judge-panel-codex-gpt-5-high",
+      "session_namespace": "taste-panel-v1/codex-gpt-5-high",
+      "session_rule": "Runtime mints a fresh unique session id under this namespace for every work unit; session reuse across work units invalidates the receipt.",
+      "provider": "openai",
+      "family": "openai-gpt",
+      "adapter": "polylane-taste-judge-codex",
+      "adapter_path": "bin/polylane-taste-judge-codex.sh",
+      "cli": "codex",
+      "model": "gpt-5",
+      "config": {
+        "subcommand": "exec",
+        "sandbox": "read-only",
+        "reasoning_effort": "high",
+        "timeout_seconds": 120
+      },
+      "system_prompt_path": "benchmarks/taste-live/prompts/judge-codex-system.md",
+      "system_prompt_sha256": "f4495f70549c1bc4af510b6761f9f6da5fce358a5d81ac122fca834f85c4c853",
+      "response_schema_path": "docs/polylane/taste-certification/live-harness/judge-response-schema.json",
+      "response_schema_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+      "response_schema_version": "taste-judge-response/v1",
+      "sampling_canonical": "cli=codex;subcommand=exec;sandbox=read-only;ephemeral=1;ignore-user-config=1;ignore-rules=1;reasoning_effort=high;timeout=120",
+      "sampling_sha256": "62336a013b568a5f462a0551b93f189cf4b7adbc3314adf8d098da86bf200665"
+    },
+    {
+      "slot_id": "slot-codex-gpt-5-medium",
+      "judge_id": "judge-panel-codex-gpt-5-medium",
+      "session_namespace": "taste-panel-v1/codex-gpt-5-medium",
+      "session_rule": "Runtime mints a fresh unique session id under this namespace for every work unit; session reuse across work units invalidates the receipt.",
+      "provider": "openai",
+      "family": "openai-gpt",
+      "adapter": "polylane-taste-judge-codex",
+      "adapter_path": "bin/polylane-taste-judge-codex.sh",
+      "cli": "codex",
+      "model": "gpt-5",
+      "config": {
+        "subcommand": "exec",
+        "sandbox": "read-only",
+        "reasoning_effort": "medium",
+        "timeout_seconds": 120
+      },
+      "system_prompt_path": "benchmarks/taste-live/prompts/judge-codex-system.md",
+      "system_prompt_sha256": "f4495f70549c1bc4af510b6761f9f6da5fce358a5d81ac122fca834f85c4c853",
+      "response_schema_path": "docs/polylane/taste-certification/live-harness/judge-response-schema.json",
+      "response_schema_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+      "response_schema_version": "taste-judge-response/v1",
+      "sampling_canonical": "cli=codex;subcommand=exec;sandbox=read-only;ephemeral=1;ignore-user-config=1;ignore-rules=1;reasoning_effort=medium;timeout=120",
+      "sampling_sha256": "fb067abbd70065d3b708a80afe38eb4f5737fb678687665a4bc8c4c311df358b"
+    }
+  ]
+}
