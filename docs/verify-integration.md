@@ -243,3 +243,5 @@ all recorded as non-fixture evidence. The sole open item is the WAF-blocked prim
 Dataverse corpus, which by contract blocks production calibration/ballot/study and
 yields external-evidence-open — never a fixture pass. The engineering harness is
 proven; the real study certificate remains external.
+
+POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c40-live-harness-20260812-a3
