@@ -1557,9 +1557,9 @@
           "id": "m32.4a",
           "text": "Implement and live-smoke the pinned corpus, provider judges, browser/task/accessibility adapters, production ballot-v2, prompt freeze, and twenty-brief study harness",
           "weight": 138,
-          "status": "doing",
+          "status": "done",
           "cycle": 40,
-          "evidence": "cycle 40 live harness frozen before implementation"
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 40"
         }
       ]
     }

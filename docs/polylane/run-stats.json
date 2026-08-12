@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c40-live-harness-20260812-a3",
   "started_at": 1786553276,
-  "updated_at": 1786566904,
-  "wall_s": 13628,
+  "updated_at": 1786567190,
+  "wall_s": 13914,
   "lanes": {
     "source-live": {
       "launches": 1,
@@ -92,7 +92,7 @@
     "protocol-live": 0,
     "taste-live-integrator": 1319824
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -460,6 +460,35 @@
       "type": "usage_capture",
       "lane": "taste-live-integrator",
       "at": 1786566904,
+      "added": null
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786567190
+    },
+    {
+      "type": "usage_capture",
+      "lane": "judge-runner",
+      "at": 1786567190,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "browser-live",
+      "at": 1786567190,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "study-live",
+      "at": 1786567190,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "taste-live-integrator",
+      "at": 1786567190,
       "added": null
     }
   ]

@@ -2,9 +2,9 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 39
+## Cycle 40
 
-subgoals: 89/92 done · criteria: 82/90 done · 93%
+subgoals: 90/93 done · criteria: 82/90 done · 93%
 
 **Route:** `CONTINUE m32.4  Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm`
 
@@ -116,8 +116,8 @@ subgoals: 89/92 done · criteria: 82/90 done · 93%
 
 ## Acceptance checks
 
-- Total: 104
-- Pass: 102
+- Total: 106
+- Pass: 104
 - Fail: 0
 - Unchecked: 2
   - `m32.4` [unchecked] — bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == "TASTE-CERTIFIED" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test("^[0-9a-f]{40}([0-9a-f]{24})?$")) and (.validator_chain_sha256 | test("^[0-9a-f]{64}$"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null
