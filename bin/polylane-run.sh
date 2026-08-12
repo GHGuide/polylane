@@ -323,6 +323,262 @@ visual_quality_gate() {
   return 1
 }
 
+# ---------------------------------------------------------------------------
+# Current-UI visual-contract wiring (Cycle 39).
+#
+# A "current UI" run is one whose manifest EXPLICITLY declares the current
+# visual-contract version. Only such runs reach the authoritative tournament /
+# certificate gate, the grounded bounded-repair loop, and post-promotion taste
+# learning. Legacy `visual_quality` manifests (no contract_version) and non-UI
+# manifests are never classified from file dates and keep their existing
+# behaviour via visual_quality_requested()/visual_quality_gate().
+#
+# The authoritative helper (quality-adapter) and the taste-memory helper own all
+# schema/tournament/certificate validation; the runner never re-derives it. Both
+# calls resolve through overridable command variables so a sourced test can
+# inject hermetic doubles, and the runner reads only the helper's own top-level
+# record fields.
+# ---------------------------------------------------------------------------
+
+# The version the runner implements. Overridable only so fixtures can pin it; a
+# manifest is "current" iff it declares exactly this value.
+visual_contract_current_version() { printf '%s' "${POLYLANE_VISUAL_CONTRACT_VERSION:-2}"; }
+
+visual_contract_current_requested() {
+  [ -n "${MANIFEST:-}" ] && [ -f "${MANIFEST:-}" ] || return 1
+  local want; want=$(visual_contract_current_version)
+  jq -e --arg want "$want" \
+    '(.visual_quality? | objects | .contract_version? // "" | tostring) == $want' \
+    "$MANIFEST" >/dev/null 2>&1
+}
+
+visual_taste_authority_cmd() {
+  printf '%s' "${POLYLANE_VISUAL_AUTHORITY_CMD:-$SCRIPT_DIR/polylane-visual-quality.sh}"
+}
+visual_taste_memory_cmd() {
+  printf '%s' "${POLYLANE_TASTE_MEMORY_CMD:-$SCRIPT_DIR/polylane-taste-memory.sh}"
+}
+
+# Read the compiled prompt's UI-CONTRACT version token (prompt-contract's frozen
+# reply, relay seq5): prefer its own `polylane-promptopt.sh ui-version` reader,
+# else parse the exact-once `UI-CONTRACT:` scalar's `ui_contract=` token. Empty
+# for a non-UI / absent prompt.
+visual_taste_prompt_ui_version() {
+  local prompt="$1" cmd tok
+  cmd="${POLYLANE_PROMPT_UI_VERSION_CMD:-$SCRIPT_DIR/polylane-promptopt.sh}"
+  if [ -x "$cmd" ]; then
+    tok=$("$cmd" ui-version "$prompt" 2>/dev/null) || tok=""
+    printf '%s' "$tok"
+    return 0
+  fi
+  tok=$(grep -E '^UI-CONTRACT:' "$prompt" 2>/dev/null \
+    | sed -n 's/.*ui_contract=\([A-Za-z0-9._-]*\).*/\1/p' | head -1)
+  printf '%s' "$tok"
+}
+
+# A manifest-declared path is admissible only as a safe repository-relative file.
+visual_taste_path_safe() {
+  case "$1" in ''|/*|*'..'*) return 1 ;; *) return 0 ;; esac
+}
+
+visual_taste_state_dir()    { printf '%s/.polylane/visual-taste' "${REPO_ROOT:?}"; }
+visual_taste_attempt_file() { printf '%s/%s.attempt' "$(visual_taste_state_dir)" "${RUN_ID:-legacy}"; }
+visual_taste_attempt_get() {
+  local f n; f=$(visual_taste_attempt_file); n=$(cat "$f" 2>/dev/null || echo 0)
+  case "$n" in ''|*[!0-9]*) n=0 ;; esac
+  printf '%s' "$n"
+}
+visual_taste_attempt_set() {
+  local n="$1" f; f=$(visual_taste_attempt_file)
+  mkdir -p "$(dirname "$f")" || return 1
+  printf '%s' "$n" > "$f"
+}
+visual_taste_repair_cap() {
+  local cap
+  cap=$(jq -r '(.visual_quality.repair_cap // 2)' "$MANIFEST" 2>/dev/null || echo 2)
+  case "$cap" in ''|*[!0-9]*) cap=2 ;; esac
+  [ "$cap" -le 2 ] 2>/dev/null || cap=2
+  printf '%s' "$cap"
+}
+
+# visual_taste_preflight : validate current-UI runs BEFORE any worktree/tmux
+# side effect. A current-UI manifest missing authoritative record/tournament/
+# memory/adapter/repair configuration, declaring an unsafe path, lacking an
+# executable helper, or carrying a prompt that disagrees with the manifest
+# contract version fails closed. Legacy and non-UI runs are a no-op.
+visual_taste_preflight() {
+  visual_contract_current_requested || return 0
+  if ! jq -e '
+      .visual_quality as $v
+      | (($v.authority | type) == "object")
+      and (($v.authority.record | type) == "string")
+      and (($v.authority.tournament | type) == "string")
+      and (($v.authority.memory | type) == "string")
+      and (($v.adapters | type) == "array") and (($v.adapters | length) > 0)
+      and (($v.repair_cap | type) == "number")
+      and ($v.repair_cap >= 0) and ($v.repair_cap <= 2)
+    ' "$MANIFEST" >/dev/null 2>&1; then
+    echo "polylane-run: current-UI manifest missing authoritative record/tournament/memory/adapter/repair configuration" >&2
+    return 1
+  fi
+  local p
+  for p in \
+    "$(jq -r '.visual_quality.authority.record' "$MANIFEST")" \
+    "$(jq -r '.visual_quality.authority.tournament' "$MANIFEST")" \
+    "$(jq -r '.visual_quality.authority.memory' "$MANIFEST")" \
+    "$(jq -r '.visual_quality.evidence // "docs/polylane/design/visual-evidence.json"' "$MANIFEST")" \
+    "$(jq -r '.visual_quality.contract // "docs/polylane/design/visual-contract.json"' "$MANIFEST")" \
+    "$(jq -r '.visual_quality.verdict // "docs/polylane/design/visual-verdict.json"' "$MANIFEST")"; do
+    if ! visual_taste_path_safe "$p"; then
+      echo "polylane-run: unsafe current-UI visual path: $p" >&2
+      return 1
+    fi
+  done
+  local authcmd memcmd
+  authcmd=$(visual_taste_authority_cmd); memcmd=$(visual_taste_memory_cmd)
+  [ -x "$authcmd" ] || { echo "polylane-run: authoritative visual helper not executable: $authcmd" >&2; return 1; }
+  [ -x "$memcmd" ]  || { echo "polylane-run: taste memory helper not executable: $memcmd" >&2; return 1; }
+  # Builders cannot self-certify a different contract than the host enforces:
+  # the compiled integrator prompt's UI-CONTRACT scalar must equal the manifest's
+  # declared visual-contract version (prompt-contract owns emission; relay seq5).
+  local declared prompt_ver
+  declared=$(jq -r '.visual_quality.contract_version // ""' "$MANIFEST")
+  if [ -n "${INT_PROMPT:-}" ] && [ -f "${INT_PROMPT:-}" ]; then
+    prompt_ver=$(visual_taste_prompt_ui_version "$INT_PROMPT")
+    if [ -z "$prompt_ver" ] || [ "$prompt_ver" != "$declared" ]; then
+      echo "polylane-run: integrator prompt ui_contract '$prompt_ver' does not match manifest visual-contract '$declared'" >&2
+      return 1
+    fi
+  else
+    echo "polylane-run: current-UI run has no compiled integrator prompt to check contract agreement" >&2
+    return 1
+  fi
+}
+
+# visual_taste_repair_dispatch ATTEMPT RECORD : write ONLY the grounded failed
+# criterion/region/state, prior immutable evidence hash, incumbent id, and
+# attempt number the authoritative record named, then route them through the
+# existing typed integrator visual-repair path. No full evidence, screenshot, or
+# prose reaches the builder.
+visual_taste_repair_dispatch() {
+  local attempt="$1" rec="$2" crit region state prior incumbent dir verdict
+  crit=$(jq -r '.repair.criterion // ""' "$rec" 2>/dev/null || echo "")
+  region=$(jq -r '.repair.region // ""' "$rec" 2>/dev/null || echo "")
+  state=$(jq -r '.repair.state // ""' "$rec" 2>/dev/null || echo "")
+  prior=$(jq -r '.repair.prior_evidence_sha256 // ""' "$rec" 2>/dev/null || echo "")
+  incumbent=$(jq -r '.repair.incumbent_id // ""' "$rec" 2>/dev/null || echo "")
+  if [ -z "$crit" ] || [ -z "$region" ] || [ -z "$state" ] || [ -z "$prior" ] || [ -z "$incumbent" ]; then
+    echo "polylane-run: repair record lacks grounded criterion/region/state/evidence/incumbent; refusing ungrounded repair." >&2
+    return 1
+  fi
+  dir="$INT_WORKTREE/docs/polylane/design"
+  mkdir -p "$dir" || return 1
+  verdict="$dir/visual-verdict.json"
+  jq -n --arg criterion "$crit" --arg region "$region" --arg state "$state" \
+        --arg prior "$prior" --arg incumbent "$incumbent" --argjson attempt "$attempt" \
+    '{criterion:$criterion,region:$region,state:$state,prior_evidence_sha256:$prior,incumbent_id:$incumbent,attempt:$attempt}' \
+    > "$verdict" || return 1
+  repair_integrator_verdict "$attempt" visual
+}
+
+# visual_taste_authoritative_gate : run the authoritative visual-quality mode
+# against the integrator worktree AFTER an engineering GO/READY and BEFORE
+# promotion. The integrator's prose verdict never substitutes for this host gate.
+# PASS (exit 0, status=pass) returns 0 and records the promoted receipt hash for
+# taste learning. An actionable repair (exit 10, status=repair) drives at most
+# `repair_cap` (<=2) grounded repairs through the existing integrator-repair
+# route, requiring the record AND artifact hashes to change before re-evaluation
+# and preserving the attempt count durably across supervisor resumes. Any other
+# outcome — block, missing/invalid record, unchanged repair, exhausted budget —
+# blocks promotion.
+visual_taste_authoritative_gate() {
+  visual_contract_current_requested || return 0
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would run authoritative visual gate against the integrator worktree"
+    VISUAL_TASTE_ATTEMPT=0
+    return 0
+  fi
+  local authcmd cap attempt statedir rec rc st rsha asha receipt
+  local prev_rsha="" prev_asha=""
+  authcmd=$(visual_taste_authority_cmd)
+  [ -x "$authcmd" ] || { echo "polylane-run: authoritative visual helper not executable: $authcmd" >&2; return 1; }
+  cap=$(visual_taste_repair_cap)
+  statedir=$(visual_taste_state_dir); mkdir -p "$statedir" || return 1
+  attempt=$(visual_taste_attempt_get)
+  VISUAL_TASTE_ATTEMPT="$attempt"
+  VISUAL_TASTE_RECORD=""; VISUAL_TASTE_RECEIPT_SHA=""
+  while :; do
+    rec="$statedir/${RUN_ID:-legacy}-record-$attempt.json"
+    rm -f "$rec"
+    rc=0
+    "$authcmd" authoritative --manifest "$MANIFEST" --worktree "$INT_WORKTREE" \
+      --record "$rec" --attempt "$attempt" || rc=$?
+    if [ ! -s "$rec" ]; then
+      echo "polylane-run: authoritative visual helper produced no record" >&2
+      return 1
+    fi
+    st=$(jq -r '.status // ""' "$rec" 2>/dev/null || echo "")
+    rsha=$(jq -r '.record_sha256 // ""' "$rec" 2>/dev/null || echo "")
+    asha=$(jq -rc '(.artifact_sha256 // []) | sort | join(",")' "$rec" 2>/dev/null || echo "")
+    if [ "$rc" = "0" ] && [ "$st" = "pass" ]; then
+      receipt=$(jq -r '.promoted_receipt_sha256 // ""' "$rec" 2>/dev/null || echo "")
+      [ -n "$receipt" ] || { echo "polylane-run: PASS record missing promoted receipt hash" >&2; return 1; }
+      VISUAL_TASTE_RECORD="$rec"; VISUAL_TASTE_RECEIPT_SHA="$receipt"; VISUAL_TASTE_ATTEMPT="$attempt"
+      return 0
+    fi
+    if [ "$rc" != "${VISUAL_TASTE_EXIT_REPAIR:-10}" ] || [ "$st" != "repair" ]; then
+      echo "polylane-run: authoritative visual gate blocked promotion (status=${st:-none} rc=$rc)." >&2
+      return 1
+    fi
+    if [ -n "$prev_rsha" ] && [ "$rsha" = "$prev_rsha" ]; then
+      echo "polylane-run: repair produced an unchanged record hash; blocking." >&2
+      return 1
+    fi
+    if [ -n "$prev_asha" ] && [ "$asha" = "$prev_asha" ]; then
+      echo "polylane-run: repair produced unchanged artifact hashes; blocking." >&2
+      return 1
+    fi
+    if [ "$attempt" -ge "$cap" ]; then
+      echo "polylane-run: visual repair budget exhausted ($cap); promotion blocked." >&2
+      return 1
+    fi
+    prev_rsha="$rsha"; prev_asha="$asha"
+    attempt=$((attempt + 1))
+    visual_taste_attempt_set "$attempt" || return 1
+    VISUAL_TASTE_ATTEMPT="$attempt"
+    visual_taste_repair_dispatch "$attempt" "$rec" || return 1
+    poll_done "$INT_NAME:$INT_WORKTREE" || return 1
+    merge_gate || return 1
+  done
+}
+
+# visual_taste_memory_record : learn project-scoped taste ONLY from a verified
+# promotion and ONLY from the exact promoted authoritative receipt/hash. Never
+# from a NO-GO, a repair, an unpromoted candidate, or integrator prose. A memory
+# failure is surfaced and fails closed; the promotion itself is already durable.
+visual_taste_memory_record() {
+  visual_contract_current_requested || return 0
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "+ (dry-run) would record project taste memory from the promoted receipt"
+    return 0
+  fi
+  if [ "${PROMOTION_STATE:-}" != "promoted" ]; then
+    echo "polylane-run: promotion not verified; taste memory not updated (nothing learned)." >&2
+    return 0
+  fi
+  if [ -z "${VISUAL_TASTE_RECORD:-}" ] || [ ! -s "${VISUAL_TASTE_RECORD:-}" ] || [ -z "${VISUAL_TASTE_RECEIPT_SHA:-}" ]; then
+    echo "polylane-run: no promoted authoritative receipt to learn from; taste memory not updated." >&2
+    return 1
+  fi
+  local memcmd; memcmd=$(visual_taste_memory_cmd)
+  [ -x "$memcmd" ] || { echo "polylane-run: taste memory helper not executable: $memcmd" >&2; return 1; }
+  if ! "$memcmd" record --manifest "$MANIFEST" --record "$VISUAL_TASTE_RECORD" \
+        --receipt-sha256 "$VISUAL_TASTE_RECEIPT_SHA"; then
+    echo "polylane-run: taste memory update FAILED (fail-closed); promotion stands but nothing was learned." >&2
+    return 1
+  fi
+}
+
 seam_gate() {
   local evidence="$INT_WORKTREE/docs/verify-integration.md"
   advanced_runtime seams "$INT_WORKTREE" "$evidence" && return 0
@@ -4934,6 +5190,9 @@ main() {
   economy_plan_gate || exit 1
   emit_effective_model_policy
   preflight_contract
+  # Current-UI runs prove their authoritative visual configuration before any
+  # worktree or tmux side effect exists. Legacy and non-UI runs are a no-op.
+  visual_taste_preflight || { echo "Halt: current-UI visual-contract preflight failed before any worktree/tmux side effect. Nothing launched." >&2; exit 1; }
   prime_hybrid_prepare || exit 1
   advanced_runtime preflight || exit 1
   graph_shadow_init || exit 1
@@ -5023,7 +5282,19 @@ main() {
     else
       graph_shadow_record_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     fi
-    if visual_quality_requested; then
+    if visual_contract_current_requested; then
+      # Current UI: the authoritative tournament/certificate gate runs against
+      # the integrator worktree regardless of the integrator's prose verdict.
+      if ! visual_taste_authoritative_gate; then
+        graph_visual_quality_halt || { report_completed_terminal NO-GO || true; exit 1; }
+        report_completed_terminal NO-GO || true
+        advanced_runtime salvage || true
+        advanced_runtime record NO-GO || true
+        echo "Halt: authoritative visual gate blocked promotion. Nothing merged." >&2
+        exit 1
+      fi
+      graph_authority_record_ready_node visual-quality succeeded "${VISUAL_TASTE_ATTEMPT:-0}" visual-quality-passed || exit 1
+    elif visual_quality_requested; then
       if ! visual_quality_gate; then
         graph_visual_quality_halt || { report_completed_terminal NO-GO || true; exit 1; }
         report_completed_terminal NO-GO || true
@@ -5064,6 +5335,13 @@ main() {
     fi
     graph_authority_record_ready_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
     finalize_cycle_state || { report_completed_terminal HALTED || true; exit 1; }
+    # Learn project taste ONLY now: from the exact promoted authoritative
+    # receipt, after a verified promotion. A failure is visible and fails
+    # closed; the promotion itself is already durable and stands.
+    if visual_contract_current_requested && ! visual_taste_memory_record; then
+      notify_event stall "taste memory update failed after a verified promotion (nothing learned)"
+      echo "Warning: taste memory update failed after a verified promotion (fail-closed). Promotion stands." >&2
+    fi
     advanced_runtime accepted-receipt "${RUN_ID:-legacy}" "$CYCLE" "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
     graph_authority_require complete "complete verified run" || { report_completed_terminal HALTED || true; exit 1; }
     graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
