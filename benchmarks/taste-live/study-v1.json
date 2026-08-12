@@ -1,0 +1,224 @@
+{
+  "schema_version": "taste-study-manifest/v1",
+  "study_id": "taste-study-c40-old-vs-new-v1",
+  "run_id": "c40-live-harness-20260812-a3",
+  "created_at": "2026-08-12T17:54:05Z",
+  "brief_floor": 10,
+  "target_locked_briefs": 20,
+  "compiler_capacity": 100,
+  "seed": "c40-corpus-20-stratified-draw-0b802ad1-20260812",
+  "brief_order": [
+    "dog-walk-route",
+    "pantry-planner",
+    "repair-reminder",
+    "shift-handoff",
+    "study-circle",
+    "bookstore-events",
+    "climate-data-explorer",
+    "neighborhood-bulk-order",
+    "field-recording-catalog",
+    "makerspace-booking",
+    "pediatric-appointment",
+    "art-residency-portfolio",
+    "freight-dispatch",
+    "farmers-market-portal",
+    "cash-runway",
+    "urban-tree-census",
+    "fermentation-tracker",
+    "live-music-calendar",
+    "language-exchange",
+    "tabletop-atlas"
+  ],
+  "strata": {
+    "consumer": [
+      "dog-walk-route",
+      "pantry-planner",
+      "fermentation-tracker"
+    ],
+    "collaboration": [
+      "neighborhood-bulk-order",
+      "tabletop-atlas"
+    ],
+    "operations": [
+      "repair-reminder",
+      "makerspace-booking"
+    ],
+    "health": [
+      "shift-handoff",
+      "pediatric-appointment"
+    ],
+    "finance": [
+      "cash-runway",
+      "farmers-market-portal"
+    ],
+    "data": [
+      "climate-data-explorer",
+      "urban-tree-census"
+    ],
+    "culture": [
+      "bookstore-events",
+      "live-music-calendar"
+    ],
+    "logistics": [
+      "freight-dispatch"
+    ],
+    "education": [
+      "study-circle",
+      "language-exchange"
+    ],
+    "creative": [
+      "art-residency-portfolio",
+      "field-recording-catalog"
+    ]
+  },
+  "baseline": {
+    "skill_revision": "0b802ad13ada13a0dc7cc702a526ed17d3348851",
+    "description": "final commit before the visual-intelligence plan; frozen preregistered baseline arm"
+  },
+  "current_subject": {
+    "placeholder": "PENDING-CYCLE-40-GO",
+    "resolution": "the final clean Cycle 40 merge revision, frozen before generation; resolved only after the Cycle 40 GO verdict, never earlier and never from a partial merge"
+  },
+  "builder": {
+    "provider": "anthropic",
+    "model": "claude-fable-5",
+    "configuration": "single fixed configuration shared by baseline and current arms"
+  },
+  "arms": {
+    "baseline": "one prompt, one build",
+    "current": "three structurally divergent directions, a blind rendered tournament, and at most two evidence-targeted repairs"
+  },
+  "rules": {
+    "current_directions": 3,
+    "repair_cap": 2,
+    "target_briefs": 20,
+    "brief_floor": 10
+  },
+  "thresholds": {
+    "pooled_preference_min": 0.70,
+    "wilson_lcb_95_exclusive_min": 0.50,
+    "brief_wins_min": 7,
+    "mirrored_groups_per_brief_min": 5,
+    "accessibility_regressions_max": 0,
+    "calibration_pairs": 24,
+    "calibration_correct_min": 17,
+    "calibration_wilson_lcb_min": 0.50,
+    "side_probe_p_min": 0.05,
+    "mirror_contradictions_max": 1
+  },
+  "brief_sampling": {
+    "method": "frozen stratified prompt/brief draw",
+    "population": "declared product archetypes, complexity, and viewports",
+    "manifest_sha256": "d8fdf43b93df377ee5eba1c24ce662eb09b1ec62b8e0a955e4cf42ed4c132ff9"
+  },
+  "executable_core": {
+    "offline": true,
+    "asset_licenses": [
+      "owned",
+      "public-domain",
+      "CC0",
+      "OFL",
+      "MIT",
+      "BSD",
+      "Apache"
+    ],
+    "task_scripts_sha256": "3a0c2b9505ad42ee666a54285c0fd79438afc583b1e93378091285657b0a514c"
+  },
+  "tracks": [
+    "render_fidelity",
+    "human_taste",
+    "grounding",
+    "functional_success"
+  ],
+  "optional_audits": [
+    "Design2Code",
+    "TASTE",
+    "Vibe-Design-Arena",
+    "UICrit",
+    "UIClip",
+    "VisualWebArena"
+  ],
+  "briefs": [
+    {
+      "brief_id": "dog-walk-route",
+      "sha256": "e0187e9cf3d1ad51d23b0b312a5e4fe5c0717a859b4100e55533942294481f26"
+    },
+    {
+      "brief_id": "pantry-planner",
+      "sha256": "1f7e87f085bb568eb51d9a6f23113656209a87890d77d34c36ba78d82f060ca5"
+    },
+    {
+      "brief_id": "repair-reminder",
+      "sha256": "f903015d63dd0399920e5fca9ade090dba29d37cb7b9547d0c62dc301f983d07"
+    },
+    {
+      "brief_id": "shift-handoff",
+      "sha256": "9975e293e18bbb27bfdc075bacf89a832bca0bf15f53d10006dda569aedad24d"
+    },
+    {
+      "brief_id": "study-circle",
+      "sha256": "ee56f616bcc38337f17a0d9e0ffe0e19bc408663c5c0e246988ff94453584836"
+    },
+    {
+      "brief_id": "bookstore-events",
+      "sha256": "1bddea166b0e4c03434a2222827cb08a2dfd0a7ee31db57f7a1c222ed3c7f7c1"
+    },
+    {
+      "brief_id": "climate-data-explorer",
+      "sha256": "d858c8a2438a2f55ccc94e58eefe0b87eb483e6882ed6f12dbd962aca1a525d2"
+    },
+    {
+      "brief_id": "neighborhood-bulk-order",
+      "sha256": "47ab2d4a715b96d5968027f077f72691a8f8b973aeaf91ccd318ef6c566b0bd7"
+    },
+    {
+      "brief_id": "field-recording-catalog",
+      "sha256": "a782b1eee46ce47a6550a54d0edb3aeab9cd54d142dda69478a2a5522e222a08"
+    },
+    {
+      "brief_id": "makerspace-booking",
+      "sha256": "b500994df1a286cec42ff794004455ac89506ac2e47a57448c3789af39009d30"
+    },
+    {
+      "brief_id": "pediatric-appointment",
+      "sha256": "61510c84de19bd50510f4f85295069e43bf855199755321afa39f665428b9433"
+    },
+    {
+      "brief_id": "art-residency-portfolio",
+      "sha256": "d05cea418c8d7805852c52848994976bb8a4f67337a508dabffaa5b73d492886"
+    },
+    {
+      "brief_id": "freight-dispatch",
+      "sha256": "e5c2af63e0751611590121b4efaf81adc05f4e59ba6033014a406ed782287ee5"
+    },
+    {
+      "brief_id": "farmers-market-portal",
+      "sha256": "b142cdfa94e50b87ab42f51717e227a53230f5a2acd05ce3cdee597d449c438e"
+    },
+    {
+      "brief_id": "cash-runway",
+      "sha256": "eec064cd99e80a8b98918131ea2b90bd017b650bbd354c450a41849f9937b70b"
+    },
+    {
+      "brief_id": "urban-tree-census",
+      "sha256": "2661fca7773c7bf2eb64093eb2305f0ff7a29867ad097503c391c91eb99a74e6"
+    },
+    {
+      "brief_id": "fermentation-tracker",
+      "sha256": "18dcbbebc29ce48e62b3f46fa333689cd5b8aff0230691b28fcfc0b591854c41"
+    },
+    {
+      "brief_id": "live-music-calendar",
+      "sha256": "f8a33f987e83a2eb8a2a39daaa2fa4500864f0c0b401150e0bdc118baec547db"
+    },
+    {
+      "brief_id": "language-exchange",
+      "sha256": "41d4323d37ebaefaeac58c64329111b312d74d8bfe72860bc62fe8f32bd370e2"
+    },
+    {
+      "brief_id": "tabletop-atlas",
+      "sha256": "604fee4cb4d8d8b7b3c84a07cd30f7b1f2fd64e4c66dc9e49ba504766f01ada2"
+    }
+  ],
+  "study_digest_sha256": "0a044dec63ebaf299018745ebf297182850e6ce9f6ea991cb083267af664fbae"
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "live-music-calendar",
+  "stratum": "culture",
+  "category": "live-music-listings",
+  "origin": "cycle-40-plan",
+  "title": "Every gig in one place",
+  "brief": "Fans miss shows because our city's gig listings are scattered across venue chalkboards and three different socials.",
+  "target_population": {
+    "role": "listings editor for a fictional small-city gig guide",
+    "locale": "de-DE",
+    "coverage_limit": "one month of shows in one invented city; browse and save only, no ticketing"
+  },
+  "product_shape": "filterable listings site",
+  "core_task": {
+    "id": "task-live-music-calendar",
+    "summary": "filter shows by neighborhood and genre, then save one to a personal plan",
+    "success_oracle": "filtering to Riverside and folk leaves exactly two listings, and saving Marrow Lanterns adds it to the my-plan tray with the tray count at one"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the month of listings ships as seeded local data and filters recompute in memory, so the list never renders a fetching or skeleton frame",
+    "validation-error": "the guide is browse-only: neighborhood and genre are picker filters and saving is a single button, so no free-form input exists to reject"
+  },
+  "state_recipes": {
+    "empty": "filter to Old Mills plus jazz, a combination with no seeded shows; the no-shows panel suggests clearing a filter",
+    "success": "filter Riverside plus folk and save Marrow Lanterns; the tray counts one with the show listed",
+    "focus": "press Tab from page load until the neighborhood filter shows its visible focus ring",
+    "mobile": "load the guide at 390x844; filters collapse into a top sheet above the list"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "neighborhood-filter", "value": "riverside"},
+      {"op": "select", "target": "genre-filter", "value": "folk"},
+      {"op": "click", "target": "save-marrow-lanterns"}
+    ],
+    "assertions": [
+      {"op": "assert_count", "target": "listing-card", "value": 2},
+      {"op": "assert_text", "target": "my-plan-count", "value": "1"},
+      {"op": "assert_visible", "target": "plan-item-marrow-lanterns"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed holds fourteen shows across four fictional venues and five neighborhoods within one month.",
+    "Filtering Riverside plus folk narrows the list to exactly two shows.",
+    "Saving a show places it in the my-plan tray and updates the tray count without leaving the page."
+  ],
+  "product_signature": {
+    "mechanism": "two-filter funnel that narrows a month of gigs into a pocket plan",
+    "anchor": "my-plan tray docked at the screen edge",
+    "brief_trace": "scattered across venue chalkboards and three different socials",
+    "counterfactual": "a static event table would fit a poster-archive brief and cannot keep a personal plan",
+    "task_proof": "success capture shows the filtered pair of listings with Marrow Lanterns held in the tray"
+  },
+  "anti_goals": [
+    "no ticket sales, links to ticket vendors, or pricing",
+    "no artist images or embedded audio; listings are typographic",
+    "no accounts; the plan tray is a local, single-session record"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"show": "Marrow Lanterns", "venue": "The Brass Eel", "neighborhood": "riverside", "genre": "folk", "date": "2026-08-15"},
+      {"show": "Quiet Pylons", "venue": "Hall Nine", "neighborhood": "riverside", "genre": "folk", "date": "2026-08-22"},
+      {"show": "Vermilion Static", "venue": "Kesselhaus Drei", "neighborhood": "old-mills", "genre": "electronic", "date": "2026-08-19"},
+      {"neighborhoods": ["riverside", "old-mills", "north-yards", "garden-ring", "station-quarter"]}
+    ],
+    "data_notes": "fourteen invented shows; exactly two are riverside folk, and old-mills has no jazz so the empty filter state is deterministic"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

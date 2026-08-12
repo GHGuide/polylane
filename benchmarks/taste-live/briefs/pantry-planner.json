@@ -1,0 +1,90 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "pantry-planner",
+  "stratum": "consumer",
+  "category": "home-food-inventory",
+  "origin": "schema-v1",
+  "title": "Use the food already at home",
+  "brief": "I waste groceries because I cannot see what is in my pantry or turn it into a simple weeknight plan.",
+  "target_population": {
+    "role": "budget-conscious home cook feeding a family of four on weeknights",
+    "locale": "en-CA",
+    "coverage_limit": "one household pantry; no barcode scanning or store integrations"
+  },
+  "product_shape": "mobile-first web app",
+  "core_task": {
+    "id": "task-pantry-planner",
+    "summary": "add a pantry item and generate a plan that uses what expires soonest",
+    "success_oracle": "adding a pantry item and pressing plan produces a three-night plan whose first night uses the soonest-expiring seeded ingredient"
+  },
+  "required_routes": ["/", "/plan"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the pantry is a seeded local dataset read synchronously and planning is an in-memory sort, so no state ever waits on a fetch or long computation"
+  },
+  "state_recipes": {
+    "empty": "open the /plan route before generating any plan; the empty plan panel explains the next action instead of a blank region",
+    "validation-error": "submit the add-item form with a blank name or a zero quantity; an inline error names the offending field",
+    "success": "add rolled oats then press the plan button; the three-night plan renders with night one using the expiring chickpeas",
+    "focus": "press Tab from page load until the item-name field shows its visible focus ring",
+    "mobile": "load either route at 390x844; the add form collapses above the pantry list"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "item-name", "value": "rolled oats"},
+      {"op": "fill", "target": "item-qty", "value": "1"},
+      {"op": "click", "target": "add-item"},
+      {"op": "click", "target": "plan-button"}
+    ],
+    "assertions": [
+      {"op": "assert_count", "target": "plan-night", "value": 3},
+      {"op": "assert_text", "target": "plan-night-1", "value": "chickpeas"},
+      {"op": "assert_visible", "target": "pantry-row-rolled-oats"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seeded pantry holds twelve staples and the soonest expiry is the canned chickpeas dated 2026-08-18.",
+    "Generating a plan yields exactly three weeknight dinners and night one uses the expiring chickpeas.",
+    "Before any plan exists the plan panel states what to do next instead of rendering an unexplained blank area."
+  ],
+  "product_signature": {
+    "mechanism": "expiry-first planner that sorts the pantry queue into named weeknights",
+    "anchor": "three-night rail on the plan route",
+    "brief_trace": "turn what is in my pantry into a simple weeknight plan",
+    "counterfactual": "a bare inventory table would serve a stocktake brief but cannot answer what to cook tonight",
+    "task_proof": "success capture shows night one citing the chickpeas that expire on 2026-08-18"
+  },
+  "anti_goals": [
+    "no recipe API, web import, or photo recognition",
+    "no nutrition scoring or dietary health claims",
+    "no grocery ordering or delivery integration"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"item": "canned chickpeas", "qty": 2, "expires": "2026-08-18"},
+      {"item": "basmati rice", "qty": 1, "expires": "2027-03-01"},
+      {"item": "crushed tomatoes", "qty": 3, "expires": "2026-11-02"},
+      {"item": "frozen peas", "qty": 1, "expires": "2026-09-15"},
+      {"item": "eggs", "qty": 12, "expires": "2026-08-24"},
+      {"item": "cheddar", "qty": 1, "expires": "2026-08-30"}
+    ],
+    "data_notes": "twelve seeded staples total; the six listed here fix the expiry ordering the planner must respect"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

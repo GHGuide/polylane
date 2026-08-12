@@ -1,0 +1,86 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "bookstore-events",
+  "stratum": "culture",
+  "category": "indie-bookstore-events",
+  "origin": "cycle-40-plan",
+  "title": "Fill the reading nights",
+  "brief": "Our reading nights fill unevenly because the events page is a static poster nobody can RSVP to.",
+  "target_population": {
+    "role": "events coordinator at a fictional independent bookstore",
+    "locale": "en-GB",
+    "coverage_limit": "one shop's event calendar over three weeks; RSVPs are local records with no tickets or email"
+  },
+  "product_shape": "storefront events page",
+  "core_task": {
+    "id": "task-bookstore-events",
+    "summary": "RSVP to a reading night and watch its remaining seats update",
+    "success_oracle": "submitting an RSVP for the Thursday poetry night decrements its remaining seats from 6 to 5 and lists the attendee's initials on the card"
+  },
+  "required_routes": ["/", "/calendar"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "events and RSVPs are seeded local records, so seat counts change in the same frame as the submission with nothing asynchronous to show"
+  },
+  "state_recipes": {
+    "empty": "filter the calendar to the History genre, which has no scheduled events; a suggest-a-night prompt replaces the list",
+    "validation-error": "submit the RSVP form with a blank name; an inline error keeps the seat count unchanged",
+    "success": "RSVP to the poetry night as Nia F.; the card reads 5 seats left with NF listed",
+    "focus": "press Tab from page load until the first event card's RSVP button shows its focus ring",
+    "mobile": "load the page at 390x844; event cards stack with seat meters full width"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "rsvp-name-poetry-night", "value": "Nia F."},
+      {"op": "click", "target": "rsvp-submit-poetry-night"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "seats-left-poetry-night", "value": "5"},
+      {"op": "assert_text", "target": "attendees-poetry-night", "value": "NF"},
+      {"op": "assert_count", "target": "event-card", "value": 5}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed lists five upcoming events across three weeks with seat capacities between 12 and 30.",
+    "An RSVP to the poetry night reduces its remaining seats from 6 to 5 without any payment or ticket step.",
+    "Filtering to a genre with no scheduled events shows a suggest-a-night prompt instead of a blank list."
+  ],
+  "product_signature": {
+    "mechanism": "seat-meter cards that show how full each reading night is before you commit",
+    "anchor": "event card rail on the storefront page",
+    "brief_trace": "a static poster nobody can RSVP to",
+    "counterfactual": "a plain poster grid would fit a flyer-archive brief and cannot hold seats or take an RSVP",
+    "task_proof": "success capture shows the poetry card at 5 seats with the new initials listed"
+  },
+  "anti_goals": [
+    "no ticket sales, payments, or fees of any kind",
+    "no email confirmations or notifications; RSVPs live on the page",
+    "no scraped author bios or cover images; all event copy is invented"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"event": "Poetry night: River Voices", "date": "2026-08-14", "capacity": 12, "seats_left": 6},
+      {"event": "Debut fiction: The Salt Orchard", "date": "2026-08-18", "capacity": 30, "seats_left": 22},
+      {"event": "Kids hour: Fox Maps", "date": "2026-08-21", "capacity": 15, "seats_left": 15},
+      {"genres": ["poetry", "fiction", "kids", "essays"]}
+    ],
+    "data_notes": "five invented events at the fictional Pelt & Quill bookshop; History is intentionally absent from the schedule to fix the empty state"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

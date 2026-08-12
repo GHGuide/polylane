@@ -1,0 +1,87 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "cash-runway",
+  "stratum": "finance",
+  "category": "small-business-cash-runway",
+  "origin": "cycle-40-plan",
+  "title": "How long can the studio last",
+  "brief": "I never know how many months our small studio can keep operating at current spend without staring at a spreadsheet.",
+  "target_population": {
+    "role": "founder of a fictional three-person design studio watching monthly burn",
+    "locale": "en-SG",
+    "coverage_limit": "one fictional studio scenario at a time; no real accounts or historical books"
+  },
+  "product_shape": "single-page projection dashboard",
+  "core_task": {
+    "id": "task-cash-runway",
+    "summary": "enter cash on hand and monthly burn, then read the runway projection",
+    "success_oracle": "entering cash 84000 and burn 7000 renders a twelve-month runway bar whose exhaustion month is labelled 2027-08"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the projection is pure arithmetic over two local inputs recomputed synchronously, so there is never an in-flight computation to display"
+  },
+  "state_recipes": {
+    "empty": "clear both inputs on first run; the scenario panel explains what to enter before any bar renders",
+    "validation-error": "enter a negative or non-numeric monthly burn; an inline error names the field and no projection updates",
+    "success": "enter cash 84000 and burn 7000; the runway bar renders twelve months ending 2027-08",
+    "focus": "press Tab from page load until the cash-on-hand input shows its visible focus ring",
+    "mobile": "load the dashboard at 390x844; the runway bar wraps into a stacked month grid"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "cash-on-hand", "value": "84000"},
+      {"op": "fill", "target": "monthly-burn", "value": "7000"},
+      {"op": "click", "target": "project-runway"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "runway-months", "value": "12"},
+      {"op": "assert_text", "target": "exhaustion-month", "value": "2027-08"},
+      {"op": "assert_visible", "target": "decision-support-disclaimer"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seeded example scenario uses fictional cash of 84000 and burn of 7000, producing a twelve-month runway ending 2027-08.",
+    "Changing the burn input recomputes the runway length and exhaustion label within the same interaction.",
+    "A visible disclaimer marks every projection as fictional decision support and not financial advice."
+  ],
+  "product_signature": {
+    "mechanism": "runway bar that converts two inputs into a labelled exhaustion month",
+    "anchor": "runway bar spanning the dashboard header",
+    "brief_trace": "how many months our small studio can keep operating at current spend",
+    "counterfactual": "a generic ledger table would fit a bookkeeping brief and never answers how long the studio can last",
+    "task_proof": "success capture shows the bar counting twelve months to the 2027-08 exhaustion label"
+  },
+  "anti_goals": [
+    "no bank connections, imports, or real transaction data",
+    "no investment, fundraising, or financial advice of any kind",
+    "no multi-scenario portfolio modelling beyond one scenario at a time"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"scenario": "Studio Meridian (fictional)", "cash": 84000, "burn": 7000},
+      {"example_expense": "salaries", "monthly": 5200},
+      {"example_expense": "workspace", "monthly": 1100},
+      {"example_expense": "software", "monthly": 700}
+    ],
+    "data_notes": "the studio, balances, and expense lines are invented for illustration; no real business figures may seed the product"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": "Uses fictional data; illustrative decision support for thinking about spend only — not financial advice, accounting, or a forecast of any real business."
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

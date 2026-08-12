@@ -1,0 +1,87 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "fermentation-tracker",
+  "stratum": "consumer",
+  "category": "home-fermentation-log",
+  "origin": "cycle-40-plan",
+  "title": "Know what the jars are doing",
+  "brief": "I lose track of which jar started when, so batches go past their window before I remember to taste them.",
+  "target_population": {
+    "role": "home fermenter juggling sourdough, kimchi, and kombucha jars",
+    "locale": "sv-SE",
+    "coverage_limit": "one kitchen's active batches with user-set windows; no sensors or safety verdicts"
+  },
+  "product_shape": "kitchen logbook app",
+  "core_task": {
+    "id": "task-fermentation-tracker",
+    "summary": "log a tasting note on a batch and read its position in the window",
+    "success_oracle": "logging a day-6 tasting note on the kimchi batch advances its timeline to day 6 of its 10-day window and flags it approaching-ready"
+  },
+  "required_routes": ["/", "/archive"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "batches and notes are seeded local records and timeline math is date arithmetic, so the rail never waits on anything asynchronous"
+  },
+  "state_recipes": {
+    "empty": "archive all three seeded batches; the logbook shows its start-a-batch invitation with the three ferment presets",
+    "validation-error": "log a reading dated before the batch's start date; an inline date error refuses the entry",
+    "success": "log the day-6 kimchi note; the jar sits at day 6 of 10 flagged approaching-ready",
+    "focus": "press Tab from page load until the kimchi batch's log button shows its focus ring",
+    "mobile": "load the logbook at 390x844; the timeline rail flips horizontal above the batch cards"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "note-kimchi", "value": "Brighter sour, still crunchy."},
+      {"op": "fill", "target": "note-day-kimchi", "value": "6"},
+      {"op": "click", "target": "log-reading-kimchi"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "timeline-day-kimchi", "value": "6"},
+      {"op": "assert_visible", "target": "flag-approaching-ready-kimchi"},
+      {"op": "assert_count", "target": "batch-card", "value": 3}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed tracks three active batches with start dates and user-set windows of 7, 10, and 14 days.",
+    "Logging a day-6 note on the kimchi batch marks it approaching-ready within its 10-day window.",
+    "The logbook renders user-set windows only and never issues a food-safety or health verdict."
+  ],
+  "product_signature": {
+    "mechanism": "jar timeline rail that positions each batch inside its tasting window",
+    "anchor": "timeline rail along the logbook's left edge",
+    "brief_trace": "batches go past their window before I remember to taste them",
+    "counterfactual": "a plain notes app would fit a journal brief and cannot place a jar inside a counting window",
+    "task_proof": "success capture shows the kimchi jar at day 6 of 10 wearing the approaching-ready flag"
+  },
+  "anti_goals": [
+    "no food-safety, spoilage, or health judgements; windows are the user's own settings",
+    "no sensor, thermometer, or pH-meter integrations",
+    "no recipes, communities, or sharing"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"batch": "kimchi", "started": "2026-08-06", "window_days": 10},
+      {"batch": "sourdough levain", "started": "2026-08-10", "window_days": 7},
+      {"batch": "kombucha", "started": "2026-08-01", "window_days": 14},
+      {"presets": ["kimchi", "sourdough levain", "kombucha"]}
+    ],
+    "data_notes": "three invented batches; kimchi started 2026-08-06 so a day-6 note lands on the frozen date 2026-08-12"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}
