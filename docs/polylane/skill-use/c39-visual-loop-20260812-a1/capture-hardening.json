@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "capture-hardening",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-capture-hardening/docs/verify-capture-hardening.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:system-design",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

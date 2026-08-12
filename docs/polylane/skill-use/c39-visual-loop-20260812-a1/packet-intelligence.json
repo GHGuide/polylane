@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "packet-intelligence",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-packet-intelligence/docs/verify-packet-intelligence.md",
+  "helped": [],
+  "unused": [
+    "design:design-system",
+    "design:research-synthesis",
+    "engineering:debug",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

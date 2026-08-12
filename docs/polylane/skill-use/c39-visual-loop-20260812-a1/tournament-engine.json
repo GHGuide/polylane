@@ -1,0 +1,20 @@
+{
+  "schema": 2,
+  "lane": "tournament-engine",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-tournament-engine/docs/verify-tournament-engine.md",
+  "helped": [
+    {
+      "id": "data:statistical-analysis",
+      "effect": " reinforced treating the ≥5-group quorum and strict-majority resolution as non-compensatory coverage floors, not a taste score — so ties yield \"no strict majority\" and there is deliberately no margin/score/LCB tie-break in selection. Directly informed the `taste-rejects-tie-no-strict-majority` and `taste-rejects-quorum-gap` cases; its forecasting/outlier material was not applicable to this lane."
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " shaped the pyramid — a broad base of fast, isolated attack cases (graph 15, taste 13, seam 9 run in <1 min total) plus a few slow, high-confidence e2e cases (visual zero-repair, champion repair chain) on real PNG + real ballots. It also drove the decision to cache the expensive initial run once and clone the gen-0 state for the durability scenarios, keeping coverage high without re-paying the render cost."
+    }
+  ],
+  "unused": [
+    "design:design-critique",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

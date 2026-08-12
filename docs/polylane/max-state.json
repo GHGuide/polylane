@@ -3227,7 +3227,7 @@
       "cmd": "bash tests/test-taste-validator-receipts.sh && bash tests/test-taste-certification.sh && bash tests/test-visual-capture.sh && bash tests/test-taste-a11y.sh && bash tests/test-taste-stimulus.sh && bash tests/test-visual-tournament.sh && bash tests/test-taste-tournament.sh && bash tests/test-tournament-capture-seam.sh && bash tests/test-champion-persistence.sh && bash tests/test-graph-tournament.sh && bash tests/test-taste-memory.sh && bash tests/test-taste-memory-security.sh && bash tests/test-taste-memory-advice.sh && bash tests/test-visual-taste-memory-integration.sh && bash tests/test-visual-intelligence.sh && bash tests/test-visual-quality.sh && bash tests/test-taste-runner-gate.sh && bash tests/test-promptlint.sh && bash tests/test-prompt-compiler.sh && bash tests/test-claude-taste-contract.sh && bash tests/test-visual-loop-integration.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bash tests/test-hooks.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-taste-production-chain.sh && bash tests/test-taste-runner-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
       "tier": "focused",
       "key": "taste-contract",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

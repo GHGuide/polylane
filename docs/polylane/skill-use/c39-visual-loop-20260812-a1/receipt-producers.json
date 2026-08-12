@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "receipt-producers",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-receipt-producers/docs/verify-receipt-producers.md",
+  "helped": [],
+  "unused": [
+    "data:validate-data",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

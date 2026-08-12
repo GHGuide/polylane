@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "provider-hooks",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-provider-hooks/docs/verify-provider-hooks.md",
+  "helped": [],
+  "unused": [
+    "caveman:safe-refactor",
+    "engineering:system-design",
+    "engineering:testing-strategy",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

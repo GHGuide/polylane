@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "taste-memory",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-taste-memory/docs/verify-taste-memory.md",
+  "helped": [
+    {
+      "id": "engineering:architecture",
+      "effect": " its ADR \"options → trade-offs → consequences\" frame drove the one architectural decision here — a self-contained `taste-study-closure/v1` receipt whose nested `*_sha256` fields form a transitive content-addressed chain the CLI recomputes, chosen over trusting a cross-lane certificate (isolation-safe, tamper-evident) at the cost of a heavier receipt."
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " its \"cover business-critical paths, error handling, edge cases, security boundaries, data integrity; skip trivia\" guidance shaped the four-file split (memory / security / advice / visual-integration) and the emphasis on adversarial + boundary cases over line coverage; 66 assertions target exactly those axes."
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " its likelihood×impact register framing became the poisoning matrix above — each attack is an enumerated risk with a fail-closed mitigation, forcing coverage of high-impact bypasses (machine-cert bypass, capture bypass, chain tamper, injection) rather than only happy-path admission."
+    },
+    {
+      "id": "productivity:memory-management",
+      "effect": "helped conceptually, hurt if copied literally: it correctly framed memory as durable, tiered, and recalled by relevance (→ the append-only ledger + context-scoped `recommend`), but its CLAUDE.md/glossary format stores raw human text — the exact opposite of this lane's hard requirement that memory be non-executable opaque atoms with no raw strings; I took the durability/recall model and deliberately rejected the storage format."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

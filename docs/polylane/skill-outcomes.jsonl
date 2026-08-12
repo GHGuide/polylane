@@ -190,3 +190,123 @@
 
 {"lane":"threat-engine","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" the missing executable was demonstrated by the red focused test before implementation."}
 
+{"lane":"receipt-producers","domain":"test","skill":"data:validate-data","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-receipt-producers/docs/verify-receipt-producers.md"}
+
+{"lane":"receipt-producers","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-receipt-producers/docs/verify-receipt-producers.md"}
+
+{"lane":"receipt-producers","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-receipt-producers/docs/verify-receipt-producers.md"}
+
+{"lane":"receipt-producers","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-receipt-producers/docs/verify-receipt-producers.md"}
+
+{"lane":"certificate-v2","domain":"test","skill":"data:statistical-analysis","outcome":"helped","why":" the threshold-case table was"}
+
+{"lane":"certificate-v2","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" coverage was planned as"}
+
+{"lane":"certificate-v2","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" the trust boundaries were"}
+
+{"lane":"certificate-v2","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-certificate-v2/docs/verify-certificate-v2.md"}
+
+{"lane":"tournament-engine","domain":"test","skill":"data:statistical-analysis","outcome":"helped","why":" reinforced treating the ≥5-group quorum and strict-majority resolution as non-compensatory coverage floors, not a taste score — so ties yield \"no strict majority\" and there is deliberately no margin/score/LCB tie-break in selection. Directly informed the `taste-rejects-tie-no-strict-majority` and `taste-rejects-quorum-gap` cases; its forecasting/outlier material was not applicable to this lane."}
+
+{"lane":"tournament-engine","domain":"test","skill":"design:design-critique","outcome":"unused","why":" it is an interactive human-facing critique framework (Figma/screenshot review output) with no executable seam in a fail-closed protocol lane. Its \"name the specific region/state, not a vague adjective\" principle mirrors the protocol's requirement that pointwise observations cite a capture/region/brief-clause (honored by the fixtures), but no design review was performed or needed here."}
+
+{"lane":"tournament-engine","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" shaped the pyramid — a broad base of fast, isolated attack cases (graph 15, taste 13, seam 9 run in <1 min total) plus a few slow, high-confidence e2e cases (visual zero-repair, champion repair chain) on real PNG + real ballots. It also drove the decision to cache the expensive initial run once and clone the gen-0 state for the durability scenarios, keeping coverage high without re-paying the render cost."}
+
+{"lane":"tournament-engine","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-tournament-engine/docs/verify-tournament-engine.md"}
+
+{"lane":"taste-memory","domain":"test","skill":"engineering:architecture","outcome":"helped","why":" its ADR \"options → trade-offs → consequences\" frame drove the one architectural decision here — a self-contained `taste-study-closure/v1` receipt whose nested `*_sha256` fields form a transitive content-addressed chain the CLI recomputes, chosen over trusting a cross-lane certificate (isolation-safe, tamper-evident) at the cost of a heavier receipt."}
+
+{"lane":"taste-memory","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" its \"cover business-critical paths, error handling, edge cases, security boundaries, data integrity; skip trivia\" guidance shaped the four-file split (memory / security / advice / visual-integration) and the emphasis on adversarial + boundary cases over line coverage; 66 assertions target exactly those axes."}
+
+{"lane":"taste-memory","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" its likelihood×impact register framing became the poisoning matrix above — each attack is an enumerated risk with a fail-closed mitigation, forcing coverage of high-impact bypasses (machine-cert bypass, capture bypass, chain tamper, injection) rather than only happy-path admission."}
+
+{"lane":"taste-memory","domain":"test","skill":"productivity:memory-management","outcome":"helped","why":"helped conceptually, hurt if copied literally: it correctly framed memory as durable, tiered, and recalled by relevance (→ the append-only ledger + context-scoped `recommend`), but its CLAUDE.md/glossary format stores raw human text — the exact opposite of this lane's hard requirement that memory be non-executable opaque atoms with no raw strings; I took the durability/recall model and deliberately rejected the storage format."}
+
+{"lane":"packet-intelligence","domain":"test","skill":"design:design-system","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-packet-intelligence/docs/verify-packet-intelligence.md"}
+
+{"lane":"packet-intelligence","domain":"test","skill":"design:research-synthesis","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-packet-intelligence/docs/verify-packet-intelligence.md"}
+
+{"lane":"packet-intelligence","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-packet-intelligence/docs/verify-packet-intelligence.md"}
+
+{"lane":"packet-intelligence","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-packet-intelligence/docs/verify-packet-intelligence.md"}
+
+{"lane":"quality-adapter","domain":"test","skill":"design:accessibility-review","outcome":"helped","why":" confirmed the accessibility dimension is the WCAG 2.1 AA set (contrast 1.4.3/1.4.11, keyboard 2.1.1, focus 2.4.3/2.4.7, target 2.5.5, reflow, name/role/value 4.1.2) and that these are non-compensatory, justifying `ACCESSIBILITY_VETO` as a hard block no taste vote can offset."}
+
+{"lane":"quality-adapter","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" framed the adversarial matrix as the \"security boundaries + edge cases\" layer (contract tests over receipt schemas) rather than adding unit tests for trivial helpers, keeping the suite to 37 behavior-level cases with one real end-to-end capture fixture."}
+
+{"lane":"quality-adapter","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" reinforced treating `generic_pattern_signals` as likelihood/impact risk-context signals in the verdict, explicitly not an AI/copying attribution, matching the hard contract."}
+
+{"lane":"quality-adapter","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-quality-adapter/docs/verify-quality-adapter.md"}
+
+{"lane":"runner-wiring","domain":"test","skill":"engineering:architecture","outcome":"helped","why":" framed the seam as an ADR-style decision (thin overridable helper-command boundary vs. re-implementing tournament/certificate schema in the runner) and chose the boundary that keeps the runner ignorant of helper schemas, satisfying \"do not duplicate the helper's schema logic\"."}
+
+{"lane":"runner-wiring","domain":"test","skill":"engineering:debug","outcome":"unused","why":" this was greenfield wiring with no reproduce→isolate→diagnose defect cycle; the RED→GREEN TDD loop covered the one failure surface (missing functions)."}
+
+{"lane":"runner-wiring","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" enumerated the fail-closed risks (missing authoritative config, unsafe paths, prose-GO bypass, unchanged/exhausted repair, learning from an unpromoted candidate) and turned each into a blocking gate with a dedicated test."}
+
+{"lane":"runner-wiring","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-runner-wiring/docs/verify-runner-wiring.md"}
+
+{"lane":"prompt-contract","domain":"test","skill":"engineering:architecture","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-prompt-contract/docs/verify-prompt-contract.md"}
+
+{"lane":"prompt-contract","domain":"test","skill":"engineering:documentation","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-prompt-contract/docs/verify-prompt-contract.md"}
+
+{"lane":"prompt-contract","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-prompt-contract/docs/verify-prompt-contract.md"}
+
+{"lane":"prompt-contract","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-prompt-contract/docs/verify-prompt-contract.md"}
+
+{"lane":"visual-doc-contract","domain":"report","skill":"design:ux-copy","outcome":"helped","why":" its error/empty-state/CTA structure informed `UI-CONTENT` and the real per-state copy requirement (default/loading/empty/error/success/focus/mobile) in the `ui-design-lock/v2` schema."}
+
+{"lane":"visual-doc-contract","domain":"report","skill":"engineering:documentation","outcome":"helped","why":" \"write for the reader,\" \"start with the most useful information,\" and \"link, don't duplicate\" produced the ownership-boundary-first ordering of visual-intelligence.md and the backtick-path (not duplicated content) references to the frozen PROTOCOL.md."}
+
+{"lane":"visual-doc-contract","domain":"report","skill":"humanizer","outcome":"helped","why":" removed em-dash overuse, rule-of-three, and \"unless justified\" hedging from the rewritten visual-intelligence.md; the new prose uses straight quotes, plain copulas, and positive definitions (added em-dashes that remain are pre-existing house style in lines I only lightly touched)."}
+
+{"lane":"visual-doc-contract","domain":"report","skill":"product-management:write-spec","outcome":"helped","why":" its goals/non-goals and testable acceptance-criteria framing shaped the shift from a free-form generic blacklist to positively defined, checkable product-specificity requirements (primary task/entity/information unit, per-state done-when copy)."}
+
+{"lane":"claude-contract","domain":"test","skill":"design:design-critique","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-claude-contract/docs/verify-claude-contract.md"}
+
+{"lane":"claude-contract","domain":"test","skill":"engineering:documentation","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-claude-contract/docs/verify-claude-contract.md"}
+
+{"lane":"claude-contract","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-claude-contract/docs/verify-claude-contract.md"}
+
+{"lane":"claude-contract","domain":"test","skill":"ponytail:ponytail-review","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-claude-contract/docs/verify-claude-contract.md"}
+
+{"lane":"codex-parity","domain":"test","skill":"caveman:safe-refactor","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-codex-parity/docs/verify-codex-parity.md"}
+
+{"lane":"codex-parity","domain":"test","skill":"engineering:code-review","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-codex-parity/docs/verify-codex-parity.md"}
+
+{"lane":"codex-parity","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-codex-parity/docs/verify-codex-parity.md"}
+
+{"lane":"codex-parity","domain":"test","skill":"ponytail:ponytail-review","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-codex-parity/docs/verify-codex-parity.md"}
+
+{"lane":"provider-hooks","domain":"test","skill":"caveman:safe-refactor","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-provider-hooks/docs/verify-provider-hooks.md"}
+
+{"lane":"provider-hooks","domain":"test","skill":"engineering:system-design","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-provider-hooks/docs/verify-provider-hooks.md"}
+
+{"lane":"provider-hooks","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-provider-hooks/docs/verify-provider-hooks.md"}
+
+{"lane":"provider-hooks","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-provider-hooks/docs/verify-provider-hooks.md"}
+
+{"lane":"capture-hardening","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-capture-hardening/docs/verify-capture-hardening.md"}
+
+{"lane":"capture-hardening","domain":"test","skill":"engineering:system-design","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-capture-hardening/docs/verify-capture-hardening.md"}
+
+{"lane":"capture-hardening","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-capture-hardening/docs/verify-capture-hardening.md"}
+
+{"lane":"capture-hardening","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-capture-hardening/docs/verify-capture-hardening.md"}
+
+{"lane":"a11y-evidence","domain":"test","skill":"design:accessibility-review","outcome":"helped","why":" its WCAG 2.1 AA quick reference and common-issues list became the canonical criterion set and the fixture violation cases (contrast 1.4.3, labels 3.3.2, keyboard 2.1.1, focus 2.4.7, target 2.5.5, name-role-value 4.1.2); its \"test with real AT catches what I can't\" note anchored the manual-external boundary."}
+
+{"lane":"a11y-evidence","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" \"security boundaries, error handling, edge cases\" focus drove the adversarial-first suite (forged/stale adapter, relabel, coverage gaps) over happy-path coverage; frontend row explicitly lists accessibility as a test dimension."}
+
+{"lane":"a11y-evidence","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" framed the reject taxonomy by failure mode (tamper, stale, relabel, missing coverage, caller pass) and the \"cannot hide missing coverage\" ordering as a compliance/security control rather than a nice-to-have."}
+
+{"lane":"a11y-evidence","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane-c39-a11y-evidence/docs/verify-a11y-evidence.md"}
+
+{"lane":"stimulus-evidence","domain":"test","skill":"design:design-critique","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-stimulus-evidence/docs/verify-stimulus-evidence.md"}
+
+{"lane":"stimulus-evidence","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-stimulus-evidence/docs/verify-stimulus-evidence.md"}
+
+{"lane":"stimulus-evidence","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-stimulus-evidence/docs/verify-stimulus-evidence.md"}
+
+{"lane":"stimulus-evidence","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-stimulus-evidence/docs/verify-stimulus-evidence.md"}
+

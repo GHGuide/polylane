@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "codex-parity",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-codex-parity/docs/verify-codex-parity.md",
+  "helped": [],
+  "unused": [
+    "caveman:safe-refactor",
+    "engineering:code-review",
+    "engineering:testing-strategy",
+    "ponytail:ponytail-review"
+  ],
+  "hurt": []
+}

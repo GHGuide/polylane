@@ -1,286 +1,379 @@
 {
   "version": 1,
-  "run_id": "c38-taste-engine-20260811-a1",
-  "started_at": 1786475510,
-  "updated_at": 1786478476,
-  "wall_s": 2966,
+  "run_id": "c39-visual-loop-20260812-a1",
+  "started_at": 1786540324,
+  "updated_at": 1786550276,
+  "wall_s": 9952,
   "lanes": {
-    "capture-engine": {
+    "receipt-producers": {
       "launches": 1,
       "restarts": 0
     },
-    "pixel-verifier": {
+    "certificate-v2": {
       "launches": 1,
       "restarts": 0
     },
-    "calibration-corpus": {
+    "tournament-engine": {
       "launches": 1,
       "restarts": 0
     },
-    "judge-calibration": {
+    "taste-memory": {
       "launches": 1,
       "restarts": 0
     },
-    "blind-ballot": {
+    "packet-intelligence": {
+      "launches": 1,
+      "restarts": 1
+    },
+    "quality-adapter": {
       "launches": 1,
       "restarts": 0
     },
-    "stats-engine": {
+    "runner-wiring": {
       "launches": 1,
       "restarts": 0
     },
-    "cert-aggregator": {
+    "prompt-contract": {
       "launches": 1,
       "restarts": 0
     },
-    "threat-engine": {
+    "visual-doc-contract": {
       "launches": 1,
       "restarts": 0
     },
-    "integrator": {
+    "claude-contract": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "codex-parity": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "provider-hooks": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "capture-hardening": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "a11y-evidence": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "stimulus-evidence": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "taste-integrator": {
       "launches": 1,
       "restarts": 0
     }
   },
   "supervisor_restarts": 0,
   "terminal_gates": 0,
-  "tokens": 36000570,
-  "token_state": "known",
+  "tokens": null,
+  "token_state": "unknown",
   "usage_offsets": {
-    "capture-engine": 415187,
-    "pixel-verifier": 235732,
-    "calibration-corpus": 81084,
-    "judge-calibration": 68054,
-    "blind-ballot": 199723,
-    "stats-engine": 106859,
-    "cert-aggregator": 133688,
-    "threat-engine": 148520,
-    "integrator": 1374926
+    "receipt-producers": 1359469,
+    "certificate-v2": 1652350,
+    "tournament-engine": 1879149,
+    "taste-memory": 1743799,
+    "packet-intelligence": 362193,
+    "quality-adapter": 751224,
+    "runner-wiring": 786898,
+    "prompt-contract": 426355,
+    "visual-doc-contract": 491932,
+    "claude-contract": 252312,
+    "codex-parity": 480579,
+    "provider-hooks": 519512,
+    "capture-hardening": 864796,
+    "a11y-evidence": 578437,
+    "stimulus-evidence": 478334,
+    "taste-integrator": 1998680
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786475510
+      "at": 1786540324
     },
     {
       "type": "usage_capture",
-      "lane": "capture-engine",
-      "at": 1786475626,
+      "lane": "receipt-producers",
+      "at": 1786540411,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "capture-engine",
-      "at": 1786475626
+      "lane": "receipt-producers",
+      "at": 1786540411
     },
     {
       "type": "usage_capture",
-      "lane": "pixel-verifier",
-      "at": 1786475626,
+      "lane": "certificate-v2",
+      "at": 1786540411,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "pixel-verifier",
-      "at": 1786475626
+      "lane": "certificate-v2",
+      "at": 1786540411
     },
     {
       "type": "usage_capture",
-      "lane": "calibration-corpus",
-      "at": 1786475627,
+      "lane": "tournament-engine",
+      "at": 1786540412,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "calibration-corpus",
-      "at": 1786475627
+      "lane": "tournament-engine",
+      "at": 1786540412
     },
     {
       "type": "usage_capture",
-      "lane": "judge-calibration",
-      "at": 1786475627,
+      "lane": "taste-memory",
+      "at": 1786540412,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "judge-calibration",
-      "at": 1786475627
+      "lane": "taste-memory",
+      "at": 1786540413
     },
     {
       "type": "usage_capture",
-      "lane": "blind-ballot",
-      "at": 1786475627,
+      "lane": "packet-intelligence",
+      "at": 1786540414,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "blind-ballot",
-      "at": 1786475627
+      "lane": "packet-intelligence",
+      "at": 1786540414
     },
     {
       "type": "usage_capture",
-      "lane": "stats-engine",
-      "at": 1786475628,
+      "lane": "quality-adapter",
+      "at": 1786540416,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "stats-engine",
-      "at": 1786475628
+      "lane": "quality-adapter",
+      "at": 1786540416
     },
     {
       "type": "usage_capture",
-      "lane": "cert-aggregator",
-      "at": 1786475629,
+      "lane": "runner-wiring",
+      "at": 1786540418,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "cert-aggregator",
-      "at": 1786475629
+      "lane": "runner-wiring",
+      "at": 1786540418
     },
     {
       "type": "usage_capture",
-      "lane": "threat-engine",
-      "at": 1786475629,
+      "lane": "prompt-contract",
+      "at": 1786540419,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "threat-engine",
-      "at": 1786475629
+      "lane": "prompt-contract",
+      "at": 1786540420
     },
     {
       "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786476906,
+      "lane": "visual-doc-contract",
+      "at": 1786540422,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "integrator",
-      "at": 1786476906
+      "lane": "visual-doc-contract",
+      "at": 1786540423
     },
     {
       "type": "usage_capture",
-      "lane": "capture-engine",
-      "at": 1786478431,
-      "added": 9753339
+      "lane": "claude-contract",
+      "at": 1786540425,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "claude-contract",
+      "at": 1786540426
     },
     {
       "type": "usage_capture",
-      "lane": "pixel-verifier",
-      "at": 1786478431,
-      "added": 4894057
+      "lane": "codex-parity",
+      "at": 1786540431,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "codex-parity",
+      "at": 1786540432
     },
     {
       "type": "usage_capture",
-      "lane": "calibration-corpus",
-      "at": 1786478431,
-      "added": 816391
+      "lane": "provider-hooks",
+      "at": 1786540435,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "provider-hooks",
+      "at": 1786540436
     },
     {
       "type": "usage_capture",
-      "lane": "judge-calibration",
-      "at": 1786478431,
-      "added": 1156882
+      "lane": "capture-hardening",
+      "at": 1786540439,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "capture-hardening",
+      "at": 1786540440
     },
     {
       "type": "usage_capture",
-      "lane": "blind-ballot",
-      "at": 1786478431,
-      "added": 3127663
+      "lane": "a11y-evidence",
+      "at": 1786540445,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "a11y-evidence",
+      "at": 1786540446
     },
     {
       "type": "usage_capture",
-      "lane": "stats-engine",
-      "at": 1786478432,
-      "added": 1009343
+      "lane": "stimulus-evidence",
+      "at": 1786540450,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "stimulus-evidence",
+      "at": 1786540451
+    },
+    {
+      "type": "restarts",
+      "lane": "packet-intelligence",
+      "at": 1786541120
     },
     {
       "type": "usage_capture",
-      "lane": "cert-aggregator",
-      "at": 1786478432,
-      "added": 2318059
+      "lane": "taste-integrator",
+      "at": 1786545057,
+      "added": null
+    },
+    {
+      "type": "launches",
+      "lane": "taste-integrator",
+      "at": 1786545057
     },
     {
       "type": "usage_capture",
-      "lane": "threat-engine",
-      "at": 1786478432,
-      "added": 1394329
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786478432,
-      "added": 11530507
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786478476
-    },
-    {
-      "type": "usage_capture",
-      "lane": "capture-engine",
-      "at": 1786478476,
+      "lane": "receipt-producers",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "pixel-verifier",
-      "at": 1786478476,
+      "lane": "certificate-v2",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "calibration-corpus",
-      "at": 1786478476,
+      "lane": "tournament-engine",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "judge-calibration",
-      "at": 1786478476,
+      "lane": "taste-memory",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "blind-ballot",
-      "at": 1786478476,
+      "lane": "packet-intelligence",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "stats-engine",
-      "at": 1786478476,
+      "lane": "quality-adapter",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "cert-aggregator",
-      "at": 1786478476,
+      "lane": "runner-wiring",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "threat-engine",
-      "at": 1786478476,
+      "lane": "prompt-contract",
+      "at": 1786550275,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786478476,
+      "lane": "visual-doc-contract",
+      "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "claude-contract",
+      "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "codex-parity",
+      "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "provider-hooks",
+      "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "capture-hardening",
+      "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "a11y-evidence",
+      "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "stimulus-evidence",
+      "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "taste-integrator",
+      "at": 1786550276,
       "added": null
     }
-  ],
-  "usage": {
-    "input_tokens": 35763874,
-    "cached_input_tokens": 34593792,
-    "uncached_input_tokens": 1170082,
-    "output_tokens": 236696,
-    "reasoning_output_tokens": 92609
-  }
+  ]
 }

@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "stimulus-evidence",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-stimulus-evidence/docs/verify-stimulus-evidence.md",
+  "helped": [],
+  "unused": [
+    "design:design-critique",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}
