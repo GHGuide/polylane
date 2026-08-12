@@ -259,4 +259,14 @@ assert_eq "abstention-sealed" "abstained" "$(ledger_field "$D_AB" wu-ab terminal
 assert_eq "abstention-decision-recorded" "abstain" "$(ledger_field "$D_AB" wu-ab decision)"
 assert_eq "abstention-counted-not-failed" 1 "$(jq -r .counts.abstained "$D_AB/campaign-summary.json")"
 
+# --- source hygiene: no raw NUL bytes ----------------------------------------
+# bash silently strips NUL bytes from script words, so a raw NUL inside a jq
+# program (e.g. a path-delimiter literal) silently changes the program. Any
+# NUL-valued delimiter must be spelled as the ASCII escape backslash-u0000.
+if LC_ALL=C tr -d '\0' < "$CAMPAIGN" | cmp -s - "$CAMPAIGN"; then
+  assert_eq "no-raw-nul-bytes-in-campaign-script" ok ok
+else
+  assert_eq "no-raw-nul-bytes-in-campaign-script" ok "raw NUL byte present"
+fi
+
 finish

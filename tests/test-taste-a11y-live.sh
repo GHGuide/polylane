@@ -406,4 +406,15 @@ RECEIPT_FORGE='.executed_at="2000-01-01T00:00:00Z"' \
   run_audit "$ROOT" "$C/manifest.json" "$C/plan.json" "$C/receipt.json" bash "$FORGER"
 assert_reject "stale_engine_receipt" STALE_RECEIPT
 
+# --- source hygiene: no raw NUL bytes ----------------------------------------
+# bash silently strips NUL bytes from script words, so a raw NUL inside a jq
+# program (the composite-key delimiters here) silently changes the program.
+# NUL delimiters must be spelled as the escape " ".
+if LC_ALL=C tr -d '\0' < "$A11Y_LIVE" | cmp -s - "$A11Y_LIVE"; then
+  PASS_COUNT=$((PASS_COUNT + 1))
+else
+  echo "FAIL: raw NUL byte present in $A11Y_LIVE" >&2
+  exit 1
+fi
+
 finish

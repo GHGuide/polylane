@@ -136,7 +136,10 @@ cp "$B/raw.txt" "$TMP/mismatch/raw.txt"; cp "$B/sessions.txt" "$TMP/mismatch/ses
   printf 's1\t%s\t%s\t%s\t0.90\t%s\t%s\n' $Z $Z $Z $Z $Z
   printf 's2\t-%s\t-%s\t-%s\t-%s\t-%s\t-%s\n' $Z $Z $Z $Z $Z $Z
 } >"$TMP/mismatch/agg.txt"
-assert_ok norm "$TMP/mismatch/raw.txt" "$TMP/mismatch/agg.txt" "$TMP/out4.json" \
+# Under the fail-closed fidelity contract a mismatch is never a success: the
+# diagnostic output still records the exclusion, but the exit is non-zero.
+expect_fail_reason "aggregate verification failed" \
+  norm "$TMP/mismatch/raw.txt" "$TMP/mismatch/agg.txt" "$TMP/out4.json" \
   --compliant-sessions "$TMP/mismatch/sessions.txt"
 expect_eq 1 "$(jq '.records | length' "$TMP/out4.json")" "mismatched stimulus dropped"
 expect_eq "aggregate-mismatch" \
@@ -281,12 +284,14 @@ expect_eq 5 \
   "$(jq '.records[] | select(.stimulus_id == "s1") | .support.AE' "$TMP/out10.json")" \
   "re-rated session counts once"
 
-# --- 14. more than two rows per session/stimulus/dimension is drift -----------
+# --- 14. more than two DISTINCT rows per session/stimulus/dimension is drift --
+# (a verbatim-repeated row is collapsed losslessly — case 20 — so this fixture
+# uses three genuinely distinct rows)
 mkdir -p "$TMP/triple"
 { printf '%s\n' "$RAW_HDR"; rate_all_dims s1 1 s 5; rate_all_dims s2 -1 s 5
-  raw_row s1 FALSE 1 FALSE AE s1
+  raw_row s1 TRUE 0 FALSE AE s1
   raw_row s1 TRUE 1 FALSE AE s1
-} >"$TMP/triple/raw.txt"   # s1/AE/s1 now appears three times
+} >"$TMP/triple/raw.txt"   # s1/AE/s1: three distinct exposures
 cp "$B/agg.txt" "$TMP/triple/agg.txt"
 assert_fail norm "$TMP/triple/raw.txt" "$TMP/triple/agg.txt" "$TMP/x.json"
 
@@ -298,8 +303,8 @@ printf 'stimulusId\tTYP\tAVG\tEXMPL\tAE\tUS\tTRU\tEXTRA\ns1\t1\t1\t1\t1\t1\t1\t1
 printf 'stimulusId\tTYP\tAVG\tEXMPL\tAE\tUS\ns1\t1\t1\t1\t1\t1\n' >"$TMP/agg-bad/missing.txt"
 { printf '%s\n' "$AGG_HDR"
   printf 's1\t%s\t%s\t%s\t%s\t%s\t%s\n' $Z $Z $Z $Z $Z $Z
-  printf 's1\t%s\t%s\t%s\t%s\t%s\t%s\n' $Z $Z $Z $Z $Z $Z
-} >"$TMP/agg-bad/dupstim.txt"
+  printf 's1\t0.5\t%s\t%s\t%s\t%s\t%s\n' $Z $Z $Z $Z $Z
+} >"$TMP/agg-bad/dupstim.txt"   # repeated stimulus with DIFFERENT values (identical repeats collapse, case 23)
 { printf '%s\n' "$AGG_HDR"
   printf 's1\t%s\t%s\t%s\tNA\t%s\t%s\n' $Z $Z $Z $Z $Z
   printf 's2\t-%s\t-%s\t-%s\t-%s\t-%s\t-%s\n' $Z $Z $Z $Z $Z $Z
@@ -363,5 +368,227 @@ sed $'s/$/\r/' "$B/raw.txt" >"$TMP/crlf/raw.txt"
 sed $'s/$/\r/' "$B/agg.txt" >"$TMP/crlf/agg.txt"
 assert_ok norm "$TMP/crlf/raw.txt" "$TMP/crlf/agg.txt" "$TMP/out12.json"
 expect_eq 2 "$(jq '.records | length' "$TMP/out12.json")" "CRLF tolerated"
+
+# --- 20. byte-identical repeated raw rows collapse losslessly ----------------
+# The released banks file contains one verbatim-repeated duplicate-exposure row
+# (b825.jpg / US). Collapsing an exact repeat loses no information; the
+# published-aggregate tolerance gate remains the arbiter of the interpretation.
+mkdir -p "$TMP/dupped"
+cp "$B/agg.txt" "$TMP/dupped/agg.txt"
+{ cat "$B/raw.txt"
+  raw_row s1 TRUE 1 FALSE TYP sess1
+  raw_row s1 TRUE 1 FALSE TYP sess1
+} >"$TMP/dupped/raw.txt"
+assert_ok norm "$TMP/dupped/raw.txt" "$TMP/dupped/agg.txt" "$TMP/out20.json"
+expect_eq 2 "$(jq '.records | length' "$TMP/out20.json")" "exact-repeat rows collapse"
+expect_eq "$(jq -r '.records[] | select(.stimulus_id=="s1") | .labels.TYP' "$TMP/out1.json")" \
+  "$(jq -r '.records[] | select(.stimulus_id=="s1") | .labels.TYP' "$TMP/out20.json")" \
+  "collapsed repeat leaves labels unchanged"
+
+# Three DISTINCT rows for one session/stimulus/dimension stay a hard failure.
+mkdir -p "$TMP/tripled"
+cp "$B/agg.txt" "$TMP/tripled/agg.txt"
+{ cat "$B/raw.txt"
+  raw_row s1 TRUE 1 FALSE TYP sess1
+  raw_row s1 TRUE 0 FALSE TYP sess1
+} >"$TMP/tripled/raw.txt"
+expect_fail_reason "more than two" norm "$TMP/tripled/raw.txt" "$TMP/tripled/agg.txt" "$TMP/x20.json"
+
+# --- 21. per-stimulus standardized samples (compliant mode only) -------------
+assert_ok norm "$B/raw.txt" "$B/agg.txt" "$TMP/out21.json" \
+  --compliant-sessions "$B/sessions.txt" --samples AE
+expect_eq "recomputed-within-tolerance" \
+  "$(jq -r '.aggregate_check' "$TMP/out21.json")" "samples run stays compliant"
+expect_eq "0.957427 0.957427 0.957427 0.957427 0.957427" \
+  "$(jq -r '.records[] | select(.stimulus_id=="s1") | .samples.AE | map(tostring) | join(" ")' "$TMP/out21.json")" \
+  "AE samples are the five compliant standardized session values"
+expect_eq "5" "$(jq -r '.records[] | select(.stimulus_id=="s2") | .samples.AE | length' "$TMP/out21.json")" \
+  "samples length equals compliant support"
+# samples without a compliant list are undefined and must be refused
+assert_fail norm "$B/raw.txt" "$B/agg.txt" "$TMP/x21.json" --samples AE
+# unknown dimension is refused
+assert_fail norm "$B/raw.txt" "$B/agg.txt" "$TMP/x21b.json" \
+  --compliant-sessions "$B/sessions.txt" --samples NOPE
+
+# --- 22. training rows enter the standardization basis (source-exact) --------
+# Reproduced exactly against the released aggregates: the source standardizes
+# each session over ALL its dup-averaged (stimulus, dimension, training)
+# values — training items included in the basis — then publishes the mean of
+# the non-training standardized values over compliant sessions. With one
+# training value 0 beside s1=1 and s2=-1 on all six dimensions, the basis is
+# 13 values with mean 0 and sample sd exactly 1, so published labels are ±1.
+mkdir -p "$TMP/train-basis"
+{ printf '%s\n' "$RAW_HDR"
+  i=1
+  while [ "$i" -le 5 ]; do
+    for dim in $DIMS; do
+      raw_row s1 FALSE 1 FALSE "$dim" "sess$i"
+      raw_row s2 FALSE -1 FALSE "$dim" "sess$i"
+    done
+    raw_row t1 FALSE 0 TRUE AE "sess$i"
+    i=$((i + 1))
+  done
+} >"$TMP/train-basis/raw.txt"
+{ printf '%s\n' "$AGG_HDR"
+  printf 's1\t1\t1\t1\t1\t1\t1\n'
+  printf 's2\t-1\t-1\t-1\t-1\t-1\t-1\n'
+} >"$TMP/train-basis/agg.txt"
+printf 'sess1\nsess2\nsess3\nsess4\nsess5\n' >"$TMP/train-basis/sessions.txt"
+assert_ok norm "$TMP/train-basis/raw.txt" "$TMP/train-basis/agg.txt" "$TMP/out22.json" \
+  --compliant-sessions "$TMP/train-basis/sessions.txt" --samples AE
+expect_eq "recomputed-within-tolerance" \
+  "$(jq -r '.aggregate_check' "$TMP/out22.json")" "training-basis recompute matches"
+expect_eq "2" "$(jq '.records | length' "$TMP/out22.json")" "training stimulus never a record"
+expect_eq "1.000000 1.000000 1.000000 1.000000 1.000000" \
+  "$(jq -r '.records[] | select(.stimulus_id=="s1") | .samples.AE | map(tostring) | join(" ")' "$TMP/out22.json")" \
+  "samples reflect the training-inclusive basis"
+
+# --- 23. byte-identical duplicate aggregate rows collapse; differing die -----
+# The released banks aggregate repeats the b428.jpg row verbatim.
+mkdir -p "$TMP/aggdup"
+cp "$B/raw.txt" "$TMP/aggdup/raw.txt"
+{ cat "$B/agg.txt"; tail -1 "$B/agg.txt"; } >"$TMP/aggdup/agg.txt"
+assert_ok norm "$TMP/aggdup/raw.txt" "$TMP/aggdup/agg.txt" "$TMP/out23.json"
+expect_eq 2 "$(jq '.records | length' "$TMP/out23.json")" "identical agg repeat collapses"
+{ cat "$B/agg.txt"; tail -1 "$B/agg.txt" | awk -F'\t' 'BEGIN{OFS="\t"}{$2="0.5"; print}'; } >"$TMP/aggdup/agg-conflict.txt"
+expect_fail_reason "duplicate aggregate stimulus" \
+  norm "$TMP/aggdup/raw.txt" "$TMP/aggdup/agg-conflict.txt" "$TMP/x23.json"
+
+# --- 24. support gate scoped to the declared label dimension -----------------
+# Pairs and selection consume >=5 samples of the label dimension; a stimulus
+# with 5 AE raters but 4 on another dimension is usable when AE is declared,
+# and still excluded under the legacy min-over-all-dimensions gate.
+mkdir -p "$TMP/scoped"
+{ printf '%s\n' "$RAW_HDR"
+  i=1
+  while [ "$i" -le 4 ]; do
+    for dim in $DIMS; do
+      raw_row s1 FALSE 1 FALSE "$dim" "sess$i"
+      raw_row s2 FALSE -1 FALSE "$dim" "sess$i"
+    done
+    i=$((i + 1))
+  done
+  raw_row s1 FALSE 1 FALSE AE sess5
+  for dim in $DIMS; do raw_row s2 FALSE -1 FALSE "$dim" sess5; done
+} >"$TMP/scoped/raw.txt"
+{ printf '%s\n' "$AGG_HDR"
+  printf 's1\t0.957427\t0.957427\t0.957427\t1.219499\t0.957427\t0.957427\n'
+  printf 's2\t-0.841535\t-0.841535\t-0.841535\t-0.841535\t-0.841535\t-0.841535\n'
+} >"$TMP/scoped/agg.txt"
+printf 'sess1\nsess2\nsess3\nsess4\nsess5\n' >"$TMP/scoped/sessions.txt"
+assert_ok norm "$TMP/scoped/raw.txt" "$TMP/scoped/agg.txt" "$TMP/out24.json" \
+  --compliant-sessions "$TMP/scoped/sessions.txt" --samples AE
+expect_eq 2 "$(jq '.records | length' "$TMP/out24.json")" "AE-scoped gate keeps s1"
+expect_eq 5 "$(jq '.records[] | select(.stimulus_id=="s1") | .samples.AE | length' "$TMP/out24.json")" \
+  "s1 carries five AE samples"
+expect_eq 4 "$(jq '.records[] | select(.stimulus_id=="s1") | .support.TYP' "$TMP/out24.json")" \
+  "other-dimension support recorded honestly"
+# legacy mode (no declared label dimension) still gates on every dimension
+assert_ok norm "$TMP/scoped/raw.txt" "$TMP/scoped/agg.txt" "$TMP/out24b.json" \
+  --compliant-sessions "$TMP/scoped/sessions.txt"
+expect_eq 1 "$(jq '.records | length' "$TMP/out24b.json")" "legacy min-over-dims gate unchanged"
+expect_eq "weak-support" "$(jq -r '.excluded[] | select(.stimulus_id=="s1") | .reason' "$TMP/out24b.json")" \
+  "legacy exclusion reason preserved"
+
+# --- 25. source fidelity is verified before (and regardless of) eligibility --
+# A weak-support stimulus with a wrong published aggregate must still poison
+# the global claim: verification covers every finite joined value, and only
+# afterwards may weak-support exclude the stimulus.
+mkdir -p "$TMP/fidelity"
+cp "$TMP/scoped/raw.txt" "$TMP/fidelity/raw.txt"
+cp "$TMP/scoped/sessions.txt" "$TMP/fidelity/sessions.txt"
+{ printf '%s\n' "$AGG_HDR"
+  printf 's1\t0.957427\t0.957427\t0.957427\t1.219499\t0.957427\t0.957427\n'
+  printf 's2\t-0.841535\t-0.841535\t2.000000\t-0.841535\t-0.841535\t-0.841535\n'
+} >"$TMP/fidelity/agg.txt"   # s2 EXMPL is wrong by ~2.8
+# A mismatched source is never a success: diagnostic output is preserved but
+# the exit is non-zero, so no downstream step can consume it as validated.
+expect_fail_reason "aggregate verification failed" \
+  norm "$TMP/fidelity/raw.txt" "$TMP/fidelity/agg.txt" "$TMP/out25.json" \
+  --compliant-sessions "$TMP/fidelity/sessions.txt" --samples AE
+expect_eq "recomputed-with-mismatches" \
+  "$(jq -r '.aggregate_check' "$TMP/out25.json")" "diagnostic output records the poisoned claim"
+expect_eq "1" "$(jq -r '.verification.mismatched_values' "$TMP/out25.json")" "mismatch counted"
+expect_eq "aggregate-mismatch" \
+  "$(jq -r '.excluded[] | select(.stimulus_id=="s2") | .reason' "$TMP/out25.json")" \
+  "mismatch exclusion precedes weak-support"
+# clean run: counters present, zero mismatches, full coverage
+expect_eq "0" "$(jq -r '.verification.mismatched_values' "$TMP/out24.json")" "clean run has zero mismatches"
+jq -e '.verification.verified_values >= 12
+       and .verification.unverified_values == 0
+       and .verification.expected_finite_values == .verification.verified_values
+       and (.verification.max_abs_error | type == "number")' \
+  "$TMP/out24.json" >/dev/null || { echo "FAIL verification counters missing" >&2; exit 1; }
+ASSERTIONS=$((ASSERTIONS + 1))
+
+# --- 25b. a joined stimulus with an unverifiable finite dimension is a
+# coverage gap: never within-tolerance, never a success. Five sessions each
+# rate s1=+1 and s2=-1 on all six dimensions plus s3=0 on AE only: the basis
+# is 13 dup-means with mean 0 and sample sd exactly 1, so recompute is exact
+# for every rated value while s3's five unrated dimensions stay unverifiable.
+mkdir -p "$TMP/gap"
+{ printf '%s\n' "$RAW_HDR"
+  i=1
+  while [ "$i" -le 5 ]; do
+    for dim in $DIMS; do
+      raw_row s1 FALSE 1 FALSE "$dim" "sess$i"
+      raw_row s2 FALSE -1 FALSE "$dim" "sess$i"
+    done
+    raw_row s3 FALSE 0 FALSE AE "sess$i"
+    i=$((i + 1))
+  done
+} >"$TMP/gap/raw.txt"
+{ printf '%s\n' "$AGG_HDR"
+  printf 's1\t1\t1\t1\t1\t1\t1\n'
+  printf 's2\t-1\t-1\t-1\t-1\t-1\t-1\n'
+  printf 's3\t0\t0\t0\t0\t0\t0\n'
+} >"$TMP/gap/agg.txt"
+printf 'sess1\nsess2\nsess3\nsess4\nsess5\n' >"$TMP/gap/sessions.txt"
+expect_fail_reason "aggregate verification failed" \
+  norm "$TMP/gap/raw.txt" "$TMP/gap/agg.txt" "$TMP/out25b.json" \
+  --compliant-sessions "$TMP/gap/sessions.txt" --samples AE
+expect_eq "recomputed-incomplete" \
+  "$(jq -r '.aggregate_check' "$TMP/out25b.json")" "coverage gap poisons the claim"
+expect_eq "5" "$(jq -r '.verification.unverified_values' "$TMP/out25b.json")" "five s3 dimensions unverifiable"
+
+# --- 25c. declared label dimension is explicit in the output -----------------
+expect_eq "AE" "$(jq -r '.label_dimension' "$TMP/out24.json")" "label dimension recorded"
+expect_eq "5" "$(jq -r '.records[] | select(.stimulus_id=="s1") | .label_support' "$TMP/out24.json")" \
+  "label_support carries the scoped support"
+
+# --- 26. strict demographics -> compliant-sessions helper --------------------
+mkdir -p "$TMP/demo"
+demo_hdr=$(printf 'sessionId\tGender\tsusCheat\tuid')
+{ printf '%s\n' "$demo_hdr"
+  printf 'sess1\tF\tFALSE\tu1\n'
+  printf 'sess2\tM\tfalse\tu2\n'
+  printf 'sess3\tF\tTRUE\tu3\n'
+  printf 'sessX\tM\tFALSE\tu4\n'
+} >"$TMP/demo/demo.txt"
+assert_ok "$RATINGS" sessions --demographics "$TMP/demo/demo.txt" --raw "$B/raw.txt" \
+  --out "$TMP/demo/list.txt" --receipt "$TMP/demo/receipt.json"
+expect_eq "sess1
+sess2" "$(cat "$TMP/demo/list.txt")" "case-insensitive FALSE, raw-joined, sorted unique"
+jq -e --arg d "$(shasum -a 256 "$TMP/demo/demo.txt" | awk '{print $1}')" '
+  .inputs.demographics_sha256 == $d
+  and .counts.suscheat_false == 3 and .counts.in_raw == 2' "$TMP/demo/receipt.json" >/dev/null \
+  || { echo "FAIL sessions receipt bindings" >&2; exit 1; }
+ASSERTIONS=$((ASSERTIONS + 1))
+# duplicate session row is terminal
+{ printf '%s\n' "$demo_hdr"; printf 'sess1\tF\tFALSE\tu1\nsess1\tF\tFALSE\tu1\n'; } >"$TMP/demo/dup.txt"
+expect_fail_reason "duplicate demographics session" \
+  "$RATINGS" sessions --demographics "$TMP/demo/dup.txt" --raw "$B/raw.txt" --out "$TMP/demo/x.txt"
+# malformed susCheat value is terminal
+{ printf '%s\n' "$demo_hdr"; printf 'sess1\tF\tmaybe\tu1\n'; } >"$TMP/demo/badval.txt"
+expect_fail_reason "invalid susCheat" \
+  "$RATINGS" sessions --demographics "$TMP/demo/badval.txt" --raw "$B/raw.txt" --out "$TMP/demo/x.txt"
+# missing susCheat column is terminal
+{ printf 'sessionId\tGender\n'; printf 'sess1\tF\n'; } >"$TMP/demo/nocol.txt"
+expect_fail_reason "susCheat" \
+  "$RATINGS" sessions --demographics "$TMP/demo/nocol.txt" --raw "$B/raw.txt" --out "$TMP/demo/x.txt"
+# zero compliant sessions after the raw join is terminal
+{ printf '%s\n' "$demo_hdr"; printf 'sessZ\tF\tFALSE\tu1\n'; } >"$TMP/demo/none.txt"
+expect_fail_reason "no compliant sessions" \
+  "$RATINGS" sessions --demographics "$TMP/demo/none.txt" --raw "$B/raw.txt" --out "$TMP/demo/x.txt"
 
 echo "ok - $ASSERTIONS assertions"

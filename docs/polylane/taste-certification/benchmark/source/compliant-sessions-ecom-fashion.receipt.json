@@ -1,0 +1,20 @@
+{
+  "counts": {
+    "demographics_rows": 593,
+    "in_raw": 290,
+    "suscheat_false": 290
+  },
+  "executed_at": "2026-08-13T00:00:00Z",
+  "inputs": {
+    "demographics_sha256": "34f2bca2a789f0f9619f4a2938cf4e0c737e67289441e89980d436efedb6586c",
+    "raw_sha256": "9c14d098c48ff45cec2dd91d5832a14f50ca589c7f00fab9163077c1bcfa557d"
+  },
+  "kind": "compliant-sessions-receipt",
+  "output_sha256": "5bc42bdaf42902f7354e90bfabb631d64310a6b6b378911f7c6e78f1f1fcb320",
+  "rule": "susCheat == FALSE (case-insensitive), joined against raw sessions, sorted unique",
+  "schema_version": "taste-ratings-normalize/v1",
+  "tool": {
+    "fingerprint": "1697937e927db84d160e89414865a8aa2d7ef76dd935933d6c6f63fde802c1dd",
+    "id": "polylane-taste-ratings"
+  }
+}

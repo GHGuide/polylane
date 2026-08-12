@@ -1,0 +1,35 @@
+{
+  "aggregate_check": "recomputed-within-tolerance",
+  "domain": "commercial-banks",
+  "excluded": 523,
+  "executed_at": "2026-08-13T00:00:00Z",
+  "inputs": {
+    "aggregate_sha256": "56721f7b915faa61b6a78100a3f6da6bf44d4aabf02b94688f15722c2266a46a",
+    "compliant_sessions_sha256": "e673b3350e345e8ee24a0ba9af2a39326c9a9af538c3d9dbbcaa7112c614dbfe",
+    "raw_sha256": "a4201b2977052fe74841b874d68bf2ff4630a66d229ab2a5e2a57a69d4f8aeef"
+  },
+  "kind": "receipt",
+  "min_support_required": 5,
+  "output_sha256": "7474aced7a936d17dda4aaf8c03bc7fab4478f361563df864e28592216fb04fc",
+  "records": 510,
+  "row_stats": {
+    "nonfinite_rows": 0,
+    "raw_rows": 116829,
+    "training_rows": 3894
+  },
+  "schema_version": "taste-ratings-normalize/v1",
+  "source_id": "miniukovich-z7klih",
+  "support_basis": "compliant-sessions",
+  "tolerance": 0.01,
+  "tool": {
+    "fingerprint": "1697937e927db84d160e89414865a8aa2d7ef76dd935933d6c6f63fde802c1dd",
+    "id": "polylane-taste-ratings"
+  },
+  "verification": {
+    "expected_finite_values": 6168,
+    "max_abs_error": 0.004141,
+    "mismatched_values": 0,
+    "unverified_values": 0,
+    "verified_values": 6168
+  }
+}
