@@ -1,0 +1,146 @@
+{
+  "schema_version": "taste-judge-response/v1",
+  "work_unit_id": "wu-c40-live-smoke-a3",
+  "positions": {
+    "A": {
+      "color": 2,
+      "craftsmanship": 2,
+      "hierarchy": 3,
+      "originality": 2,
+      "product_fit": 3,
+      "spatial_rhythm": 3,
+      "state_coherence": 3,
+      "typography": 3
+    },
+    "B": {
+      "color": 6,
+      "craftsmanship": 6,
+      "hierarchy": 6,
+      "originality": 5,
+      "product_fit": 6,
+      "spatial_rhythm": 6,
+      "state_coherence": 7,
+      "typography": 6
+    }
+  },
+  "observations": {
+    "A": [
+      {
+        "brief_clause": "The board must clearly show the default state and the overload/error state.",
+        "capture_id": "A",
+        "criterion": "color",
+        "reason": "All three fill bars use the same flat dark-gray, including Priya's overfilled bar; color does no signaling work and only the red 'Overload refused' text carries any hue meaning.",
+        "region_or_state": "progress bars across all cards"
+      },
+      {
+        "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+        "capture_id": "A",
+        "criterion": "craftsmanship",
+        "reason": "Stark 1px black rectangular borders, default-browser serif rendering, cramped internal padding, and bars butting against card edges read as unstyled HTML rather than a finished control surface.",
+        "region_or_state": "card borders and interiors"
+      },
+      {
+        "brief_clause": "The board must clearly show the default state and the overload/error state.",
+        "capture_id": "A",
+        "criterion": "hierarchy",
+        "reason": "Bold serif van headers read first, but the capacity readout, the bar, and the shipment bullet are weakly differentiated in size/weight, flattening the secondary information.",
+        "region_or_state": "card header vs body"
+      },
+      {
+        "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+        "capture_id": "A",
+        "criterion": "originality",
+        "reason": "The layout presents as generic default-styled markup with serif type and outline boxes; there is no distinctive design voice or memorable treatment.",
+        "region_or_state": "overall composition"
+      },
+      {
+        "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+        "capture_id": "A",
+        "criterion": "product_fit",
+        "reason": "The newspaper-style serif type and hard black outlines feel mismatched to a live operations control board, though all required load data is present and legible.",
+        "region_or_state": "whole board"
+      },
+      {
+        "brief_clause": "Assigning the 950 kg shipment S-108 to Nadia's 1200 kg van fills her capacity bar to 950.",
+        "capture_id": "A",
+        "criterion": "spatial_rhythm",
+        "reason": "Vertical card gaps are even, but tight internal padding and full-bleed bars touching the borders leave the rhythm cramped and inconsistent between header and content.",
+        "region_or_state": "stacked card list"
+      },
+      {
+        "brief_clause": "Any assignment that would exceed a van's capacity is refused with an overload warning.",
+        "capture_id": "A",
+        "criterion": "state_coherence",
+        "reason": "Priya's overload is signaled only by red text; the overfilled bar stays the same gray as the healthy bars, so the default vs error states are not visually distinguished at the meter itself.",
+        "region_or_state": "Priya overload card vs Nadia/Omar default cards"
+      },
+      {
+        "brief_clause": "The board must clearly show the default state and the overload/error state.",
+        "capture_id": "A",
+        "criterion": "typography",
+        "reason": "Type is consistent serif and readable, but generic default sizing gives the van name and capacity line near-equal prominence with little intentional scale.",
+        "region_or_state": "headings and body text"
+      }
+    ],
+    "B": [
+      {
+        "brief_clause": "The board must clearly show the default state and the overload/error state.",
+        "capture_id": "B",
+        "criterion": "color",
+        "reason": "Healthy loads use coordinated blue-to-green gradient fills while the overload uses red, all reading cleanly on the dark navy ground; color is used purposefully and cohesively.",
+        "region_or_state": "progress bars and card accents"
+      },
+      {
+        "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+        "capture_id": "B",
+        "criterion": "craftsmanship",
+        "reason": "Rounded slate cards, softly gradiented pill meters, subtle borders, and evenly aligned columns present a polished, deliberately finished surface.",
+        "region_or_state": "cards and pill bars"
+      },
+      {
+        "brief_clause": "The board must clearly show the default state and the overload/error state.",
+        "capture_id": "B",
+        "criterion": "hierarchy",
+        "reason": "Bold white van name reads first, then the meter, then muted capacity text, then the blue shipment id — a clear descending emphasis that guides the eye.",
+        "region_or_state": "card content stack"
+      },
+      {
+        "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+        "capture_id": "B",
+        "criterion": "originality",
+        "reason": "A modern dark dashboard with gradient load meters is attractive and competent, though it draws on a fairly familiar dark-UI idiom rather than a novel one.",
+        "region_or_state": "overall composition"
+      },
+      {
+        "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+        "capture_id": "B",
+        "criterion": "product_fit",
+        "reason": "The horizontal row of per-van load cards with capacity meters reads convincingly as a live operations control dashboard suited to a dispatcher's morning board.",
+        "region_or_state": "whole board"
+      },
+      {
+        "brief_clause": "Assigning the 950 kg shipment S-108 to Nadia's 1200 kg van fills her capacity bar to 950.",
+        "capture_id": "B",
+        "criterion": "spatial_rhythm",
+        "reason": "Three equal-width cards with consistent gaps and internal padding create a balanced, well-measured rhythm; the only slack is the large empty area below the row.",
+        "region_or_state": "three-card row"
+      },
+      {
+        "brief_clause": "Any assignment that would exceed a van's capacity is refused with an overload warning.",
+        "capture_id": "B",
+        "criterion": "state_coherence",
+        "reason": "The overload is triple-signaled — a red fill bar, a red card outline, and red bold 'Overload refused' text — against the green/blue default cards, giving an unambiguous default-vs-error distinction.",
+        "region_or_state": "Priya overload card vs Nadia/Omar default cards"
+      },
+      {
+        "brief_clause": "The board must clearly show the default state and the overload/error state.",
+        "capture_id": "B",
+        "criterion": "typography",
+        "reason": "Clean sans-serif with clear weight contrast between bold names and muted secondary lines keeps the readouts legible and organized.",
+        "region_or_state": "headings and body text"
+      }
+    ]
+  },
+  "choice": "B",
+  "abstain_reason": null
+}

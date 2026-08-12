@@ -15,6 +15,14 @@ tournament, receipt, and label rules for Cycle 39 live in
 `docs/polylane/cycle-39-plan.md`; this file is the planning and prompt doctrine that
 feeds them.
 
+**Live boundary.** The fail-closed validator/compiler chain
+(`bin/polylane-taste*.sh`) is live in the tree but runs on **fixture-grade**
+evidence; the real acquisition, browser-capture, judge, and production ballot-v2
+adapters are Cycle-40 deliverables built in sibling lanes and not yet merged here.
+`PROTOCOL.md` §0 is the authoritative map of what is live now, what is a Cycle-40
+adapter, and what stays external. Because Cycle 40 recruits no deciding humans, the
+strongest attainable label is `HUMAN_CALIBRATED_MACHINE` (`human_certified:false`).
+
 ## Ownership boundary (read this first)
 
 The builder owns implementation and real capture evidence. That is all. The
@@ -179,8 +187,12 @@ a previous pointer. Tournament losers never merge into the ordinary integration 
 
 Local tournament selection is labeled `SELECTED_NOT_CERTIFIED`. It does not claim
 aesthetic superiority. Only the later benchmark of ten or more varied briefs may emit
-`TASTE-CERTIFIED`, and only real eligible humans may set `human_certified:true`
-(PROTOCOL.md §1, §8). A proposed champion replacement earns that benchmark promotion
+`TASTE-CERTIFIED`, and only real recruited eligible humans may set
+`human_certified:true` (PROTOCOL.md §1, §8). A machine panel that passes the held-out
+human-label calibration reaches at most `HUMAN_CALIBRATED_MACHINE`. That benchmark
+depends on the Cycle-40 live adapters (browser capture, provider judges, production
+ballot-v2); until they merge, a `taste-certificate/v2` compiled here stays
+`fixture_only:true` and cannot promote a champion. A proposed champion replacement earns that benchmark promotion
 only from an executable old-vs-new certification: at least 10 varied prompts, paired
 anonymized screenshots, blind decisive comparisons, at least 70% creative or polish
 wins, and no accessibility regression. Preserve prompts, artifact ids or paths, the

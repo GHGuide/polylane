@@ -1,0 +1,88 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "language-exchange",
+  "stratum": "education",
+  "category": "language-partner-exchange",
+  "origin": "cycle-40-plan",
+  "title": "Match the mirrored offers",
+  "brief": "Learners pin paper slips to our library corkboard hoping a matching speaker walks by the same week.",
+  "target_population": {
+    "role": "coordinator of a city library's tandem language-exchange board",
+    "locale": "it-IT",
+    "coverage_limit": "one library branch's open offers; first names only, matches meet at the desk"
+  },
+  "product_shape": "matching board",
+  "core_task": {
+    "id": "task-language-exchange",
+    "summary": "post an exchange offer and see its reciprocal partner surface",
+    "success_oracle": "posting an offer of Italian seeking Japanese immediately surfaces the seeded card offering Japanese seeking Italian as a proposed match"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "offers are seeded local records and reciprocal matching is an in-memory scan, so posting resolves its match in the same frame"
+  },
+  "state_recipes": {
+    "empty": "post an offer seeking Icelandic, which no seeded card offers; the board shows a no-match-yet panel that keeps the offer pinned",
+    "validation-error": "choose the same language in both the offering and seeking fields; an inline error refuses the post",
+    "success": "post Italian-for-Japanese as Carla; Yuki's reciprocal card rises under the match banner",
+    "focus": "press Tab from page load until the offering-language picker shows its focus ring",
+    "mobile": "load the board at 390x844; offer cards flow single-column beneath the post form"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "offer-language", "value": "italian"},
+      {"op": "select", "target": "seek-language", "value": "japanese"},
+      {"op": "fill", "target": "poster-name", "value": "Carla"},
+      {"op": "click", "target": "post-offer"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "match-partner", "value": "Yuki"},
+      {"op": "assert_visible", "target": "match-banner"},
+      {"op": "assert_count", "target": "board-card", "value": 7}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed board carries six open offers spanning five languages with poster first names only.",
+    "Posting Italian-for-Japanese surfaces Yuki's reciprocal card as a proposed match at once.",
+    "Offering and seeking the same language is refused with an inline error before posting."
+  ],
+  "product_signature": {
+    "mechanism": "reciprocal-pair matcher that lights up when two offers mirror each other",
+    "anchor": "proposed-match banner above the board",
+    "brief_trace": "hoping a matching speaker walks by the same week",
+    "counterfactual": "a classifieds list would fit a noticeboard brief and never detects that two slips mirror each other",
+    "task_proof": "success capture shows Carla's new offer beside Yuki's card under the match banner"
+  },
+  "anti_goals": [
+    "no chat, messaging, or contact exchange; matched pairs meet via the library desk",
+    "no accounts or profiles beyond a first name",
+    "no proficiency levels, tests, or scoring"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"poster": "Yuki", "offers": "japanese", "seeks": "italian"},
+      {"poster": "Malik", "offers": "arabic", "seeks": "german"},
+      {"poster": "Greta", "offers": "german", "seeks": "arabic"},
+      {"languages": ["italian", "japanese", "arabic", "german", "polish"]}
+    ],
+    "data_notes": "six invented offers; Yuki's card is the planted reciprocal for the core task and no card offers Icelandic, fixing the empty state"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

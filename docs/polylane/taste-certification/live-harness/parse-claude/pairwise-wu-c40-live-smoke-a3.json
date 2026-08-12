@@ -1,0 +1,15 @@
+{
+  "schema_version": "taste-pairwise/v1",
+  "ballot_id": "pair-wu-c40-live-smoke-a3",
+  "judge_id": "judge-claude-opus-4-8",
+  "display_order": "A/B",
+  "choice": "B",
+  "canonical_choice": "stim-12b3bf3f8fab",
+  "response_sha256": "e36e2ad160b139afd6a3bc54a5c0915d90afd77528f2c98bba169202e0ca4082",
+  "sealed_at": "2026-08-12T20:26:30Z",
+  "identity_visible": false,
+  "prior_ballots_visible": false,
+  "injection_detected": false,
+  "judge_discussion": false,
+  "abstain_reason": null
+}

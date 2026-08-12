@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://polylane.local/taste-live/task-schema.json",
+  "title": "polylane taste-live task/state/assertion schema",
+  "description": "Canonical, executable contract for the task-live hard gate. A coordinator-pinned task plan declares the per-brief tasks, the expected end-state each task reaches, and the success ORACLE for every assertion (the expected value lives in the plan, never in the adapter). A browser task adapter replays an allowlisted action trace and reports only OBSERVED measured evidence bound to the pinned DOM. The validator recomputes each assertion verdict by joining the pinned oracle with the observed evidence — it never trusts a caller-authored status/pass/verdict field. Every required task, state, and assertion must resolve; a missing, unknown, tampered, or failing item vetoes. Product-specificity is proven by a signature that names a brief-specific mechanism, a rendered anchor assertion, a brief clause trace, an unrelated-brief counterfactual that must be ABSENT, and a task proof.",
+
+  "allowlists": {
+    "comment": "Frozen allowlists. bin/polylane-taste-task.sh embeds the identical strings in ALLOWED_ACTIONS / ALLOWED_ASSERTIONS; tests/test-taste-task-live.sh asserts the two never drift. No eval, script, exec, xhr, fetch, or arbitrary JS/shell action is allowlisted, so a brief can never inject execution.",
+    "actions": ["navigate", "click", "fill", "select", "press", "wait_for", "submit"],
+    "assertions": ["exists", "absent", "unique", "count", "text_equals", "text_present", "value_equals", "attr_equals", "state_is"]
+  },
+
+  "safety": {
+    "selector": {
+      "description": "Safe selector charset. Bounded length; CSS/attribute selectors only. Rejects < (tag/script injection), backtick, ; { } $ and the substring javascript:.",
+      "pattern": "^[A-Za-z0-9 _.#\\[\\]=\"':(),>*-]{1,200}$",
+      "forbidden_substrings": ["javascript:", "<", "`", ";", "{", "}", "$"]
+    },
+    "route": {
+      "description": "Relative in-app route only. No scheme, host, protocol-relative //, or .. traversal — any absolute/external target is a NETWORK_ACTION veto.",
+      "pattern": "^/[A-Za-z0-9/_-]*$"
+    },
+    "path": {
+      "description": "Repo-relative regular file, no symlink component, no absolute path, no // and no .. — enforced by safe_relative_regular_file() in the validator."
+    }
+  },
+
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "revision": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+    "rfc3339_utc": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "task_id": { "type": "string", "pattern": "^task-[a-z0-9][a-z0-9-]*$" },
+    "assertion_id": { "type": "string", "pattern": "^assert-[a-z0-9][a-z0-9-]*$" },
+    "state": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "expected": {
+      "description": "Coordinator-pinned oracle value. String for text/value/attr/state kinds, integer for count, null for exists/absent/unique (structural kinds need no expected value).",
+      "type": ["string", "number", "null"]
+    },
+
+    "plan_assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assertion_id", "kind", "selector", "expected"],
+      "properties": {
+        "assertion_id": { "$ref": "#/$defs/assertion_id" },
+        "kind": { "enum": ["exists", "absent", "unique", "count", "text_equals", "text_present", "value_equals", "attr_equals", "state_is"] },
+        "selector": { "type": "string" },
+        "expected": { "$ref": "#/$defs/expected" }
+      }
+    },
+
+    "plan_task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id", "brief_clause", "reaches_state", "assertions"],
+      "properties": {
+        "task_id": { "$ref": "#/$defs/task_id" },
+        "brief_clause": { "type": "string", "minLength": 1, "description": "Verbatim brief clause this task proves — the clause trace anchor." },
+        "reaches_state": { "$ref": "#/$defs/state" },
+        "assertions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/plan_assertion" } }
+      }
+    },
+
+    "product_signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mechanism", "clause_trace", "rendered_anchor", "task_proof", "counterfactual"],
+      "properties": {
+        "mechanism": { "type": "string", "minLength": 1, "description": "Brief-specific functional mechanism name (what makes this product distinctive)." },
+        "clause_trace": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "Each entry must equal some task's brief_clause." },
+        "rendered_anchor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["capture_id", "task_id", "assertion_id"],
+          "description": "The capture + task + assertion whose derived verdict must PASS, proving the mechanism is rendered and functional in a real trace.",
+          "properties": {
+            "capture_id": { "type": "string", "minLength": 1 },
+            "task_id": { "$ref": "#/$defs/task_id" },
+            "assertion_id": { "$ref": "#/$defs/assertion_id" }
+          }
+        },
+        "task_proof": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/task_id" }, "description": "Tasks whose passing proves the mechanism works end to end." },
+        "counterfactual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["unrelated_brief_id", "selector"],
+          "description": "An unrelated brief's distinctive marker. It is evaluated as an ABSENT oracle against the anchor capture's pinned DOM; if present, the product is generic (SIGNATURE_GENERIC veto).",
+          "properties": {
+            "unrelated_brief_id": { "type": "string", "minLength": 1 },
+            "selector": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "taste-task-plan/v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "candidate_id", "source_revision", "brief_sha256", "design_lock_sha256", "evidence_class", "baseline_receipt_path", "adapter", "required_states", "tasks", "product_signature", "manual_external_tasks"],
+      "properties": {
+        "schema_version": { "const": "taste-task-plan/v1" },
+        "candidate_id": { "type": "string", "minLength": 1 },
+        "source_revision": { "$ref": "#/$defs/revision" },
+        "brief_sha256": { "$ref": "#/$defs/sha256" },
+        "design_lock_sha256": { "$ref": "#/$defs/sha256" },
+        "evidence_class": { "enum": ["fixture", "production"] },
+        "baseline_receipt_path": { "type": "string" },
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["adapter_id", "adapter_version", "command_path", "command_sha256", "profile_sha256"],
+          "properties": {
+            "adapter_id": { "type": "string", "minLength": 1 },
+            "adapter_version": { "type": "string", "minLength": 1 },
+            "command_path": { "type": "string", "minLength": 1 },
+            "command_sha256": { "$ref": "#/$defs/sha256" },
+            "profile_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "required_states": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/state" } },
+        "tasks": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/plan_task" }, "description": "Unique task_ids. Every task.reaches_state must be in required_states; every required_state must be reached by at least one task." },
+        "product_signature": { "$ref": "#/$defs/product_signature" },
+        "manual_external_tasks": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/task_id" }, "description": "Tasks judged externally by a human. Present + non-vetoed run derives EXTERNAL; they are never auto-passed." }
+      }
+    },
+
+    "action": {
+      "type": "object",
+      "description": "One replayed action. Only allowlisted types. navigate carries a relative route; click/submit/wait_for carry a safe selector; fill/select carry selector+value; press carries a key value. Any other key (script/js/code/eval) is an ARBITRARY_ACTION veto.",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["navigate", "click", "fill", "select", "press", "wait_for", "submit"] },
+        "selector": { "type": "string" },
+        "value": { "type": "string" },
+        "route": { "type": "string" }
+      }
+    },
+
+    "measured": {
+      "type": "object",
+      "description": "Observed evidence produced by replaying against the pinned DOM. dom_sha256 must equal the capture's dom_sha256 (evidence is bound to the exact render; a mismatch is STALE_DOM). Kind-specific observed field: match_count for exists/absent/unique/count; observed for text_equals/value_equals/attr_equals; text for text_present; state for state_is.",
+      "required": ["dom_sha256"],
+      "properties": {
+        "dom_sha256": { "$ref": "#/$defs/sha256" },
+        "match_count": { "type": "integer", "minimum": 0 },
+        "observed": { "type": ["string", "number"] },
+        "text": { "type": "string" },
+        "state": { "type": "string" }
+      }
+    },
+
+    "result_assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assertion_id", "kind", "selector", "measured"],
+      "description": "No status/pass/verdict field is permitted — the verdict is derived by the validator. kind and selector must echo the plan assertion exactly.",
+      "properties": {
+        "assertion_id": { "$ref": "#/$defs/assertion_id" },
+        "kind": { "enum": ["exists", "absent", "unique", "count", "text_equals", "text_present", "value_equals", "attr_equals", "state_is"] },
+        "selector": { "type": "string" },
+        "measured": { "$ref": "#/$defs/measured" }
+      }
+    },
+
+    "result_task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id", "reaches_state", "assertions"],
+      "properties": {
+        "task_id": { "$ref": "#/$defs/task_id" },
+        "reaches_state": { "$ref": "#/$defs/state" },
+        "assertions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/result_assertion" } }
+      }
+    },
+
+    "result_capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capture_id", "dom_sha256", "action_trace_sha256", "action_trace", "tasks"],
+      "properties": {
+        "capture_id": { "type": "string", "minLength": 1 },
+        "dom_sha256": { "$ref": "#/$defs/sha256" },
+        "action_trace_sha256": { "$ref": "#/$defs/sha256", "description": "Must equal both the manifest pin AND the recomputed canonical sha256 of action_trace (jq -cS). A mismatch is NONDETERMINISTIC — the replay is not reproducible from the pinned bytes." },
+        "action_trace": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+        "tasks": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/result_task" } }
+      }
+    },
+
+    "taste-task-adapter-result/v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "adapter_id", "adapter_version", "profile_sha256", "evidence_class", "captures", "signature"],
+      "properties": {
+        "schema_version": { "const": "taste-task-adapter-result/v1" },
+        "adapter_id": { "type": "string", "minLength": 1 },
+        "adapter_version": { "type": "string", "minLength": 1 },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "evidence_class": { "enum": ["fixture", "production"] },
+        "captures": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/result_capture" } },
+        "signature": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["anchor", "counterfactual"],
+          "properties": {
+            "anchor": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["capture_id", "task_id", "assertion_id"],
+              "properties": {
+                "capture_id": { "type": "string" },
+                "task_id": { "$ref": "#/$defs/task_id" },
+                "assertion_id": { "$ref": "#/$defs/assertion_id" }
+              }
+            },
+            "counterfactual": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["selector", "measured"],
+              "properties": {
+                "selector": { "type": "string" },
+                "measured": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["dom_sha256", "match_count"],
+                  "properties": {
+                    "dom_sha256": { "$ref": "#/$defs/sha256" },
+                    "match_count": { "type": "integer", "minimum": 0 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "taste-task-receipt/v1": {
+      "type": "object",
+      "description": "Validator output. classification is always fixture and human_certified false — this hermetic replay can never mint a production PASS. derived_status is PASS only when every required task/state/assertion resolves, the signature is proven, and the counterfactual is absent.",
+      "required": ["schema_version", "candidate_id", "source_revision", "brief_sha256", "design_lock_sha256", "derived_status", "reason_codes"],
+      "properties": {
+        "schema_version": { "const": "taste-task-receipt/v1" },
+        "classification": { "const": "fixture" },
+        "human_certified": { "const": false },
+        "derived_status": { "enum": ["PASS", "FAIL", "EXTERNAL"] },
+        "reason_codes": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+
+  "reason_codes": {
+    "structural_reject": {
+      "comment": "Fail-closed: validator exits non-zero and writes NO receipt (untrusted incompleteness, forgery, or unsafe input).",
+      "codes": ["JQ_UNAVAILABLE", "UNSAFE_ROOT", "MANIFEST_UNAVAILABLE", "PLAN_UNAVAILABLE", "MANIFEST_SHAPE", "PLAN_SHAPE", "SOURCE_REVISION_UNAVAILABLE", "STALE_SOURCE_REVISION", "CANDIDATE_MISMATCH", "SOURCE_TIME_UNAVAILABLE", "INVALID_NOW", "ADAPTER_UNAVAILABLE", "ADAPTER_MISMATCH", "SHA256_UNAVAILABLE", "ADAPTER_FAILED", "ADAPTER_TIMEOUT", "ADAPTER_RESULT_MISSING", "ADAPTER_RECEIPT", "ADAPTER_RESULT_SHAPE", "CALLER_PASS", "PROFILE_MISMATCH", "FIXTURE_RELABELED", "MATRIX_MISMATCH", "FORGED_CAPTURE", "NONDETERMINISTIC", "ARBITRARY_ACTION", "UNSAFE_SELECTOR", "NETWORK_ACTION", "MISSING_MEASURED_EVIDENCE", "STALE_DOM", "ASSERTION_TAMPERED", "MISSING_TASK", "UNKNOWN_TASK", "DUPLICATE_TASK", "COVERAGE_INCOMPLETE", "UNKNOWN_ASSERTION", "DUPLICATE_ASSERTION", "UNKNOWN_STATE", "MISSING_STATE", "SIGNATURE_UNBOUND", "CLAUSE_UNBOUND", "STALE_RECEIPT", "BASELINE_SHAPE", "UNSAFE_PATH", "RECEIPT_BUILD_FAILED", "RECEIPT_PATH_UNSAFE"]
+    },
+    "derived_fail": {
+      "comment": "Receipt written with derived_status FAIL and the veto reason (genuine negative evidence recomputed from the trace).",
+      "codes": ["ASSERTION_FAILED", "STATE_NOT_REACHED", "SIGNATURE_UNPROVEN", "SIGNATURE_GENERIC"]
+    },
+    "clean": {
+      "comment": "derived_status PASS (CLEAN) or EXTERNAL (CLEAN + MANUAL_EXTERNAL) — no veto.",
+      "codes": ["CLEAN", "MANUAL_EXTERNAL"]
+    }
+  }
+}

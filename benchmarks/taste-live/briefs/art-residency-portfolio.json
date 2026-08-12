@@ -1,0 +1,88 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "art-residency-portfolio",
+  "stratum": "creative",
+  "category": "residency-application-portfolio",
+  "origin": "cycle-40-plan",
+  "title": "Lead with the strongest work",
+  "brief": "Residency deadlines catch me rearranging thirty images in a folder, unsure if my strongest work leads the packet.",
+  "target_population": {
+    "role": "ceramic artist assembling a residency application from thirty works",
+    "locale": "pt-BR",
+    "coverage_limit": "one artist's catalog and one submission packet; nothing is sent anywhere"
+  },
+  "product_shape": "curation workspace",
+  "core_task": {
+    "id": "task-art-residency-portfolio",
+    "summary": "mark three works for the packet and put the strongest first",
+    "success_oracle": "marking three works for the packet and moving Kiln Study II to slot one completes the three-slot meter with Kiln Study II leading the packet order"
+  },
+  "required_routes": ["/", "/packet"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the thirty works are seeded records with placeholder imagery bundled locally, so curation moves complete in the same frame they are made"
+  },
+  "state_recipes": {
+    "empty": "open the /packet route before marking any work; the tray shows three open slots and what belongs in them",
+    "validation-error": "mark a fourth work while the packet holds three; a limit notice refuses it and the tray is unchanged",
+    "success": "mark three works and move Kiln Study II first; the meter reads complete with it leading",
+    "focus": "press Tab from page load until the first work card's mark button shows its focus ring",
+    "mobile": "load the grid at 390x844; the packet tray docks to the bottom edge above the work grid"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "click", "target": "mark-kiln-study-ii"},
+      {"op": "click", "target": "mark-salt-vessel"},
+      {"op": "click", "target": "mark-ember-row"},
+      {"op": "click", "target": "move-first-kiln-study-ii"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "packet-count", "value": "3"},
+      {"op": "assert_text", "target": "packet-slot-1", "value": "Kiln Study II"},
+      {"op": "assert_visible", "target": "packet-complete-meter"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed holds thirty works with year, medium, and dimensions recorded for each piece.",
+    "The submission packet accepts exactly three works and refuses a fourth with a limit notice.",
+    "Moving a work to slot one reorders the packet immediately and the meter reads complete at three."
+  ],
+  "product_signature": {
+    "mechanism": "three-slot packet tray that fills from the full work grid",
+    "anchor": "packet tray pinned beside the work grid",
+    "brief_trace": "unsure if my strongest work leads the packet",
+    "counterfactual": "a photo-gallery grid would fit an album brief and has no notion of a bounded, ordered packet",
+    "task_proof": "success capture shows the tray complete with Kiln Study II in slot one"
+  },
+  "anti_goals": [
+    "no image uploads; works are seeded records with locally bundled placeholder imagery",
+    "no residency directory, deadlines feed, or application submission",
+    "no critique, comments, or social features"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"work": "Kiln Study II", "year": 2025, "medium": "stoneware", "cm": "40x22"},
+      {"work": "Salt Vessel", "year": 2024, "medium": "salt-glazed porcelain", "cm": "18x18"},
+      {"work": "Ember Row", "year": 2026, "medium": "raku series", "cm": "12x60"},
+      {"catalog_size": 30}
+    ],
+    "data_notes": "all thirty works, titles, and dimensions are invented; placeholder imagery must carry an allowed licence and ship in the bundle"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

@@ -1,0 +1,88 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "freight-dispatch",
+  "stratum": "logistics",
+  "category": "regional-freight-dispatch",
+  "origin": "cycle-40-plan",
+  "title": "Load every van right",
+  "brief": "I assign regional freight by memory each morning and only discover an overloaded van when the driver calls back.",
+  "target_population": {
+    "role": "dispatcher pairing twelve fictional shipments with five drivers each morning",
+    "locale": "en-ZA",
+    "coverage_limit": "one depot's morning run; no routing, tracking, or customer contact"
+  },
+  "product_shape": "operations control board",
+  "core_task": {
+    "id": "task-freight-dispatch",
+    "summary": "assign a heavy shipment to a driver and confirm the capacity bar updates",
+    "success_oracle": "assigning the 950 kg shipment S-108 to Nadia's 1200 kg van fills her capacity bar to 950, and any assignment that would exceed a van's capacity is refused with an overload warning"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "shipments and vans are seeded local records and load math is immediate arithmetic, so the board never shows an in-flight assignment"
+  },
+  "state_recipes": {
+    "empty": "assign all twelve seeded shipments; the unassigned queue collapses to its depot-clear message",
+    "validation-error": "assign the 400 kg shipment S-104 to Nadia after S-108; the overload warning names the 150 kg excess and refuses",
+    "success": "assign S-108 to Nadia; her capacity bar reads 950 of 1200 kg",
+    "focus": "press Tab from page load until the first unassigned shipment's driver picker shows its focus ring",
+    "mobile": "load the board at 390x844; driver columns become a horizontal capacity strip above the queue"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "driver-for-S-108", "value": "nadia"},
+      {"op": "click", "target": "confirm-assignment-S-108"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "van-load-nadia", "value": "950"},
+      {"op": "assert_count", "target": "unassigned-shipment", "value": 11},
+      {"op": "assert_visible", "target": "capacity-bar-nadia"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed defines twelve shipments totalling 6.4 tonnes and five drivers with van capacities from 800 to 1500 kg.",
+    "Assigning shipment S-108 to Nadia shows 950 of 1200 kg used on her capacity bar.",
+    "An assignment that would exceed a van's capacity is refused with a warning naming the overload amount."
+  ],
+  "product_signature": {
+    "mechanism": "per-van capacity bars that fill as shipments land on each driver",
+    "anchor": "driver columns with capacity bars across the board",
+    "brief_trace": "only discover an overloaded van when the driver calls back",
+    "counterfactual": "a plain assignment list would fit a task-board brief and cannot show remaining payload per van",
+    "task_proof": "success capture shows Nadia's bar at 950 of 1200 kg with S-108 pinned to her column"
+  },
+  "anti_goals": [
+    "no GPS, maps, or route optimization",
+    "no real carrier, customer, or address data",
+    "no driver messaging or notification flows"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"shipment": "S-108", "kg": 950, "destination_zone": "north"},
+      {"shipment": "S-104", "kg": 400, "destination_zone": "north"},
+      {"shipment": "S-112", "kg": 120, "destination_zone": "coast"},
+      {"driver": "Nadia", "van_capacity_kg": 1200},
+      {"driver": "Sipho", "van_capacity_kg": 1500},
+      {"driver": "Lena", "van_capacity_kg": 800}
+    ],
+    "data_notes": "twelve invented shipments and five invented drivers; S-108 plus S-104 on Nadia's van deliberately exceeds 1200 kg to fix the refusal case"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

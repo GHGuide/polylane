@@ -1,0 +1,88 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "urban-tree-census",
+  "stratum": "data",
+  "category": "urban-tree-inventory",
+  "origin": "cycle-40-plan",
+  "title": "Count the street trees",
+  "brief": "Our volunteer tree census still lives on clipboards, so nobody can see which blocks are done or what species dominate.",
+  "target_population": {
+    "role": "municipal parks volunteer logging street trees block by block",
+    "locale": "nl-NL",
+    "coverage_limit": "six named blocks in one fictional district; no maps, coordinates, or real inventories"
+  },
+  "product_shape": "field-entry web app",
+  "core_task": {
+    "id": "task-urban-tree-census",
+    "summary": "log a tree observation and watch the block summary update",
+    "success_oracle": "logging a linden with trunk diameter 32 on block B3 raises that block's count to 15 and adds linden to its species mix"
+  },
+  "required_routes": ["/", "/blocks"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "observations append to seeded local records and summaries recompute in memory, so entry and summary never show an in-flight state"
+  },
+  "state_recipes": {
+    "empty": "open block B7, which starts with zero logged trees; a start-surveying prompt replaces the summary",
+    "validation-error": "enter a trunk diameter outside 1-300 cm; an inline range error blocks the observation",
+    "success": "log a linden at 32 cm on block B3; the block count reads 15 with linden chipped into the mix",
+    "focus": "press Tab from page load until the species picker shows its visible focus ring",
+    "mobile": "load the entry form at 390x844; the block summary grid drops below the form"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "block-picker", "value": "B3"},
+      {"op": "select", "target": "species-picker", "value": "linden"},
+      {"op": "fill", "target": "trunk-diameter", "value": "32"},
+      {"op": "click", "target": "log-tree"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "block-count-B3", "value": "15"},
+      {"op": "assert_visible", "target": "species-chip-linden"},
+      {"op": "assert_text", "target": "district-total", "value": "42"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed contains 41 trees across six named blocks and block B3 starts with 14 logged trees.",
+    "Logging a linden on block B3 raises its count to 15 and the district total to 42.",
+    "Block B7 starts empty and shows a start-surveying prompt instead of a blank summary."
+  ],
+  "product_signature": {
+    "mechanism": "block-progress grid that fills as observations land",
+    "anchor": "block summary grid beside the entry form",
+    "brief_trace": "nobody can see which blocks are done or what species dominate",
+    "counterfactual": "a flat table of trees would fit a spreadsheet brief and never shows survey completeness per block",
+    "task_proof": "success capture shows B3 at 15 trees with the linden chip added to its mix"
+  },
+  "anti_goals": [
+    "no map tiles, geolocation, or coordinates; blocks are named units",
+    "no photo upload or species-identification claims; species come from a fixed picker",
+    "no public dashboard or resident-facing reporting"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"block": "B3", "trees": 14, "dominant": "plane"},
+      {"block": "B1", "trees": 9, "dominant": "elm"},
+      {"block": "B7", "trees": 0, "dominant": null},
+      {"species_list": ["linden", "plane", "elm", "maple", "hornbeam"]}
+    ],
+    "data_notes": "41 invented trees across six blocks; B7 is deliberately empty to fix the empty state and the district total lands at 42 after the core task"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}
