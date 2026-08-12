@@ -1,9 +1,14 @@
 # Cycle 40 plan — live taste-study harness
 
-Run: `c40-live-harness-20260812-a1`  
-Target: `m32.4a`  
-Base: `codex/taste-certification` at the committed Cycle 39 close  
+Run: `c40-live-harness-20260812-a2`
+Target: `m32.4a`
+Base: `codex/taste-certification` at the committed Cycle 39 close plus preflight repair `93269ca`
 Mode: autonomous, high-assurance, file-isolated Claude Code lanes in tmux
+
+Attempt `a1` stopped before worktree, branch, tmux, or worker side effects when the
+production-size scope gate exposed a Bash 3.2 process-substitution SIGTRAP. Commit
+`93269ca` pins the fifteen-lane regression and bounds manifest glob loads. This fresh
+nonce prevents the aborted attempt's telemetry or markers from entering study evidence.
 
 ## Frozen outcome
 
