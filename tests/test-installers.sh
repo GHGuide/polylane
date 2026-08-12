@@ -101,6 +101,60 @@ C_CORE=$(cksum "$REPO/.codex/skills/polylane/scripts/polylane-run.sh" | awk '{pr
 CL_CORE=$(cksum "$REPO/.claude/skills/polylane/bin/polylane-run.sh" | awk '{print $1 ":" $2}')
 assert_eq "install-shared-core-identical" "$C_CORE" "$CL_CORE"
 
+# --- Claude installer parity: visual/taste helpers, packaged protocol, hooks ---
+sha256_hex() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  else shasum -a 256 "$1" | awk '{print $1}'; fi
+}
+CLAUDE_GOOD="$REPO/.claude/skills/polylane"
+for H in polylane-taste polylane-taste-ballot polylane-taste-calibrate polylane-taste-corpus \
+         polylane-taste-pixels polylane-taste-stats polylane-taste-threat \
+         polylane-visual polylane-visual-capture polylane-visual-quality; do
+  assert_ok "install-claude-exec-$H" test -x "$CLAUDE_GOOD/bin/$H.sh"
+done
+assert_ok "install-claude-visual-intelligence" test -s "$CLAUDE_GOOD/references/visual-intelligence.md"
+
+# Authoritative taste protocol packaged to a stable installed reference path with
+# a checksum/provenance sidecar that authentically matches the repo source.
+assert_ok "install-claude-protocol-packaged"   test -s "$CLAUDE_GOOD/references/taste-certification-protocol.md"
+assert_ok "install-claude-protocol-provenance" test -s "$CLAUDE_GOOD/references/taste-certification-protocol.provenance"
+PKG_HASH=$(sha256_hex "$CLAUDE_GOOD/references/taste-certification-protocol.md")
+SRC_HASH=$(sha256_hex "$REPO/docs/polylane/taste-certification/PROTOCOL.md")
+PROV_HASH=$(sed -n 's/^sha256=//p' "$CLAUDE_GOOD/references/taste-certification-protocol.provenance")
+assert_eq "install-claude-protocol-hash-matches-package" "$PKG_HASH" "$PROV_HASH"
+assert_eq "install-claude-protocol-hash-authentic"       "$SRC_HASH" "$PROV_HASH"
+
+# The installed helper locates itself and renders a fragment resolving that exact
+# path — never the blank target repo's non-existent bin/polylane-hooks.sh.
+if command -v jq >/dev/null 2>&1; then
+  INSTALLED_HOOKS="$CLAUDE_GOOD/bin/polylane-hooks.sh"
+  RLOC=$("$INSTALLED_HOOKS" locate)
+  assert_ok "install-claude-locate-executable" test -x "$RLOC"
+  RFRAG=$("$INSTALLED_HOOKS" render claude)
+  RCMD=$(printf '%s' "$RFRAG" | jq -r '.hooks.SessionStart[0].hooks[0].command')
+  assert_contains "install-claude-render-resolves-installed" "$RLOC" "$RCMD"
+  assert_eq "install-claude-render-no-placeholder" false \
+    "$(printf '%s' "$RFRAG" | jq -r 'tostring | contains("__POLYLANE_HOOKS_HELPER__")')"
+else
+  pass "install-claude-render-skipped-no-jq"
+fi
+
+# Build/validate failure must never touch the already-installed package: the
+# installer stages and validates before the atomic swap, so a missing required
+# source aborts with the prior package fully intact and no staging litter left.
+GOOD_HELPER_SUM=$(cksum "$CLAUDE_GOOD/bin/polylane-hooks.sh" | awk '{print $1 ":" $2}')
+PROTO_SRC="$REPO/docs/polylane/taste-certification/PROTOCOL.md"
+mv "$PROTO_SRC" "$PROTO_SRC.hidden"
+assert_fail "install-claude-build-failure-nonzero" \
+  env -i HOME="$HOME" PATH="$PATH" sh -c 'cd "$1" && ./claude-code/install.sh --repo' sh "$REPO"
+mv "$PROTO_SRC.hidden" "$PROTO_SRC"
+assert_ok "install-claude-failure-preserves-helper"   test -x "$CLAUDE_GOOD/bin/polylane-hooks.sh"
+assert_ok "install-claude-failure-preserves-protocol" test -f "$CLAUDE_GOOD/references/taste-certification-protocol.md"
+assert_eq "install-claude-failure-no-partial-swap" "$GOOD_HELPER_SUM" \
+  "$(cksum "$CLAUDE_GOOD/bin/polylane-hooks.sh" | awk '{print $1 ":" $2}')"
+assert_ok "install-claude-failure-no-staging-litter" \
+  sh -c 'set -- "$1"/.claude/skills/.polylane.staging.* "$1"/.claude/skills/.polylane.backup.*; [ ! -e "$1" ] && [ ! -e "$2" ]' sh "$REPO"
+
 # A supported full-clone Claude install may be run from its own destination.
 # The installer must stage from that source before replacing it, never delete
 # the running clone out from under itself.
