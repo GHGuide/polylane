@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "calibration-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-calibration-live/docs/verify-calibration-live.md",
+  "helped": [
+    {
+      "id": "data:statistical-analysis",
+      "effect": " its sample-size and"
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " its \"cover security"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

@@ -1,479 +1,465 @@
 {
   "version": 1,
-  "run_id": "c39-visual-loop-20260812-a1",
-  "started_at": 1786540324,
-  "updated_at": 1786550960,
-  "wall_s": 10636,
+  "run_id": "c40-live-harness-20260812-a3",
+  "started_at": 1786553276,
+  "updated_at": 1786566904,
+  "wall_s": 13628,
   "lanes": {
-    "receipt-producers": {
-      "launches": 1,
-      "restarts": 0
-    },
-    "certificate-v2": {
-      "launches": 1,
-      "restarts": 0
-    },
-    "tournament-engine": {
-      "launches": 1,
-      "restarts": 0
-    },
-    "taste-memory": {
-      "launches": 1,
-      "restarts": 0
-    },
-    "packet-intelligence": {
+    "source-live": {
       "launches": 1,
       "restarts": 1
     },
-    "quality-adapter": {
+    "calibration-live": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 3
     },
-    "runner-wiring": {
+    "judge-claude": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 2
     },
-    "prompt-contract": {
+    "judge-codex": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 1
     },
-    "visual-doc-contract": {
+    "judge-runner": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 6
     },
-    "claude-contract": {
+    "ballot-live": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 2
     },
-    "codex-parity": {
+    "browser-live": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 2
     },
-    "provider-hooks": {
+    "decode-live": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 1
     },
-    "capture-hardening": {
+    "a11y-live": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 2
     },
-    "a11y-evidence": {
+    "task-live": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 1
     },
-    "stimulus-evidence": {
+    "corpus-20": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 1
     },
-    "taste-integrator": {
+    "prompts-live": {
       "launches": 1,
-      "restarts": 0
+      "restarts": 1
+    },
+    "generate-live": {
+      "launches": 1,
+      "restarts": 1
+    },
+    "study-live": {
+      "launches": 1,
+      "restarts": 2
+    },
+    "protocol-live": {
+      "launches": 1,
+      "restarts": 1
+    },
+    "taste-live-integrator": {
+      "launches": 1,
+      "restarts": 1
     }
   },
-  "supervisor_restarts": 0,
+  "supervisor_restarts": 3,
   "terminal_gates": 0,
   "tokens": null,
   "token_state": "unknown",
   "usage_offsets": {
-    "receipt-producers": 1359469,
-    "certificate-v2": 1652350,
-    "tournament-engine": 1879149,
-    "taste-memory": 1743799,
-    "packet-intelligence": 362193,
-    "quality-adapter": 751224,
-    "runner-wiring": 786898,
-    "prompt-contract": 426355,
-    "visual-doc-contract": 491932,
-    "claude-contract": 252312,
-    "codex-parity": 480579,
-    "provider-hooks": 519512,
-    "capture-hardening": 864796,
-    "a11y-evidence": 578437,
-    "stimulus-evidence": 478334,
-    "taste-integrator": 1998680
+    "source-live": 0,
+    "calibration-live": 0,
+    "judge-claude": 0,
+    "judge-codex": 0,
+    "judge-runner": 1355860,
+    "ballot-live": 0,
+    "browser-live": 1011698,
+    "decode-live": 0,
+    "a11y-live": 0,
+    "task-live": 0,
+    "corpus-20": 0,
+    "prompts-live": 0,
+    "generate-live": 0,
+    "study-live": 1150389,
+    "protocol-live": 0,
+    "taste-live-integrator": 1319824
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786540324
+      "at": 1786553276
     },
     {
       "type": "usage_capture",
-      "lane": "receipt-producers",
-      "at": 1786540411,
+      "lane": "source-live",
+      "at": 1786553353,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "receipt-producers",
-      "at": 1786540411
+      "lane": "source-live",
+      "at": 1786553353
     },
     {
       "type": "usage_capture",
-      "lane": "certificate-v2",
-      "at": 1786540411,
+      "lane": "calibration-live",
+      "at": 1786553353,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "certificate-v2",
-      "at": 1786540411
+      "lane": "calibration-live",
+      "at": 1786553353
     },
     {
       "type": "usage_capture",
-      "lane": "tournament-engine",
-      "at": 1786540412,
+      "lane": "judge-claude",
+      "at": 1786553353,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "tournament-engine",
-      "at": 1786540412
+      "lane": "judge-claude",
+      "at": 1786553353
     },
     {
       "type": "usage_capture",
-      "lane": "taste-memory",
-      "at": 1786540412,
+      "lane": "judge-codex",
+      "at": 1786553354,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "taste-memory",
-      "at": 1786540413
+      "lane": "judge-codex",
+      "at": 1786553354
     },
     {
       "type": "usage_capture",
-      "lane": "packet-intelligence",
-      "at": 1786540414,
+      "lane": "judge-runner",
+      "at": 1786553354,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "packet-intelligence",
-      "at": 1786540414
+      "lane": "judge-runner",
+      "at": 1786553354
     },
     {
       "type": "usage_capture",
-      "lane": "quality-adapter",
-      "at": 1786540416,
+      "lane": "ballot-live",
+      "at": 1786553356,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "quality-adapter",
-      "at": 1786540416
+      "lane": "ballot-live",
+      "at": 1786553356
     },
     {
       "type": "usage_capture",
-      "lane": "runner-wiring",
-      "at": 1786540418,
+      "lane": "browser-live",
+      "at": 1786553359,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "runner-wiring",
-      "at": 1786540418
+      "lane": "browser-live",
+      "at": 1786553359
     },
     {
       "type": "usage_capture",
-      "lane": "prompt-contract",
-      "at": 1786540419,
+      "lane": "decode-live",
+      "at": 1786553361,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "prompt-contract",
-      "at": 1786540420
+      "lane": "decode-live",
+      "at": 1786553362
     },
     {
       "type": "usage_capture",
-      "lane": "visual-doc-contract",
-      "at": 1786540422,
+      "lane": "a11y-live",
+      "at": 1786553364,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "visual-doc-contract",
-      "at": 1786540423
+      "lane": "a11y-live",
+      "at": 1786553364
     },
     {
       "type": "usage_capture",
-      "lane": "claude-contract",
-      "at": 1786540425,
+      "lane": "task-live",
+      "at": 1786553367,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "claude-contract",
-      "at": 1786540426
+      "lane": "task-live",
+      "at": 1786553367
     },
     {
       "type": "usage_capture",
-      "lane": "codex-parity",
-      "at": 1786540431,
+      "lane": "corpus-20",
+      "at": 1786553372,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "codex-parity",
-      "at": 1786540432
+      "lane": "corpus-20",
+      "at": 1786553372
     },
     {
       "type": "usage_capture",
-      "lane": "provider-hooks",
-      "at": 1786540435,
+      "lane": "prompts-live",
+      "at": 1786553386,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "provider-hooks",
-      "at": 1786540436
+      "lane": "prompts-live",
+      "at": 1786553390
     },
     {
       "type": "usage_capture",
-      "lane": "capture-hardening",
-      "at": 1786540439,
+      "lane": "generate-live",
+      "at": 1786553397,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "capture-hardening",
-      "at": 1786540440
+      "lane": "generate-live",
+      "at": 1786553398
     },
     {
       "type": "usage_capture",
-      "lane": "a11y-evidence",
-      "at": 1786540445,
+      "lane": "study-live",
+      "at": 1786553404,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "a11y-evidence",
-      "at": 1786540446
+      "lane": "study-live",
+      "at": 1786553406
     },
     {
       "type": "usage_capture",
-      "lane": "stimulus-evidence",
-      "at": 1786540450,
+      "lane": "protocol-live",
+      "at": 1786553421,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "stimulus-evidence",
-      "at": 1786540451
+      "lane": "protocol-live",
+      "at": 1786553423
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786554793
+    },
+    {
+      "type": "initialized",
+      "at": 1786554794
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786554970
+    },
+    {
+      "type": "initialized",
+      "at": 1786554971
     },
     {
       "type": "restarts",
-      "lane": "packet-intelligence",
-      "at": 1786541120
+      "lane": "source-live",
+      "at": 1786556422
+    },
+    {
+      "type": "restarts",
+      "lane": "calibration-live",
+      "at": 1786556428
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-claude",
+      "at": 1786556433
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-codex",
+      "at": 1786556441
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-runner",
+      "at": 1786556459
+    },
+    {
+      "type": "restarts",
+      "lane": "ballot-live",
+      "at": 1786556480
+    },
+    {
+      "type": "restarts",
+      "lane": "browser-live",
+      "at": 1786556510
+    },
+    {
+      "type": "restarts",
+      "lane": "decode-live",
+      "at": 1786556537
+    },
+    {
+      "type": "restarts",
+      "lane": "a11y-live",
+      "at": 1786556561
+    },
+    {
+      "type": "restarts",
+      "lane": "task-live",
+      "at": 1786556587
+    },
+    {
+      "type": "restarts",
+      "lane": "corpus-20",
+      "at": 1786556623
+    },
+    {
+      "type": "restarts",
+      "lane": "prompts-live",
+      "at": 1786556641
+    },
+    {
+      "type": "restarts",
+      "lane": "generate-live",
+      "at": 1786556647
+    },
+    {
+      "type": "restarts",
+      "lane": "study-live",
+      "at": 1786556651
+    },
+    {
+      "type": "restarts",
+      "lane": "protocol-live",
+      "at": 1786556655
+    },
+    {
+      "type": "restarts",
+      "lane": "a11y-live",
+      "at": 1786557057
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-runner",
+      "at": 1786557091
+    },
+    {
+      "type": "restarts",
+      "lane": "calibration-live",
+      "at": 1786557128
+    },
+    {
+      "type": "restarts",
+      "lane": "ballot-live",
+      "at": 1786557166
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-runner",
+      "at": 1786557285
+    },
+    {
+      "type": "restarts",
+      "lane": "study-live",
+      "at": 1786557371
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-claude",
+      "at": 1786557420
+    },
+    {
+      "type": "restarts",
+      "lane": "calibration-live",
+      "at": 1786557795
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-runner",
+      "at": 1786557798
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-runner",
+      "at": 1786558586
+    },
+    {
+      "type": "restarts",
+      "lane": "browser-live",
+      "at": 1786559164
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1786559951
+    },
+    {
+      "type": "initialized",
+      "at": 1786559971
+    },
+    {
+      "type": "restarts",
+      "lane": "judge-runner",
+      "at": 1786561889
     },
     {
       "type": "usage_capture",
-      "lane": "taste-integrator",
-      "at": 1786545057,
+      "lane": "taste-live-integrator",
+      "at": 1786562117,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "taste-integrator",
-      "at": 1786545057
+      "lane": "taste-live-integrator",
+      "at": 1786562117
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-live-integrator",
+      "at": 1786563409
     },
     {
       "type": "usage_capture",
-      "lane": "receipt-producers",
-      "at": 1786550275,
+      "lane": "judge-runner",
+      "at": 1786566904,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "certificate-v2",
-      "at": 1786550275,
+      "lane": "browser-live",
+      "at": 1786566904,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "tournament-engine",
-      "at": 1786550275,
+      "lane": "study-live",
+      "at": 1786566904,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "taste-memory",
-      "at": 1786550275,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "packet-intelligence",
-      "at": 1786550275,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "quality-adapter",
-      "at": 1786550275,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "runner-wiring",
-      "at": 1786550275,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "prompt-contract",
-      "at": 1786550275,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "visual-doc-contract",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "claude-contract",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "codex-parity",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "provider-hooks",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "capture-hardening",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "a11y-evidence",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "stimulus-evidence",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "taste-integrator",
-      "at": 1786550276,
-      "added": null
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786550958
-    },
-    {
-      "type": "usage_capture",
-      "lane": "receipt-producers",
-      "at": 1786550959,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "certificate-v2",
-      "at": 1786550959,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "tournament-engine",
-      "at": 1786550959,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "taste-memory",
-      "at": 1786550959,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "packet-intelligence",
-      "at": 1786550959,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "quality-adapter",
-      "at": 1786550959,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "runner-wiring",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "prompt-contract",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "visual-doc-contract",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "claude-contract",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "codex-parity",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "provider-hooks",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "capture-hardening",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "a11y-evidence",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "stimulus-evidence",
-      "at": 1786550960,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "taste-integrator",
-      "at": 1786550960,
+      "lane": "taste-live-integrator",
+      "at": 1786566904,
       "added": null
     }
   ]

@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "decode-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-decode-live/docs/verify-decode-live.md",
+  "helped": [],
+  "unused": [
+    "caveman:surgical-patch",
+    "engineering:code-review"
+  ],
+  "hurt": []
+}

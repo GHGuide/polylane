@@ -310,3 +310,75 @@
 
 {"lane":"stimulus-evidence","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c39-stimulus-evidence/docs/verify-stimulus-evidence.md"}
 
+{"lane":"source-live","domain":"test","skill":"data:validate-data","outcome":"helped","why":" its join/dedup/denominator/reasonableness catalog became fail-closed assertions — raw↔aggregate mean agreement (± 0.5), ≥ 5 valid raw ratings per stimulus, duplicate-image detection, and 1–5 rating-range sanity are all recomputed from source bytes, never trusted."}
+
+{"lane":"source-live","domain":"test","skill":"deep-research","outcome":"helped","why":" its provenance-and-citation discipline shaped the receipt — pinned dataset pid/version, metadata/aggregate/raw SHA-256, licence receipt, and an exact reproduction command are all bound, and the live canary captures real source provenance (or a truthful UNKNOWN) rather than asserting acquisition."}
+
+{"lane":"source-live","domain":"test","skill":"legal:compliance-check","outcome":"helped","why":" its use-boundary framing drove the licence gate — an allow-listed SPDX receipt with URL + SHA-256 is mandatory, and the TASTE secondary audit is labelled and quarantined so a CC0 primary corpus can never be silently substituted."}
+
+{"lane":"calibration-live","domain":"test","skill":"data:statistical-analysis","outcome":"helped","why":" its sample-size and"}
+
+{"lane":"calibration-live","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" its \"cover security"}
+
+{"lane":"judge-claude","domain":"test","skill":"engineering:system-design","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-judge-claude/docs/verify-judge-claude.md"}
+
+{"lane":"judge-claude","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-judge-claude/docs/verify-judge-claude.md"}
+
+{"lane":"judge-codex","domain":"test","skill":"engineering:system-design","outcome":"helped","why":" drove the explicit"}
+
+{"lane":"judge-codex","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" shaped the attack matrix"}
+
+{"lane":"judge-runner","domain":"test","skill":"engineering:architecture","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-judge-runner/docs/verify-judge-runner.md"}
+
+{"lane":"judge-runner","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-judge-runner/docs/verify-judge-runner.md"}
+
+{"lane":"ballot-live","domain":"test","skill":"engineering:code-review","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-ballot-live/docs/verify-ballot-live.md"}
+
+{"lane":"ballot-live","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-ballot-live/docs/verify-ballot-live.md"}
+
+{"lane":"browser-live","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-browser-live/docs/verify-browser-live.md"}
+
+{"lane":"browser-live","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-browser-live/docs/verify-browser-live.md"}
+
+{"lane":"decode-live","domain":"test","skill":"caveman:surgical-patch","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-decode-live/docs/verify-decode-live.md"}
+
+{"lane":"decode-live","domain":"test","skill":"engineering:code-review","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-decode-live/docs/verify-decode-live.md"}
+
+{"lane":"a11y-live","domain":"test","skill":"design:accessibility-review","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-a11y-live/docs/verify-a11y-live.md"}
+
+{"lane":"a11y-live","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-a11y-live/docs/verify-a11y-live.md"}
+
+{"lane":"task-live","domain":"data","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-task-live/docs/verify-task-live.md"}
+
+{"lane":"task-live","domain":"data","skill":"product-management:write-spec","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-task-live/docs/verify-task-live.md"}
+
+{"lane":"corpus-20","domain":"test","skill":"design:user-research","outcome":"helped","why":" its \"who has this problem and what are they doing today\" framing drove one distinct role/locale/coverage-limit triple per brief (twenty distinct roles, fourteen locales) instead of a generic \"user\" audience."}
+
+{"lane":"corpus-20","domain":"test","skill":"product-management:product-brainstorming","outcome":"helped","why":" varying solutions along meaningful dimensions (scope, information unit, interaction) produced twenty distinct signature mechanisms (capacity bars, reciprocal-pair matcher, backlink web, seat meters, decade comparator) rather than one CRUD list re-skinned."}
+
+{"lane":"corpus-20","domain":"test","skill":"product-management:write-spec","outcome":"helped","why":" its testable acceptance-criteria discipline (\"avoid ambiguous words, each criterion independently testable\") shaped the three concrete acceptance facts and deterministic success oracles per brief, each anchored to seeded numbers the validator can cross-check."}
+
+{"lane":"prompts-live","domain":"test","skill":"design:design-system","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-prompts-live/docs/verify-prompts-live.md"}
+
+{"lane":"prompts-live","domain":"test","skill":"design:ux-copy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-prompts-live/docs/verify-prompts-live.md"}
+
+{"lane":"prompts-live","domain":"test","skill":"humanizer","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-prompts-live/docs/verify-prompts-live.md"}
+
+{"lane":"generate-live","domain":"test","skill":"engineering:deploy-checklist","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-generate-live/docs/verify-generate-live.md"}
+
+{"lane":"generate-live","domain":"test","skill":"ponytail:ponytail","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-generate-live/docs/verify-generate-live.md"}
+
+{"lane":"generate-live","domain":"test","skill":"sites:sites-building","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-generate-live/docs/verify-generate-live.md"}
+
+{"lane":"study-live","domain":"test","skill":"engineering:architecture","outcome":"helped","why":" its options→trade-offs→"}
+
+{"lane":"study-live","domain":"test","skill":"engineering:code-review","outcome":"helped","why":" reviewing my own jq edits under"}
+
+{"lane":"study-live","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" the false-positive table"}
+
+{"lane":"protocol-live","domain":"test","skill":"deep-research","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-protocol-live/docs/verify-protocol-live.md"}
+
+{"lane":"protocol-live","domain":"test","skill":"engineering:documentation","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-protocol-live/docs/verify-protocol-live.md"}
+
+{"lane":"protocol-live","domain":"test","skill":"legal:compliance-check","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-protocol-live/docs/verify-protocol-live.md"}
+

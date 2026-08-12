@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "a11y-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-a11y-live/docs/verify-a11y-live.md",
+  "helped": [],
+  "unused": [
+    "design:accessibility-review",
+    "engineering:testing-strategy"
+  ],
+  "hurt": []
+}

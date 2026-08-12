@@ -3265,7 +3265,7 @@
       "cmd": "bash tests/test-taste-source-live.sh && bash tests/test-taste-calibration-live.sh && bash tests/test-taste-judge-claude.sh && bash tests/test-taste-judge-codex.sh && bash tests/test-taste-judge-run.sh && bash tests/test-taste-ballot-live.sh && bash tests/test-taste-browser-live.sh && bash tests/test-taste-decode-live.sh && bash tests/test-taste-a11y-live.sh && bash tests/test-taste-task-live.sh && bash tests/test-taste-corpus-20.sh && bash tests/test-taste-prompts-live.sh && bash tests/test-taste-generate-live.sh && bash tests/test-taste-study-live.sh && bash tests/test-taste-live-harness-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -3275,7 +3275,7 @@
       "cmd": "bash tests/test-taste-protocol-live.sh && bin/polylane-markers.sh check-docs references/ && bash tests/test-skill-parity.sh && git diff --check",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

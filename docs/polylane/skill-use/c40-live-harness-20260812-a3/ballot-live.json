@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "ballot-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-ballot-live/docs/verify-ballot-live.md",
+  "helped": [],
+  "unused": [
+    "engineering:code-review",
+    "engineering:testing-strategy"
+  ],
+  "hurt": []
+}

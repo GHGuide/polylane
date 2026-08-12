@@ -1,0 +1,21 @@
+{
+  "schema": 2,
+  "lane": "source-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-source-live/docs/verify-source-live.md",
+  "helped": [
+    {
+      "id": "data:validate-data",
+      "effect": " its join/dedup/denominator/reasonableness catalog became fail-closed assertions — raw↔aggregate mean agreement (± 0.5), ≥ 5 valid raw ratings per stimulus, duplicate-image detection, and 1–5 rating-range sanity are all recomputed from source bytes, never trusted."
+    },
+    {
+      "id": "deep-research",
+      "effect": " its provenance-and-citation discipline shaped the receipt — pinned dataset pid/version, metadata/aggregate/raw SHA-256, licence receipt, and an exact reproduction command are all bound, and the live canary captures real source provenance (or a truthful UNKNOWN) rather than asserting acquisition."
+    },
+    {
+      "id": "legal:compliance-check",
+      "effect": " its use-boundary framing drove the licence gate — an allow-listed SPDX receipt with URL + SHA-256 is mandatory, and the TASTE secondary audit is labelled and quarantined so a CC0 primary corpus can never be silently substituted."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

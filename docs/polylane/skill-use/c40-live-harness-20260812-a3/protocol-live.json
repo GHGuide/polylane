@@ -1,0 +1,12 @@
+{
+  "schema": 2,
+  "lane": "protocol-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-protocol-live/docs/verify-protocol-live.md",
+  "helped": [],
+  "unused": [
+    "deep-research",
+    "engineering:documentation",
+    "legal:compliance-check"
+  ],
+  "hurt": []
+}
