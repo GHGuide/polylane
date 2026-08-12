@@ -83,6 +83,34 @@ export function normalizeRawCsv(text) {
   return out;
 }
 
+// Map any live failure onto the frozen taxonomy so receipts are machine-checkable:
+// 'challenge' (WAF/CAPTCHA — stays UNKNOWN), 'timeout' (deadline fired), 'redirect'
+// (cross-origin redirect the transport could not follow), 'checksum' (bytes arrived
+// but do not match the declared digest), 'transport' (everything else: no binary,
+// spawn/CDP/socket failure).
+export function classifyFailure(e) {
+  const known = ['challenge', 'timeout', 'redirect', 'transport', 'checksum'];
+  if (e && known.includes(e.class)) return e.class;
+  const msg = String(e?.message || e || '');
+  if (e?.waf || /challenge|captcha|access denied/i.test(msg)) return 'challenge';
+  if (/timed out|timeout/i.test(msg)) return 'timeout';
+  if (/checksum mismatch/i.test(msg)) return 'checksum';
+  if (/redirect/i.test(msg)) return 'redirect';
+  return 'transport';
+}
+
+// Observed readiness: the WAF is considered cleared only when a probe of the
+// Dataverse JSON API returns HTTP 200 with a parseable {"status":"OK"} envelope.
+export function isReadyEnvelope(status, bodyText) {
+  if (status !== 200) return false;
+  try {
+    const obj = JSON.parse(String(bodyText || ''));
+    return obj?.status === 'OK';
+  } catch {
+    return false;
+  }
+}
+
 // Extract version + file list (id, md5, filename) from a Dataverse dataset
 // metadata JSON envelope.
 export function parseDatasetMetadata(json) {
@@ -144,76 +172,169 @@ function chromeBinary() {
   return candidates.find((p) => existsSync(p)) || null;
 }
 
-async function cdp(ws, method, params, id) {
-  return new Promise((resolve, reject) => {
-    const onMsg = (ev) => {
-      let m;
-      try { m = JSON.parse(ev.data); } catch { return; }
-      if (m.id === id) { ws.removeEventListener('message', onMsg); m.error ? reject(new Error(m.error.message)) : resolve(m.result); }
-    };
-    ws.addEventListener('message', onMsg);
-    ws.send(JSON.stringify({ id, method, params }));
-  });
-}
-
-// Warm a real Chrome context against the Dataverse site, then fetch the target URL
-// from within the page context (same-context) so WAF cookies apply. Returns bytes.
-async function warmAndFetch(base, targetUrl) {
+// Launch a fresh ephemeral headless Chrome (never a personal profile), hand a live
+// CDP browser session to `fn`, and always kill the browser afterwards. Every step
+// inside is bounded by the caller's withTimeout deadline; there is no fixed warm-up.
+async function withChrome(fn) {
   const bin = chromeBinary();
-  if (!bin) throw new Error('no Chrome binary (set CHROME_BIN)');
-  if (typeof WebSocket === 'undefined') throw new Error('node WebSocket global unavailable');
+  if (!bin) { const e = new Error('no Chrome binary (set CHROME_BIN)'); e.class = 'transport'; throw e; }
+  if (typeof WebSocket === 'undefined') { const e = new Error('node WebSocket global unavailable'); e.class = 'transport'; throw e; }
   const udd = join(tmpdir(), `dv-chrome-${process.pid}-${Date.now()}`);
-  mkdirSync(udd, { recursive: true });
+  const dlDir = join(udd, 'downloads');
+  mkdirSync(dlDir, { recursive: true });
   const proc = spawn(bin, [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     `--user-data-dir=${udd}`, '--remote-debugging-port=0', 'about:blank',
   ], { stdio: 'ignore' });
   const cleanup = () => { try { proc.kill('SIGKILL'); } catch { /* ignore */ } };
+  process.on('exit', cleanup); // unknown() exits the process; never leak a browser
+  let spawnErr = null;
+  proc.on('error', (err) => { spawnErr = err; });
   try {
     const portFile = join(udd, 'DevToolsActivePort');
     let port = null;
-    for (let i = 0; i < 100 && port == null; i++) {
+    // Deliberately unbounded: the caller's withTimeout deadline is the only clock,
+    // so a Chrome that never opens DevTools classifies as 'timeout' while a binary
+    // that fails to spawn classifies as 'transport'.
+    while (port == null) {
+      if (spawnErr) { const e = new Error(`Chrome launch failed: ${spawnErr.message}`); e.class = 'transport'; throw e; }
       await sleep(100);
       if (existsSync(portFile)) port = readFileSync(portFile, 'utf8').split('\n')[0].trim();
     }
-    if (!port) throw new Error('Chrome DevTools port never appeared');
     const ver = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
     const ws = new WebSocket(ver.webSocketDebuggerUrl);
-    await new Promise((res, rej) => { ws.addEventListener('open', res); ws.addEventListener('error', () => rej(new Error('cdp ws error'))); });
+    await new Promise((res, rej) => {
+      ws.addEventListener('open', res);
+      ws.addEventListener('error', () => { const e = new Error('cdp websocket error'); e.class = 'transport'; rej(e); });
+    });
+    const eventListeners = new Set();
+    ws.addEventListener('message', (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.method) for (const l of eventListeners) l(m);
+    });
     let seq = 1;
-    const { targetId } = await cdp(ws, 'Target.createTarget', { url: base }, seq++);
-    const { sessionId } = await cdp(ws, 'Target.attachToTarget', { targetId, flatten: true }, seq++);
-    // Same-context fetch: evaluate fetch() inside the warmed page.
-    const wrap = (method, params) => new Promise((resolve, reject) => {
+    const send = (method, params, sessionId) => new Promise((resolve, reject) => {
       const id = seq++;
       const onMsg = (ev) => {
         let m; try { m = JSON.parse(ev.data); } catch { return; }
         if (m.id === id) { ws.removeEventListener('message', onMsg); m.error ? reject(new Error(m.error.message)) : resolve(m.result); }
       };
       ws.addEventListener('message', onMsg);
-      ws.send(JSON.stringify({ sessionId, id, method, params }));
+      ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
-    await sleep(1500); // let the WAF issue its clearance cookie
-    const expr = `(async () => {
-      const r = await fetch(${JSON.stringify(targetUrl)}, { credentials: 'include' });
-      const b = new Uint8Array(await r.arrayBuffer());
-      let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
-      return JSON.stringify({ status: r.status, server: r.headers.get('server') || '', b64: btoa(s) });
-    })()`;
-    const evalRes = await wrap('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
-    ws.close();
-    const parsed = JSON.parse(evalRes.result.value);
-    const bytes = Buffer.from(parsed.b64, 'base64');
-    if (detectWaf(parsed.status, { server: parsed.server }, bytes.toString('utf8').slice(0, 512))) {
-      const e = new Error(`WAF challenge (status ${parsed.status})`);
-      e.waf = true;
-      throw e;
-    }
-    if (parsed.status !== 200) throw new Error(`unexpected status ${parsed.status}`);
-    return bytes;
+    try {
+      return await fn({ send, eventListeners, dlDir });
+    } finally { try { ws.close(); } catch { /* ignore */ } }
   } finally {
     cleanup();
   }
+}
+
+// In-page same-origin fetch through an attached page session. Returns
+// { status, server, bytes }. Used for readiness probes and JSON metadata only;
+// redirected binary data files go through the CDP download path instead.
+async function pageFetch(send, sessionId, url) {
+  const expr = `(async () => {
+    const r = await fetch(${JSON.stringify(url)}, { credentials: 'same-origin' });
+    const b = new Uint8Array(await r.arrayBuffer());
+    let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return JSON.stringify({ status: r.status, server: r.headers.get('server') || '', b64: btoa(s) });
+  })()`;
+  const res = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }, sessionId);
+  if (res.exceptionDetails) {
+    const e = new Error(`in-page fetch failed: ${res.exceptionDetails.exception?.description || res.exceptionDetails.text || 'exception'}`);
+    e.class = 'transport';
+    throw e;
+  }
+  const parsed = JSON.parse(res.result.value);
+  return { status: parsed.status, server: parsed.server, bytes: Buffer.from(parsed.b64, 'base64') };
+}
+
+// Observed JSON readiness: poll the Dataverse version endpoint until the WAF clears
+// and a valid {"status":"OK"} envelope is observed. No magic warm-up delay; the
+// caller's withTimeout deadline bounds the poll, so a persistent challenge ends as
+// a bounded UNKNOWN instead of a guessed sleep.
+async function waitForReadiness(send, sessionId, base) {
+  const probe = `${base}/api/info/version`;
+  for (;;) {
+    try {
+      const r = await pageFetch(send, sessionId, probe);
+      if (isReadyEnvelope(r.status, r.bytes.toString('utf8'))) return;
+    } catch { /* page still settling or challenge in flight; keep observing */ }
+    await sleep(500);
+  }
+}
+
+// Open a fresh tab on `base`, wait for observed readiness, then run `fn(pageCtx)`.
+async function withReadyPage(base, fn) {
+  return withChrome(async ({ send, eventListeners, dlDir }) => {
+    const { targetId } = await send('Target.createTarget', { url: base });
+    const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+    await send('Page.enable', {}, sessionId);
+    await waitForReadiness(send, sessionId, base);
+    return fn({ send, sessionId, eventListeners, dlDir });
+  });
+}
+
+// Fetch a same-origin JSON API URL from the warmed page context.
+async function fetchJsonSameOrigin(base, url) {
+  return withReadyPage(base, async ({ send, sessionId }) => {
+    const r = await pageFetch(send, sessionId, url);
+    if (detectWaf(r.status, { server: r.server }, r.bytes.toString('utf8').slice(0, 512))) {
+      const e = new Error(`WAF challenge (status ${r.status})`);
+      e.class = 'challenge'; e.waf = true;
+      throw e;
+    }
+    if (r.status !== 200) { const e = new Error(`unexpected status ${r.status}`); e.class = 'transport'; throw e; }
+    return r.bytes;
+  });
+}
+
+// Download a (possibly cross-origin redirected) data file through the browser's own
+// download pipeline. Browser.setDownloadBehavior names the file by GUID inside the
+// ephemeral profile and Browser.downloadProgress events signal completion, so the
+// object-store redirect is followed natively by Chrome inside the same fresh
+// ephemeral WAF-cleared session — no session material is read, logged, or copied.
+async function downloadDatafile(base, url) {
+  return withReadyPage(base, async ({ send, sessionId, eventListeners, dlDir }) => {
+    await send('Browser.setDownloadBehavior', { behavior: 'allowAndName', downloadPath: dlDir, eventsEnabled: true });
+    const done = new Promise((resolve, reject) => {
+      let guid = null;
+      eventListeners.add((m) => {
+        if (m.method === 'Browser.downloadWillBegin') guid = m.params.guid;
+        if (m.method === 'Browser.downloadProgress' && (guid === null || m.params.guid === guid)) {
+          if (m.params.state === 'completed') resolve(m.params.guid);
+          if (m.params.state === 'canceled') {
+            const e = new Error('download canceled mid-redirect by browser');
+            e.class = 'redirect';
+            reject(e);
+          }
+        }
+      });
+    });
+    // Navigating to an attachment URL starts the download; a navigation error
+    // (net::ERR_ABORTED) is the normal signal that it became a download.
+    await send('Page.navigate', { url }, sessionId).catch(() => ({}));
+    // If no download begins and a page renders instead, inspect it exactly once:
+    // a WAF interstitial is a 'challenge'; anything else keeps waiting for the
+    // download until the bounded deadline classifies it as 'timeout'.
+    const challengeProbe = (async () => {
+      await sleep(2000);
+      const res = await send('Runtime.evaluate', {
+        expression: 'document.documentElement ? document.documentElement.outerHTML.slice(0, 2048) : ""',
+        returnByValue: true,
+      }, sessionId).catch(() => null);
+      const html = res?.result?.value || '';
+      if (/access denied|reference #|request blocked|attention required|captcha/i.test(html)) {
+        const e = new Error('WAF challenge page instead of datafile');
+        e.class = 'challenge'; e.waf = true;
+        throw e;
+      }
+      return new Promise(() => {}); // inconclusive page; keep waiting on the download
+    })();
+    const guid = await Promise.race([done, challengeProbe]);
+    return readFileSync(join(dlDir, guid));
+  });
 }
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -277,6 +398,19 @@ function selftest() {
   const meta = parseDatasetMetadata({ data: { latestVersion: { versionNumber: 2, versionMinorNumber: 0, files: [{ dataFile: { id: 42, filename: 'agg.tab', md5: 'ABC123' } }] } } });
   ok(meta.version === '2.0' && meta.files[0].id === '42' && meta.files[0].md5 === 'abc123', 'metadata parse');
 
+  ok(classifyFailure({ waf: true, message: 'WAF challenge (status 202)' }) === 'challenge', 'classify challenge');
+  ok(classifyFailure(new Error('discover timed out after 1500ms')) === 'timeout', 'classify timeout');
+  ok(classifyFailure(new Error('checksum mismatch: expected a got b')) === 'checksum', 'classify checksum');
+  ok(classifyFailure(new Error('cross-origin redirect blocked in-page fetch')) === 'redirect', 'classify redirect');
+  ok(classifyFailure(new Error('spawn ENOENT')) === 'transport', 'classify transport default');
+  const tagged = new Error('download canceled'); tagged.class = 'redirect';
+  ok(classifyFailure(tagged) === 'redirect', 'classify honors explicit tag');
+
+  ok(isReadyEnvelope(200, '{"status":"OK","data":{"version":"6.8"}}'), 'ready on OK envelope');
+  ok(!isReadyEnvelope(202, '{"status":"OK"}'), 'not ready on 202');
+  ok(!isReadyEnvelope(200, '<html>Attention Required</html>'), 'not ready on challenge html');
+  ok(!isReadyEnvelope(200, '{"status":"ERROR"}'), 'not ready on error envelope');
+
   console.log(`SELFTEST-OK n=${n}`);
 }
 
@@ -292,25 +426,36 @@ async function main() {
     if (!a.pid || !a.cache) return unknown('discover requires --pid and --cache');
     try {
       const url = `${base}/api/datasets/:persistentId/?persistentId=${encodeURIComponent(a.pid)}`;
-      const bytes = await withTimeout(warmAndFetch(base, url), 'discover');
+      const bytes = await withTimeout(fetchJsonSameOrigin(base, url), 'discover');
       const meta = parseDatasetMetadata(bytes.toString('utf8'));
       const sha = storeObject(a.cache, bytes);
       console.log(JSON.stringify({ status: 'OK', kind: 'metadata', pid: a.pid, metadata_sha256: sha, version: meta.version, files: meta.files }));
-    } catch (e) { return unknown(`discover failed: ${e.message}`, { waf: !!e.waf, pid: a.pid }); }
+    } catch (e) { return unknown(`discover failed: ${e.message}`, { class: classifyFailure(e), waf: !!e.waf, pid: a.pid }); }
     return;
   }
 
   if (cmd === 'fetch') {
     if (!a.pid || !a.file || !a.cache) return unknown('fetch requires --pid, --file and --cache');
+    const want = typeof a.sha256 === 'string' ? a.sha256.toLowerCase() : null;
+    // Resumable: a verified content-addressed object short-circuits the network.
+    if (want) {
+      try {
+        const p = contentAddressPath(a.cache, want);
+        if (existsSync(p) && sha256Hex(readFileSync(p)) === want) {
+          console.log(JSON.stringify({ status: 'OK', kind: 'datafile', pid: a.pid, file_id: String(a.file), resumed: true, sha256: want }));
+          return;
+        }
+      } catch { /* malformed digest or unreadable object: fall through to live */ }
+    }
     try {
       const url = `${base}/api/access/datafile/${encodeURIComponent(a.file)}?format=original`;
-      const bytes = await withTimeout(warmAndFetch(base, url), 'fetch');
+      const bytes = await withTimeout(downloadDatafile(base, url), 'fetch');
       const sha = storeObject(a.cache, bytes);
-      if (a.sha256 && a.sha256 !== true && a.sha256 !== sha) {
-        return unknown(`checksum mismatch: expected ${a.sha256} got ${sha}`, { got_sha256: sha });
+      if (want && want !== sha) {
+        return unknown(`checksum mismatch: expected ${want} got ${sha}`, { class: 'checksum', got_sha256: sha, pid: a.pid, file_id: String(a.file) });
       }
-      console.log(JSON.stringify({ status: 'OK', kind: 'datafile', pid: a.pid, file_id: String(a.file), bytes: bytes.length, sha256: sha }));
-    } catch (e) { return unknown(`fetch failed: ${e.message}`, { waf: !!e.waf, pid: a.pid, file_id: String(a.file) }); }
+      console.log(JSON.stringify({ status: 'OK', kind: 'datafile', pid: a.pid, file_id: String(a.file), resumed: false, bytes: bytes.length, sha256: sha }));
+    } catch (e) { return unknown(`fetch failed: ${e.message}`, { class: classifyFailure(e), waf: !!e.waf, pid: a.pid, file_id: String(a.file) }); }
     return;
   }
 
