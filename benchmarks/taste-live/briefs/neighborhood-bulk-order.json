@@ -1,0 +1,87 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "neighborhood-bulk-order",
+  "stratum": "collaboration",
+  "category": "neighborhood-bulk-buying",
+  "origin": "cycle-40-plan",
+  "title": "Pool the street's order",
+  "brief": "Our street pools bulk grocery orders in a group chat, and every round someone's quantity is lost before pickup day.",
+  "target_population": {
+    "role": "block captain pooling pantry staples for eleven fictional households",
+    "locale": "en-PH",
+    "coverage_limit": "one street's order rounds; quantities and pickup slots only, no money handling"
+  },
+  "product_shape": "community coordination page",
+  "core_task": {
+    "id": "task-neighborhood-bulk-order",
+    "summary": "join an open bulk order with a quantity and receive a pickup window",
+    "success_oracle": "joining the rice order with 5 kg updates its pooled meter to 40 of 50 kg and assigns the joining household a pickup window"
+  },
+  "required_routes": ["/", "/pickup"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "open orders and joins are seeded local records, so the pooled meter and pickup roster update in the same frame as the join"
+  },
+  "state_recipes": {
+    "empty": "close both seeded orders at their caps; the street page shows its no-open-rounds message with the next-round hint",
+    "validation-error": "join the rice order with 20 kg when only 15 remain; the error shows the remaining capacity and refuses",
+    "success": "join the rice order with 5 kg as Household 9; the meter reads 40 of 50 kg and a pickup window appears",
+    "focus": "press Tab from page load until the rice order's quantity field shows its focus ring",
+    "mobile": "load the page at 390x844; order meter cards stack with join forms inline"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "join-qty-rice", "value": "5"},
+      {"op": "select", "target": "join-household-rice", "value": "household-9"},
+      {"op": "click", "target": "join-rice"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "pool-total-rice", "value": "40"},
+      {"op": "assert_visible", "target": "pickup-slot-household-9"},
+      {"op": "assert_count", "target": "open-order", "value": 2}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed has two open orders: 50 kg of rice pooled at 35 kg and 24 jars of honey pooled at 18.",
+    "Joining the rice order with 5 kg moves its pool to 40 of 50 kg and assigns a pickup window.",
+    "A join that would push a pool past its cap is refused with the remaining amount shown."
+  ],
+  "product_signature": {
+    "mechanism": "pooled-progress meters that close each order exactly at its bulk cap",
+    "anchor": "order meter cards on the street page",
+    "brief_trace": "someone's quantity is lost before pickup day",
+    "counterfactual": "a group-chat transcript would fit a messaging brief and loses quantities in the scroll",
+    "task_proof": "success capture shows the rice meter at 40 of 50 kg with Household 9's pickup window issued"
+  },
+  "anti_goals": [
+    "no payments, price splitting, or money collection",
+    "no supplier ordering or inventory; rounds are neighbor coordination only",
+    "no chat, comments, or reactions"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"order": "rice", "cap_kg": 50, "pooled_kg": 35, "households_joined": 6},
+      {"order": "honey", "cap_jars": 24, "pooled_jars": 18, "households_joined": 5},
+      {"household": "Household 9", "street": "Mabini Lane (fictional)"},
+      {"pickup_windows": ["Sat 08:00-09:00", "Sat 09:00-10:00"]}
+    ],
+    "data_notes": "eleven invented households on one invented street; rice starts at 35 of 50 kg so the 5 kg join lands exactly on 40"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "dog-walk-route",
+  "stratum": "consumer",
+  "category": "pet-recreation-planning",
+  "origin": "schema-v1",
+  "title": "Choose a good dog walk",
+  "brief": "I want a quick way to choose a dog walk based on the time I have, weather, and how energetic my dog is today.",
+  "target_population": {
+    "role": "urban dog owner squeezing walks between remote-work meetings",
+    "locale": "en-US",
+    "coverage_limit": "single household with one dog profile; no multi-user accounts"
+  },
+  "product_shape": "single-page web app",
+  "core_task": {
+    "id": "task-dog-walk-route",
+    "summary": "pick a recommended route for a 25-minute window and a low-energy dog",
+    "success_oracle": "after setting the time budget to 25 minutes and energy to low, the recommendation panel names exactly one seeded route and lists at least one reason referencing time, weather, or energy"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "all six seeded routes live in local JSON parsed synchronously at startup, so no pending frame ever renders between input and recommendation",
+    "validation-error": "time budget and dog energy are chosen from constrained preset controls; the interface offers no free-form field that can hold an invalid value"
+  },
+  "state_recipes": {
+    "empty": "set the 10-minute preset with energy high; no seeded route fits both constraints, so the no-match panel with its loosen-a-filter hint shows",
+    "success": "set the 25-minute preset with energy low and confirm; the recommendation card resolves to Willow Loop with its reasons listed",
+    "focus": "press Tab from page load until the time-budget control shows its visible focus ring",
+    "mobile": "load the page at 390x844; the budget, weather, and energy controls stack above the route list"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "time-budget", "value": "25"},
+      {"op": "select", "target": "dog-energy", "value": "low"},
+      {"op": "click", "target": "recommend-button"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "recommendation-name", "value": "Willow Loop"},
+      {"op": "assert_visible", "target": "recommendation-reason"},
+      {"op": "assert_count", "target": "route-option", "value": 6}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed data contains exactly six named walking routes with durations from 10 to 55 minutes and shade cover recorded for each route.",
+    "A 25-minute budget with the low energy setting recommends Willow Loop and never recommends a route longer than the stated budget.",
+    "Every recommendation displays at least one plain-language reason that references time, weather, or dog energy."
+  ],
+  "product_signature": {
+    "mechanism": "time-budget dial that filters routes by fit before ranking them",
+    "anchor": "recommendation panel in the primary column",
+    "brief_trace": "quick way to choose a dog walk based on the time I have",
+    "counterfactual": "a generic map directory without a time filter would satisfy a trail-listing brief but fails this one",
+    "task_proof": "success-state capture shows the dial at 25 minutes with a single ranked route card and its reasons"
+  },
+  "anti_goals": [
+    "no GPS, geolocation, or live tracking of walks",
+    "no social feed, sharing, or community features",
+    "no live weather API; weather is a manual three-value toggle"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"route": "Willow Loop", "minutes": 22, "terrain": "flat", "shade": "high"},
+      {"route": "Quarry Rise", "minutes": 40, "terrain": "steep", "shade": "low"},
+      {"route": "Canal Flats", "minutes": 15, "terrain": "flat", "shade": "medium"},
+      {"route": "Meadow Chain", "minutes": 35, "terrain": "rolling", "shade": "medium"},
+      {"route": "Old Pier Out-and-back", "minutes": 55, "terrain": "flat", "shade": "low"},
+      {"route": "Birch Court Circuit", "minutes": 10, "terrain": "flat", "shade": "high"},
+      {"dog": "Juniper", "breed": "heeler mix", "age_years": 4}
+    ],
+    "data_notes": "all routes and the dog profile are invented; weather is a manual toggle among sunny, rain, and heat"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

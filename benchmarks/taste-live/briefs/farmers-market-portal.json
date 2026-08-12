@@ -1,0 +1,86 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "farmers-market-portal",
+  "stratum": "finance",
+  "category": "market-vendor-ledger",
+  "origin": "cycle-40-plan",
+  "title": "Reconcile the market by noon",
+  "brief": "Every Saturday I track stall fees and day tallies on paper slips that blow away before reconciliation.",
+  "target_population": {
+    "role": "market-day manager coordinating twenty fictional stalls at a weekly farmers market",
+    "locale": "en-NZ",
+    "coverage_limit": "one market day and one fee schedule; fee records only, never payment processing"
+  },
+  "product_shape": "tablet-friendly reconciliation portal",
+  "core_task": {
+    "id": "task-farmers-market-portal",
+    "summary": "record a stall's fee as collected and watch the day tally reconcile",
+    "success_oracle": "marking stall 7 as fee-recorded moves it from the outstanding column to reconciled and raises the day tally by exactly 35"
+  },
+  "required_routes": ["/", "/stalls"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the stall roster and fee schedule are seeded local records and reconciliation is a column move, so the portal never renders a waiting state"
+  },
+  "state_recipes": {
+    "empty": "record every outstanding stall; the outstanding column collapses to its market-reconciled message",
+    "validation-error": "enter a collected amount that differs from the stall's scheduled fee; an inline mismatch error blocks the record",
+    "success": "record stall 7 at its scheduled 35; it joins the reconciled column and the tally rises",
+    "focus": "press Tab from page load until the first outstanding stall's record button shows its focus ring",
+    "mobile": "load the board at 390x844; the two columns stack with outstanding stalls first"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "amount-stall-7", "value": "35"},
+      {"op": "click", "target": "record-stall-7"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "day-tally", "value": "215"},
+      {"op": "assert_count", "target": "outstanding-stall", "value": 14},
+      {"op": "assert_visible", "target": "reconciled-stall-7"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed lists twenty stalls with a fee schedule of 35 for produce stalls and 50 for prepared-food stalls.",
+    "Recording stall 7 moves it from outstanding to reconciled and raises the day tally from 180 to 215.",
+    "Reconciliation completes only when the outstanding column reaches zero stalls."
+  ],
+  "product_signature": {
+    "mechanism": "two-column reconciliation board that drains outstanding stalls into the day tally",
+    "anchor": "day tally counter fixed in the portal header",
+    "brief_trace": "paper slips that blow away before reconciliation",
+    "counterfactual": "a generic spreadsheet grid would fit an inventory brief and never shows what remains outstanding at a glance",
+    "task_proof": "success capture shows stall 7 in the reconciled column with the tally at 215"
+  },
+  "anti_goals": [
+    "no payment processing, card readers, or money movement of any kind",
+    "no vendor accounts, invoicing, or tax reporting",
+    "no map layout or stall placement planning"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"stall": 7, "vendor": "Tarn Hollow Produce", "type": "produce", "fee": 35},
+      {"stall": 3, "vendor": "Wren & Rye Bakery", "type": "prepared", "fee": 50},
+      {"stall": 12, "vendor": "Saltgrass Honey", "type": "produce", "fee": 35},
+      {"tally_start": 180, "recorded_stalls": 5}
+    ],
+    "data_notes": "twenty invented stalls; five arrive pre-recorded so the seeded tally starts at 180 and stall 7 is the first outstanding produce stall"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

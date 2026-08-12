@@ -1,0 +1,87 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "climate-data-explorer",
+  "stratum": "data",
+  "category": "local-climate-records",
+  "origin": "cycle-40-plan",
+  "title": "Show the decades side by side",
+  "brief": "I want students to see how our town's rainfall and temperature have shifted decade by decade without me exporting charts by hand.",
+  "target_population": {
+    "role": "secondary-school geography teacher building lesson material from local records",
+    "locale": "en-AU",
+    "coverage_limit": "a fixed fictional archive of three stations and forty years; no live or real data"
+  },
+  "product_shape": "read-only data explorer",
+  "core_task": {
+    "id": "task-climate-data-explorer",
+    "summary": "compare two decades of rainfall at one station and read the anomaly note",
+    "success_oracle": "selecting station Kerrbrook Weir with decades 1990s and 2010s renders both series and an annotation naming 2017 the driest year in the archive"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the forty-year archive is bundled local JSON parsed at startup, so chart composition happens synchronously with no fetch to wait on",
+    "empty": "the explorer ships a fixed seeded archive covering every station and decade its pickers can express, so a no-data result is unreachable by construction",
+    "validation-error": "every input is a constrained picker over the seeded archive; there is no free-form field whose value could be rejected"
+  },
+  "state_recipes": {
+    "success": "pick Kerrbrook Weir, decades 1990s and 2010s, and compare; the paired series render with the 2017 annotation",
+    "focus": "press Tab from page load until the station picker shows its visible focus ring",
+    "mobile": "load the explorer at 390x844; the chart reflows beneath the stacked pickers"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "station-picker", "value": "kerrbrook-weir"},
+      {"op": "select", "target": "decade-a", "value": "1990s"},
+      {"op": "select", "target": "decade-b", "value": "2010s"},
+      {"op": "click", "target": "compare-button"}
+    ],
+    "assertions": [
+      {"op": "assert_count", "target": "decade-series", "value": 2},
+      {"op": "assert_text", "target": "anomaly-note", "value": "2017"},
+      {"op": "assert_visible", "target": "archive-label"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seeded archive holds forty years of monthly rainfall and temperature for three invented stations.",
+    "Comparing the 1990s against the 2010s at Kerrbrook Weir annotates 2017 as the driest year in the archive.",
+    "Every chart states the fictional dataset name and the decade range directly on the figure."
+  ],
+  "product_signature": {
+    "mechanism": "decade-pair comparator that overlays two eras of a single station",
+    "anchor": "paired-series chart filling the main stage",
+    "brief_trace": "shifted decade by decade without me exporting charts by hand",
+    "counterfactual": "a single-series weather dashboard would satisfy a display brief but cannot put one era against another",
+    "task_proof": "success capture shows both decade series overlaid with the 2017 driest-year annotation"
+  },
+  "anti_goals": [
+    "no live weather feeds, APIs, or real station data",
+    "no climate forecasting or policy claims; the archive is explicitly fictional teaching data",
+    "no user data entry; the explorer is strictly read-only"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"station": "Kerrbrook Weir", "years": "1980-2019", "driest_year": 2017},
+      {"station": "Mount Halloran", "years": "1980-2019", "wettest_year": 1994},
+      {"station": "Tilbury Flats", "years": "1980-2019", "hottest_year": 2013}
+    ],
+    "data_notes": "all station names and forty years of monthly values are invented; anomalies are planted so annotations are deterministic"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

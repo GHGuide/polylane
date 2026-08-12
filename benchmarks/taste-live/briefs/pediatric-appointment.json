@@ -1,0 +1,89 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "pediatric-appointment",
+  "stratum": "health",
+  "category": "pediatric-visit-preparation",
+  "origin": "cycle-40-plan",
+  "title": "Walk in with the questions ready",
+  "brief": "Between booking and the exam room I forget every question I meant to ask at my child's checkup.",
+  "target_population": {
+    "role": "parent of a fictional toddler preparing for a routine well-child visit",
+    "locale": "es-US",
+    "coverage_limit": "one fictional child profile and one upcoming visit; no records of real children"
+  },
+  "product_shape": "mobile-first checklist app",
+  "core_task": {
+    "id": "task-pediatric-appointment",
+    "summary": "add a question, mark it top priority, and review the printable visit sheet",
+    "success_oracle": "adding a question and marking it top priority places it first on the visit sheet beneath the fictional child's visit details"
+  },
+  "required_routes": ["/", "/sheet"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the child profile and question templates are seeded local data, and the visit sheet is composed in memory, so no view ever waits on a fetch"
+  },
+  "state_recipes": {
+    "empty": "remove the four template questions before adding any; the checklist invites the first question with an example",
+    "validation-error": "submit the add-question form with an empty question field; an inline error keeps the checklist unchanged",
+    "success": "add 'How much water is enough daily?', mark it top priority, and open /sheet; it leads the sheet",
+    "focus": "press Tab from page load until the question input shows its visible focus ring",
+    "mobile": "load either route at 390x844; the sheet preview collapses beneath the checklist"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "question-input", "value": "How much water is enough daily?"},
+      {"op": "click", "target": "add-question"},
+      {"op": "click", "target": "priority-how-much-water-is-enough-daily"},
+      {"op": "goto", "route": "/sheet"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "sheet-question-1", "value": "How much water is enough daily?"},
+      {"op": "assert_count", "target": "sheet-question", "value": 5},
+      {"op": "assert_visible", "target": "decision-support-disclaimer"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed defines one fictional child profile, a visit dated 2026-08-20, and four template questions.",
+    "Marking a question top priority moves it to the first slot of the printable visit sheet.",
+    "Every route displays the decision-support disclaimer stating the tool is not medical advice."
+  ],
+  "product_signature": {
+    "mechanism": "priority-ordered question sheet compiled for the minutes inside the exam room",
+    "anchor": "visit sheet header carrying the child's name and visit date",
+    "brief_trace": "forget every question I meant to ask at my child's checkup",
+    "counterfactual": "a generic notes app would satisfy a memo brief but produces no prioritized, printable sheet tied to a visit",
+    "task_proof": "sheet capture shows the newly prioritized question in slot one under the visit details"
+  },
+  "anti_goals": [
+    "no medical guidance, symptom checking, or dosage content of any kind",
+    "no appointment booking or clinic integration",
+    "no storage of real family or patient data"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"child": "Ro (fictional)", "age_months": 18, "visit": "2026-08-20"},
+      {"template": "How is Ro's sleep routine developing?"},
+      {"template": "Which language milestones should we watch for?"},
+      {"template": "Ideas for calmer mealtimes?"},
+      {"template": "How much screen time is reasonable?"}
+    ],
+    "data_notes": "the child, visit, and all questions are invented; questions are things to ask a clinician, and the app itself answers none of them"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": "Uses fictional data; organizing decision support for writing down questions only — not medical advice, diagnosis, or a substitute for a clinician."
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

@@ -1,0 +1,88 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "makerspace-booking",
+  "stratum": "operations",
+  "category": "equipment-reservation",
+  "origin": "cycle-40-plan",
+  "title": "Book the machine, not the queue",
+  "brief": "Members queue for the laser cutter while other machines sit idle, and nobody knows who booked what or whether they are certified.",
+  "target_population": {
+    "role": "evening steward of a community makerspace with six machines",
+    "locale": "fr-CA",
+    "coverage_limit": "one makerspace, six machines, four evening slots; no billing or member management"
+  },
+  "product_shape": "kiosk-style booking board",
+  "core_task": {
+    "id": "task-makerspace-booking",
+    "summary": "reserve an evening laser-cutter slot for a certified member",
+    "success_oracle": "reserving the 19:00 laser-cutter slot for certified member Vale H. fills the slot with their certification badge, while an uncertified member is refused with a notice"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "machines, slots, members, and certifications are seeded local records, so reserving updates the grid in the same frame with nothing to await"
+  },
+  "state_recipes": {
+    "empty": "switch the board to Sunday, which has no seeded reservations; each machine column shows its all-slots-open message",
+    "validation-error": "attempt to book the laser cutter for uncertified member Timo J.; a certification notice refuses the reservation",
+    "success": "reserve the 19:00 laser slot for Vale H.; the slot fills and wears the certified badge",
+    "focus": "press Tab from page load until the machine grid's first open slot shows its focus ring",
+    "mobile": "load the board at 390x844; machine columns become swipeable stacked cards"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "member-picker", "value": "vale-h"},
+      {"op": "click", "target": "slot-laser-cutter-1900"},
+      {"op": "click", "target": "confirm-reservation"}
+    ],
+    "assertions": [
+      {"op": "assert_text", "target": "slot-laser-cutter-1900", "value": "Vale H."},
+      {"op": "assert_visible", "target": "badge-laser-cutter-1900"},
+      {"op": "assert_count", "target": "open-slot-laser-cutter", "value": 2}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed defines six machines, four evening slots each, and nine members of whom five hold laser certification.",
+    "Reserving the 19:00 laser slot for Vale H. fills the slot and displays their certification badge.",
+    "Booking an uncertified member is refused with a notice naming the missing certification."
+  ],
+  "product_signature": {
+    "mechanism": "certification-gated slot grid that exposes idle machine time at a glance",
+    "anchor": "machine-by-slot grid spanning the board",
+    "brief_trace": "nobody knows who booked what or whether they are certified",
+    "counterfactual": "a generic room-booking calendar would fit a meeting-space brief and cannot refuse an uncertified booking",
+    "task_proof": "success capture shows the 19:00 laser slot filled and badged for Vale H."
+  },
+  "anti_goals": [
+    "no billing, memberships, or payment handling",
+    "no training content or certification issuing; certifications are seeded facts",
+    "no waitlists, swaps, or notification flows"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"machine": "laser cutter", "slots": ["17:00", "18:00", "19:00", "20:00"], "certification": "laser"},
+      {"machine": "cnc router", "slots": ["17:00", "18:00", "19:00", "20:00"], "certification": "cnc"},
+      {"member": "Vale H.", "certified": ["laser", "cnc"]},
+      {"member": "Timo J.", "certified": []},
+      {"member": "Ines Q.", "certified": ["laser"]}
+    ],
+    "data_notes": "six invented machines and nine invented members; one seeded reservation occupies the 18:00 laser slot so 19:00 is bookable and two laser slots remain open after the core task"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}
