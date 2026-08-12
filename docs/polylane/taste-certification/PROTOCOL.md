@@ -3,13 +3,15 @@
 ## Status and scope
 
 This is a provider-neutral specification with a **live fail-closed validator
-core** already in the tree and a set of **live adapters frozen for Cycle 40**
-but not yet merged here. Cycle 37 wrote no code; Cycle 39 shipped the fail-closed
-receipt/validator/compiler chain (`bin/polylane-taste*.sh`); Cycle 40 builds the
-real acquisition, capture, judge, and ballot-v2 adapters in sibling lanes. This
-document tracks that exact boundary — see §0 for what is live now, what is a
-Cycle-40 deliverable, and what stays external — and never approximates a result
-across it. A missing adapter, receipt, field, or predicate is an evidence
+core** and the **Cycle-40 live adapters now merged in this tree**. Cycle 37
+wrote no code; Cycle 39 shipped the fail-closed receipt/validator/compiler
+chain (`bin/polylane-taste*.sh`); Cycle 40 shipped the real acquisition,
+capture, judge, and ballot-v2 adapters into this tree; Cycle 41 freezes the
+acquisition/calibration campaign design in sibling lanes (see
+`SOURCE-AUDIT.md` for the source-identity, mirror, and transport boundary).
+This document tracks that exact boundary — see §0 for what is live now, what
+is a frozen Cycle-41 deliverable, and what stays external — and never
+approximates a result across it. A missing adapter, receipt, field, or predicate is an evidence
 failure, not permission to substitute. The coordinator core is Bash 3.2, `jq`,
 `git`, and a declared SHA-256 command; every browser/decoder/OCR/accessibility/
 model adapter is explicitly declared, versioned, and hash-receipted, and is never
@@ -25,13 +27,15 @@ not a compliment for a screenshot or an attribute of a model.
 ## 0. Live boundary — what is real, what is frozen, what stays external
 
 The single most load-bearing fact in this document: the certification chain is
-**live and fail-closed over receipts**, but on **fixture-grade** evidence until
-the Cycle-40 live adapters land. The tiers below never collapse into each other.
+**live and fail-closed over receipts**, and the live adapters are merged, but a
+result is still only as real as the external evidence (network, Chrome,
+providers, recruited humans) actually obtained at run time. Fixture-grade and
+production-grade evidence never collapse into each other.
 
-**Live now (in this tree, Cycle-39 close).** Pure Bash 3.2 + jq validators and
-compilers. None renders a browser, acquires a dataset, runs a model, or recruits
-a person; each stamps `classification:"fixture"` (or `fixture_only:true`) on its
-output.
+**Live validator core (in this tree since the Cycle-39 close).** Pure Bash 3.2
++ jq validators and compilers. None renders a browser, acquires a dataset,
+runs a model, or recruits a person; each stamps `classification:"fixture"`
+(or `fixture_only:true`) on its output.
 
 | Producer | Command | Emits / enforces | Grade |
 |---|---|---|---|
@@ -50,29 +54,39 @@ The v2 compiler additionally requires the `subject_revision` to be the integrato
 HEAD or a proven ancestor with only declared evidence commits after it, and it
 content-addresses every artifact and screenshot in the manifest closure.
 
-**Frozen for Cycle 40 (not in this tree; sibling lanes build them in parallel).**
-Each is an explicit, versioned, hash-receipted adapter external to the Bash core;
-a missing adapter is `UNKNOWN`/failure, never a fixture fallback. Do not describe
-any of these as live in this tree until its lane merges.
+**Live adapters (shipped by Cycle 40, merged in this tree).** Each is an
+explicit, versioned, hash-receipted adapter around the Bash core; a missing or
+failing adapter at run time is `UNKNOWN`/failure, never a fixture fallback.
+Shipped code does not by itself produce real evidence: every non-fixture result
+still requires the external fact (network, Chrome, provider, human) at run time.
 
-| Cycle-40 lane | Adds |
+| Cycle-40 lane | Shipped as |
 |---|---|
-| `source-live` | browser-backed Dataverse acquisition (see §4.3), three-domain split, TASTE secondary receipt, one-file canary |
-| `calibration-live` | production calibration input/receipt v2 binding images, source labels, mirrored raw responses, parser/invocation hashes, judge identity |
-| `judge-claude` / `judge-codex` | isolated provider-native visual-judge adapters with model, prompt, image, output-schema, raw-response, timing, exit receipts |
-| `judge-runner` | campaign sharding, unique session IDs, retry/abstain, no shared ballot channel, deterministic parsing |
-| `ballot-live` | **production `taste-ballot-validation/v2`** producer (`fixture_only:false`) recomputing every group, raw response, orientation, pointwise, calibration, capture, escrow binding |
-| `browser-live` | real Chrome/Playwright capture over frozen route/state/viewport/action matrices, offline enforcement, full receipts |
-| `decode-live` | real PNG→RGBA decoder with dimensions, payload, provenance, duplicate/perceptual evidence |
-| `a11y-live` | pinned accessibility engine with keyboard/focus/reflow/contrast/target/motion evidence and fail-closed receipts |
-| `task-live` | replayable per-brief action/state/task oracle and hard-gate compiler |
-| `corpus-20` | frozen twenty-brief study corpus, task scripts, categories, acceptance facts, licence/offline rules |
-| `prompts-live` | immutable baseline/current prompt compiler, literal goal, reference/design locks, no candidate self-verdict |
-| `generate-live` | isolated fixed-model build runner, source/build receipts, replay, no-network output checks |
-| `study-live` | study freeze/compiler, calibration-v2 + ballot-v2 certificate support, declared evidence closure, statistics, negative attacks |
+| `source-live` | `bin/polylane-taste-source.sh` + `benchmarks/taste-live/tools/dataverse-acquire.mjs` — browser-backed Dataverse acquisition (see §4.3 and `SOURCE-AUDIT.md`), three-domain split, TASTE secondary receipt, one-file canary |
+| `calibration-live` | `bin/polylane-taste-calibration-live.sh` — production `taste-calibration/v2` input/receipt binding images, source labels, mirrored raw responses, parser/invocation hashes, judge identity |
+| `judge-claude` / `judge-codex` | `bin/polylane-taste-judge-claude.sh` / `bin/polylane-taste-judge-codex.sh` — isolated provider-native visual-judge adapters with model, prompt, image, output-schema, raw-response, timing, exit receipts |
+| `judge-runner` | `bin/polylane-taste-judge-run.sh` — campaign sharding, unique session IDs, retry/abstain, no shared ballot channel, deterministic parsing |
+| `ballot-live` | `bin/polylane-taste-ballot-live.sh` — **production `taste-ballot-validation/v2`** producer (`fixture_only:false`) recomputing every group, raw response, orientation, pointwise, calibration, capture, escrow binding |
+| `browser-live` | `bin/polylane-taste-browser.sh` + `benchmarks/taste-live/tools/browser-capture.mjs` — real Chrome capture over frozen route/state/viewport/action matrices, offline enforcement, full receipts |
+| `decode-live` | `bin/polylane-taste-decode.sh` + `benchmarks/taste-live/tools/png-decode.sh` — real PNG→RGBA decoding with dimensions, payload, provenance, duplicate/perceptual evidence |
+| `a11y-live` | `bin/polylane-taste-a11y-live.sh` (`bash`-invoked; no exec bit in this tree) + `benchmarks/taste-live/tools/accessibility.mjs` — pinned accessibility engine with keyboard/focus/reflow/contrast/target/motion evidence and fail-closed receipts |
+| `task-live` | `bin/polylane-taste-task.sh` — replayable per-brief action/state/task oracle and hard-gate compiler |
+| `corpus-20` | `benchmarks/taste-live/` (briefs, prompts, `study-v1.json`, `task-schema.json`) — frozen twenty-brief study corpus, task scripts, categories, acceptance facts, licence/offline rules |
+| `prompts-live` | `polylane-taste-prompts.sh` (in `bin/`, `bash`-invoked; no exec bit in this tree) — immutable baseline/current prompt compiler, literal goal, reference/design locks, no candidate self-verdict |
+| `generate-live` | `bin/polylane-taste-generate.sh` — isolated fixed-model build runner, source/build receipts, replay, no-network output checks |
+| `study-live` | `bin/polylane-taste-study.sh` — study freeze/compiler, calibration-v2 + ballot-v2 certificate support, declared evidence closure, statistics, negative attacks |
 
-The deferred `taste-live-integrator` merges the fifteen tips and records one real
-primary-corpus canary plus one real Claude and one real Codex visual-judge smoke.
+**Frozen for Cycle 41 (not in this tree; sibling lanes build them in parallel).**
+The acquisition/calibration campaign design — deterministic Chrome readiness
+polling and a CDP/session-handoff path for object-storage redirected files
+(`dataverse-transport`), DataONE discovery/resolve receipts (`dataone-metadata`),
+the reconciled fail-closed frozen source manifest (`source-freeze`), the
+resumable download campaign and cache integrity, ratings normalization, corpus
+selection, pair building, the provider calibration campaign and audit, panel
+freeze, benchmark preflight, and the source adversary suite — is frozen design,
+not shipped code here. `SOURCE-AUDIT.md` records the exact shipped-versus-frozen
+gaps. The Cycle-40 run's own source canary was WAF-blocked, so real corpus
+acquisition remains `EXTERNAL-EVIDENCE-OPEN` at this writing.
 
 **Stays external / `UNKNOWN` (never provable in software).** Recruited deciding
 humans (hence no `HUMAN_CERTIFIED` in Cycle 40), panel identity/independence/
@@ -297,6 +311,12 @@ for a hard gate. Fewer than 10 valid locked briefs is `UNKNOWN`. The planned
 old-versus-new study targets 20; manifest/compiler inability to preserve all
 locked inputs up to 100 is an implementation failure, not a reason to silently
 shrink or repeat the prompt sample.
+
+`SOURCE-AUDIT.md` in this directory is the authoritative source-identity
+boundary for the primary corpus: canonical Harvard Dataverse bytes versus
+DataONE immutable metadata, the observed WAF/readiness/redirect transport
+facts, and the frozen substitution and claim rules. A source decision that
+contradicts that audit is a manifest error, not an alternative reading.
 
 ## 5. Candidate and live browser-render contract
 
@@ -734,8 +754,10 @@ every validator receipt is hash-bound to its raw input; and `subject_revision`
 must be the integrator HEAD or a proven ancestor with only declared evidence
 commits after it. `claim_label` is derived (§1), never supplied. `fixture_only`
 is `false` **only** when every ballot receipt is `taste-ballot-validation/v2` with
-`fixture_only:false` — the Cycle-40 `ballot-live` deliverable, absent from this
-tree — so a v2 certificate compiled here is still `fixture_only:true`.
+`fixture_only:false` — produced by the shipped `ballot-live` adapter
+(`bin/polylane-taste-ballot-live.sh`) from real judged evidence. A v2
+certificate compiled from fixture-grade ballot receipts remains
+`fixture_only:true`; shipping the producer did not create real evidence.
 
 ```json
 {
@@ -782,10 +804,12 @@ coverage, or manual assistive-technology review.
 
 ## 12. Producer map — live slices and their Cycle-40 live adapters
 
-Each slice's fail-closed **validator/compiler is live in this tree** (§0 table);
-what Cycle 40 adds is the **live adapter** that feeds it real (non-fixture)
-evidence. The "Verification" column is the negative-fixture bar every slice
-already holds. Do not read the "live adapter" column as merged here.
+Each slice's fail-closed **validator/compiler is live in this tree** (§0 table),
+and the Cycle-40 **live adapters** that feed it real (non-fixture) evidence are
+merged (§0 shipped-as table). The "Verification" column is the negative-fixture
+bar every slice already holds. Merged adapters still yield real evidence only
+when the external fact (network, Chrome, provider, human) is obtained at run
+time; otherwise the result is `UNKNOWN`/`EXTERNAL-EVIDENCE-OPEN`.
 
 | Slice | Deliverable (validator live now; live adapter is Cycle-40) | Verification (negative fixtures fail closed) |
 |---|---|---|
