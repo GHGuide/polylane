@@ -1552,6 +1552,14 @@
           "status": "open",
           "cycle": null,
           "evidence": ""
+        },
+        {
+          "id": "m32.4a",
+          "text": "Implement and live-smoke the pinned corpus, provider judges, browser/task/accessibility adapters, production ballot-v2, prompt freeze, and twenty-brief study harness",
+          "weight": 138,
+          "status": "doing",
+          "cycle": 40,
+          "evidence": "cycle 40 live harness frozen before implementation"
         }
       ]
     }
@@ -3247,6 +3255,26 @@
       "cmd": "bash tests/run.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "taste-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4a",
+      "cmd": "bash tests/test-taste-source-live.sh && bash tests/test-taste-calibration-live.sh && bash tests/test-taste-judge-claude.sh && bash tests/test-taste-judge-codex.sh && bash tests/test-taste-judge-run.sh && bash tests/test-taste-ballot-live.sh && bash tests/test-taste-browser-live.sh && bash tests/test-taste-decode-live.sh && bash tests/test-taste-a11y-live.sh && bash tests/test-taste-task-live.sh && bash tests/test-taste-corpus-20.sh && bash tests/test-taste-prompts-live.sh && bash tests/test-taste-generate-live.sh && bash tests/test-taste-study-live.sh && bash tests/test-taste-live-harness-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4a",
+      "cmd": "bash tests/test-taste-protocol-live.sh && bin/polylane-markers.sh check-docs references/ && bash tests/test-skill-parity.sh && git diff --check",
+      "tier": "focused",
+      "key": "",
       "status": "unchecked",
       "deps": [],
       "fp": "",

@@ -6,6 +6,15 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 40 live harness (active): [plan](cycle-40-plan.md) ·
+[research lock](cycle-40-research.md) · [per-lane skills](cycle-40-suggestions.md).
+Fifteen isolated builders plus a deferred integrator own the primary human-corpus
+acquirer, held-out calibration, Claude/Codex judge adapters, production ballot-v2,
+real browser/decode/task/accessibility evidence, immutable prompts/generation, twenty
+briefs, and the study compiler. Thresholds and the pre-visual baseline were frozen
+before launch. This cycle can prove the harness only; `m32.4` remains open for the
+subsequent rendered old-versus-new study and honest machine-panel certificate.
+
 Cycle 39 production taste loop: [plan](cycle-39-plan.md) ·
 [skill suggestions](cycle-39-suggestions.md) · [council](cycle-39-council.md) ·
 [digest](cycle-39-digest.md) · [questions](cycle-39-questions.md) ·
