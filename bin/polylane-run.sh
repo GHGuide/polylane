@@ -3300,12 +3300,14 @@ next_fallback_model() {
   return 1
 }
 
-# respawn_lane IDX NAME WT [COUNT_RESTART] : checkpoint WIP then re-seed the
+# respawn_lane IDX NAME WT [COUNT_RESTART] [FORCE_RESUME] : checkpoint WIP then re-seed the
 # pane with the CURRENT (possibly downgraded) model. Used by both dead-pane
 # recovery and stall fallback. COUNT_RESTART defaults to 1; startup seed
-# recovery passes 0 because no agent attempt reached the pane.
+# recovery passes 0 because no agent attempt reached the pane. FORCE_RESUME is
+# `resume` only for a known-good interactive session (notably a timed account
+# cooldown), preserving the lane's reasoning without mutating retry accounting.
 respawn_lane() {
-  local idx="$1" name="$2" wt="$3" count_restart="${4:-1}" cmd
+  local idx="$1" name="$2" wt="$3" count_restart="${4:-1}" force_resume="${5:-}" cmd
   assert_prompt "$(lane_prompt_get "$name")" "$name"
   checkpoint_lane "$wt" "$name"
   refresh_manifest_runtime_settings
@@ -3317,7 +3319,7 @@ respawn_lane() {
   # respawns use the proven cold seed, so a session that genuinely can't resume costs
   # exactly one retry instead of looping on a failing --continue.
   local resume=""
-  [ "$(retry_get "$name")" = "1" ] && resume=resume
+  if [ "$force_resume" = resume ] || [ "$(retry_get "$name")" = "1" ]; then resume=resume; fi
   cmd=$(pane_cmd_for "$name" "$resume")
   pane_exists "$idx" || return 1
   if ! run tmux respawn-pane -k -t "$TMUX_SESSION:0.$idx" "$(pane_launch_command "$cmd")" 2>/dev/null; then
@@ -3418,7 +3420,7 @@ resolve_stalls() {
       if pane_session_reset_due "$idx"; then
         echo "stall: lane '$name' free reset window reached — resuming the frozen goal (no credits purchased)"
         notify_event stall "lane '$name': free session reset reached — resuming"
-        if respawn_lane "$idx" "$name" "$wt"; then unstall "$name"; fi
+        if respawn_lane "$idx" "$name" "$wt" 1 resume; then unstall "$name"; fi
       else
         echo "stall: lane '$name' session-limited — waiting for its printed free reset"
       fi

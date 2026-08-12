@@ -47,8 +47,9 @@ LANE_NAMES=(a); LANE_PANE_IDX=(0); LANE_WORKTREES=("$TEST_TMPDIR/wt")
 mkdir -p "$TEST_TMPDIR/wt/docs"
 STALLED_LANES=a
 RESPAWNS=0
+RESUME_MODE=""
 notify_event() { :; }
-respawn_lane() { RESPAWNS=$((RESPAWNS + 1)); }
+respawn_lane() { RESPAWNS=$((RESPAWNS + 1)); RESUME_MODE="${5:-}"; }
 POLYLANE_ON_LIMIT=fallback
 POLYLANE_NOW_HM=20:39
 resolve_stalls "a:$TEST_TMPDIR/wt" > "$TEST_TMPDIR/wait.out"
@@ -61,6 +62,7 @@ resolve_stalls "a:$TEST_TMPDIR/wt" > "$TEST_TMPDIR/resume.out"
 RESUME_OUT=$(cat "$TEST_TMPDIR/resume.out")
 assert_contains "session-cooldown-resumes-at-free-reset" "free reset window reached" "$RESUME_OUT"
 assert_eq "session-cooldown-respawns-once" "1" "$RESPAWNS"
+assert_eq "session-cooldown-preserves-live-conversation" "resume" "$RESUME_MODE"
 assert_eq "session-cooldown-clears-stall-after-resume" "" "$STALLED_LANES"
 unset POLYLANE_NOW_HM POLYLANE_ON_LIMIT
 
