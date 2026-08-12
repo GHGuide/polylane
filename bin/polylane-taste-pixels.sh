@@ -3,7 +3,60 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-taste-pixels.sh verify <project-root> <capture-manifest.json> <now-utc>" >&2
+  echo "usage: polylane-taste-pixels.sh verify <project-root> <capture-manifest.json> <now-utc> [receipt-out.json]" >&2
+}
+
+# Atomic, hash-bound receipt.  Only reached after every gate in verify() passes,
+# so a rejection leaves no partial file (fail-closed).  classification is
+# validator-derived: a caller cannot request "production"; that requires an
+# external attestation this hermetic cycle does not authorize.
+# ponytail: classification hard-derived to "fixture" until an external
+# production-attestation contract lands (Cycle >39).
+write_pixels_receipt() {
+  local out="$1" manifest="$2" head="$3" candidate="$4" srcrev="$5" now="$6" source_input="$7" \
+        manifest_sha="$8" browser_receipt_sha="$9" browser_cmd="${10}" decoder_cmd="${11}" \
+        source_epoch="${12}" now_epoch="${13}" validator_fp dir tmp
+  validator_fp=$(sha256_file "${BASH_SOURCE[0]}") || return 1
+  dir=$(dirname -- "$out")
+  mkdir -p "$dir" || return 1
+  tmp=$(mktemp "${out}.tmp.XXXXXX") || return 1
+  jq -n \
+    --arg schema "taste-pixels-receipt/v1" \
+    --arg status VERIFIED --arg class fixture \
+    --arg vid polylane-taste-pixels --arg vfp "$validator_fp" \
+    --arg now "$now" --arg head "$head" --arg candidate "$candidate" --arg srcrev "$srcrev" \
+    --arg manifest_sha "$manifest_sha" --arg source_input "$source_input" \
+    --arg browser_receipt_sha "$browser_receipt_sha" --arg browser_cmd "$browser_cmd" \
+    --arg decoder_cmd "$decoder_cmd" \
+    --argjson source_epoch "$source_epoch" --argjson now_epoch "$now_epoch" \
+    --slurpfile manifest "$manifest" '
+    ($manifest[0]) as $m | {
+      schema_version:$schema,
+      receipt_version:"polylane.taste.pixels-receipt.v1",
+      status:$status,
+      classification:$class,
+      validator:{id:$vid,fingerprint:$vfp},
+      executed_at:$now,
+      subject:{project_head:$head,candidate_id:$candidate,candidate_source_revision:$srcrev},
+      inputs:{
+        capture_manifest_sha256:$manifest_sha,
+        source_revision_sha256:$source_input,
+        browser_adapter_receipt_sha256:$browser_receipt_sha,
+        browser_command_sha256:$browser_cmd,
+        decoder_command_sha256:$decoder_cmd
+      },
+      input_sha256:$manifest_sha,
+      freshness_window:{source_epoch:$source_epoch,now_epoch:$now_epoch},
+      matrix:([$m.captures[] | "\(.route)\(.state)\(.viewport)"] | sort),
+      captures:[$m.captures[] | {capture_id,route,state,viewport,screenshot_png_sha256,decoded_pixel_sha256,decoded_width,decoded_height}],
+      output:{
+        capture_count:($m.captures|length),
+        distinct_screenshot_hashes:([$m.captures[].screenshot_png_sha256]|unique|length),
+        distinct_decoded_hashes:([$m.captures[].decoded_pixel_sha256]|unique|length)
+      },
+      reason_codes:[]
+    }' > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$out"
 }
 
 reject() {
@@ -189,7 +242,7 @@ actual_matrix() {
 }
 
 verify() {
-  local root="$1" manifest="$2" now="$3" manifest_dir source_revision source_input_sha source_epoch now_epoch browser_path browser_id browser_sha browser_receipt decoder_path decoder_sha actual expected viewport width height path image_sha decoded_sha captured captured_epoch image_mtime dimensions decoded_output pixel_sha pixel_bytes colors nonbackground receipt
+  local root="$1" manifest="$2" now="$3" receipt_out="${4:-}" manifest_dir source_revision source_input_sha source_epoch now_epoch browser_path browser_id browser_sha browser_receipt decoder_path decoder_sha actual expected viewport width height path image_sha decoded_sha captured captured_epoch image_mtime dimensions decoded_output pixel_sha pixel_bytes colors nonbackground receipt manifest_sha browser_receipt_sha
   [ -d "$root" ] && [ ! -L "$root" ] || reject UNSAFE_ROOT
   [ -f "$manifest" ] && [ ! -L "$manifest" ] || reject MANIFEST_UNAVAILABLE
   command -v jq >/dev/null 2>&1 || reject JQ_UNAVAILABLE
@@ -263,12 +316,22 @@ verify() {
 
   [ "$(jq '[.captures[].screenshot_png_sha256] | length == (unique | length)' "$manifest")" = true ] || reject DUPLICATE_RENDER
   [ "$(jq '[.captures[].decoded_pixel_sha256] | length == (unique | length)' "$manifest")" = true ] || reject DUPLICATE_RENDER
+
+  if [ -n "$receipt_out" ]; then
+    manifest_sha=$(sha256_file "$manifest") || reject SHA256_UNAVAILABLE
+    browser_receipt_sha=$(sha256_file "$browser_receipt") || reject SHA256_UNAVAILABLE
+    write_pixels_receipt "$receipt_out" "$manifest" "$source_revision" \
+      "$(jq -r '.candidate_id' "$manifest")" "$(jq -r '.candidate_source_revision' "$manifest")" \
+      "$now" "$source_input_sha" "$manifest_sha" "$browser_receipt_sha" "$browser_sha" "$decoder_sha" \
+      "$source_epoch" "$now_epoch" || reject RECEIPT_WRITE_FAILED
+  fi
+
   printf 'TASTE-PIXELS: VERIFIED captures=%s\n' "$(jq '.captures | length' "$manifest")"
 }
 
 main() {
   case "${1:-}" in
-    verify) [ $# -eq 4 ] || { usage; return 2; }; verify "$2" "$3" "$4" ;;
+    verify) [ $# -eq 4 ] || [ $# -eq 5 ] || { usage; return 2; }; verify "$2" "$3" "$4" "${5:-}" ;;
     *) usage; return 2 ;;
   esac
 }

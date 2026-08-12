@@ -10,8 +10,70 @@ export LC_ALL
 
 usage() {
   echo "usage: polylane-hooks.sh codex|claude SessionStart|PreCompact|PostCompact|Stop [--project PROJECT]" >&2
+  echo "       polylane-hooks.sh locate" >&2
+  echo "       polylane-hooks.sh render codex|claude" >&2
   exit 2
 }
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
+  else return 1; fi
+}
+
+# resolve_safe PATH — print the canonical absolute path of an installed regular
+# file, or fail.  A missing file, a symlinked leaf, a non-regular or
+# non-executable target, or a path carrying quote/backslash characters (which
+# would break safe quoting in a rendered shell command) is rejected before use.
+resolve_safe() {
+  local path=$1 dir base canon
+  [ -e "$path" ] || return 3
+  [ ! -L "$path" ] || return 3
+  [ -f "$path" ] || return 3
+  [ -x "$path" ] || return 3
+  case "$path" in *\'*|*\"*|*\\*) return 3 ;; esac
+  dir=$(cd "$(dirname "$path")" 2>/dev/null && pwd -P) || return 3
+  base=$(basename "$path")
+  canon="$dir/$base"
+  [ ! -L "$canon" ] || return 3
+  printf '%s\n' "$canon"
+}
+
+# do_locate — resolve and print the actual installed helper (this script).  The
+# supervisor and both provider fragments use this single locator; there is no
+# duplicated per-hook path logic.
+do_locate() {
+  resolve_safe "$0"
+}
+
+# do_render PROVIDER — emit a project-scoped hook fragment whose commands invoke
+# the exact installed helper by absolute path, with its sha256 recorded as
+# provenance.  Reads the shipped template beside this helper; never edits global
+# settings and never infers trust.  Fails safely when the helper or template is
+# unsafe or absent.
+do_render() {
+  local provider=$1 self selfdir tpl field sum
+  case "$provider" in claude) field=_comment ;; codex) field=description ;; *) usage ;; esac
+  command -v jq >/dev/null 2>&1 || { echo "polylane-hooks: jq is required to render" >&2; return 3; }
+  self=$(resolve_safe "$0") || { echo "polylane-hooks: cannot resolve a safe installed helper" >&2; return 3; }
+  selfdir=$(dirname "$self")
+  tpl="$selfdir/../assets/hooks/$provider-settings.json"
+  [ "$provider" = codex ] && tpl="$selfdir/../assets/hooks/codex-hooks.json"
+  [ -f "$tpl" ] || { echo "polylane-hooks: hook template missing: $tpl" >&2; return 3; }
+  sum=$(sha256_of "$self") || { echo "polylane-hooks: no SHA-256 command available" >&2; return 3; }
+  jq --arg h "$self" --arg c "$sum" --arg field "$field" '
+    def subst: if type == "string" then gsub("__POLYLANE_HOOKS_HELPER__"; $h) else . end;
+    walk(subst)
+    | .[$field] = ((.[$field] // "")
+        + " | POLYLANE-RENDERED helper=" + $h + " sha256=" + $c
+        + " (review before trusting; global settings unchanged)")
+  ' "$tpl"
+}
+
+case "${1:-}" in
+  locate) do_locate; exit $? ;;
+  render) do_render "${2:-}"; exit $? ;;
+esac
 
 provider=${1:-}
 event=${2:-}

@@ -13,7 +13,7 @@ set -euo pipefail
 
 # required token -> human label. A prompt must contain each (case-insensitive).
 lint_one() {
-  local f="$1" lane="${2:-$(basename "$1" .txt)}" prime_hybrid="${3:-false}" role="${4:-builder}" miss="" planned_count
+  local f="$1" lane="${2:-$(basename "$1" .txt)}" prime_hybrid="${3:-false}" role="${4:-builder}" agent="${5:-${POLYLANE_LINT_AGENT:-claude}}" ui="${6:-0}" miss="" planned_count
   [ -s "$f" ] || { echo "PROMPT-LINT: $lane empty-or-missing $f"; return 6; }
   grep -qiE 'GOAL|/goal' "$f"        || miss="$miss objective(GOAL)"
   grep -q   'ULTIMATE-GOAL:' "$f"    || miss="$miss ultimate-goal"
@@ -73,8 +73,41 @@ lint_one() {
       grep -qF '`propose-or-decline` is NOT a subcommand' "$f" || miss="$miss prime-hybrid-refinement-not-subcommand"
     fi
   fi
+  # Manifest-derived UI profile: a surface:"ui" lane's compiled prompt must carry
+  # all five UI-* scalars and keep the verdict with the coordinator. A UI scalar
+  # appearing on a non-UI lane is still exact-once, but is never required there.
+  if [ "$ui" = 1 ]; then
+    local uilbl
+    for uilbl in UI-CONTRACT UI-IMPLEMENT UI-CONTENT UI-EVIDENCE UI-REVIEW-BOUNDARY; do
+      grep -qE "^[[:space:]]*$uilbl:" "$f" || miss="$miss ui-scalar($uilbl)"
+    done
+    if grep -qE '^[[:space:]]*UI-REVIEW-BOUNDARY:' "$f"; then
+      grep -iE '^[[:space:]]*UI-REVIEW-BOUNDARY:' "$f" | grep -qi 'coordinator' || miss="$miss ui-verdict-not-coordinator-owned"
+    fi
+  fi
+  if grep -qiE '^[[:space:]]*UI-REVIEW-BOUNDARY:.*builder (may|can|is allowed to) (self-certify|grade)' "$f"; then
+    miss="$miss builder-owned-verdict"
+  fi
+  provider_syntax_leakage "$f" "$agent" && miss="$miss provider-syntax-leakage"
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi
   return 0
+}
+
+# Native preambles come from manifest.agent. A compiled Codex prompt must not
+# carry Claude-only launch idioms (`/model`, `ultrathink`, a Claude model id, or
+# a CLAUDE.md memory assumption); a compiled Claude prompt must not carry
+# Codex-only launch syntax. Returns 0 (true) when leakage is found.
+provider_syntax_leakage() {
+  local f="$1" agent="$2"
+  case "$agent" in
+    codex|gpt|openai)
+      grep -qiE '(^|[^a-z])/model([^a-z]|$)|ultrathink|claude-(opus|sonnet|haiku|fable)|CLAUDE\.md' "$f" && return 0
+      ;;
+    *)  # claude and anything Claude-native
+      grep -qiE 'codex exec|--dangerously-bypass-approvals|--sandbox[= ]|codex_sandbox' "$f" && return 0
+      ;;
+  esac
+  return 1
 }
 
 builder_status_paths_canonical() {
@@ -140,25 +173,30 @@ runtime_finalize_contract() {
 # and Bash-3.2-safe so lint catches a generated prompt before launch.
 exact_once_labels() {
   local f="$1" label count
-  for label in ULTIMATE-GOAL CURRENT-SUBGOAL GOAL OWN FORBIDDEN PREDEFINED-SKILLS LANE-SPECIFIC-SKILLS TEST-CADENCE DELEGATION CHECK-CACHE EXTERNAL-EVIDENCE VERIFY; do
+  for label in ULTIMATE-GOAL CURRENT-SUBGOAL GOAL OWN FORBIDDEN PREDEFINED-SKILLS LANE-SPECIFIC-SKILLS TEST-CADENCE DELEGATION CHECK-CACHE EXTERNAL-EVIDENCE VERIFY UI-CONTRACT UI-IMPLEMENT UI-CONTENT UI-EVIDENCE UI-REVIEW-BOUNDARY; do
     count=$(grep -ciE "^[[:space:]]*$label:" "$f" || true)
     [ "$count" -le 1 ] || return 1
   done
 }
 
 lint_run() {
-  local mf="$1" rc=0 lane pf dir prime_hybrid int_name role
+  local mf="$1" rc=0 lane pf dir prime_hybrid int_name role agent ui
   command -v jq >/dev/null 2>&1 || { echo "polylane-promptlint: jq required for lint-run" >&2; return 2; }
   dir=$(cd "$(dirname "$mf")/.." && pwd)   # .polylane/ -> project root
   prime_hybrid=$(jq -r 'if .prime_hybrid == true then "true" else "false" end' "$mf")
   int_name=$(jq -r '.integrator.name // empty' "$mf")
+  agent=$(jq -r '.agent // "claude"' "$mf")
   # `// empty`: a manifest with no integrator yields no phantom "null" lane
   for lane in $(jq -r '.lanes[].name, (.integrator.name // empty)' "$mf"); do
     pf=$(jq -r --arg n "$lane" '(.lanes[],.integrator) | select(.name==$n) | .prompt_file' "$mf" | head -1)
     [ -n "$pf" ] && [ "$pf" != "null" ] || { echo "PROMPT-LINT: $lane no prompt_file"; rc=6; continue; }
     case "$pf" in /*) : ;; *) pf="$dir/$pf" ;; esac
     role=builder; [ -n "$int_name" ] && [ "$lane" = "$int_name" ] && role=integrator
-    lint_one "$pf" "$lane" "$prime_hybrid" "$role" || rc=6
+    # A lane is UI iff the manifest declares surface:"ui" AND a versioned
+    # ui_contract. Classification never comes from prompt keywords or filenames.
+    ui=$(jq -r --arg n "$lane" '(.lanes[],.integrator) | select(.name==$n)
+      | if (.surface == "ui") and (.ui_contract | tostring | test("^v[0-9]+$")) then "1" else "0" end' "$mf" | head -1)
+    lint_one "$pf" "$lane" "$prime_hybrid" "$role" "$agent" "${ui:-0}" || rc=6
   done
   return $rc
 }

@@ -54,6 +54,29 @@ assert_eq "ballot-preserves-mirrored-winner" "stim-a1b2c3d4e5f6" "$(jq -r .winne
 assert_eq "ballot-emits-opaque-brief-key" "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "$(jq -r .brief_sha256 "$OUT")"
 assert_eq "ballot-never-claims-human-panel" "false" "$(jq -r .human_certified "$OUT")"
 
+# --- Receipt bindings (Cycle 39): the receipt content-addresses every input.
+assert_eq "ballot-receipt-classified-fixture" "fixture" "$(jq -r .classification "$OUT")"
+assert_eq "ballot-receipt-input-hash" "$(sha256 "$GROUP")" "$(jq -r .input_sha256 "$OUT")"
+assert_eq "ballot-receipt-binds-group" "$(sha256 "$GROUP")" "$(jq -r .inputs.group_sha256 "$OUT")"
+assert_eq "ballot-receipt-binds-calibration" "$(sha256 "$CALIBRATION")" "$(jq -r .inputs.calibration_sha256 "$OUT")"
+assert_eq "ballot-receipt-binds-escrow" "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" "$(jq -r .inputs.candidate_ids_escrow_sha256 "$OUT")"
+assert_eq "ballot-receipt-binds-capture-manifest" "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" "$(jq -r .inputs.capture_manifest_sha256 "$OUT")"
+assert_eq "ballot-receipt-binds-pointwise-count" "2" "$(jq -r '.inputs.pointwise_sha256 | length' "$OUT")"
+assert_eq "ballot-receipt-binds-pointwise-a" "$(sha256 "$POINTWISE/pointwise-a.json")" "$(jq -r '.inputs.pointwise_sha256["pointwise-a"]' "$OUT")"
+assert_eq "ballot-receipt-binds-judges" "judge-001 judge-002" "$(jq -r '.judges | sort | join(" ")' "$OUT")"
+assert_eq "ballot-receipt-validator-id" "polylane-taste-ballot" "$(jq -r '.validator.id' "$OUT")"
+assert_eq "ballot-receipt-validator-fingerprint" "$(sha256 "$BALLOT")" "$(jq -r '.validator.fingerprint' "$OUT")"
+assert_eq "ballot-receipt-reason-codes" "0" "$(jq -r '.reason_codes | length' "$OUT")"
+assert_eq "ballot-receipt-no-duplicate-keys" "" "$(jq --stream -r 'select(length==2)|.[0]|map(tostring)|join(".")' "$OUT" | LC_ALL=C sort | uniq -d)"
+
+# Fail-closed: a rejected group leaves no partial receipt.
+rm -f "$OUT"
+jq '.exposures[1].canonical_choice="stim-0f1e2d3c4b5a"' "$GROUP" > "$GROUP.tmp" && mv "$GROUP.tmp" "$GROUP"
+assert_fail "ballot-rejects-then-no-receipt" "$BALLOT" validate "$GROUP" "$POINTWISE" "$CALIBRATION" "$OUT"
+[ ! -e "$OUT" ] && ballot_present=absent || ballot_present=present
+assert_eq "ballot-receipt-fail-closed-no-partial" "absent" "$ballot_present"
+write_group
+
 jq '.exposures[1].canonical_choice="stim-0f1e2d3c4b5a"' "$GROUP" > "$GROUP.tmp" && mv "$GROUP.tmp" "$GROUP"
 assert_fail "ballot-rejects-order-contradiction" "$BALLOT" validate "$GROUP" "$POINTWISE" "$CALIBRATION" "$OUT"
 write_group

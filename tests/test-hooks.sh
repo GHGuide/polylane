@@ -83,4 +83,64 @@ assert_contains "hooks-codex-fragment-project-local" 'git rev-parse --show-tople
 assert_contains "hooks-claude-fragment-project-local" 'CLAUDE_PROJECT_DIR' "$(cat "$CLAUDE_FRAGMENT")"
 assert_ok "hooks-legacy-claude-snippet-json" jq -e '.hooks.Stop' "$ROOT/assets/settings-hook-snippet.json"
 
+# --- installed-helper locator + project-scoped fragment rendering ------------
+# The shipped fragments carry a placeholder helper path; a stranger renders a
+# project-local fragment that resolves the ACTUAL installed helper, never the
+# blank target repo's non-existent bin/polylane-hooks.sh.
+SELF_EXPECT="$(cd "$(dirname "$HOOKS")" && pwd -P)/polylane-hooks.sh"
+LOCATED=$("$HOOKS" locate)
+assert_eq "hooks-locate-resolves-self" "$SELF_EXPECT" "$LOCATED"
+assert_ok "hooks-locate-executable" test -x "$LOCATED"
+
+# Raw fragments must NOT hardcode the blank target repo bin/ path and MUST carry
+# the placeholder the renderer substitutes.
+assert_eq "hooks-claude-fragment-no-target-bin" false \
+  "$(jq -r 'tostring | contains("$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh")' "$CLAUDE_FRAGMENT")"
+assert_eq "hooks-codex-fragment-no-target-bin" false \
+  "$(jq -r 'tostring | contains("show-toplevel)/bin/polylane-hooks.sh")' "$CODEX_FRAGMENT")"
+assert_contains "hooks-claude-fragment-placeholder" '__POLYLANE_HOOKS_HELPER__' "$(cat "$CLAUDE_FRAGMENT")"
+assert_contains "hooks-codex-fragment-placeholder" '__POLYLANE_HOOKS_HELPER__' "$(cat "$CODEX_FRAGMENT")"
+
+RENDERED_CLAUDE=$("$HOOKS" render claude)
+assert_ok "hooks-render-claude-json" sh -c 'printf %s "$1" | jq -e . >/dev/null' sh "$RENDERED_CLAUDE"
+assert_eq "hooks-render-claude-no-placeholder" false \
+  "$(printf '%s' "$RENDERED_CLAUDE" | jq -r 'tostring | contains("__POLYLANE_HOOKS_HELPER__")')"
+RC_CMD=$(printf '%s' "$RENDERED_CLAUDE" | jq -r '.hooks.SessionStart[0].hooks[0].command')
+assert_contains "hooks-render-claude-resolves-helper" "$LOCATED" "$RC_CMD"
+assert_ok "hooks-render-claude-provenance-sha" \
+  sh -c 'printf %s "$1" | jq -r "._comment" | grep -Eq "sha256=[0-9a-f]{64}"' sh "$RENDERED_CLAUDE"
+
+# Execute every rendered Claude command exactly as the provider would.
+for EV in SessionStart PreCompact PostCompact Stop; do
+  case "$EV" in
+    SessionStart) FX=claude-session-start.json ;;
+    PreCompact)   FX=claude-pre-compact.json ;;
+    PostCompact)  FX=claude-post-compact.json ;;
+    Stop)         FX=claude-stop.json ;;
+  esac
+  CMD=$(printf '%s' "$RENDERED_CLAUDE" | jq -r --arg e "$EV" '.hooks[$e][0].hooks[0].command')
+  OUT=$(input_for "$FX" | env CLAUDE_PROJECT_DIR="$PROJECT" sh -c "$CMD")
+  assert_ok "hooks-render-exec-json-$EV" sh -c 'printf %s "$1" | jq -e . >/dev/null' sh "$OUT"
+  assert_eq "hooks-render-exec-continue-$EV" true "$(printf '%s' "$OUT" | jq -r '.continue // true')"
+done
+
+# Fail-safe: a rendered command whose helper has been removed is a silent no-op,
+# never a crashing hook that stalls the session.
+BOGUS_CMD=$(printf '%s' "$RC_CMD" | sed "s#$LOCATED#/no/such/polylane-hooks.sh#")
+assert_rc "hooks-render-absent-failsafe" 0 env CLAUDE_PROJECT_DIR="$PROJECT" sh -c "$BOGUS_CMD"
+
+RENDERED_CODEX=$("$HOOKS" render codex)
+assert_ok "hooks-render-codex-json" sh -c 'printf %s "$1" | jq -e . >/dev/null' sh "$RENDERED_CODEX"
+RX_CMD=$(printf '%s' "$RENDERED_CODEX" | jq -r '.hooks.SessionStart[0].hooks[0].command')
+assert_contains "hooks-render-codex-resolves-helper" "$LOCATED" "$RX_CMD"
+assert_ok "hooks-render-codex-provenance-sha" \
+  sh -c 'printf %s "$1" | jq -r ".description" | grep -Eq "sha256=[0-9a-f]{64}"' sh "$RENDERED_CODEX"
+
+# Tampering: rendering THROUGH a symlink (not the real installed regular file)
+# must fail before emitting a fragment.
+LINK="$TEST_TMPDIR/linked-hooks.sh"
+ln -s "$HOOKS" "$LINK"
+assert_fail "hooks-render-symlink-rejected" "$LINK" render claude
+assert_fail "hooks-locate-symlink-rejected" "$LINK" locate
+
 finish

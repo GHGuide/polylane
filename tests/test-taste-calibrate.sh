@@ -14,12 +14,13 @@ fail() {
 make_input() {
   INPUT_PATH=$1
   CORRECT_COUNT=$2
-  jq -n --argjson correct "$CORRECT_COUNT" '
+  UNIT_COUNT=${3:-24}
+  jq -n --argjson correct "$CORRECT_COUNT" --argjson units "$UNIT_COUNT" '
     {
       schema_version: 1,
-      calibration: {dataset_id: "human-ui-holdout-v1", partition: "held_out", label_provenance: "human-labeled"},
-      judge: {id: "judge-example-001", provider: "example-provider", model: "example-model"},
-      units: [range(0; 24) | . as $index | (if ($index % 2) == 0 then 1 else 2 end) as $gold | {
+      calibration: {dataset_id: "human-ui-holdout-v1", partition: "held_out", label_provenance: "human-labeled", holdout_corpus_receipt_sha256: ("f" * 64)},
+      judge: {id: "judge-example-001", provider: "example-provider", model: "example-model", model_version: "2026.08", system_prompt_sha256: ("1" * 64), sampling_sha256: ("2" * 64)},
+      units: [range(0; $units) | . as $index | (if ($index % 2) == 0 then 1 else 2 end) as $gold | {
         prompt: ("prompt-" + ($index | tostring)),
         brief: ("brief-" + ($index | tostring)),
         gold_vote: $gold,
@@ -50,6 +51,28 @@ test_eligible_receipt_uses_mirrored_prompt_brief_units() {
   awk -v value="$(jq -r '.wilson_lower_bound' "$OUTPUT_PATH")" 'BEGIN { exit !(value >= 0.50) }' || fail 'Wilson lower bound must be at least 0.50'
   test "$(jq -r '.judge.provider + "/" + .judge.model' "$OUTPUT_PATH")" = example-provider/example-model || fail 'receipt must bind provider/model identity'
   test "$(jq -r '.judge_id' "$OUTPUT_PATH")" = judge-example-001 || fail 'receipt must bind the ballot judge id'
+  # Cycle 39 bindings: corpus/holdout receipt, full judge configuration, accuracy,
+  # classification, and validator fingerprint.
+  test "$(jq -r '.classification' "$OUTPUT_PATH")" = fixture || fail 'receipt must be validator-classified fixture'
+  test "$(jq -r '.corpus_holdout_receipt_sha256' "$OUTPUT_PATH")" = ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff || fail 'receipt must bind the held-out corpus receipt'
+  test "$(jq -r '.judge_configuration.model_version' "$OUTPUT_PATH")" = 2026.08 || fail 'receipt must bind judge model version'
+  test "$(jq -r '.judge_configuration.system_prompt_sha256' "$OUTPUT_PATH")" = 1111111111111111111111111111111111111111111111111111111111111111 || fail 'receipt must bind system prompt hash'
+  test "$(jq -r '.judge_configuration.sampling_sha256' "$OUTPUT_PATH")" = 2222222222222222222222222222222222222222222222222222222222222222 || fail 'receipt must bind sampling hash'
+  awk -v value="$(jq -r '.accuracy' "$OUTPUT_PATH")" 'BEGIN { exit !(value > 0.70 && value < 0.71) }' || fail 'receipt must record accuracy 17/24'
+  test "$(jq -r '.validator.id' "$OUTPUT_PATH")" = polylane-taste-calibrate || fail 'receipt must name the validator'
+  test "$(jq -r '.validator.fingerprint' "$OUTPUT_PATH")" = "$(shasum -a 256 "$ROOT/bin/polylane-taste-calibrate.sh" | awk '{print $1}')" || fail 'receipt must fingerprint the validator'
+  test "$(jq -r '.input_sha256' "$OUTPUT_PATH")" = "$(shasum -a 256 "$INPUT_PATH" | awk '{print $1}')" || fail 'receipt must bind the exact input hash'
+  test "$(jq -r '.reason_codes | length' "$OUTPUT_PATH")" = 0 || fail 'eligible receipt has no reason codes'
+}
+
+test_accepts_more_than_twenty_four_units() {
+  INPUT_PATH="$TMPDIR_TEST/twenty-six.json"
+  OUTPUT_PATH="$TMPDIR_TEST/twenty-six-receipt.json"
+  make_input "$INPUT_PATH" 26 26
+  "$ROOT/bin/polylane-taste-calibrate.sh" "$INPUT_PATH" "$OUTPUT_PATH"
+  test "$(jq -r '.eligible' "$OUTPUT_PATH")" = true || fail '26/26 must be eligible (not hardcoded to exactly 24)'
+  test "$(jq -r '.human_labelled_pairs' "$OUTPUT_PATH")" = 26 || fail 'receipt must record the exact unit count, not a constant 24'
+  test "$(jq -r '.sample_units' "$OUTPUT_PATH")" = 26 || fail 'sample_units must be the exact count'
 }
 
 assert_rejected() {
@@ -145,6 +168,7 @@ test_rejects_a_systematically_side_biased_judge() {
 }
 
 test_eligible_receipt_uses_mirrored_prompt_brief_units
+test_accepts_more_than_twenty_four_units
 test_rejects_insufficient_accuracy_even_with_a_valid_shape
 test_rejects_identity_drift_and_invalid_abstention
 test_allows_explicit_paired_abstention_without_counting_it_correct

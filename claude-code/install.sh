@@ -7,6 +7,15 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
+  else echo "install: no SHA-256 command available" >&2; return 1; fi
+}
+
+STAGE_TO_CLEAN=""
+cleanup_stage() { [ -n "$STAGE_TO_CLEAN" ] && rm -rf "$STAGE_TO_CLEAN"; }
+
 case "${1:-}" in
   --repo) DEST="$REPO/.claude/skills/polylane" ;;
   ""|--user) DEST="$HOME/.claude/skills/polylane" ;;
@@ -21,6 +30,21 @@ build_one() {
   cp -R "$REPO/references" "$dest/references"
   cp -R "$REPO/assets" "$dest/assets"
   if [ -d "$REPO/benchmarks" ]; then cp -R "$REPO/benchmarks" "$dest/benchmarks"; fi
+
+  # Package the authoritative visual-taste protocol into a stable installed
+  # reference path with a checksum/provenance sidecar. A stranger's install
+  # carries the exact protocol the runtime references, verifiably unmodified.
+  local proto_src proto_dst proto_sum
+  proto_src="$REPO/docs/polylane/taste-certification/PROTOCOL.md"
+  proto_dst="$dest/references/taste-certification-protocol.md"
+  test -s "$proto_src" || { echo "install: authoritative taste protocol missing at $proto_src" >&2; exit 1; }
+  cp "$proto_src" "$proto_dst"
+  proto_sum="$(sha256_of "$proto_dst")" || exit 1
+  {
+    echo "source=docs/polylane/taste-certification/PROTOCOL.md"
+    echo "sha256=$proto_sum"
+    echo "packaged-by=claude-code/install.sh"
+  } > "$dest/references/taste-certification-protocol.provenance"
 
   grep -q '^name: polylane' "$dest/SKILL.md" || { echo "install: bad SKILL.md" >&2; exit 1; }
   test -x "$dest/bin/polylane-run.sh" || { echo "install: helpers missing" >&2; exit 1; }
@@ -37,6 +61,15 @@ build_one() {
   test -x "$dest/bin/polylane-domain-trials.sh" || { echo "install: domain trials helper missing" >&2; exit 1; }
   test -x "$dest/bin/polylane-soak.sh" || { echo "install: soak helper missing" >&2; exit 1; }
   test -x "$dest/bin/polylane-hooks.sh" || { echo "install: lifecycle hook helper missing" >&2; exit 1; }
+  local vh
+  for vh in polylane-taste polylane-taste-ballot polylane-taste-calibrate polylane-taste-corpus \
+            polylane-taste-pixels polylane-taste-stats polylane-taste-threat \
+            polylane-visual polylane-visual-capture polylane-visual-quality; do
+    test -x "$dest/bin/$vh.sh" || { echo "install: visual/taste helper missing: $vh.sh" >&2; exit 1; }
+  done
+  test -s "$dest/references/visual-intelligence.md" || { echo "install: visual intelligence contract missing" >&2; exit 1; }
+  test -s "$dest/references/taste-certification-protocol.md" || { echo "install: packaged taste protocol missing" >&2; exit 1; }
+  test -s "$dest/references/taste-certification-protocol.provenance" || { echo "install: taste protocol provenance missing" >&2; exit 1; }
   test -s "$dest/references/cycle-13-integration.md" || { echo "install: cycle 13 integration reference missing" >&2; exit 1; }
   test -s "$dest/references/evidence-driven-domain-autonomy.md" || { echo "install: domain autonomy reference missing" >&2; exit 1; }
   test -s "$dest/assets/hooks/claude-settings.json" || { echo "install: Claude lifecycle fragment missing" >&2; exit 1; }
@@ -52,11 +85,17 @@ install_one() {
     echo "install: could not create staging package for $dest" >&2
     return 1
   }
+  # build_one aborts with `exit` on any validation failure, which would leave the
+  # staging dir as discoverable litter beside the real package. Clean it on every
+  # exit path until the atomic swap succeeds; the existing package is untouched.
+  STAGE_TO_CLEAN="$stage"
+  trap cleanup_stage EXIT
 
   # Build and validate before touching an existing package. This also supports
   # a full clone whose source checkout is the destination being reinstalled.
   if ! build_one "$stage"; then
     rm -rf "$stage"
+    STAGE_TO_CLEAN=""; trap - EXIT
     return 1
   fi
 
@@ -76,11 +115,13 @@ install_one() {
 
   if ! mv "$stage" "$dest"; then
     rm -rf "$stage"
+    STAGE_TO_CLEAN=""; trap - EXIT
     if [ -n "$backup" ] && ! mv "$backup" "$dest"; then
       echo "install: replacement failed and rollback failed; preserved package is $backup" >&2
     fi
     return 1
   fi
+  STAGE_TO_CLEAN=""; trap - EXIT
   [ -z "$backup" ] || rm -rf "$backup"
 }
 
