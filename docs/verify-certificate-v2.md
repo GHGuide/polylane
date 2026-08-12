@@ -64,7 +64,8 @@ Both verification commands are cached under
   reference packet + 3 directions     |          |          group_sha256 -> raw group; v1 or
   ballots.json (brief votes)          |          |          fixture_only!=false => FIXTURE_EVIDENCE
   threat manifest                     |        stats      polylane.taste.stats.v1
-  repair ledger                       |          |          input_sha256 -> jq -cS canonical ballots;
+  repair ledger                       |          |          input_sha256 -> jq -cS canonical ballots
+        |                             |          |          (incl. trailing newline, relay-resolved);
         |                             |          |          counts == recomputed brief wins
         v                             |       hard gate   taste-hard-gate/v1 (task/a11y/state/
   subject_revision ————— git: HEAD or ancestor,  |          specificity; capture_manifest_sha256 bound)
@@ -162,10 +163,6 @@ receipts) came from.
 
 ## DEFERRED
 
-DEFERRED: stats canonical-byte rule — receipt-producers confirmed `input_sha256`
-binds the `jq -cS` canonical ballots document; whether the hashed bytes include
-the trailing newline is asked on the relay (compiler currently hashes without
-it; a one-line change either side reconciles at integration).
 DEFERRED: hard-gate producer — the compiler consumes protocol-shaped
 `taste-hard-gate/v1`; mapping from a11y-evidence `taste-a11y-receipt/v1` (and
 task/state runners) into that aggregate is integrator-owned.

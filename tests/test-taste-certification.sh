@@ -224,10 +224,11 @@ build_v2() {
   write_json "$dir/receipts/corpus-receipt.json" "{\"schema_version\":\"taste-corpus-receipt/v1\",\"status\":\"VALIDATED\",\"classification\":\"fixture\",\"output\":{\"record_count\":2},\"input_sha256\":\"$corpus_in_sha\"}"
   write_json "$dir/receipts/ballots.json" "{\"schema\":\"polylane.taste.ballots.v1\",\"ballots\":[$ballots]}"
   # The statistics receipt binds the SHA-256 of the canonical (jq -cS) ballots
-  # document, per the receipt-producers relay contract.
+  # document INCLUDING the trailing newline, per the coordinator byte-rule
+  # resolution on the relay.
   local ballots_sha ballots_canon_sha rate
   ballots_sha=$(sha "$dir/receipts/ballots.json")
-  ballots_canon_sha=$(sha_text "$(jq -cS . "$dir/receipts/ballots.json")")
+  ballots_canon_sha=$(jq -cS . "$dir/receipts/ballots.json" | shasum -a 256 | awk '{print $1}')
   rate=$(awk -v w="$wins" 'BEGIN{printf "%.2f", w/10}')
   write_json "$dir/receipts/stats-receipt.json" "{\"schema\":\"polylane.taste.stats.v1\",\"valid\":true,\"sample_unit\":\"brief\",\"brief_count\":10,\"candidate_wins\":$wins,\"baseline_wins\":$((10 - wins)),\"ties\":0,\"preference_rate\":$rate,\"wilson_lower_bound\":0.40,\"input_sha256\":\"$ballots_canon_sha\"}"
   write_json "$dir/receipts/threat-input.json" '{"schema_version":"taste-threat/v1","source_root":"/","hard_gates":{"function_pass":true,"accessibility_pass":true},"context":{"status":"pass"},"captures":[],"receipts":[],"sidecars":[]}'

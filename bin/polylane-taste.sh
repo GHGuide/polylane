@@ -676,12 +676,12 @@ certify_v2() {
 
   # shellcheck disable=SC2086 # pre_codes is a space-separated list of fixed enum tokens.
   pre_json=$(printf '%s\n' $pre_codes | sed '/^$/d' | jq -R . | jq -cs 'unique')
-  # Statistics receipts bind the canonical (jq -cS, no trailing newline) ballots
-  # document rather than the raw file bytes; recompute that digest here.
+  # Statistics receipts bind the canonical (jq -cS) ballots document including
+  # jq's trailing newline (coordinator byte-rule resolution), not raw file bytes.
   stats_rel=$(jq -r '.stats.input.path' "$manifest")
   stats_canon=''
   if v2_safe_path "$manifest_dir" "$stats_rel" && [ -f "$manifest_dir/$stats_rel" ]; then
-    stats_canon=$(printf '%s' "$(cd "$manifest_dir" && jq -cS . "$stats_rel" 2>/dev/null)" | sha256_stdin) || stats_canon=''
+    stats_canon=$( (cd "$manifest_dir" && jq -cS . "$stats_rel" 2>/dev/null) | sha256_stdin) || stats_canon=''
   fi
   evidence_chain=$(LC_ALL=C sort "$SCRATCH_V2/roles.tsv" | sha256_stdin)
   validator_chain=$(awk -F '\t' '$1 ~ /(\.rc|\.hard)$/' "$SCRATCH_V2/roles.tsv" | LC_ALL=C sort | sha256_stdin)
