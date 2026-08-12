@@ -31,12 +31,13 @@ that this sample represents all users. The release threshold is a pooled human
 preference rate of at least **0.70** (70%) and a two-sided 95% Wilson lower bound
 strictly above 0.50, alongside a majority win in at least seven briefs.
 
-## Cycle 40 live-boundary update
+## Cycle 40–41 live-boundary update
 
-Cycles 39–40 turned the protocol above from a design into a partially live
-harness. This section states exactly which live facts are now established and
-which remain future or external; the rest of this document is the standing
-research synthesis behind the protocol.
+Cycles 39–40 turned the protocol above from a design into a live harness whose
+adapters are now merged in this tree; Cycle 41 freezes the real acquisition and
+calibration campaign design. This section states exactly which live facts are
+established and which remain future or external; the rest of this document is
+the standing research synthesis behind the protocol.
 
 **Primary corpus and its honest acquisition path.** The primary calibration
 source stays Miniukovich & Figl's released homepage-evaluation corpus — 3,156
@@ -44,14 +45,33 @@ full-page homepages across commercial banking, e-commerce, and universities, wit
 raw and filtered aggregate ratings from 3,319 sessions on a `[-3,3]` scale, with
 compliance filtering, within-participant standardization, and per-page
 aggregation [9,10,11]. The three Dataverse deposits declare CC0 1.0. Acquisition
-must be described truthfully: a direct Dataverse API call currently returns an AWS
-**WAF** `202` challenge, but a real Chrome session completes the challenge and a
-same-context API request then returns dataset id `6830013`, release version `4.0`,
-1,074 files, and a byte-exact download of a canary file (`ratings.avg.fashion.txt`).
-Cycle 40 productizes that path as an explicit, versioned, hash-receipted **browser
-adapter** (`source-live`); it does not bypass, spoof, or hide the WAF, and it never
-substitutes fixture bytes for a blocked download. A blocked corpus yields a precise
-external-evidence receipt, not a fabricated dataset.
+must be described truthfully: bare HTTP requests to all four documented Dataverse
+metadata/export variants returned an empty **WAF** `202` challenge on the
+observing host, but a fresh real Chrome session completes the challenge and a
+same-context API request then returned dataset id `6830013`, release version
+`4.0`, 1,074 files, and a byte-exact download of a canary file
+(`ratings.avg.fashion.txt`). Cycle 40 shipped that path as an explicit,
+versioned, hash-receipted **browser adapter** (`bin/polylane-taste-source.sh`
+with `benchmarks/taste-live/tools/dataverse-acquire.mjs`); it does not bypass,
+spoof, or hide the WAF, and it never substitutes fixture bytes for a blocked
+download. A blocked corpus yields a precise external-evidence receipt, not a
+fabricated dataset — the Cycle-40 unattended run's own canary was WAF-blocked
+and correctly closed `EXTERNAL-EVIDENCE-OPEN`.
+
+**Cycle-41 transport and mirror facts.** Chrome readiness is a
+poll-for-valid-JSON-envelope condition, not a fixed delay; an in-page `fetch()`
+of a data file fails after Dataverse redirects to object storage because the
+redirected response is cross-origin — a transport limitation, not missing data.
+The approved directions are a same-browser CDP download or a narrowly scoped
+handoff of the fresh ephemeral WAF session; no personal browser profile, user
+cookie, API key, or credential may be inspected, persisted, logged, or copied,
+and an uncleared challenge is `UNKNOWN`. DataONE independently indexes
+immutable metadata objects for all three releases and serves as a
+provenance/discovery mirror only: downloaded bytes must still bind the Harvard
+file id, canonical URL, declared size/checksum, and a locally recomputed
+SHA-256, and a mirror disagreement is `SOURCE-MISMATCH`, never a majority vote
+[30,31,32,33]. `SOURCE-AUDIT.md` in this directory records the observed
+identities, transport facts, and frozen substitution rules in full.
 
 **TASTE is a separate, secondary, pinned audit.** The TASTE release (Hugging Face
 `purvanshi/TASTE`, repository SHA `731a7f588d433214c6d864d2e9f47978d91aed6b`) —
@@ -286,19 +306,21 @@ no current script is declared a certificate.
 ## Limits and external evidence
 
 This document's synthesis (§§Evidence synthesis) recruited no humans, ran no
-model panel, and issued no certificate. Cycle 40 changes only the acquisition and
-adapter boundary: the primary-corpus browser-acquisition path is validated
+model panel, and issued no certificate. Cycles 40–41 change only the acquisition
+and adapter boundary: the primary-corpus browser-acquisition path is validated
 (WAF-challenge Chrome session, dataset id `6830013` v`4.0`, byte-exact canary; see
-the Cycle-40 live-boundary update), and the fail-closed validator/compiler chain
-is live in the tree. Still, no recruited human panel supplied deciding ballots, so
-`HUMAN_CERTIFIED` cannot be claimed. These remain explicitly external or `UNKNOWN`:
-**host integrity**, **panel identity/independence/collusion**, **population
-coverage**, **IP/trade-dress** non-infringement, **manual accessibility**
-(assistive-technology experience), and **actual human certification**. Dataset
-licences bind only the primary CC0 releases and the separately pinned TASTE
-repository; browser/decoder/OCR/a11y/model adapters are Cycle-40 live deliverables,
-not yet merged here. A result with any one missing item must receive the lower
-honest label or `NOT-CERTIFIED`.
+the Cycle 40–41 live-boundary update), the fail-closed validator/compiler chain
+and the Cycle-40 browser/decoder/a11y/judge/ballot adapters are merged in this
+tree, and the Cycle-41 acquisition-campaign design is frozen in sibling lanes.
+No real 180+72 corpus has been acquired — corpus acquisition remains
+`EXTERNAL-EVIDENCE-OPEN` — and no recruited human panel supplied deciding
+ballots, so `HUMAN_CERTIFIED` cannot be claimed. These remain explicitly
+external or `UNKNOWN`: **host integrity**, **panel identity/independence/
+collusion**, **population coverage**, **IP/trade-dress** non-infringement,
+**manual accessibility** (assistive-technology experience), and **actual human
+certification**. Dataset licences bind only the primary CC0 releases and the
+separately pinned TASTE repository. A result with any one missing item must
+receive the lower honest label or `NOT-CERTIFIED`.
 
 ## Stable bibliography
 
@@ -331,6 +353,11 @@ honest label or `NOT-CERTIFIED`.
 27. C2PA, *Content Credentials Technical Specification 2.2*. https://spec.c2pa.org/specifications/specifications/2.2/specs/C2PA_Specification.html
 28. NIST, *Adversarial Machine Learning, AI 100-2*. https://csrc.nist.gov/pubs/ai/100/2/e2023/final
 29. W3C, *Web Content Accessibility Guidelines 2.2*. https://www.w3.org/TR/WCAG22/
+30. Harvard Dataverse, *Native API Guide (v6.8)*. https://guides.dataverse.org/en/6.8/api/native-api.html
+31. Harvard Dataverse, *Data Access API (v4.9.4)*. https://guides.dataverse.org/en/4.9.4/api/dataaccess.html
+32. DataONE, *Identifiers in DataONE (PID immutability)*. https://dataone-architecture-documentation.readthedocs.io/en/latest/design/PIDs.html
+33. DataONE, *PIRI resolution service*. https://dataoneorg.github.io/api-documentation/services/piri_service.html
+34. Miniukovich & Figl (2024), PMC open-access record of [10]. https://pmc.ncbi.nlm.nih.gov/articles/PMC10823051/
 
 ## Skill receipts
 
