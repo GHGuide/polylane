@@ -176,7 +176,7 @@ V2_CERT_FILTER='
       | B("cal.\($k).in") as $cin | B("cal.\($k).rc") as $c
       | if $cin == null or ($c | type) != "object" then {codes: ["CALIBRATION_INVALID"], judge: null}
         else
-          ($c.schema_version == "taste-calibration/v1"
+          (($c.schema_version | IN("taste-calibration/v1","taste-calibration/v2"))
            and $c.eligible == true and $c.result == "eligible"
            and ($c.judge_id | nonempty)
            and ($c.judge | type == "object" and .id == $c.judge_id)
@@ -189,12 +189,22 @@ V2_CERT_FILTER='
            and $c.side_probe_n >= 12 and $c.side_probe_exact_binomial_p >= 0.05
            and $c.mirror_probe_n >= 8 and $c.mirror_contradictions < 2) as $shape
           | ($c.input_sha256 == S("cal.\($k).in")) as $bound
+          # Live studies reject fixture/v1 calibration: only a hash-bound
+          # taste-calibration/v2 production receipt that binds the raw
+          # invocation, images, source labels, mirrored responses, and parser,
+          # and carries a session id, is production-grade calibration evidence.
+          | ($c.schema_version == "taste-calibration/v2" and $c.classification == "production"
+             and ([$c.corpus_holdout_receipt_sha256, $c.image_manifest_sha256, $c.raw_responses_sha256,
+                   $c.invocation_sha256, $c.parser_sha256] | all(type == "string" and test("^[0-9a-f]{64}$")))
+             and ($c.session_id | nonempty)) as $prod
           | {codes: ((if $shape then [] else ["CALIBRATION_INVALID"] end)
-                   + (if $bound then [] else ["RECEIPT_BINDING"] end)),
+                   + (if $bound then [] else ["RECEIPT_BINDING"] end)
+                   + (if $live and (($shape and $prod) | not) then ["CALIBRATION_NOT_PRODUCTION"] else [] end)),
              judge: (if $shape and $bound
                      then {id: $c.judge_id, kind: $c.judge_configuration.kind,
                            provider: $c.judge_configuration.provider, model: $c.judge_configuration.model}
-                     else null end)}
+                     else null end),
+             session: (if $prod then $c.session_id else null end)}
         end)) as $cals
   | ([$cals[].judge | select(. != null)]) as $judgerecs
   | (if ([$judgerecs[].id] | length) == ([$judgerecs[].id] | unique | length)
@@ -366,7 +376,7 @@ V2_CERT_FILTER='
           | B("brief.\($i).grp.\($j).in") as $g
           | B("brief.\($i).grp.\($j).rc") as $r
           | S("brief.\($i).grp.\($j).in") as $gsha
-          | if ($g | type) != "object" then {codes: ["BALLOT_INVALID"], winner: null, judges: [], fixture: false}
+          | if ($g | type) != "object" then {codes: ["BALLOT_INVALID"], winner: null, judges: [], fixture: false, bhuman: false, sessions: []}
             else
               ((($g | keys | sort) == ["brief_sha256","candidate_ids_escrow_sha256","exposures","mirror_group_id","outcome","pointwise_ballot_ids","schema_version"])
                and $g.schema_version == "taste-mirrored-group/v1"
@@ -381,7 +391,7 @@ V2_CERT_FILTER='
                       and (.independence_attestation_sha256 | hex64)
                       and (.sealed_at | type == "string")))
                and (($g.exposures | [.[].display_order] | sort) == ["A/B","B/A"])) as $shape
-              | if $shape | not then {codes: ["BALLOT_INVALID"], winner: null, judges: [], fixture: false}
+              | if $shape | not then {codes: ["BALLOT_INVALID"], winner: null, judges: [], fixture: false, bhuman: false, sessions: []}
                 else
                   ([$g | .. | objects | keys[]]
                    | map(select(IN("provider","model","provider_id","model_id","generator","author","candidate_name","candidate_label")))
@@ -390,11 +400,13 @@ V2_CERT_FILTER='
                   | ($g.exposures[0].canonical_choice != $g.exposures[1].canonical_choice) as $contradict
                   | ($g.brief_sha256 != $L.sha) as $wrongbrief
                   | ($g.outcome != ("resolved-" + $g.exposures[0].canonical_choice)) as $badoutcome
-                  | (if ($r | type) != "object" then {c: ["BALLOT_INVALID"], fixture: false}
+                  | (if ($r | type) != "object" then {c: ["BALLOT_INVALID"], fixture: false, bhuman: false, sessions: []}
                      else
                        # Cycle-39 producers emit taste-ballot-validation/v1 with
                        # fixture_only:true; only a future production v2 receipt
                        # with fixture_only:false can count as promotion evidence.
+                       # A live study demands more: classification:production and a
+                       # unique isolated session id per exposure (no shared channel).
                        {c: ((if (($r.schema_version | IN("taste-ballot-validation/v1","taste-ballot-validation/v2"))
                                 and $r.status == "eligible" and $r.human_certified == false
                                 and $r.mirror_group_id == $g.mirror_group_id
@@ -402,9 +414,16 @@ V2_CERT_FILTER='
                              then [] else ["BALLOT_INVALID"] end)
                           + (if $r.schema_version == "taste-ballot-validation/v2" and $r.fixture_only == false
                              then [] else ["FIXTURE_EVIDENCE"] end)
+                          + (if $live and (($r.schema_version == "taste-ballot-validation/v2" and $r.fixture_only == false
+                                and $r.classification == "production"
+                                and ($r.session_ids | type == "array" and length == 2
+                                     and all(.[]; type == "string" and length > 0))) | not)
+                             then ["BALLOT_NOT_PRODUCTION"] else [] end)
                           + (if $r.group_sha256 == $gsha and $r.winner == $g.exposures[0].canonical_choice
                              then [] else ["RECEIPT_BINDING"] end)),
-                        fixture: (($r.schema_version != "taste-ballot-validation/v2") or ($r.fixture_only != false))}
+                        fixture: (($r.schema_version != "taste-ballot-validation/v2") or ($r.fixture_only != false)),
+                        bhuman: ($r.human_certified == true),
+                        sessions: (if ($r.session_ids | type) == "array" then [$r.session_ids[] | select(type == "string")] else [] end)}
                      end) as $R
                   | {codes: ((if $leak then ["IDENTITY_LEAK"] else [] end)
                            + (if $samejudge then ["JUDGE_NOT_INDEPENDENT"] else [] end)
@@ -412,7 +431,8 @@ V2_CERT_FILTER='
                            + (if $wrongbrief or $badoutcome then ["BALLOT_INVALID"] else [] end)
                            + $R.c),
                      winner: (if $contradict then null else $g.exposures[0].canonical_choice end),
-                     judges: [$g.exposures[].judge_id], fixture: $R.fixture}
+                     judges: [$g.exposures[].judge_id], fixture: $R.fixture,
+                     bhuman: $R.bhuman, sessions: $R.sessions}
                 end
             end)) as $G
       | ([$G[] | select(.winner != null and .codes == [])]) as $valid_groups
@@ -428,7 +448,9 @@ V2_CERT_FILTER='
          groups: $resolved, wins: $wins,
          won: ($resolved > 0 and ($wins * 2) > $resolved),
          acc: $H.acc,
-         fixture: ([$G[].fixture] | any)}
+         fixture: ([$G[].fixture] | any),
+         sessions: [$G[].sessions[]],
+         bhuman_all: ([$G[].bhuman] | all)}
     )) as $BR
 
   # -- corpus-level floors and independence -------------------------------------
@@ -461,7 +483,19 @@ V2_CERT_FILTER='
   | ([$alljudges[] | ($calmap[.] // null) | select(. != null) | [.kind, .provider, .model]] | unique) as $cfgs
   | (if ($cfgs | length) >= 2 then [] else ["JUDGE_DIVERSITY"] end) as $diversity_codes
   | ([$alljudges | unique | .[] | select(($calmap[.] // null) != null)] | length) as $eligible_judges
-  | (($cfgs | length) > 0 and ([$cfgs[] | .[0]] | all(. == "human"))) as $all_human
+  # Live studies bind a unique isolated session id to every calibration and every
+  # mirrored exposure; reuse means a shared ballot channel or replayed judge run.
+  | ([$cals[].session | select(. != null and . != "")] + [$BR[].sessions[]]) as $all_sessions
+  | (if $live and (($all_sessions | length) != ($all_sessions | unique | length))
+     then ["LIVE_SESSION_NOT_UNIQUE"] else [] end) as $session_codes
+  | (if $live and (($trc | type == "object"
+                    and .schema_version == "taste-threat-receipt/v2"
+                    and .classification == "production") | not)
+     then ["THREAT_NOT_PRODUCTION"] else [] end) as $threat_live_codes
+  | (($cfgs | length) > 0 and ([$cfgs[] | .[0]] | all(. == "human"))) as $cal_all_human
+  # human_certified stays false unless every deciding ballot is an actual human
+  # ballot (human_certified:true), not merely a human-kind calibration.
+  | ($cal_all_human and (if $live then ([$BR[].bhuman_all] | all) else true end)) as $all_human
 
   # -- aggregation ---------------------------------------------------------------
   | ([$BR[].wins] | add // 0) as $total_wins
@@ -519,7 +553,8 @@ V2_CERT_FILTER='
       + [$BR[].codes[]] + $quorum_codes + $variety_codes + $dup_codes + $indep_codes
       + $uncal_codes + $escrow_match_codes + $alias_codes + $diversity_codes
       + $winfloor_codes + $groups_codes + $pref_codes + $wilson_codes
-      + $ballots_codes + $stats_codes + $fixture_codes + $claim_codes) | unique) as $reasons
+      + $ballots_codes + $stats_codes + $fixture_codes + $claim_codes
+      + $session_codes + $threat_live_codes) | unique) as $reasons
   | ($reasons | length == 0) as $certified
   | {schema_version: "taste-certificate/v2",
      run_id: $m.run_id,
@@ -537,6 +572,7 @@ V2_CERT_FILTER='
      fixture_only: $fixture_out,
      human_calibrated: $certified,
      human_certified: ($certified and $achieved == "HUMAN_CERTIFIED"),
+     live_mode: $live,
      briefs: $bn,
      brief_wins: $brief_wins,
      briefs_lost: $briefs_lost,
@@ -561,7 +597,7 @@ write_v2_failure() {
      candidate_id: "unknown", subject_revision: "", goal_sha256: "", design_lock_sha256: "",
      evidence_manifest_sha256: $msha, evidence_chain_sha256: "", validator_chain_sha256: "",
      status: "NOT-CERTIFIED", required_claim: "", claim_label: "NOT-CERTIFIED", fixture_only: true,
-     human_calibrated: false, human_certified: false, briefs: 0, brief_wins: 0, briefs_lost: [],
+     human_calibrated: false, human_certified: false, live_mode: false, briefs: 0, brief_wins: 0, briefs_lost: [],
      groups_per_brief: {}, eligible_judges: 0, unique_judge_configurations: 0,
      preference_rate: 0, wilson_lower_bound: 0, accessibility_regressions: 0, repair_count: 0,
      repair_ledger_sha256: "", external_limitations: ["manifest failed closed-schema validation"],
@@ -570,8 +606,11 @@ write_v2_failure() {
 
 certify_v2() {
   local role path dsha line commit cfile prefix match head_rev subject declared stats_rel stats_canon
-  local git_subject=false git_ancestor=false git_clean=false
+  local git_subject=false git_ancestor=false git_clean=false live=false
   local pre_codes='' pre_json evidence_chain validator_chain tmp status spath ssha actual_shot
+  # Live mode is opt-in and set only by the frozen study compiler; it rejects
+  # v1/fixture calibration, ballot, and threat evidence in the deciding roles.
+  [ "${POLYLANE_TASTE_LIVE:-0}" = 1 ] && live=true
   manifest_sha_v2=$(sha256_file "$manifest")
   SCRATCH_V2=$(mktemp -d "${TMPDIR:-/tmp}/polylane-taste-v2.XXXXXX") || exit 1
 
@@ -693,7 +732,7 @@ certify_v2() {
 
   if ! jq -n --slurpfile A "$SCRATCH_V2/art.json" --slurpfile mm "$manifest" \
        --argjson git "{\"subject_valid\":$git_subject,\"ancestor\":$git_ancestor,\"clean\":$git_clean}" \
-       --argjson pre "$pre_json" --arg stats_canon "$stats_canon" \
+       --argjson pre "$pre_json" --arg stats_canon "$stats_canon" --argjson live "$live" \
        --arg msha "$manifest_sha_v2" --arg chain_e "$evidence_chain" --arg chain_v "$validator_chain" \
        "$V2_CERT_FILTER" >"$SCRATCH_V2/cert.json" || ! jq -e . "$SCRATCH_V2/cert.json" >/dev/null 2>&1; then
     write_v2_failure '["COMPILER_ERROR"]' || true
