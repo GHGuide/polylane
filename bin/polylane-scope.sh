@@ -45,6 +45,63 @@ globs_overlap() (                        # 0 iff some path could match BOTH glob
 
 _lane_globs() { jq -r --arg n "$2" '.lanes[] | select(.name==$n) | .own_globs[]?' "$1"; }
 
+# --- exclusive candidate group -----------------------------------------------
+# A tournament runs exactly three same-base candidate lanes that DELIBERATELY
+# share one module scope. Their mutual overlap is legal ONLY inside the declared
+# group globs; ordinary lanes may never overlap them; exactly one selected tip
+# may reach integration. Legacy manifests omit candidate_group and are unchanged.
+_candidate_members() {
+  jq -r 'if has("candidate_group") then (.candidate_group.members[]? // empty) else empty end' "$1" 2>/dev/null
+}
+
+# check_candidate_group MANIFEST : validate the exclusive-group declaration.
+# No group -> 0. Bad shape/member/scope/selection -> 2 with a SCOPE-CANDIDATE
+# witness. Each member's non-status globs must EQUAL the shared group globs, so
+# the three overlap only inside the group and nowhere else.
+check_candidate_group() {
+  local mf="$1" shared m mglobs selected lane_names rc=0
+  command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
+  [ "$(jq -r 'has("candidate_group")' "$mf" 2>/dev/null)" = true ] || return 0
+  if ! jq -e '.candidate_group | (type=="object")
+      and ((keys - ["members","shared_globs","selected","base_lane"]) | length == 0)
+      and (.members | type=="array" and length==3 and ((unique|length)==3) and all(.[]; type=="string" and length>0))
+      and (.shared_globs | type=="array" and length>0 and ((unique|length)==length) and all(.[]; type=="string" and length>0))
+      and ((has("selected")|not) or (.selected|type=="string" and length>0))' "$mf" >/dev/null 2>&1; then
+    echo "SCOPE-CANDIDATE: candidate_group must have exactly three unique members and non-empty shared_globs" >&2
+    return 2
+  fi
+  lane_names=" $(jq -r '.lanes[].name' "$mf" | tr '\n' ' ') "
+  shared=$(jq -r '.candidate_group.shared_globs[]' "$mf" | LC_ALL=C sort)
+  while IFS= read -r m; do
+    [ -n "$m" ] || continue
+    case "$lane_names" in *" $m "*) ;; *) echo "SCOPE-CANDIDATE: member '$m' is not a declared lane" >&2; rc=2; continue ;; esac
+    mglobs=$(jq -r --arg m "$m" '.lanes[] | select(.name==$m) | .own_globs[] | select(. != ("docs/status-"+$m+".md"))' "$mf" | LC_ALL=C sort)
+    if [ "$mglobs" != "$shared" ]; then
+      echo "SCOPE-CANDIDATE: member '$m' scope must equal the shared group globs (no escape outside the exclusive group)" >&2
+      rc=2
+    fi
+  done < <(_candidate_members "$mf")
+  selected=$(jq -r '.candidate_group.selected // empty' "$mf")
+  if [ -n "$selected" ]; then
+    case " $(_candidate_members "$mf" | tr '\n' ' ') " in
+      *" $selected "*) ;;
+      *) echo "SCOPE-CANDIDATE: selected tip '$selected' is not a group member" >&2; rc=2 ;;
+    esac
+  fi
+  return $rc
+}
+
+# integration_tip MANIFEST : print the single selected candidate tip permitted to
+# reach the ordinary integration join. Ambiguity or absence fails closed.
+integration_tip() {
+  local mf="$1" selected
+  check_candidate_group "$mf" || return 2
+  [ "$(jq -r 'has("candidate_group")' "$mf" 2>/dev/null)" = true ] || { echo "SCOPE-CANDIDATE: no candidate_group" >&2; return 2; }
+  selected=$(jq -r '.candidate_group.selected // empty' "$mf")
+  [ -n "$selected" ] || { echo "SCOPE-CANDIDATE: no selected integration tip" >&2; return 2; }
+  printf '%s\n' "$selected"
+}
+
 # Keep manifest glob records newline-delimited until the intentional `case`
 # matcher. Flattening and then expanding an unquoted list lets the caller's cwd
 # rewrite src/** into real checkout paths before scope sees the declared glob.
@@ -126,9 +183,10 @@ EOF
 }
 
 check_static() {
-  local mf="$1" names i j a b ga rc=0
+  local mf="$1" names i j a b ga rc=0 members
   command -v jq >/dev/null 2>&1 || { echo "polylane-scope: jq required" >&2; return 2; }
   names=$(jq -r '.lanes[].name' "$mf")
+  members=" $(_candidate_members "$mf" | tr '\n' ' ') "
   for a in $names; do
     ga=$(_lane_globs "$mf" "$a" | tr '\n' ' ')
     [ -n "${ga// /}" ] || { echo "SCOPE-EMPTY: lane '$a' has no own_globs" >&2; rc=2; }
@@ -140,6 +198,14 @@ check_static() {
     j=$((i + 1))
     while [ "$j" -le "$#" ]; do
       a=$(eval "echo \${$i}"); b=$(eval "echo \${$j}")
+      # Two members of the exclusive candidate group are ALLOWED to overlap —
+      # that is the whole point of the same-base tournament. check_candidate_group
+      # (below) confines that overlap to the declared group globs. Any other pair,
+      # including member-vs-ordinary, is still a hard isolation violation.
+      case "$members" in
+        *" $a "*)
+          case "$members" in *" $b "*) j=$((j + 1)); continue ;; esac ;;
+      esac
       if lane_globs_overlap "$mf" "$a" "$b"; then
         echo "SCOPE-OVERLAP: lanes '$a' and '$b' can both match a path (own_globs collide)" >&2; rc=2
       fi
@@ -148,6 +214,7 @@ check_static() {
     i=$((i + 1))
   done
   check_write_plan "$mf" || rc=2
+  check_candidate_group "$mf" || rc=2
   return $rc
 }
 
@@ -195,6 +262,8 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     check-status) shift; check_status_markers "$@" ;;
     check-lane)   shift; check_lane   "$@" ;;
     check-write-plan) shift; check_write_plan "$@" ;;
-    *) echo "usage: polylane-scope.sh check-static <manifest> | check-status <manifest> | check-lane <manifest> <lane> <path>... | check-write-plan <manifest>" >&2; exit 2 ;;
+    check-candidates) shift; check_candidate_group "$@" ;;
+    integration-tip) shift; integration_tip "$@" ;;
+    *) echo "usage: polylane-scope.sh check-static <manifest> | check-status <manifest> | check-lane <manifest> <lane> <path>... | check-write-plan <manifest> | check-candidates <manifest> | integration-tip <manifest>" >&2; exit 2 ;;
   esac
 fi
