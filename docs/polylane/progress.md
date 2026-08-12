@@ -2,15 +2,14 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 38
+## Cycle 39
 
-subgoals: 88/92 done · criteria: 82/90 done · 93%
+subgoals: 89/92 done · criteria: 82/90 done · 93%
 
-**Route:** `CONTINUE m32.3  Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts`
+**Route:** `CONTINUE m32.4  Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm`
 
 ## Open autonomous work
 
-- `m32.3` [doing, w138] — Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts
 - `m32.4` [open, w137] — Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm
 - `m32.5` [open, w136] — Install both provider packages and certify the complete workflow end to end
 
@@ -118,9 +117,8 @@ subgoals: 88/92 done · criteria: 82/90 done · 93%
 ## Acceptance checks
 
 - Total: 104
-- Pass: 101
+- Pass: 102
 - Fail: 0
-- Unchecked: 3
-  - `m32.3` [unchecked] — bash tests/test-taste-validator-receipts.sh && bash tests/test-taste-certification.sh && bash tests/test-visual-capture.sh && bash tests/test-taste-a11y.sh && bash tests/test-taste-stimulus.sh && bash tests/test-visual-tournament.sh && bash tests/test-taste-tournament.sh && bash tests/test-tournament-capture-seam.sh && bash tests/test-champion-persistence.sh && bash tests/test-graph-tournament.sh && bash tests/test-taste-memory.sh && bash tests/test-taste-memory-security.sh && bash tests/test-taste-memory-advice.sh && bash tests/test-visual-taste-memory-integration.sh && bash tests/test-visual-intelligence.sh && bash tests/test-visual-quality.sh && bash tests/test-taste-runner-gate.sh && bash tests/test-promptlint.sh && bash tests/test-prompt-compiler.sh && bash tests/test-claude-taste-contract.sh && bash tests/test-visual-loop-integration.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bash tests/test-hooks.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-taste-production-chain.sh && bash tests/test-taste-runner-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh
+- Unchecked: 2
   - `m32.4` [unchecked] — bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == "TASTE-CERTIFIED" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test("^[0-9a-f]{40}([0-9a-f]{24})?$")) and (.validator_chain_sha256 | test("^[0-9a-f]{64}$"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null
   - `m32.5` [unchecked] — bash tests/run.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bin/polylane-doctor.sh --rehearse

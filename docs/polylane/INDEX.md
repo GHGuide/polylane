@@ -6,6 +6,16 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 39 production taste loop: [plan](cycle-39-plan.md) ·
+[skill suggestions](cycle-39-suggestions.md) · [council](cycle-39-council.md) ·
+[digest](cycle-39-digest.md) · [questions](cycle-39-questions.md) ·
+[integration proof](../verify-integration.md). Fifteen file-isolated builders and one
+deferred integrator closed the capture, hard-gate, tournament, repair-memory, prompt,
+hook, installer, and Claude/Codex seams. The frozen 28-script gate, 3,201-check full
+suite, ShellCheck, and cross-module adversarial chains passed, and `m32.3` promoted.
+The result is an engineering chain, not a live taste claim; `m32.4` now owns the pinned
+human corpus, calibrated machine panel, real rendered study, and non-fixture certificate.
+
 Cycle 37 taste-certification research: [plan](cycle-37-plan.md) ·
 [research scope](taste-certification/RESEARCH-SCOPE.md) ·
 [research synthesis](taste-certification/RESEARCH.md) ·

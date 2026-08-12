@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c39-visual-loop-20260812-a1",
   "started_at": 1786540324,
-  "updated_at": 1786550276,
-  "wall_s": 9952,
+  "updated_at": 1786550960,
+  "wall_s": 10636,
   "lanes": {
     "receipt-producers": {
       "launches": 1,
@@ -92,7 +92,7 @@
     "stimulus-evidence": 478334,
     "taste-integrator": 1998680
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -373,6 +373,107 @@
       "type": "usage_capture",
       "lane": "taste-integrator",
       "at": 1786550276,
+      "added": null
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1786550958
+    },
+    {
+      "type": "usage_capture",
+      "lane": "receipt-producers",
+      "at": 1786550959,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "certificate-v2",
+      "at": 1786550959,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "tournament-engine",
+      "at": 1786550959,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "taste-memory",
+      "at": 1786550959,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "packet-intelligence",
+      "at": 1786550959,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "quality-adapter",
+      "at": 1786550959,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "runner-wiring",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "prompt-contract",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "visual-doc-contract",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "claude-contract",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "codex-parity",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "provider-hooks",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "capture-hardening",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "a11y-evidence",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "stimulus-evidence",
+      "at": 1786550960,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "taste-integrator",
+      "at": 1786550960,
       "added": null
     }
   ]

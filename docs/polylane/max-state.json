@@ -1533,9 +1533,9 @@
           "id": "m32.3",
           "text": "Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts",
           "weight": 138,
-          "status": "doing",
+          "status": "done",
           "cycle": 39,
-          "evidence": "cycle 39 production taste loop launched after adversarial protocol audit"
+          "evidence": "integrator GO; promoted cycle 39"
         },
         {
           "id": "m32.4",
