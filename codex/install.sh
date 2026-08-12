@@ -28,6 +28,9 @@ build_one() {
   mkdir -p "$dest/scripts"
   # Codex owns a standalone product contract. The runner remains shared, but Codex
   # never inherits Claude-only prompt syntax, models, memory, or stop conditions.
+  # codex/SKILL.md links are package-root-relative (references/…), so install is a
+  # pure copy and installed bytes equal source. SKILL.md and references/ are SIBLINGS
+  # under $dest; a `../` link would escape the package and 404 — the guard below.
   cp "$REPO/codex/SKILL.md" "$dest/SKILL.md"
   cp "$REPO"/bin/*.sh "$dest/scripts/" && chmod +x "$dest/scripts/"*.sh
   # rm first: `cp -R dir existing-dir` NESTS (references/references) and leaves the
@@ -56,7 +59,19 @@ build_one() {
   test -x "$dest/scripts/polylane-domain-trials.sh" || { echo "install: domain trials helper missing" >&2; exit 1; }
   test -x "$dest/scripts/polylane-soak.sh" || { echo "install: soak helper missing" >&2; exit 1; }
   test -x "$dest/scripts/polylane-hooks.sh" || { echo "install: lifecycle hook helper missing" >&2; exit 1; }
+  # Visual/taste executables: the rendered-tournament, capture, judging, pixel, and
+  # prompt-gate helpers must land executable, or a UI lane silently loses the taste loop.
+  for v in polylane-visual polylane-visual-capture polylane-visual-quality \
+           polylane-taste polylane-taste-pixels polylane-taste-ballot \
+           polylane-taste-calibrate polylane-taste-corpus polylane-taste-stats \
+           polylane-taste-threat polylane-graph polylane-graph-bench \
+           polylane-promptlint polylane-promptopt; do
+    test -x "$dest/scripts/$v.sh" || { echo "install: visual/taste helper $v.sh missing or non-executable" >&2; exit 1; }
+  done
   test -s "$dest/references/visual-intelligence.md" || { echo "install: visual intelligence contract missing" >&2; exit 1; }
+  test -s "$dest/references/prompt-blocks.md" || { echo "install: prompt-block protocol reference missing" >&2; exit 1; }
+  # Doc links must resolve from the package root: no `../` escape survives install.
+  ! grep -q '](\.\./' "$dest/SKILL.md" || { echo "install: SKILL.md has an unresolved ../ doc link" >&2; exit 1; }
   test -s "$dest/references/cycle-13-integration.md" || { echo "install: cycle 13 integration reference missing" >&2; exit 1; }
   test -s "$dest/references/evidence-driven-domain-autonomy.md" || { echo "install: domain autonomy reference missing" >&2; exit 1; }
   test -s "$dest/assets/hooks/codex-hooks.json" || { echo "install: Codex lifecycle fragment missing" >&2; exit 1; }

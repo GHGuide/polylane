@@ -38,9 +38,9 @@ test -f "$STATE" && "$MEM" "$STATE" resume
 ```
 
 On resume, read the bounded packet and accepted decisions; do not repeat discovery.
-For a new or vague goal, follow [references/discovery.md](../references/discovery.md).
+For a new or vague goal, follow [references/discovery.md](references/discovery.md).
 Ask outcome/profile/evidence/risk first, then read only the chosen route in
-[references/project-types.md](../references/project-types.md). Before decomposition,
+[references/project-types.md](references/project-types.md). Before decomposition,
 write `docs/polylane/PROJECT_PROFILE.md` and its matching machine form
 `docs/polylane/PROJECT_PROFILE.json` with outcome, deliverables, stakeholders,
 constraints, evidence, risk, external actions, and finish conditions. Run this
@@ -53,7 +53,7 @@ scripts/polylane-project.sh gate docs/polylane/PROJECT_PROFILE.md docs/polylane/
 Lock concise `NORTHSTAR.md`, `STRATEGY.md`, `ULTIMATE_GOAL.md`, `INDEX.md`, and
 decision records. The strategy links the profile, names the riskiest assumption,
 and distinguishes autonomous deliverables from external proof. Create `AGENTS.md`
-from [references/documentation.md](../references/documentation.md): project operating
+from [references/documentation.md](references/documentation.md): project operating
 instructions, artifact provenance, reproduction/validation, decisions, and handoff.
 
 Initialize observable criteria and frozen acceptance before lanes start:
@@ -89,7 +89,7 @@ Apply the selected route in `project-types.md`:
 - Operations, content, and data work distinguishes a prepared artifact from sent,
   published, purchased, deployed, or changed external state.
 - UI Visual Intelligence is required only when discovery or recon finds a user-facing
-  UI. Then follow [references/visual-intelligence.md](../references/visual-intelligence.md),
+  UI. Then follow [references/visual-intelligence.md](references/visual-intelligence.md),
   carry literal `ULTIMATE-GOAL`, a reference packet with reference evidence, and a
   design lock covering tokens, layout, motion, and signature. Automatically discover
   optional candidates only into quarantine; audit and benchmark them, then require a pinned arm before use.
@@ -97,6 +97,11 @@ Apply the selected route in `project-types.md`:
   installed kit. The council chooses the lock automatically. Require product-specific
   typography, imagery, and humanized UX copy; desktop/mobile and
   empty/loading/error/hover/focus captures; three independent visual lenses; and at most two targeted repairs.
+  Render at least three divergent candidates from one locked base and pick the winner by
+  calibrated blind mirrored judging against the incumbent best-so-far after deterministic
+  hard gates. Label a per-project pick `SELECTED_NOT_CERTIFIED`; reserve `TASTE-CERTIFIED`
+  and `human_certified` for the separate >=10 varied-brief global benchmark and real humans.
+  After promotion write only bounded, evidence-scoped taste memory.
   Compare anonymized screenshots blind. Reject
   emoji-as-product-art and default-font sameness. Promotion needs >=10 varied prompts and >=70% creative/polish wins.
   Require no accessibility regression and a visual certification record.
@@ -121,7 +126,7 @@ the manifest’s optional `domain_runtime` object (profile, bundle, grade, and
 registration paths). The runner registers it before pane creation and reruns it
 against the integrator worktree before promotion. A missing, checksum-mismatched,
 or profile-incomplete deliverable bundle is a gate failure—not a generic
-file-exists pass. See [evidence-driven domain autonomy](../references/evidence-driven-domain-autonomy.md).
+file-exists pass. See [evidence-driven domain autonomy](references/evidence-driven-domain-autonomy.md).
 
 Use source-pinned real-domain trials as deterministic completion evidence:
 
@@ -196,7 +201,7 @@ external proof.
 
 ## Shared measured assurance
 
-Use [references/cycle-9-control-room.md](../references/cycle-9-control-room.md):
+Use [references/cycle-9-control-room.md](references/cycle-9-control-room.md):
 `scripts/polylane-product-benchmark.sh`, `scripts/polylane-discovery.sh`, model policy,
 `scripts/polylane-promptopt.sh`, `scripts/polylane-judges.sh`, and the
 canonical dashboard. Build a metadata-only `catalog-index`; select installed skills
