@@ -27,6 +27,7 @@ cp "$(cd "$(dirname "$RUNNER")" && pwd)/polylane-tmux.sh" "$BIN/polylane-tmux.sh
 #   nogo          : write report, exit 1                  (legit NO-GO end)
 #   halted-then-go: HALTED report first, then GO           (boundary recovery)
 #   external      : write external-open report, exit 0     (clean cycle end)
+#   preflight-error: deterministic configuration rc2        (never retry)
 #   always-crash  : crash rc137 every time                 (cap path)
 #   halted-needs-user: HALTED + needs-user marker           (do not relaunch)
 #   slow-go       : stay alive briefly, then GO             (lock contention)
@@ -44,6 +45,7 @@ if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
     halted-then-go) if [ -f "$D/halted" ]; then printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0
                     else touch "$D/halted"; printf '**Outcome:** HALTED\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1; fi ;;
     external)      printf '**Outcome:** EXTERNAL-EVIDENCE-OPEN\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
+    preflight-error) exit 2 ;;
     nogo)          printf '**Outcome:** NO-GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
     halted-needs-user) echo lane-a > "$D/needs-user"; printf '**Outcome:** HALTED\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
     slow-go)       trap 'echo term > "$D/child-term"; exit 143' TERM
@@ -123,6 +125,17 @@ rc=$?
 assert_eq "sup-needs-user-rc1" "1" "$rc"
 assert_eq "sup-needs-user-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
 assert_contains "sup-needs-user-no-loop" "not relaunching identical work" "$(cat "$TEST_TMPDIR/out-needs-user")"
+
+# A usage/manifest/contract preflight failure is deterministic. Retrying the
+# same immutable manifest only burns restart budget and sends repeated failure
+# notifications; stop after the first rc2 and preserve its diagnostic log.
+reset_proj; echo preflight-error > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=0 POLYLANE_SUP_MAX_RESTARTS=2 \
+  "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-preflight" 2>&1
+rc=$?
+assert_eq "sup-preflight-rc2" "2" "$rc"
+assert_eq "sup-preflight-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+assert_contains "sup-preflight-no-identical-retry" "deterministic preflight" "$(cat "$TEST_TMPDIR/out-preflight")"
 
 # --- only one supervisor may own a manifest ------------------------------------
 reset_proj; echo slow-go > "$PROJ/.polylane/mode"

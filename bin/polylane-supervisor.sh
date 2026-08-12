@@ -272,6 +272,16 @@ supervisor_main() {
       esac
     fi
 
+    # rc=2 is the runner's usage/manifest/contract/preflight class. The same
+    # immutable manifest cannot heal by relaunching, and no work has begun, so
+    # preserve the first diagnostic instead of burning the restart budget on
+    # identical failures (and emitting repeated failure notifications).
+    if [ "$rc" = 2 ]; then
+      sup_log "runner stopped on deterministic preflight/configuration failure (rc=2) — not relaunching identical work"
+      heartbeat halted "$restarts"
+      return 2
+    fi
+
     restarts=$((restarts + 1))
     if [ "$restarts" -gt "$SUP_MAX_RESTARTS" ]; then
       sup_log "runner died without a report and the restart cap ($SUP_MAX_RESTARTS) is exhausted — halting"

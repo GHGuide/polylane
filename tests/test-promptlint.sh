@@ -219,4 +219,29 @@ JSON
     "$LINT" lint-run "$TEST_TMPDIR/.polylane/prime-integrator-missing.json"
 else pass "lint-run-skipped-no-jq"; fi
 
+# Contract-v2 integrators must advertise at least one supported verdict with the
+# manifest's current nonce. Generic DONE/run prose is insufficient: the runner
+# otherwise discovers the missing verdict only after compiling every prompt.
+if command -v jq >/dev/null 2>&1; then
+  mkdir -p "$TEST_TMPDIR/verdict/.polylane/lanes"
+  cp "$GOOD" "$TEST_TMPDIR/verdict/.polylane/lanes/builder.txt"
+  cp "$GOOD" "$TEST_TMPDIR/verdict/.polylane/lanes/integrator.txt"
+  printf '%s\n' \
+    'End docs/verify-integration.md with POLYLANE-VERDICT: GO run=lint-verdict-run.' \
+    >> "$TEST_TMPDIR/verdict/.polylane/lanes/integrator.txt"
+  cat > "$TEST_TMPDIR/verdict/.polylane/run.json" <<'JSON'
+{"orchestration_contract":2,"run_id":"lint-verdict-run","agent":"claude","lanes":[{"name":"x","prompt_file":".polylane/lanes/builder.txt"}],"integrator":{"name":"integrator","prompt_file":".polylane/lanes/integrator.txt"}}
+JSON
+  POLYLANE_STRICT_PROMPTS=1 assert_ok \
+    "lint-run-v2-integrator-current-verdict" \
+    "$LINT" lint-run "$TEST_TMPDIR/verdict/.polylane/run.json"
+  grep -v 'POLYLANE-VERDICT:' "$TEST_TMPDIR/verdict/.polylane/lanes/integrator.txt" \
+    > "$TEST_TMPDIR/verdict/.polylane/lanes/integrator-missing.txt"
+  sed 's#integrator.txt#integrator-missing.txt#' "$TEST_TMPDIR/verdict/.polylane/run.json" \
+    > "$TEST_TMPDIR/verdict/.polylane/run-missing.json"
+  POLYLANE_STRICT_PROMPTS=1 assert_fail \
+    "lint-run-v2-rejects-integrator-without-current-verdict" \
+    "$LINT" lint-run "$TEST_TMPDIR/verdict/.polylane/run-missing.json"
+else pass "lint-run-v2-verdict-skipped-no-jq"; fi
+
 finish

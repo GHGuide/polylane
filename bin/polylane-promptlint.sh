@@ -181,11 +181,15 @@ exact_once_labels() {
 
 lint_run() {
   local mf="$1" rc=0 lane pf dir prime_hybrid int_name role agent ui
+  local contract run_id verdict verdict_ok
   command -v jq >/dev/null 2>&1 || { echo "polylane-promptlint: jq required for lint-run" >&2; return 2; }
   dir=$(cd "$(dirname "$mf")/.." && pwd)   # .polylane/ -> project root
   prime_hybrid=$(jq -r 'if .prime_hybrid == true then "true" else "false" end' "$mf")
   int_name=$(jq -r '.integrator.name // empty' "$mf")
   agent=$(jq -r '.agent // "claude"' "$mf")
+  contract=$(jq -r '.orchestration_contract // 0' "$mf")
+  case "$contract" in ''|*[!0-9]*) contract=0 ;; esac
+  run_id=$(jq -r '.run_id // empty' "$mf")
   # `// empty`: a manifest with no integrator yields no phantom "null" lane
   for lane in $(jq -r '.lanes[].name, (.integrator.name // empty)' "$mf"); do
     pf=$(jq -r --arg n "$lane" '(.lanes[],.integrator) | select(.name==$n) | .prompt_file' "$mf" | head -1)
@@ -197,6 +201,16 @@ lint_run() {
     ui=$(jq -r --arg n "$lane" '(.lanes[],.integrator) | select(.name==$n)
       | if (.surface == "ui") and (.ui_contract | tostring | test("^v[0-9]+$")) then "1" else "0" end' "$mf" | head -1)
     lint_one "$pf" "$lane" "$prime_hybrid" "$role" "$agent" "${ui:-0}" || rc=6
+    if [ "$role" = integrator ] && [ "$contract" -ge 2 ]; then
+      verdict_ok=0
+      for verdict in GO READY-FOR-HOST-GATE EXTERNAL-EVIDENCE-OPEN NO-GO; do
+        grep -qF "POLYLANE-VERDICT: $verdict run=$run_id" "$pf" && verdict_ok=1
+      done
+      if [ "$verdict_ok" -ne 1 ]; then
+        echo "PROMPT-LINT: $lane missing current-run integrator verdict(run=$run_id)"
+        rc=6
+      fi
+    fi
   done
   return $rc
 }
