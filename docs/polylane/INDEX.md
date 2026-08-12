@@ -16,7 +16,7 @@ before launch. This cycle can prove the harness only; `m32.4` remains open for t
 subsequent rendered old-versus-new study and honest machine-panel certificate.
 
 Cycle 39 production taste loop: [plan](cycle-39-plan.md) ·
-[skill suggestions](cycle-39-suggestions.md) · [council](cycle-39-council.md) ·
+[research](cycle-39-research.md) · [skill suggestions](cycle-39-suggestions.md) · [council](cycle-39-council.md) ·
 [digest](cycle-39-digest.md) · [questions](cycle-39-questions.md) ·
 [integration proof](../verify-integration.md). Fifteen file-isolated builders and one
 deferred integrator closed the capture, hard-gate, tournament, repair-memory, prompt,
