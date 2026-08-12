@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-promptopt.sh metrics <prompt> | check <prompt> [budget] | compile <prompt> | compile-selected <prompt> <kit> <lane> <output> | compare <champion> <challenger>" >&2
+  echo "usage: polylane-promptopt.sh metrics <prompt> | check <prompt> [budget] | compile <prompt> | compile-selected <prompt> <kit> <lane> <output> | compare <champion> <challenger> | ui-version <prompt>" >&2
 }
 
 require_prompt() {
@@ -34,8 +34,90 @@ scalar_label() {
     CHECK-CACHE:*) echo CHECK-CACHE ;;
     EXTERNAL-EVIDENCE:*) echo EXTERNAL-EVIDENCE ;;
     VERIFY:*) echo VERIFY ;;
+    # Manifest-derived UI profile scalars (present only on surface:"ui" lanes).
+    # They are exact-once and immutable: dropping, weakening, or duplicating any
+    # one must break scalar validation and the frozen-contract comparison.
+    UI-CONTRACT:*) echo UI-CONTRACT ;;
+    UI-IMPLEMENT:*) echo UI-IMPLEMENT ;;
+    UI-CONTENT:*) echo UI-CONTENT ;;
+    UI-EVIDENCE:*) echo UI-EVIDENCE ;;
+    UI-REVIEW-BOUNDARY:*) echo UI-REVIEW-BOUNDARY ;;
     *) return 1 ;;
   esac
+}
+
+sha256_text() {
+  if command -v shasum >/dev/null 2>&1; then
+    printf '%s' "$1" | shasum -a 256 | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    printf '%s' "$1" | sha256sum | awk '{print $1}'
+  else
+    return 1
+  fi
+}
+
+# A repo-relative path with no absolute anchor, no `..` climb, and no empty
+# segment. Mirrors the capture verifier's safety rule so a UI scalar cannot
+# smuggle an escape or symlink-style path into a builder prompt.
+ui_safe_relpath() {
+  local path="$1" part old_ifs
+  case "$path" in ""|/*|*'//'*) return 1 ;; esac
+  old_ifs=$IFS; IFS='/'
+  for part in $path; do
+    [ -n "$part" ] && [ "$part" != . ] && [ "$part" != .. ] || { IFS=$old_ifs; return 1; }
+  done
+  IFS=$old_ifs
+}
+
+ui_field() {  # ui_field LINE KEY : echo the whitespace-delimited value of KEY=…
+  printf '%s\n' "$1" | tr ' ' '\n' | sed -n "s/^$2=//p" | head -1
+}
+
+# validate_ui_profile PROMPT : if the prompt carries any UI-* scalar it must
+# carry all five, with a mode=ui versioned contract, 64-hex reference/design and
+# goal/subgoal binding hashes, safe capture/tournament paths, a bounded repair
+# attempt, and a coordinator-owned (never builder-self-certified) review verdict.
+# Prompts with no UI-* scalar are non-UI and skip this entirely (backward compat).
+validate_ui_profile() {
+  local prompt="$1" contract implement review label goal subgoal path attempt
+  grep -qE '^[[:space:]]*UI-(CONTRACT|IMPLEMENT|CONTENT|EVIDENCE|REVIEW-BOUNDARY):' "$prompt" || return 0
+  for label in UI-CONTRACT UI-IMPLEMENT UI-CONTENT UI-EVIDENCE UI-REVIEW-BOUNDARY; do
+    grep -qE "^[[:space:]]*$label:" "$prompt" || {
+      echo "polylane-promptopt: UI profile present but missing scalar: $label" >&2; return 3
+    }
+  done
+  contract=$(trim_line "$(grep -E '^[[:space:]]*UI-CONTRACT:' "$prompt" | head -1)")
+  implement=$(trim_line "$(grep -E '^[[:space:]]*UI-IMPLEMENT:' "$prompt" | head -1)")
+  review=$(trim_line "$(grep -E '^[[:space:]]*UI-REVIEW-BOUNDARY:' "$prompt" | head -1)")
+
+  case " $contract " in *' mode=ui '*) : ;; *) echo "polylane-promptopt: UI-CONTRACT mode must be ui" >&2; return 5 ;; esac
+  printf '%s\n' "$contract" | grep -qE 'ui_contract=v[0-9]+( |$)' || { echo "polylane-promptopt: UI-CONTRACT needs a versioned ui_contract=v<n>" >&2; return 5; }
+  for label in ref_packet_sha256 design_lock_sha256 goal_sha256 subgoal_sha256; do
+    printf '%s\n' "$(ui_field "$contract" "$label")" | grep -qE '^[0-9a-f]{64}$' ||
+      { echo "polylane-promptopt: UI-CONTRACT $label is not a 64-hex digest (placeholder/stale)" >&2; return 5; }
+  done
+  goal=$(trim_line "$(sed -n 's/^[[:space:]]*GOAL://p' "$prompt" | head -1)")
+  subgoal=$(trim_line "$(sed -n 's/^[[:space:]]*CURRENT-SUBGOAL://p' "$prompt" | head -1)")
+  [ "$(ui_field "$contract" goal_sha256)" = "$(sha256_text "$goal")" ] ||
+    { echo "polylane-promptopt: UI-CONTRACT goal_sha256 does not bind the GOAL scalar" >&2; return 5; }
+  [ "$(ui_field "$contract" subgoal_sha256)" = "$(sha256_text "$subgoal")" ] ||
+    { echo "polylane-promptopt: UI-CONTRACT subgoal_sha256 does not bind the CURRENT-SUBGOAL scalar" >&2; return 5; }
+
+  for label in capture_matrix tournament; do
+    path=$(ui_field "$implement" "$label")
+    [ -n "$path" ] || { echo "polylane-promptopt: UI-IMPLEMENT missing $label" >&2; return 5; }
+    ui_safe_relpath "$path" || { echo "polylane-promptopt: UI-IMPLEMENT $label is not a safe repo-relative path: $path" >&2; return 5; }
+  done
+  attempt=$(ui_field "$implement" repair_attempt)
+  case "$attempt" in 0|1|2) : ;; *) echo "polylane-promptopt: UI-IMPLEMENT repair_attempt must be 0, 1, or 2" >&2; return 5 ;; esac
+  printf '%s\n' "$(ui_field "$implement" incumbent)" | grep -qE '^[A-Za-z0-9._-]+$' ||
+    { echo "polylane-promptopt: UI-IMPLEMENT incumbent must be an opaque id" >&2; return 5; }
+
+  printf '%s\n' "$review" | grep -qi 'coordinator' || { echo "polylane-promptopt: UI-REVIEW-BOUNDARY must name coordinator verdict ownership" >&2; return 5; }
+  printf '%s\n' "$review" | grep -qiE 'cannot (self-certify|grade itself)' || { echo "polylane-promptopt: UI-REVIEW-BOUNDARY must forbid builder self-certification" >&2; return 5; }
+  printf '%s\n' "$review" | grep -qiE 'builder ((may|can|is allowed to) self-certify|owns the verdict|grades itself)' &&
+    { echo "polylane-promptopt: UI-REVIEW-BOUNDARY grants a builder-owned verdict" >&2; return 5; }
+  return 0
 }
 
 trim_line() {
@@ -72,6 +154,7 @@ validate_scalars() {
 strict_blocks() {
   local prompt="$1" spec label pattern
   validate_scalars "$prompt" || return $?
+  validate_ui_profile "$prompt" || return $?
   # Historical generated prompts may keep the two adjacent ownership
   # boundaries on one line (`OWN: … FORBIDDEN: …`). Promptlint has always
   # accepted that form, so compilation must preserve rather than reject it.
@@ -178,6 +261,18 @@ compile_selected() {
   mv "$tmp" "$output"
 }
 
+# ui-version PROMPT : echo the manifest-derived visual-contract version (e.g. v1)
+# carried on the UI-CONTRACT scalar, or nothing for a non-UI prompt. Lets the
+# runner assert equality with manifest .visual_quality.contract_version without
+# re-parsing the whole scalar.
+ui_version() {
+  local prompt="$1" line
+  require_prompt "$prompt" || return $?
+  line=$(grep -E '^[[:space:]]*UI-CONTRACT:' "$prompt" | head -1 || true)
+  [ -n "$line" ] || return 0
+  ui_field "$(trim_line "$line")" ui_contract
+}
+
 check() {
   local prompt="$1" budget="${2:-8000}" byte_budget="${POLYLANE_PROMPT_BYTE_BUDGET:-}" result bytes tokens conservative_tokens
   require_prompt "$prompt" || return $?
@@ -234,6 +329,7 @@ main() {
     metrics) [ "$#" -eq 2 ] || { usage; return 2; }; metrics "$2" ;;
     check) [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || { usage; return 2; }; check "$2" "${3:-}" ;;
     compile) [ "$#" -eq 2 ] || { usage; return 2; }; compile "$2" ;;
+    ui-version) [ "$#" -eq 2 ] || { usage; return 2; }; ui_version "$2" ;;
     compile-selected) [ "$#" -eq 5 ] || { usage; return 2; }; compile_selected "$2" "$3" "$4" "$5" ;;
     compare) [ "$#" -eq 3 ] || { usage; return 2; }; compare "$2" "$3" ;;
     *) usage; return 2 ;;
