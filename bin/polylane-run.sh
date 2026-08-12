@@ -2903,10 +2903,62 @@ mark_lane_failed() {
 # just re-hit the paywall, and auto-answering would spend money without a
 # human. Detect it, notify once, surface it in the poll + report, and wait.
 
-# pane_stalled IDX : 0 iff the pane shows an actionable paywall decision.
+# pane_session_cooldown IDX : 0 iff Claude Code has ended the turn at its exact
+# account-session-limit screen. This screen offers `/usage-credits` as prose but
+# no numbered decision menu; treating it as ordinary work leaves a live process
+# idle forever, while selecting credits would spend money without authority.
+pane_session_cooldown() {
+  local idx="$1" txt
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  printf '%s' "$txt" | grep -qiF "You've hit your session limit" &&
+    printf '%s' "$txt" | grep -qiE 'resets[[:space:]]+[0-9]{1,2}:[0-9]{2}(am|pm)' &&
+    printf '%s' "$txt" | grep -qF '/usage-credits to finish'
+}
+
+# pane_session_reset_due IDX : infer whether the reset time printed in a live
+# cooldown screen has arrived. The CLI reports a future reset within the next
+# half-day; after it passes, modulo-day distance becomes > 12h. Tests may inject
+# POLYLANE_NOW_HM=HH:MM. The optional IANA zone is accepted only as a safe TZ
+# token. Parse failure stays not-due, so malformed UI cannot cause retry churn.
+pane_session_reset_due() {
+  local idx="$1" txt reset hour minute suffix zone="" now_hm now_h now_m reset_m now_total delta
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  reset=$(printf '%s\n' "$txt" | grep -ioE 'resets[[:space:]]+[0-9]{1,2}:[0-9]{2}(am|pm)([[:space:]]+\([^)]*\))?' | tail -n 1 || true)
+  [ -n "$reset" ] || return 1
+  if [[ "$reset" =~ ([0-9]{1,2}):([0-9]{2})(am|pm) ]]; then
+    hour="${BASH_REMATCH[1]}"; minute="${BASH_REMATCH[2]}"; suffix="${BASH_REMATCH[3]}"
+  else
+    return 1
+  fi
+  zone=$(printf '%s' "$reset" | sed -n 's/.*(\([^)]*\)).*/\1/p')
+  case "$zone" in *[!A-Za-z0-9_+./-]*) zone="" ;; esac
+  hour=$((10#$hour)); minute=$((10#$minute))
+  [ "$hour" -ge 1 ] && [ "$hour" -le 12 ] && [ "$minute" -le 59 ] || return 1
+  [ "$hour" -eq 12 ] && hour=0
+  [ "$suffix" = pm ] && hour=$((hour + 12))
+  if [ -n "${POLYLANE_NOW_HM:-}" ]; then
+    now_hm="$POLYLANE_NOW_HM"
+  elif [ -n "$zone" ]; then
+    now_hm=$(TZ="$zone" date '+%H:%M' 2>/dev/null || true)
+  else
+    now_hm=$(date '+%H:%M' 2>/dev/null || true)
+  fi
+  case "$now_hm" in [0-2][0-9]:[0-5][0-9]) : ;; *) return 1 ;; esac
+  now_h=${now_hm%:*}; now_m=${now_hm#*:}
+  now_total=$((10#$now_h * 60 + 10#$now_m)); reset_m=$((hour * 60 + minute))
+  delta=$(( (reset_m - now_total + 1440) % 1440 ))
+  [ "$delta" -eq 0 ] || [ "$delta" -gt 720 ]
+}
+
+# pane_stalled IDX : 0 iff the pane shows an actionable paywall decision OR the
+# exact no-menu session cooldown. resolve_stalls distinguishes the latter and
+# waits for its free reset instead of buying credits or burning fallback models.
 pane_stalled() {
   local idx="$1" txt
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  pane_session_cooldown "$idx" && return 0
   txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
   printf '%s' "$txt" | grep -qiE 'Switch to usage credits|Upgrade your plan' &&
     printf '%s' "$txt" | grep -qE '\[[[:space:]]*1[[:space:]]*\]|(^|[[:space:]])1\.'
@@ -2926,8 +2978,13 @@ stall_check() {
     pane_stalled "$idx" || continue
     STALLED_LANES="${STALLED_LANES:+$STALLED_LANES }$name"
     prime_hybrid_observe stall "$name" "usage-limit stall in run ${RUN_ID:-legacy}" || return 1
-    echo "stall: lane '$name' hit a usage limit — waiting for a human decision (no auto-retry)"
-    notify_event stall "lane '$name' hit a usage limit — human decision needed"
+    if pane_session_cooldown "$idx"; then
+      echo "stall: lane '$name' hit its session limit — waiting for the free reset (no credits purchased)"
+      notify_event stall "lane '$name' hit its session limit — waiting for free reset; no credits purchased"
+    else
+      echo "stall: lane '$name' hit a usage limit — waiting for a human decision (no auto-retry)"
+      notify_event stall "lane '$name' hit a usage limit — human decision needed"
+    fi
   done
 }
 retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
@@ -3357,6 +3414,16 @@ resolve_stalls() {
     lane_stalled "$name" || continue
     lane_done "$wt" "$name" && { unstall "$name"; continue; }
     idx=$(pane_index_for "$name")
+    if pane_session_cooldown "$idx"; then
+      if pane_session_reset_due "$idx"; then
+        echo "stall: lane '$name' free reset window reached — resuming the frozen goal (no credits purchased)"
+        notify_event stall "lane '$name': free session reset reached — resuming"
+        if respawn_lane "$idx" "$name" "$wt"; then unstall "$name"; fi
+      else
+        echo "stall: lane '$name' session-limited — waiting for its printed free reset"
+      fi
+      continue
+    fi
     case "$policy" in
       wait)
         w=$(stallwait_get "$name"); w=$((w + 1)); stallwait_set "$name" "$w"
