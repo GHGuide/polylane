@@ -1533,9 +1533,9 @@
           "id": "m32.3",
           "text": "Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts",
           "weight": 138,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 39,
+          "evidence": "cycle 39 production taste loop launched after adversarial protocol audit"
         },
         {
           "id": "m32.4",
@@ -1874,6 +1874,12 @@
       "kind": "decision",
       "text": "Taste certification is empirical: human-calibrated rendered comparisons, confidence, and accessibility veto; no prose-only or self-scored pass.",
       "meta": ""
+    },
+    {
+      "cycle": 39,
+      "kind": "decision",
+      "text": "Close production taste authority before benchmarking: three rendered candidates, trusted transitive receipts, durable two-repair event replay, provider-native installs, and evidence-scoped memory.",
+      "meta": "adversarial swarm consensus"
     }
   ],
   "accept": [
@@ -3218,7 +3224,7 @@
     },
     {
       "sid": "m32.3",
-      "cmd": "tests/test-visual-intelligence.sh && tests/test-visual-loop-integration.sh && tests/test-skill-parity.sh",
+      "cmd": "bash tests/test-taste-validator-receipts.sh && bash tests/test-taste-certification.sh && bash tests/test-visual-capture.sh && bash tests/test-taste-a11y.sh && bash tests/test-taste-stimulus.sh && bash tests/test-visual-tournament.sh && bash tests/test-taste-tournament.sh && bash tests/test-tournament-capture-seam.sh && bash tests/test-champion-persistence.sh && bash tests/test-graph-tournament.sh && bash tests/test-taste-memory.sh && bash tests/test-taste-memory-security.sh && bash tests/test-taste-memory-advice.sh && bash tests/test-visual-taste-memory-integration.sh && bash tests/test-visual-intelligence.sh && bash tests/test-visual-quality.sh && bash tests/test-taste-runner-gate.sh && bash tests/test-promptlint.sh && bash tests/test-prompt-compiler.sh && bash tests/test-claude-taste-contract.sh && bash tests/test-visual-loop-integration.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bash tests/test-hooks.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-taste-production-chain.sh && bash tests/test-taste-runner-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
       "tier": "focused",
       "key": "taste-contract",
       "status": "unchecked",
@@ -3228,7 +3234,7 @@
     },
     {
       "sid": "m32.4",
-      "cmd": "bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == \"TASTE-CERTIFIED\" and .human_calibrated == true and .eligible_judges >= 5 and .briefs >= 10 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null",
+      "cmd": "bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == \"TASTE-CERTIFIED\" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test(\"^[0-9a-f]{40}([0-9a-f]{24})?$\")) and (.validator_chain_sha256 | test(\"^[0-9a-f]{64}$\"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null",
       "tier": "focused",
       "key": "taste-live-corpus",
       "status": "unchecked",
@@ -3238,7 +3244,7 @@
     },
     {
       "sid": "m32.5",
-      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh && tests/test-install.sh && tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse",
+      "cmd": "bash tests/run.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "taste-terminal",
       "status": "unchecked",
