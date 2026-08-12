@@ -68,13 +68,13 @@ validate_manifest() {
     and ([.records[].id] | length == (unique | length))
     and ([.records[].asset_sha256] | length == (unique | length))
     and all(.records[]; .source_id as $source_id | any($manifest.sources[]; .id == $source_id))
-    and ([.records[].domain] | unique) as $domains
-    | ($domains | length >= 3)
-    and all($domains[];
-      . as $domain
-      | ([$manifest.records[] | select(.domain == $domain and .split == "calibration")] | length) as $calibration
-      | ([$manifest.records[] | select(.domain == $domain and .split == "holdout")] | length) as $holdout
-      | $calibration > 0 and $calibration == $holdout)
+    and (([.records[].domain] | unique) as $domains
+      | ($domains | length >= 3)
+      and all($domains[];
+        . as $domain
+        | ([$manifest.records[] | select(.domain == $domain and .split == "calibration")] | length) as $calibration
+        | ([$manifest.records[] | select(.domain == $domain and .split == "holdout")] | length) as $holdout
+        | $calibration > 0 and $calibration == $holdout))
     and ([paths(type == "boolean")] | length == 0)
   ' "$manifest" >/dev/null || fail "manifest must contain pinned, licensed, balanced records without trust booleans"
 }

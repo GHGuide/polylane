@@ -21,10 +21,15 @@ VISUAL="$FIXTURE/.codex/skills/polylane/references/visual-intelligence.md"
 
 assert_ok "visual-installed-reference" test -s "$VISUAL"
 
+# Flatten each contract before matching: obligations wrap across native prose
+# lines, and per-line grep would miss a phrase split over two lines. Same
+# flattening the Codex-native checks already use below.
+CLAUDE_FLAT="$(tr '\n' ' ' < "$CLAUDE" | tr -s ' ')"
+CODEX_MD_FLAT="$(tr '\n' ' ' < "$CODEX" | tr -s ' ')"
 both() {
   local name="$1" pattern="$2"
-  grep -qiE -e "$pattern" "$CLAUDE" || { fail "visual-claude-$name" "missing installed contract"; return; }
-  grep -qiE -e "$pattern" "$CODEX" || { fail "visual-codex-$name" "missing generated contract"; return; }
+  printf '%s' "$CLAUDE_FLAT" | grep -qiE -e "$pattern" || { fail "visual-claude-$name" "missing installed contract"; return; }
+  printf '%s' "$CODEX_MD_FLAT" | grep -qiE -e "$pattern" || { fail "visual-codex-$name" "missing generated contract"; return; }
   pass "visual-parity-$name"
 }
 
@@ -47,7 +52,7 @@ both automatic-council 'council.*automatic|automatic.*council'
 both asset-copy 'product-specific.*(typography|imagery|copy)|humanized UX copy'
 both anti-generic 'emoji-as-product-art|nested-card soup|default-font sameness'
 both certification '10 varied prompts|>=10 varied prompts|at least 10 varied prompts'
-both blind-comparison 'anonymized screenshots.*blind|blind.*anonymized screenshots'
+both blind-comparison 'anonymized (screenshots|candidates).{0,160}(blind|identity-hidden|mirror)|blind.{0,80}anonymized (screenshots|candidates)'
 both champion-gate '70%.*(creative|polish)|current champion'
 both accessibility 'no accessibility regression'
 

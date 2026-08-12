@@ -133,8 +133,12 @@ UNITS_A=$(cal_units m-one)
 UNITS_B=$(cal_units m-two)
 
 make_cal_templates() {
-  write_json "$WORK/cal-tpl-a-input.json" "{\"schema_version\":1,\"calibration\":{\"partition\":\"held_out\",\"label_provenance\":\"human-labeled\"},\"judge\":{\"id\":\"judge-tpl-a\",\"provider\":\"fixture-provider\",\"model\":\"m-one\"},\"units\":$UNITS_A}"
-  write_json "$WORK/cal-tpl-b-input.json" "{\"schema_version\":1,\"calibration\":{\"partition\":\"held_out\",\"label_provenance\":\"human-labeled\"},\"judge\":{\"id\":\"judge-tpl-b\",\"provider\":\"fixture-provider\",\"model\":\"m-two\"},\"units\":$UNITS_B}"
+  local hold_sha sys_sha samp_sha
+  hold_sha=$(printf '0%.0s' $(seq 1 64))
+  sys_sha=$(printf '1%.0s' $(seq 1 64))
+  samp_sha=$(printf '2%.0s' $(seq 1 64))
+  write_json "$WORK/cal-tpl-a-input.json" "{\"schema_version\":1,\"calibration\":{\"partition\":\"held_out\",\"label_provenance\":\"human-labeled\",\"holdout_corpus_receipt_sha256\":\"$hold_sha\"},\"judge\":{\"id\":\"judge-tpl-a\",\"provider\":\"fixture-provider\",\"model\":\"m-one\",\"model_version\":\"2026.08\",\"system_prompt_sha256\":\"$sys_sha\",\"sampling_sha256\":\"$samp_sha\"},\"units\":$UNITS_A}"
+  write_json "$WORK/cal-tpl-b-input.json" "{\"schema_version\":1,\"calibration\":{\"partition\":\"held_out\",\"label_provenance\":\"human-labeled\",\"holdout_corpus_receipt_sha256\":\"$hold_sha\"},\"judge\":{\"id\":\"judge-tpl-b\",\"provider\":\"fixture-provider\",\"model\":\"m-two\",\"model_version\":\"2026.08\",\"system_prompt_sha256\":\"$sys_sha\",\"sampling_sha256\":\"$samp_sha\"},\"units\":$UNITS_B}"
   "$CALIBRATE" "$WORK/cal-tpl-a-input.json" "$CAL_TPL_A" || fail "calibration producer rejected template input"
   "$CALIBRATE" "$WORK/cal-tpl-b-input.json" "$CAL_TPL_B" || fail "calibration producer rejected template input"
   assert_json "$CAL_TPL_A" '.schema_version == "taste-calibration/v1" and .eligible == true and .judge_configuration.kind == "machine"'

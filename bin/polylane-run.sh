@@ -2510,8 +2510,64 @@ lane_done() {
     fi
     lane_completion_scope_valid "$wt" "$name" || return 1
   fi
-  lane_completion_worker_live "$wt" "$name" && return 1
+  if lane_completion_worker_live "$wt" "$name"; then
+    # coordinator seq28: everything above already proved a clean, committed,
+    # scope-valid, current-run DONE — the ONLY remaining blocker is a pane still
+    # live at its input (a finished agent that committed DONE then sat idle).
+    # Left alone this hangs the run forever. Send exactly one tracked /exit
+    # (never re-sent, never respawned). A dirty, stale, symlinked, or
+    # marker-mismatched pane never reaches this point, so quiesce can only close
+    # a genuinely finished agent. Stay "not done" this poll; the next poll
+    # observes the exited pane and completes normally.
+    quiesce_done_pane "$wt" "$name"
+    return 1
+  fi
   return 0
+}
+
+# quiesce_done_pane WORKTREE NAME : send one durable /exit to a finished lane's
+# still-live pane so a clean committed DONE progresses instead of hanging
+# (coordinator seq28). Callers must already have proved the clean/committed/
+# scope-valid/current-run DONE preconditions; this only refuses to send twice
+# and refuses to act outside contract-v2/current-run. It never respawns and
+# never touches an unmapped pane.
+quiesce_done_pane() {
+  local wt="$1" name="$2" idx base state_dir marker
+  [ "${DRY_RUN:-0}" = "1" ] && return 1
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  [ -n "${RUN_ID:-}" ] || return 1
+  case "$name" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac
+  idx=$(pane_index_for "$name")
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  [ "$(pane_for_worktree "$wt" 2>/dev/null || true)" = "$idx" ] || return 1
+  # The durable once-marker MUST live in coordinator scratch OUTSIDE the lane
+  # worktree it is about to complete (coordinator seq29): a marker written under
+  # $wt would dirty the tree and make the very next lane_done poll reject a clean
+  # committed DONE. Prefer PROJECT_ROOT (always set + distinct in a real run); in
+  # a sourced fixture PROJECT_ROOT is unset, so fall back to the manifest's
+  # directory, a coordinator-scratch sibling of the worktree. Never write inside
+  # the worktree under any base.
+  base="${PROJECT_ROOT:-}"
+  [ -n "$base" ] || base=$(dirname "${MANIFEST:-}")
+  [ -n "$base" ] && [ "$base" != "." ] && [ "$base" != "$wt" ] || return 1
+  case "$base" in "$wt"/*) return 1 ;; esac
+  state_dir="$base/.polylane/quiesce"
+  marker="$state_dir/quiesce-$RUN_ID-$name"
+  [ -e "$marker" ] && return 1
+  mkdir -p "$state_dir" 2>/dev/null || return 1
+  : > "$marker"
+  pane_send_exit "$idx"
+}
+
+# pane_send_exit IDX : type "/exit" then Enter into pane IDX. A single atomic
+# quiesce keystroke sequence; failures are non-fatal to the poll loop. With no
+# tmux session bound (sourced unit fixtures) it is a no-op, so the marker path
+# stays testable without a live server.
+pane_send_exit() {
+  local idx="$1"
+  [ -n "${TMUX_SESSION:-}" ] || return 0
+  run tmux send-keys -t "$TMUX_SESSION:0.$idx" -l "/exit" 2>/dev/null || true
+  run tmux send-keys -t "$TMUX_SESSION:0.$idx" C-m 2>/dev/null || true
 }
 
 # lane_completion_scope_valid WORKTREE NAME : the static ownership plan is only
