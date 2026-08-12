@@ -1541,9 +1541,9 @@
           "id": "m32.4",
           "text": "Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm",
           "weight": 137,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "doing",
+          "cycle": 41,
+          "evidence": "cycle 41 source acquisition and held-out judge calibration frozen"
         },
         {
           "id": "m32.5",
@@ -3276,6 +3276,26 @@
       "tier": "focused",
       "key": "",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4",
+      "cmd": "bash tests/test-taste-dataverse-transport.sh && bash tests/test-taste-dataone-metadata.sh && bash tests/test-taste-source-freeze.sh && bash tests/test-taste-download-campaign.sh && bash tests/test-taste-cache-integrity.sh && bash tests/test-taste-ratings-normalize.sh && bash tests/test-taste-corpus-select.sh && bash tests/test-taste-pair-builder.sh && bash tests/test-taste-calibration-campaign.sh && bash tests/test-taste-calibration-audit.sh && bash tests/test-taste-panel-freeze.sh && bash tests/test-taste-benchmark-preflight.sh && bash tests/test-taste-source-adversarial.sh && bash tests/test-taste-source-campaign-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4",
+      "cmd": "jq -e '.status == \"VALIDATED\" and .fixture_only == false and .domains == 3 and .calibration_images == 180 and .holdout_images == 72 and .eligible_judges >= 5 and .human_calibrated == true and .human_certified == false' docs/polylane/taste-certification/benchmark/calibration-summary.json >/dev/null",
+      "tier": "focused",
+      "key": "",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
