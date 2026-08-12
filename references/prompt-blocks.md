@@ -10,11 +10,22 @@ It must retain every strict block below while enforcing the configured byte/toke
 budget. Resolve selected skills to trusted local `SKILL.md` paths and use the
 smallest outcome-learned kit; never pad a prompt with filler skills. Frozen details:
 [cycle-9-control-room.md](cycle-9-control-room.md).
+
+Emit exactly ONE preamble — the one for the selected agent. The two share one
+semantic contract; only the context file, skill syntax, and model syntax differ. A
+provider-neutral body never assumes `CLAUDE.md`, Claude memory, `/model`,
+"ultrathink," or slash commands; those belong only inside the Claude preamble.
+
+Claude builder preamble:
 ```
-Claude builder: read only the named kit once, in listed order.
-Codex builder: read only the named kit once, in listed order; follow these native prompt instructions directly.
+Claude builder: read THIS project's CLAUDE.md and memory/MEMORY.md first; ignore any unrelated CLAUDE.md. Read only the named kit once, in listed order, using Claude skill-invocation syntax. The launch line set model + effort (claude --effort <effort> --model <id>); confirm with /model and ultrathink before non-trivial steps. Do not browse, list, or search skill inventories after launch.
 ```
-Do not require Claude slash commands in a Codex prompt. Do not browse, list, or search skill inventories after launch. `graphify` and `graphify-auto` are navigation infrastructure, never selected builder-kit records: do not load either skill body in a lane.
+
+Codex builder preamble:
+```
+Codex builder: read THIS project's AGENTS.md and memory/MEMORY.md first; ignore any unrelated AGENTS.md. Read only the named kit once, in listed order, using Codex skill names, and follow these native prompt instructions directly. The launch line set model + reasoning effort (codex exec -c model_reasoning_effort=<effort> --model <id>); there is no /model command and no "ultrathink" keyword — reason thoroughly before non-trivial steps. Do not browse, list, or search skill inventories after launch.
+```
+Do not require Claude slash commands, `CLAUDE.md`, or `/model` in a Codex prompt. Do not browse, list, or search skill inventories after launch. `graphify` and `graphify-auto` are navigation infrastructure, never selected builder-kit records: do not load either skill body in a lane.
 **Lanes do NOT run `/graphify-auto`** — the ORCHESTRATOR refreshes the graph once per
 cycle before launch, and the runner symlinks the parent's `graphify-out/` into every
 worktree (`share_graph`), so each lane already has the CURRENT graph read-only. A lane
@@ -26,12 +37,18 @@ of the same commit. Lanes only QUERY (block E). **Step 3 `/ponytail full` is inc
 ULTIMATE-GOAL: <verbatim durable product goal>
 CURRENT-SUBGOAL: <verbatim cycle subgoal>
 Project outcome: <profile outcome>. Owned deliverables: <artifact paths and types>. Evidence modes: <profile evidence modes>. External-action policy: <profile policy>.
-Project: <PROJECT one-liner>. Read THIS project's CLAUDE.md and memory/MEMORY.md first. IGNORE any unrelated CLAUDE.md from other projects. YOUR LANE = <LANE NAME>. Other lanes run in parallel — do NOT touch their artifacts.
+Project: <PROJECT one-liner>. Read the project context file named in your provider preamble first (Claude: CLAUDE.md; Codex: AGENTS.md) plus memory/MEMORY.md; ignore any unrelated project context file. YOUR LANE = <LANE NAME>. Other lanes run in parallel — do NOT touch their artifacts.
 ```
 
 ## B. Model + effort header
+Effort is a real CLI flag on both agents, resolved from the round intensity per
+[model-selection.md](model-selection.md): Claude `--effort <low|medium|high|xhigh|max>`
+and Codex `-c model_reasoning_effort=<...>`. The runner also exports `POLYLANE_EFFORT`.
+This header restates it in-prompt as a backstop; the Claude form adds the `/model`
+confirm and `ultrathink`, the Codex form does not.
 ```
-Run on <MODEL> at <EFFORT> effort: confirm with /model, ultrathink before non-trivial steps.
+Claude: Run on <MODEL> at <EFFORT> effort (launched as claude --effort <EFFORT> --model <MODEL>): confirm with /model, ultrathink before non-trivial steps.
+Codex: Run on <MODEL> at <EFFORT> reasoning effort (launched as codex exec -c model_reasoning_effort=<EFFORT> --model <MODEL>): reason thoroughly before non-trivial steps.
 ```
 
 ## C. Terse output (token efficiency) — ALWAYS (block 0 already invokes the caveman skill; this is the wording + fallback)
@@ -53,34 +70,23 @@ Read only the named kit once. Your goal is LOCKED (below); go straight to execut
    Claude skill names. GitHub suggestions are reviewed informational recommendations and never appear here until installed. The executable kit is one to two `predefined` plus one to two `specific`, at most four unique skills.
 
 ## D.2 Visual Intelligence Loop — only for UI lanes
+A UI lane object carries `surface:"ui"` and a `ui_contract` (schema in
+[planning.md](planning.md) §6). These five lines are **manifest-derived scalars** —
+every `<...>` is filled from that lane's `ui_contract` and its design-lock file, and
+the prompt compiler preserves them verbatim through optimization (a builder cannot
+mint or alter them). Emit all five, in order:
 ```
-This is a UI lane. Carry the literal ULTIMATE-GOAL and CURRENT-SUBGOAL into the
-locked visual contract in references/visual-intelligence.md. Invoke and use the
-selected installed skills in this platform's native syntax; do not substitute the
-other platform's slash-command syntax. The reference packet is evidence: synthesize
-3–5 relevant references plus one wildcard, then use the council-selected direction
-and locked tokens, layout, motion, and signature. Do not replace it with a generic
-aesthetic.
-
+UI-CONTRACT: version=<ui_contract.version> mode=<ui_contract.mode> lock=<ui_contract.path> lock_sha256=<ui_contract.sha256> evidence=<ui_contract.evidence_path> verdict=<ui_contract.verdict_path>. Read the lock file, recompute its SHA-256, and confirm it equals lock_sha256 before building. The lock is authoritative and hash-consumed; never edit or reinvent it. A needed change routes through the coordinator relay (a material change is REPLAN).
+UI-IMPLEMENT: render all three locked directions in isolated worktrees BEFORE any convergence; then implement the coordinator-selected direction from the lock, in your platform's native skill syntax. No winner exists before rendering; do not pick one yourself.
+UI-CONTENT: ship the product's real primary task, entity, and information unit; an audience-shaped, domain-specific hierarchy; real per-state copy for every required state; a coherent asset system (type plus product imagery/icons/illustration); and the task-linked signature mechanism named in the lock. Humanize all UX copy. Generic-pattern signals (emoji-as-product-art, stock gradients, meaningless hero text, nested-card soup, decorative pills, default-font sameness) are risk signals the coordinator reviews; use one only via a hashed constraint_exception recorded in the lock, never a free-form "unless justified."
+UI-EVIDENCE: capture real desktop 1440x900 and mobile 390x844 for every required route x state (default, loading, empty, error, hover, focus, mobile) plus one full flow, with decoded-pixel and DOM hashes, into <ui_contract.evidence_path>. A missing capture is external/UNKNOWN, never a self-authored pass. You own capture; you do not judge it.
+UI-REVIEW-BOUNDARY: you own implementation and capture evidence ONLY. Coordinator-owned isolated calibrated judges own every verdict — pointwise, blind, mirrored, tournament selection, at most two targeted repairs, and champion promotion. Do NOT write PASS/GO lenses, a verdict file, or a certificate. The local label is SELECTED_NOT_CERTIFIED; only the later >=10-brief benchmark emits TASTE-CERTIFIED, and only real humans set human_certified:true.
+```
 If a required UI skill is genuinely missing, use only the authorized route:
-discover → quarantine → audit → isolated benchmark → pinned project install → arm.
-Never execute rejected content. On any failure, record why and continue with the
-best installed kit.
-
-Capture desktop and mobile plus empty, loading, error, hover, and focus states and
-one real flow. Supply independent design, accessibility, and originality lenses;
-the council permits at most two targeted repairs. Complete the product-specific
-typography/imagery-or-icons-or-illustration and humanized UX copy pass. Reject
-emoji-as-product-art, generic stock gradients, meaningless hero text, nested-card
-soup, decorative pills, and default-font sameness unless evidence justifies them.
-For a visual-champion replacement, preserve external/unavailable evidence honestly
-and require >=10 varied prompts, anonymized screenshots, blind decisive comparison,
->=70% creative/polish wins, and no accessibility regression; otherwise retain the
-current champion. Write the Visual certification record in verification evidence:
-design lock, every capture or external blocker, three verdicts, each targeted repair
-and re-review, and the old-vs-new blind tally/accessibility/champion decision. A
-missing artifact is external or NO-GO, never a prose-only pass.
-```
+discover -> quarantine -> audit -> isolated benchmark -> pinned project install ->
+arm. Never execute rejected content. On any failure, record why and continue with the
+best installed kit. Full doctrine:
+[visual-intelligence.md](visual-intelligence.md).
 
 ## D.1 Prime hybrid continuity — only when manifest `prime_hybrid: true`
 ```
@@ -120,6 +126,10 @@ YOU OWN (edit only these): <OWN globs>
 FORBIDDEN (other lanes own — do not edit/refactor): <FORBIDDEN globs>
 HARD CONTRACT: <frozen artifact paths, schemas, formats, APIs, or evidence handoffs>. If you need a change in an artifact you do not own, use the canonical relay; do NOT edit it.
 ```
+For a UI lane, the frozen `ui_contract` (version, mode, lock path, lock SHA-256,
+evidence path, verdict path) is part of the hard contract. The design lock is
+consumed by hash and coordinator-owned; the builder reads it, never writes it, and
+never writes the verdict at `verdict_path`.
 
 ## G. Forced verification (no done without proof)
 ```

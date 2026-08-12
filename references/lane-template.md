@@ -8,7 +8,7 @@ Codex builder: state the locked goals directly and read only the selected kit on
 ```
 cd "<WORKTREE_ABS_PATH>" && <selected-agent-cli> <MODEL/EXEC FLAGS>
 ```
-(`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `<MODEL_ID>` is whatever id the Phase 4 resolution of the `intensity` preset against `available_models` produced per model-selection.md — any rank-map model (`claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) — or the user's Phase 5 per-lane override; the lane's effort resolves the same way. Effort is instructed in-prompt via block B; when launched by the runner it is also surfaced to the pane as the `POLYLANE_EFFORT` env var — there is no CLI effort flag.)
+(`<WORKTREE_ABS_PATH>` = this lane's own git worktree — the Phase 5 default; each lane launches in its own worktree so its git index + commits stay isolated. `<MODEL_ID>` is whatever id the Phase 4 resolution of the `intensity` preset against `available_models` produced per model-selection.md — any rank-map model (`claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) — or the user's Phase 5 per-lane override; the lane's effort resolves the same way. Effort is a real CLI flag on both agents, resolved from intensity per model-selection.md: Claude launches as `claude --effort <low|medium|high|xhigh|max> --model <id>` and Codex as `codex exec -c model_reasoning_effort=<...> --model <id>`. The runner also exports the resolved value as the `POLYLANE_EFFORT` env var, and block B restates it in-prompt (with the `/model` confirm + ultrathink on the Claude form only) as a backstop.)
 
 ## Paste block skeleton (fill and inline the blocks)
 ```
@@ -16,9 +16,10 @@ cd "<WORKTREE_ABS_PATH>" && <selected-agent-cli> <MODEL/EXEC FLAGS>
 ULTIMATE-GOAL: <verbatim durable product goal>
 CURRENT-SUBGOAL: <verbatim cycle subgoal>
 [B model + effort header]
-[0 selected-skill preamble: Claude/Codex platform-native instruction; read only named kit once (graph comes pre-refreshed via symlink — query only)]
+[0 selected-skill preamble: emit ONE provider preamble (Claude reads CLAUDE.md; Codex reads AGENTS.md) — carries context file, skill syntax, model/effort syntax; read only named kit once (graph comes pre-refreshed via symlink — query only)]
 [C terse output]
 [D skills for this lane]
+[D.2 UI contract block — UI lanes ONLY: the five manifest-derived lines UI-CONTRACT / UI-IMPLEMENT / UI-CONTENT / UI-EVIDENCE / UI-REVIEW-BOUNDARY, filled from this lane's ui_contract + hash-consumed design lock; builder owns implementation + capture only, coordinator owns verdicts]
 [E graphify-first]   (for non-code artifacts, query the available artifact graph or use targeted read-only inspection; never create an exploration lane.)
 [F file ownership + contract]
 
@@ -66,13 +67,13 @@ Once every lane's paste block is printed, the planner ALSO writes them to disk a
   ]
 }
 ```
-`intensity` is the Phase 1 preset; `available_models` is the set it resolved against; per-object `model` + `effort` are the Phase 4-resolved (or Phase 5-overridden) values, on every lane object and the integrator (matching Lc's `.polylane/SCHEMA.md`). `worktree` is each lane's Phase 5 worktree; `prompt_file` is its `.polylane/lanes/<lane>.txt`. New generated manifests set `write_plan_contract: 1`; every builder then includes non-empty, unique, safe repository-relative exact `planned_writes`, all mechanically covered by its `own_globs`. The integrator omits `own_globs`; every builder includes it.
+`intensity` is the Phase 1 preset; `available_models` is the set it resolved against; per-object `model` + `effort` are the Phase 4-resolved (or Phase 5-overridden) values, on every lane object and the integrator (matching Lc's `.polylane/SCHEMA.md`). `worktree` is each lane's Phase 5 worktree; `prompt_file` is its `.polylane/lanes/<lane>.txt`. New generated manifests set `write_plan_contract: 1`; every builder then includes non-empty, unique, safe repository-relative exact `planned_writes`, all mechanically covered by its `own_globs`. The integrator omits `own_globs`; every builder includes it. A UI lane object also carries the two sanctioned additional keys `surface:"ui"` and `ui_contract` (full schema and design-lock fragment in [planning.md](planning.md) §6); a non-UI lane carries neither.
 
 ## Rules
 - The GOAL is copied verbatim from the locked INTEGRATION SPEC — never paraphrased or expanded. If a builder wants scope beyond it, it must raise NEEDS DECISION, not act.
 - Derive `planned_writes` from the lane’s concrete artifact write-set, include `docs/status-<lane>.md`, and run `bin/polylane-scope.sh check-write-plan .polylane/run.json` before launch. Do not use a glob, absolute path, traversal, duplicate, or an unowned path; the runner rejects the manifest before creating a worktree or pane.
 - Keep each prompt self-contained (a fresh terminal has no session context).
-- Project-specific recipes (build/install commands, device IDs, known-broken tooling) are pulled from the project's CLAUDE.md and inlined into the relevant lane(s) — not hardcoded in this template.
+- Project-specific recipes (build/install commands, device IDs, known-broken tooling) are pulled from the project's context file (Claude `CLAUDE.md`, Codex `AGENTS.md`) and inlined into the relevant lane(s) — not hardcoded in this template.
 - A software UI lane is one specialization. Research, operations, content, data, and custom lanes substitute artifact-appropriate commands and evidence; never invent a source change, build, test, UI, deployment, publication, live trade, or physical/manual result when the profile calls for analysis, a dry run, a sample, a backtest, a prepared artifact, or external approval.
 - In prompt-generation-only mode, hand off after the prompts. In autonomous Polylane
   mode, validate contract v2 and launch the supervisor immediately; prompt generation is
@@ -133,4 +134,6 @@ DONE-SIGNAL: on completion write docs/status-dark-theme.md, first line EXACTLY `
 DONE = all true: both GOAL items observably met + docs/verify-dark-theme.md has proof + docs/status-dark-theme.md written with first line `STATUS: dark-theme DONE run=<RUN_ID>` + no new errors. Drive with the skills; no generic output.
 ```
 
-Reading top to bottom: A (identity) → B (model header) → 0 (mandatory-4 preamble) → C (terse) → D (skills) → E (graphify-first) → F (ownership + contract) → GOAL (locked, verbatim from spec) → WORKFLOW → G (verify) → H (coordination) → I (scoped git) → J (done) → DONE-SIGNAL (docs/status-<lane>.md, first line `STATUS: <lane> DONE run=<RUN_ID>`). Same order the skeleton above prescribes.
+Reading top to bottom: A (identity) → B (model header) → 0 (provider preamble) → C (terse) → D (skills) → E (graphify-first) → F (ownership + contract) → GOAL (locked, verbatim from spec) → WORKFLOW → G (verify) → H (coordination) → I (scoped git) → J (done) → DONE-SIGNAL (docs/status-<lane>.md, first line `STATUS: <lane> DONE run=<RUN_ID>`). Same order the skeleton above prescribes.
+
+This example shows the Claude form (block 0 reads `CLAUDE.md`, block B uses `--effort`/`/model`). A Codex lane keeps every neutral block and swaps only block 0 and block B for the Codex preamble (reads `AGENTS.md`, uses `-c model_reasoning_effort=`, no `/model` or "ultrathink"). Because it renders a dark theme across surfaces, this is a UI lane: a real run also gives its manifest object `surface:"ui"` + `ui_contract`, inserts the D.2 UI-CONTRACT/UI-IMPLEMENT/UI-CONTENT/UI-EVIDENCE/UI-REVIEW-BOUNDARY lines after block D, and keeps verdicts with the coordinator (the builder captures the screenshots into `docs/verify-dark-theme.md` but writes no PASS lens or certificate).
