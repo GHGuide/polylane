@@ -1,0 +1,82 @@
+{
+  "schema_version": "taste-pointwise/v1",
+  "ballot_id": "pointwise-wu-c40-live-smoke-a3-b",
+  "judge_id": "judge-claude-opus-4-8",
+  "candidate_id": "stim-12b3bf3f8fab",
+  "brief_sha256": "22204b0b33eb55d172692ea2482b91e15a5087986bffe3e135e19564929746b7",
+  "capture_manifest_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+  "scores_1_to_7": {
+    "color": 6,
+    "craftsmanship": 6,
+    "hierarchy": 6,
+    "originality": 4,
+    "product_fit": 6,
+    "spatial_rhythm": 6,
+    "state_coherence": 6,
+    "typography": 6
+  },
+  "observations": [
+    {
+      "brief_clause": "The board must clearly show the default state and the overload/error state.",
+      "capture_id": "B",
+      "criterion": "color",
+      "reason": "A cohesive navy palette, cyan-to-green normal bars, and coral-red overload accents provide clear semantic separation with strong contrast.",
+      "region_or_state": "All three cards, especially Priya overload card"
+    },
+    {
+      "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+      "capture_id": "B",
+      "criterion": "craftsmanship",
+      "reason": "Rounded cards, controlled borders, inset progress tracks, consistent padding, and clean alignment produce a polished interface.",
+      "region_or_state": "Header and three-card row"
+    },
+    {
+      "brief_clause": "Assigning the 950 kg shipment S-108 to Nadia's 1200 kg van fills her capacity bar to 950.",
+      "capture_id": "B",
+      "criterion": "hierarchy",
+      "reason": "The title leads clearly, followed by driver and capacity labels, then the bar, numeric utilization, and shipment ID in a compact scan path.",
+      "region_or_state": "Title and Nadia card"
+    },
+    {
+      "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+      "capture_id": "B",
+      "criterion": "originality",
+      "reason": "The dark operations-dashboard treatment and gradient utilization bars show a distinct visual direction, though the card pattern remains familiar.",
+      "region_or_state": "Full board"
+    },
+    {
+      "brief_clause": "A regional freight dispatcher assigns shipments to vans each morning on an operations control board.",
+      "capture_id": "B",
+      "criterion": "product_fit",
+      "reason": "The compact horizontal card layout supports rapid comparison of vans, capacity utilization, shipment IDs, and the refusal state.",
+      "region_or_state": "Three-card dispatch row"
+    },
+    {
+      "brief_clause": "The board must clearly show the default state and the overload/error state.",
+      "capture_id": "B",
+      "criterion": "spatial_rhythm",
+      "reason": "Equal card widths, consistent internal spacing, aligned bars, and even gutters create a steady, efficient rhythm.",
+      "region_or_state": "Three-card row"
+    },
+    {
+      "brief_clause": "Any assignment that would exceed a van's capacity is refused with an overload warning.",
+      "capture_id": "B",
+      "criterion": "state_coherence",
+      "reason": "Priya's coral bar, red border, and bold red warning form a coherent error state while preserving the same card structure as default states.",
+      "region_or_state": "Priya overload card compared with Nadia and Omar"
+    },
+    {
+      "brief_clause": "The board must clearly show the default state and the overload/error state.",
+      "capture_id": "B",
+      "criterion": "typography",
+      "reason": "A consistent sans-serif family, restrained sizing, clear weight hierarchy, and well-spaced labels remain legible across normal and error states.",
+      "region_or_state": "Title and text within all cards"
+    }
+  ],
+  "identity_visible": false,
+  "prior_ballots_visible": false,
+  "injection_detected": false,
+  "judge_discussion": false,
+  "sealed_at": "2026-08-12T20:26:29Z",
+  "record_sha256": "f85c24ed2c5823f3eb5365ebf6d2e27eef00aa8fc8fbca4a2cc9d737135b5f11"
+}

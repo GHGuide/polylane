@@ -1,0 +1,81 @@
+{
+  "schema_version": "taste-judge-claude-receipt/v1",
+  "receipt_version": "polylane.taste.judge-claude.v1",
+  "status": "ok",
+  "classification": "live",
+  "adapter": {
+    "id": "polylane-taste-judge-claude",
+    "fingerprint": "b95e79bd0d1ddc8565f0d20063683ff98c9f166a9f6a93af9684d62cf808cd3d"
+  },
+  "executed_at": "2026-08-12T20:22:30Z",
+  "inputs": {
+    "model": "claude-opus-4-8",
+    "system_prompt_sha256": "cc73f6c03c905286ee7c8462a7b4d9f9e66773ba083f517e7c08f0011bf8c19c",
+    "response_schema_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+    "request_content_sha256": "4911c3d7783c3464d9174bc8009324ee20c1a3999a5e3ad58467f4db3be80b5e",
+    "image_sha256": [
+      "91ea41bde9fa1bef8b9a96014ba11fd2c82c8d2ceb84349b38d6be7dc3121fdf",
+      "12b3bf3f8fabb27ff4b127965765b74ef9d4c60f4a87ea9ec7acb95a4b06a11f"
+    ],
+    "argv_template": "claude/print/json/plan/safe/v2",
+    "request_sha256": "0bdc1236bab9f2b0d789060cb2200ebc9321cc3457cba399e63940b734accf6d"
+  },
+  "invocation": {
+    "cli_bin": "/opt/homebrew/bin/claude",
+    "cli_version": "2.1.228 (Claude Code)",
+    "cli_command_sha256": "b0254deadc52b6289f8fcc81a51da6c0f4f5d0bdfb7ce8a7a71a437f6e4630cf",
+    "cli_argv_redacted": [
+      "/opt/homebrew/bin/claude",
+      "--print",
+      "--model",
+      "claude-opus-4-8",
+      "--output-format",
+      "json",
+      "--permission-mode",
+      "plan",
+      "--allowedTools",
+      "",
+      "--safe-mode",
+      "--no-session-persistence",
+      "--append-system-prompt",
+      "<system:sha256:cc73f6c03c905286ee7c8462a7b4d9f9e66773ba083f517e7c08f0011bf8c19c>",
+      "-p",
+      "<request:sha256:0bdc1236bab9f2b0d789060cb2200ebc9321cc3457cba399e63940b734accf6d>"
+    ],
+    "permission_mode": "plan",
+    "allowed_tools": [],
+    "exit_status": 0,
+    "timed_out": false,
+    "timeout_seconds": 300,
+    "started_at": "2026-08-12T20:22:30Z",
+    "started_epoch": 1786566150,
+    "ended_at": "2026-08-12T20:23:48Z",
+    "ended_epoch": 1786566228,
+    "duration_seconds": 78
+  },
+  "raw": {
+    "stdout_path": "claude-receipt.json.stdout",
+    "stdout_sha256": "b8d42f396027846cec102ec60ddf37e05b0e22b99b0e1fad6749c5aa10832feb",
+    "stdout_bytes": 9793,
+    "stdout_parses_json": true,
+    "stderr_path": "claude-receipt.json.stderr",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0
+  },
+  "environment": {
+    "isolation_mode": "safe-mode",
+    "safe_mode": true,
+    "no_session_persistence": true,
+    "home_overridden": false,
+    "key_names": [
+      "CLAUDE_CODE_ENTRYPOINT",
+      "CLAUDE_BIN",
+      "HOME",
+      "PATH",
+      "POLYLANE_TASTE_JUDGE_LIVE",
+      "POLYLANE_TASTE_JUDGE_TIMEOUT"
+    ]
+  },
+  "note": "raw bytes only; this adapter never parses a preference, winner, or eligibility",
+  "reason_codes": []
+}

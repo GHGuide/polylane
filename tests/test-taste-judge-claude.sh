@@ -24,6 +24,10 @@ build_fixture() {
   cat > "$FAKE" <<'EOF'
 #!/usr/bin/env bash
 case "$1" in --version) echo "1.9.9 (fake-claude)"; exit 0 ;; esac
+# Record the env/argv the adapter actually launches the CLI with, so tests can
+# prove --safe-mode is passed and HOME/config are NOT redirected to a throwaway.
+[ -n "${POLYLANE_FAKE_ENVDUMP:-}" ] && printf 'HOME=%s\nCCD=%s\nXDG=%s\nARGS=%s\n' \
+  "$HOME" "${CLAUDE_CONFIG_DIR:-unset}" "${XDG_CONFIG_HOME:-unset}" "$*" > "$POLYLANE_FAKE_ENVDUMP"
 case "${FAKE_MODE:-success}" in
   success)   printf '{"observations":["grid aligns","contrast ok"],"choice":"A"}\n'; exit 0 ;;
   abstain)   printf '{"observations":["insufficient evidence"],"choice":"abstain"}\n'; exit 0 ;;
@@ -252,5 +256,28 @@ clause hidden-identity         'hidden|do not.*identif|blind'
 clause no-provider-speculation 'not speculate|no speculation|author|provider'
 clause abstain                 'abstain|insufficient evidence'
 clause ignore-injection        'ignore.*(instruction|screenshot text)|untrusted'
+
+# ===========================================================================
+# 15. isolation is via --safe-mode, NOT a fresh HOME/config override.  A fresh
+#     empty config dir made real CLIs report "Not logged in" (keychain auth),
+#     breaking the live smoke; --safe-mode disables CLAUDE.md/skills/plugins/
+#     hooks/MCP/agents/memory while auth still resolves.
+# ===========================================================================
+make_tmpdir; build_fixture
+ENVDUMP="$TEST_TMPDIR/fake-env.txt"
+POLYLANE_FAKE_ENVDUMP="$ENVDUMP" FAKE_MODE=success run_invoke >/dev/null 2>&1 || true
+# safe-mode + no-session-persistence are bound in the receipt's redacted argv
+if jq -e '[.invocation.cli_argv_redacted[]] | index("--safe-mode")' "$OUT" >/dev/null 2>&1; then pass "argv-has-safe-mode"; else fail "argv-has-safe-mode" "adapter did not pass --safe-mode"; fi
+if jq -e '[.invocation.cli_argv_redacted[]] | index("--no-session-persistence")' "$OUT" >/dev/null 2>&1; then pass "argv-has-no-session-persistence"; else fail "argv-has-no-session-persistence" "adapter did not pass --no-session-persistence"; fi
+# the CLI actually received --safe-mode in its argv
+if grep -q -- '--safe-mode' "$ENVDUMP" 2>/dev/null; then pass "cli-received-safe-mode"; else fail "cli-received-safe-mode" "CLI argv lacked --safe-mode"; fi
+# HOME is NOT redirected to a fresh throwaway dir — the CLI sees the caller HOME
+homeseen="$(grep '^HOME=' "$ENVDUMP" | head -1 | cut -d= -f2-)"
+assert_eq "home-not-overridden" "$HOME" "$homeseen"
+# no auth-breaking per-invocation config dir override leaks in
+if grep -qE 'polylane-judge-claude' "$ENVDUMP" 2>/dev/null; then fail "no-config-dir-override" "adapter still redirects config to a throwaway dir"; else pass "no-config-dir-override"; fi
+# receipt records the isolation mode honestly
+assert_eq "receipt-safe-mode" "true" "$(jq -r .environment.safe_mode "$OUT")"
+assert_eq "receipt-home-not-overridden" "false" "$(jq -r .environment.home_overridden "$OUT")"
 
 finish

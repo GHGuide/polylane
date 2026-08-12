@@ -1,0 +1,16 @@
+{
+  "schema_version": "taste-integrator-source-canary/v1",
+  "run": "c40-live-harness-20260812-a3",
+  "adapter": "benchmarks/taste-live/tools/dataverse-acquire.mjs discover",
+  "pid": "doi:10.7910/DVN/9FKSQI",
+  "access_host": "https://dataverse.harvard.edu",
+  "classification": "live-external",
+  "result": {
+    "status": "UNKNOWN",
+    "reason": "discover failed: WAF challenge (status 202)",
+    "waf": true,
+    "pid": "doi:10.7910/DVN/9FKSQI"
+  },
+  "interpretation": "Akamai WAF interstitial (HTTP 202) blocked the real Dataverse API; no bytes cached, no manifest minted. Primary-corpus source bytes are EXTERNAL-EVIDENCE-OPEN. Never substituted with fixture data.",
+  "curl_control_probe": "curl https://dataverse.harvard.edu/api/info/version -> HTTP 202 (independent confirmation)"
+}

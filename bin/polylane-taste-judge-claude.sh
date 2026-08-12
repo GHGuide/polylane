@@ -29,7 +29,7 @@ RECEIPT_SCHEMA="taste-judge-claude-receipt/v1"
 ADAPTER_ID="polylane-taste-judge-claude"
 # Bound argv template id: any change to how the request is composed must bump it,
 # so a receipt request_sha256 can never silently mean two different invocations.
-ARGV_TEMPLATE="claude/print/json/plan/v1"
+ARGV_TEMPLATE="claude/print/json/plan/safe/v2"
 
 # --- primitives -------------------------------------------------------------
 
@@ -171,14 +171,19 @@ $img_refs
 Respond ONLY with JSON conforming to this response schema:
 $schema_text"
 
-  # Isolate config/session state so no user session leaks into the judgement.
-  local cfg
-  cfg="$(mktemp -d "${TMPDIR:-/tmp}/polylane-judge-claude.XXXXXX")" || die_input "cannot create isolated config dir" 4
+  # Isolate customizations WITHOUT breaking auth.  --safe-mode disables CLAUDE.md,
+  # skills, plugins, hooks, MCP servers, custom commands/agents and auto-memory (it
+  # sets CLAUDE_CODE_SAFE_MODE=1), while the keychain/credential path keeps working —
+  # so no user project or session context leaks into the judgement, yet the real CLI
+  # can still authenticate.  --no-session-persistence stops this print run from
+  # writing a resumable session.  We do NOT redirect HOME/CLAUDE_CONFIG_DIR: a fresh
+  # empty config dir made the CLI report "Not logged in" on hosts whose auth lives in
+  # the keychain / real config, which broke the live smoke for no isolation gain.
 
-  # Exact provider-native argv.  Bounded: read-only plan mode, no tools.
+  # Exact provider-native argv.  Bounded: read-only plan mode, no tools, safe-mode.
   local -a argv=(
     "$bin_resolved" --print --model "$model" --output-format json
-    --permission-mode plan --allowedTools ''
+    --permission-mode plan --allowedTools '' --safe-mode --no-session-persistence
     --append-system-prompt "$sys_text"
     -p "$user_prompt"
   )
@@ -186,7 +191,7 @@ $schema_text"
   # bound command carries no prompt bytes and no secrets.
   local -a argv_redacted=(
     "$bin_resolved" --print --model "$model" --output-format json
-    --permission-mode plan --allowedTools ''
+    --permission-mode plan --allowedTools '' --safe-mode --no-session-persistence
     --append-system-prompt "<system:sha256:$sys_sha>"
     -p "<request:sha256:$request_sha>"
   )
@@ -212,13 +217,11 @@ $schema_text"
   local started_at started_epoch ended_at ended_epoch
   started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; started_epoch="$(date -u +%s)"
 
-  # Run the CLI in the isolated environment.  HOME/config redirected; no secret
-  # value is ever read into the receipt.
-  HOME="$cfg" CLAUDE_CONFIG_DIR="$cfg" XDG_CONFIG_HOME="$cfg" \
-    run_cli "$timeout" "$out_dir/$stdout_side" "$out_dir/$stderr_side" "${argv[@]}"
+  # Run the CLI with the caller's real HOME so auth resolves; --safe-mode (in argv)
+  # provides customization isolation.  No secret value is ever read into the receipt.
+  run_cli "$timeout" "$out_dir/$stdout_side" "$out_dir/$stderr_side" "${argv[@]}"
 
   ended_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; ended_epoch="$(date -u +%s)"
-  rm -rf "$cfg" 2>/dev/null || true
 
   local stdout_sha stderr_sha stdout_bytes stderr_bytes stdout_json
   stdout_sha="$(sha_file "$out_dir/$stdout_side")"
@@ -290,7 +293,7 @@ $schema_text"
         stdout_parses_json:$soutjson,
         stderr_path:$serrp, stderr_sha256:$serrsha, stderr_bytes:$serrb
       },
-      environment:{ isolated_config_dir:"isolated-per-invocation", key_names:$keynames },
+      environment:{ isolation_mode:"safe-mode", safe_mode:true, no_session_persistence:true, home_overridden:false, key_names:$keynames },
       note:"raw bytes only; this adapter never parses a preference, winner, or eligibility",
       reason_codes:[]
     }' > "$tmp" || { rm -f "$tmp"; die_input "receipt render failed" 4; }
