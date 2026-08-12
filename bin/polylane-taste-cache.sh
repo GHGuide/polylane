@@ -22,9 +22,10 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 usage:
-  polylane-taste-cache.sh inventory   CACHE_DIR PLAN.json REPORT.json
-  polylane-taste-cache.sh plan-resume CACHE_DIR PLAN.json WORK.json
-  polylane-taste-cache.sh quarantine  CACHE_DIR REPORT.json
+  polylane-taste-cache.sh inventory      CACHE_DIR PLAN.json REPORT.json
+  polylane-taste-cache.sh plan-resume    CACHE_DIR PLAN.json WORK.json
+  polylane-taste-cache.sh verify-content CACHE_DIR PLAN.json REPORT.json
+  polylane-taste-cache.sh quarantine     CACHE_DIR REPORT.json
 USAGE
 }
 
@@ -163,6 +164,83 @@ cmd_plan_resume() {
 # Quarantine only what an explicit integrity report names as corrupt, and only
 # after re-verifying that the object is still corrupt right now. Objects are
 # moved — never deleted — into $CACHE/quarantine/<sha>.
+# --- image content inspection -------------------------------------------
+# A digest-valid object that is not plausibly an image (a cached challenge
+# page, truncated bytes) must never enter the corpus. Checks run on top of —
+# never instead of — the checksum classification.
+# ponytail: magic bytes + minimum size only; full raster decode stays in the
+# pixel tooling, not the cache layer.
+MIN_IMAGE_BYTES=1024
+
+image_shas() {
+  jq -e . "$1" >/dev/null 2>&1 || fail "plan is not valid JSON: $1"
+  jq -r '
+    def hash: if type == "string" and test("^[0-9a-f]{64}$") then .
+              else error("bad-object-id") end;
+    if type == "object" and .plan_version == "taste-source-plan/v1"
+       and (.images | type == "array") and (.images | length > 0)
+    then [ .images[].sha256 | hash ] | unique | .[]
+    else error("bad-plan-shape") end
+  ' "$1" 2>/dev/null || fail "plan must be taste-source-plan/v1 with 64-hex image ids"
+}
+
+image_magic_ok() { # path
+  magic=$(head -c 12 "$1" | od -An -tx1 | tr -d ' \n')
+  case "$magic" in
+    89504e470d0a1a0a*)                       return 0 ;; # PNG
+    ffd8ff*)                                 return 0 ;; # JPEG
+    474946383761*|474946383961*)             return 0 ;; # GIF87a/GIF89a
+    424d*)                                   return 0 ;; # BMP
+    52494646????????57454250*)               return 0 ;; # RIFF....WEBP
+  esac
+  return 1
+}
+
+classify_image_content() { # cache sha
+  base=$(classify_object "$1" "$2")
+  case "$base" in
+    "ok	"*)
+      path=$(obj_path "$1" "$2")
+      size=$(wc -c <"$path" | tr -d ' ')
+      if [ "$size" -lt "$MIN_IMAGE_BYTES" ]; then
+        printf 'corrupt\ttoo-small-for-image'
+      elif image_magic_ok "$path"; then
+        printf 'ok\timage-verified'
+      else
+        printf 'corrupt\tnot-an-image'
+      fi
+      ;;
+    *) printf '%s' "$base" ;;
+  esac
+}
+
+cmd_verify_content() {
+  cache=$1; plan=$2; report_out=$3
+  check_cache_root "$cache"
+  scan="$report_out.scan.$$"
+  # shellcheck disable=SC2064
+  trap "rm -f '$scan'" EXIT HUP INT TERM
+  : >"$scan"
+  image_shas "$plan" |
+    while IFS= read -r sha; do
+      line=$(classify_image_content "$cache" "$sha")
+      printf '%s\t%s\n' "$sha" "$line" >>"$scan"
+    done
+  [ -s "$scan" ] || fail "no declared images extracted from plan: $plan"
+  emit_json "$report_out" '
+    [inputs | split("\t") | { sha256: .[0], status: .[1], reason: .[2] }]
+    | sort_by(.sha256)
+    | { schema_version: "taste-cache-content/v1",
+        counts: {
+          declared: length,
+          ok:  ([.[] | select(.status == "ok")] | length),
+          bad: ([.[] | select(.status != "ok")] | length)
+        },
+        objects: . }' "$scan"
+  bad=$(jq -r '.counts.bad' "$report_out")
+  [ "$bad" -eq 0 ] || { echo "TASTE-CACHE-CONTENT: $bad of $(jq -r .counts.declared "$report_out") declared images fail content inspection (see $report_out)" >&2; exit 4; }
+}
+
 cmd_quarantine() {
   cache=$1; report=$2
   check_cache_root "$cache"
@@ -192,8 +270,9 @@ main() {
   [ "$#" -ge 1 ] || { usage >&2; exit 2; }
   sub=$1; shift
   case "$sub" in
-    inventory)   [ "$#" -eq 3 ] || { usage >&2; exit 2; }; cmd_inventory "$@" ;;
-    plan-resume) [ "$#" -eq 3 ] || { usage >&2; exit 2; }; cmd_plan_resume "$@" ;;
+    inventory)      [ "$#" -eq 3 ] || { usage >&2; exit 2; }; cmd_inventory "$@" ;;
+    plan-resume)    [ "$#" -eq 3 ] || { usage >&2; exit 2; }; cmd_plan_resume "$@" ;;
+    verify-content) [ "$#" -eq 3 ] || { usage >&2; exit 2; }; cmd_verify_content "$@" ;;
     quarantine)  [ "$#" -eq 2 ] || { usage >&2; exit 2; }; cmd_quarantine "$@" ;;
     *) usage >&2; exit 2 ;;
   esac

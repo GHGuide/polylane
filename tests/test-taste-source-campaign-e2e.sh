@@ -358,25 +358,176 @@ ok
 # ===========================================================================
 # Stage 6 — seams: rehearsal stages owned by absent Cycle-41 siblings
 # ===========================================================================
-seam corpus-select-unbalanced-quota \
-  "the frozen production split is 60 calibration / 24 holdout per domain, but bin/polylane-taste-corpus.sh validate requires calibration == holdout per domain and rejects it; the corpus-select lane must reconcile the unbalanced quota with (or replace) that validator before the real 180+72 corpus can pass" \
-  "$ROOT/bin/polylane-taste-select*.sh" "$ROOT/bin/polylane-taste-corpus-select*.sh"
+# Wired seam (corpus-select-unbalanced-quota): the merged production selector
+# implements the frozen unbalanced 60/24-per-domain split with its own
+# fail-closed verify subcommand. The balanced cycle-40 rehearsal validator
+# used in stage 2 stays untouched; the production 180+72 corpus flows through
+# this selector instead.
+CSEL="$ROOT/bin/polylane-taste-corpus-select.sh"
+[ -x "$CSEL" ] || fail "corpus-select-unbalanced-quota: merged selector missing"
+CS="$TMP/corpus-select"; mkdir -p "$CS"
+{
+  printf '{"format_version":1,"source_revision":"harvard-dvn-e2e","images":['
+  csfirst=1
+  for csdom in e-commerce universities commercial-banks; do
+    csi=0
+    while [ "$csi" -lt 90 ]; do
+      [ "$csfirst" -eq 1 ] || printf ','
+      csfirst=0
+      printf '{"id":"%s-img-%03d","domain":"%s","sha256":"%s"}' \
+        "$csdom" "$csi" "$csdom" "$(h "cs-$csdom-$csi")"
+      csi=$((csi + 1))
+    done
+  done
+  printf ']}'
+} >"$CS/source.json"
+{
+  printf '{"format_version":1,"scale":{"min":1,"max":7},"ratings":['
+  csfirst=1
+  for csdom in e-commerce universities commercial-banks; do
+    csi=0
+    while [ "$csi" -lt 90 ]; do
+      [ "$csfirst" -eq 1 ] || printf ','
+      csfirst=0
+      printf '{"id":"%s-img-%03d","mean":4.1,"sd":0.6,"support":12}' "$csdom" "$csi"
+      csi=$((csi + 1))
+    done
+  done
+  printf ']}'
+} >"$CS/ratings.json"
+CS_SEED="c41-frozen-seed-20260812"
+bash "$CSEL" select "$CS/source.json" "$CS/ratings.json" "$CS_SEED" "$CS/run1" >/dev/null 2>&1 \
+  || fail "corpus-select: production selection failed"
+ok
+CS_MAN="$CS/run1/corpus-select-manifest.json"
+jq -e '
+  (.records | length == 252)
+  and ([.records[] | select(.split == "calibration")] | length == 180)
+  and ([.records[] | select(.split == "holdout")] | length == 72)' "$CS_MAN" >/dev/null \
+  || fail "corpus-select: 180+72 totals"
+for csdom in e-commerce universities commercial-banks; do
+  jq -e --arg d "$csdom" \
+    '([.records[] | select(.domain == $d and .split == "calibration")] | length == 60)
+     and ([.records[] | select(.domain == $d and .split == "holdout")] | length == 24)' \
+    "$CS_MAN" >/dev/null || fail "corpus-select: $csdom must carry the unbalanced 60/24 quota"
+done
+ok
+bash "$CSEL" verify "$CS/source.json" "$CS/ratings.json" "$CS_SEED" "$CS/run1" >/dev/null 2>&1 \
+  || fail "corpus-select: verify must accept the unbalanced production split"
+ok
+bash "$CSEL" select "$CS/source.json" "$CS/ratings.json" "$CS_SEED" "$CS/run2" >/dev/null 2>&1 \
+  || fail "corpus-select: deterministic rebuild failed"
+cmp -s "$CS_MAN" "$CS/run2/corpus-select-manifest.json" \
+  || fail "corpus-select: same-seed manifests must be byte-identical"
+ok
 
-seam dataverse-transport-rehearsal \
-  "the rehearsal starts from a populated cache; the CDP/ephemeral-session transport (readiness poll, redirected data-file download, no personal profile) has no local interface to rehearse" \
-  "$ROOT/bin/polylane-taste-transport*.sh" "$ROOT/benchmarks/taste-live/tools/dataverse-transport*.mjs"
+# Wired seam (dataverse-transport-rehearsal): the merged CDP/ephemeral-session
+# transport adapter rehearses its pure transport contract hermetically; the
+# behavioural matrix runs in tests/test-taste-dataverse-transport.sh.
+TRANSPORT_TOOL="$ROOT/benchmarks/taste-live/tools/dataverse-acquire.mjs"
+[ -f "$TRANSPORT_TOOL" ] || fail "dataverse-transport-rehearsal: merged adapter missing"
+if command -v node >/dev/null 2>&1; then
+  TSELF=$(node "$TRANSPORT_TOOL" --selftest) || fail "transport selftest exited non-zero"
+  case "$TSELF" in SELFTEST-OK*) ok ;; *) fail "transport selftest: $TSELF" ;; esac
+else
+  seam dataverse-transport-rehearsal \
+    "node unavailable on this host: the transport selftest cannot run here" \
+    "$TRANSPORT_TOOL"
+fi
 
-seam ratings-normalize-schema \
-  "fixtures use the cycle-40 normalized aggregate/raw shape; the ratings-normalize lane must parse the actual raw/aggregate source schemas without lossy guessing before this rehearsal binds real labels" \
-  "$ROOT/bin/polylane-taste-ratings*.sh"
+# Wired seam (ratings-normalize-schema): the merged normalizer parses the
+# released Miniukovich–Figl tab-separated raw/aggregate schemas strictly and
+# rejects schema drift instead of guessing.
+RN_TOOL="$ROOT/bin/polylane-taste-ratings.sh"
+[ -x "$RN_TOOL" ] || fail "ratings-normalize-schema: merged normalizer missing"
+RN="$TMP/ratings"; mkdir -p "$RN"
+{
+  printf 'stimulusId\tisDuplicate\trating\tisTraining\tdimension\tsessionId\n'
+  rsess=1
+  while [ "$rsess" -le 5 ]; do
+    for rdim in TYP AVG EXMPL AE US TRU; do
+      printf 's1\tFALSE\t1\tFALSE\t%s\tsess%s\n' "$rdim" "$rsess"
+      printf 's2\tFALSE\t-1\tFALSE\t%s\tsess%s\n' "$rdim" "$rsess"
+    done
+    rsess=$((rsess + 1))
+  done
+} >"$RN/raw.txt"
+RZ=0.957427
+{
+  printf 'stimulusId\tTYP\tAVG\tEXMPL\tAE\tUS\tTRU\n'
+  printf 's1\t%s\t%s\t%s\t%s\t%s\t%s\n' $RZ $RZ $RZ $RZ $RZ $RZ
+  printf 's2\t-%s\t-%s\t-%s\t-%s\t-%s\t-%s\n' $RZ $RZ $RZ $RZ $RZ $RZ
+} >"$RN/agg.txt"
+printf 'sess1\nsess2\nsess3\nsess4\nsess5\n' >"$RN/sessions.txt"
+bash "$RN_TOOL" normalize --raw "$RN/raw.txt" --agg "$RN/agg.txt" \
+  --domain e-commerce --source-id miniukovich-9fksqi --out "$RN/out.json" \
+  --compliant-sessions "$RN/sessions.txt" >/dev/null 2>&1 \
+  || fail "ratings-normalize: released schema must parse"
+jq -e '.schema_version and .scale == {min:-3, max:3}
+       and (.records | length == 2)
+       and (.dimensions == ["AE","AVG","EXMPL","TRU","TYP","US"])' "$RN/out.json" >/dev/null \
+  || fail "ratings-normalize: native scale and dimensions must survive normalization"
+ok
+sed 's/dimension/dimensionX/' "$RN/raw.txt" >"$RN/raw-drift.txt"
+if bash "$RN_TOOL" normalize --raw "$RN/raw-drift.txt" --agg "$RN/agg.txt" \
+  --domain e-commerce --source-id miniukovich-9fksqi --out "$RN/out2.json" >/dev/null 2>&1; then
+  fail "ratings-normalize: schema drift must be rejected, never guessed"
+fi
+ok
 
-seam calibration-audit-recompute \
-  "the independent recompute of correctness, Wilson, side-bias, mirror contradictions, and configuration identity over the campaign ledger has no local interface; owned by the calibration-audit lane" \
-  "$ROOT/bin/polylane-taste-calibration-audit*.sh" "$ROOT/bin/polylane-taste-audit*.sh"
+# Wired seam (calibration-audit-recompute): the independent auditor recomputes
+# correctness, Wilson, side bias, mirror contradictions, and configuration
+# identity over THIS completed campaign — and still refuses a single-config
+# panel (the five-configuration floor is a panel property, not per-config).
+AUD_TOOL="$ROOT/bin/polylane-taste-calibration-audit.sh"
+[ -x "$AUD_TOOL" ] || fail "calibration-audit-recompute: merged auditor missing"
+jq '{schema_version:"taste-calibration-sessions/v1",
+     judge_id:.judge.id,
+     sessions:[.units[] as $u |
+       {unit_id:$u.unit_id, role:"primary", session_id:("sess-\($u.unit_id)-p"),
+        response_sha256:$u.primary.raw_response.sha256},
+       {unit_id:$u.unit_id, role:"mirror", session_id:("sess-\($u.unit_id)-m"),
+        response_sha256:$u.mirror.raw_response.sha256}]}' "$INPUT" >"$TMP/campaign/sessions.json"
+jq -n --arg isha "$(hf "$INPUT")" --arg rsha "$(hf "$OUT")" \
+      --arg ssha "$(hf "$TMP/campaign/sessions.json")" '
+  {schema_version:"taste-calibration-audit/v1", run:"c41-e2e-rehearsal",
+   configurations:[{config_id:"cfg-e2e-001",
+     calibration_input:{path:"input.json", sha256:$isha},
+     eligibility_receipt:{path:"out.json", sha256:$rsha},
+     sessions:{path:"campaign/sessions.json", sha256:$ssha}}]}' >"$TMP/audit-input.json"
+if "$AUD_TOOL" "$TMP/audit-input.json" "$TMP/audit-out.json" "$TMP" >/dev/null 2>&1; then
+  fail "calibration-audit: a single configuration can never satisfy the panel floor"
+fi
+ok
+jq -e '
+  .configurations[0].eligible == true
+  and .configurations[0].units == 24
+  and .configurations[0].correct == 20
+  and .configurations[0].mirror_contradictions == 0
+  and .configurations[0].classification == "production"
+  and .panel.eligible_production_configurations == 1' "$TMP/audit-out.json" >/dev/null \
+  || fail "calibration-audit: recompute must confirm this campaign: $(jq -c '.configurations[0] // {}' "$TMP/audit-out.json")"
+AUD_WILSON=$(jq -r '.configurations[0].wilson_lcb_95' "$TMP/audit-out.json")
+REC_WILSON=$(jq -r '.wilson_lower_bound' "$OUT")
+awk -v a="$AUD_WILSON" -v b="$REC_WILSON" 'BEGIN{d=a-b; if (d<0) d=-d; exit !(d < 0.0001)}' \
+  || fail "calibration-audit: recomputed Wilson $AUD_WILSON must match receipt $REC_WILSON"
+ok
 
-seam panel-freeze-claim-ceiling \
-  "the frozen machine-panel configuration and claim ceiling (no fabricated model versions or human provenance) has no local interface; owned by the panel-freeze lane" \
-  "$ROOT/bin/polylane-taste-panel*.sh"
+# Wired seam (panel-freeze-claim-ceiling): the frozen machine-panel
+# configuration exists, binds at least five unique slots, carries the
+# machine-only claim ceiling, and contains no eligibility or human-provenance
+# key anywhere (the tamper matrix runs in tests/test-taste-panel-freeze.sh).
+PANEL_FILE="$ROOT/benchmarks/taste-live/calibration/panel.v1.json"
+[ -f "$PANEL_FILE" ] || fail "panel-freeze-claim-ceiling: frozen panel missing"
+jq -e '
+  .schema_version == "polylane.taste.panel/v1"
+  and .claim.ceiling == "HUMAN_CALIBRATED_MACHINE"
+  and (.slots | type == "array" and length >= 5)
+  and ((.slots | map(.slot_id) | unique | length) == (.slots | length))
+  and ([paths[] | select(type == "string") | ascii_downcase]
+       | (index("eligible") == null) and (index("human_certified") == null))' \
+  "$PANEL_FILE" >/dev/null || fail "panel-freeze: frozen claim ceiling invariants"
+ok
 
 if [ "${POLYLANE_ADVERSARY_REQUIRE_SEAMS_CLOSED:-0}" = 1 ] && [ "$SEAMS" -gt 0 ]; then
   echo "FAIL seams must be closed in integrator mode (open=$SEAMS)" >&2

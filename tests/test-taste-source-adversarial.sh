@@ -447,17 +447,36 @@ done
 assert_cal_rejected "$D" MIRROR_INSTABILITY session-reuse-mirror
 
 # Cross-unit session reuse probe: one response transcript recycled for a
-# different unit. If the validator (or a merged campaign ledger) rejects it the
-# assertion passes; if it is still accepted the gap is a recorded seam owned by
-# the calibration-campaign lane (unique per-unit sessions).
+# different unit. The v2 validator scopes per-config checks and accepts this;
+# the merged campaign ledger layer (wired seam: session-uniqueness) must
+# refuse a raw-response digest reused across sealed ballots.
 D=$(mkcase sessx); build_cal "$D" 18
 P0=$(jq -c '.units[0].primary.raw_response' "$D/input.json")
 jq --argjson r "$P0" '.units[1].primary.raw_response = $r' "$D/input.json" >"$D/input.json.n"
 mv "$D/input.json.n" "$D/input.json"
 if run_cal "$D" >/dev/null 2>&1; then
-  seam session-uniqueness \
-    "cross-unit raw-response reuse (same transcript sha in two units) is accepted by the v2 validator; the calibration-campaign lane must enforce unique sessions per work unit (reject duplicate raw_response digests across ballots)" \
-    "$ROOT/bin/polylane-taste-campaign*.sh" "$ROOT/bin/polylane-taste-calibration-campaign*.sh"
+  CAMPAIGN="$ROOT/bin/polylane-taste-calibration-campaign.sh"
+  [ -x "$CAMPAIGN" ] || fail "session-uniqueness: merged campaign tool missing"
+  # mk_chain_ledger DIR RSHA... — a correctly hash-chained campaign ledger
+  # whose only attacker-controlled degree of freedom is the response digest.
+  mk_chain_ledger() {
+    ldir=$1; shift
+    mkdir -p "$ldir"; : >"$ldir/ledger.jsonl"
+    prevsha=$(rep64 0); ln=0
+    for r in "$@"; do
+      ln=$((ln + 1))
+      lbody=$(jq -cnS --arg prev "$prevsha" --arg r "$r" --arg wu "wu-$ln" \
+        '{prev_sha256:$prev, response_sha256:$r, work_unit_id:$wu}')
+      lsha=$(h "$lbody")
+      printf '%s' "$lbody" | jq -c --arg e "$lsha" '. + {entry_sha256:$e}' >>"$ldir/ledger.jsonl"
+      prevsha=$lsha
+    done
+  }
+  DUPSHA=$(h "shared-transcript-bytes")
+  mk_chain_ledger "$TMP/sess-dup" "$DUPSHA" "$DUPSHA"
+  assert_fail "$CAMPAIGN" verify-ledger "$TMP/sess-dup"
+  mk_chain_ledger "$TMP/sess-uniq" "$(h transcript-one)" "$(h transcript-two)"
+  assert_ok "$CAMPAIGN" verify-ledger "$TMP/sess-uniq"
 else
   ok
 fi
@@ -533,32 +552,150 @@ WAF_IMG_SHA=$(mk_obj "$WAF_HTML")
 jq --arg old "$FIRST_IMG" --arg new "$WAF_IMG_SHA" \
    '.images |= map(if .sha256==$old then .sha256=$new else . end)' "$PLAN" >"$TMP/p_wafimg.json"
 if "$SRC" build "$CACHE" "$TMP/p_wafimg.json" "$TMP/o_wafimg.json" >/dev/null 2>&1; then
-  seam image-content-verification \
-    "challenge HTML pinned as an image object builds successfully today; the cache-integrity lane must add content inspection (image magic bytes / minimum plausible size) on top of digest checks" \
-    "$ROOT/bin/polylane-taste-cache*.sh"
+  # Wired seam (image-content-verification): the address check accepts any
+  # digest-valid bytes by construction; the merged cache-integrity content
+  # layer must reject non-image bytes pinned as an image and accept a real
+  # image-magic object of plausible size.
+  CACHE_TOOL="$ROOT/bin/polylane-taste-cache.sh"
+  [ -x "$CACHE_TOOL" ] || fail "image-content-verification: merged cache tool missing"
+  jq --arg s "$WAF_IMG_SHA" '.images = [{stimulus_id:"waf-img", source_id:"src-adv", sha256:$s}]' \
+    "$TMP/p_wafimg.json" >"$TMP/p_wafonly.json"
+  assert_fail "$CACHE_TOOL" verify-content "$CACHE" "$TMP/p_wafonly.json" "$TMP/o_wafcontent.json"
+  jq -e --arg s "$WAF_IMG_SHA" \
+    '.objects[] | select(.sha256 == $s) | .status == "corrupt"' \
+    "$TMP/o_wafcontent.json" >/dev/null || fail "content report must mark the HTML-as-image object corrupt"
+  ok
+  { printf '\211PNG\r\n\032\n'; dd if=/dev/zero bs=512 count=4 2>/dev/null; } >"$TMP/png.blob"
+  PNG_IMG_SHA=$(hf "$TMP/png.blob")
+  pngdir="$CACHE/objects/${PNG_IMG_SHA:0:2}"; mkdir -p "$pngdir"; cp "$TMP/png.blob" "$pngdir/$PNG_IMG_SHA"
+  jq --arg s "$PNG_IMG_SHA" '.images = [{stimulus_id:"png-ok", source_id:"src-adv", sha256:$s}]' \
+    "$TMP/p_wafimg.json" >"$TMP/p_pngonly.json"
+  assert_ok "$CACHE_TOOL" verify-content "$CACHE" "$TMP/p_pngonly.json" "$TMP/o_pngcontent.json"
 else
   ok  # a merged cache-integrity layer already rejects it
 fi
 
-seam dataone-metadata-crosscheck \
-  "pinned metadata bytes are digest-verified but never parsed: a wrong-DOI, wrong-version, wrong-licence, or challenge-HTML metadata object that matches its own pin is accepted; the source-freeze/dataone-metadata lanes must cross-check DOI, domain, licence, version, and file identity exactly and emit SOURCE-MISMATCH on disagreement" \
-  "$ROOT/bin/polylane-taste-freeze*.sh" "$ROOT/bin/polylane-taste-source-freeze*.sh" "$ROOT/bin/polylane-taste-dataone*.sh"
+# Wired seams (dataone-metadata-crosscheck, distribution-drift): the merged
+# source-freeze compiler parses BOTH receipt sets — pinned bytes are no longer
+# trusted unparsed — and fails closed on any DOI/licence/version/file-identity
+# or distribution-inventory disagreement between Harvard and DataONE.
+FREEZE_TOOL="$ROOT/bin/polylane-taste-source-freeze.sh"
+[ -x "$FREEZE_TOOL" ] || fail "dataone-metadata-crosscheck: merged source-freeze tool missing"
+FZ_DOI_ECOM="doi:10.7910/DVN/9FKSQI"
+FZ_DOI_UNI="doi:10.7910/DVN/XOI0HI"
+FZ_DOI_BANK="doi:10.7910/DVN/Z7KLIH"
+FZ_PID_ECOM="sha256:6ff2435a723445a99d8ef725da000115fc6d5716babaa776ea1604e30bb870e9"
+FZ_PID_UNI="sha256:71ee5e0dbf9e0b47bb95d6291ab337e02322907f20a996d028376e3065cf20f5"
+FZ_PID_BANK="sha256:6fe3377fec3aa24ce8c3b697791440c26400146381b7e5fc0ae7834daf0b78df"
+fz_files() { # DOMAIN — identical identity view on both sides
+  cat <<JSON
+[
+  {"file_id":"$1-raw-1","name":"$1-raw.csv","role":"raw","sha256":"$(h "$1-raw")","size":1001},
+  {"file_id":"$1-agg-1","name":"$1-aggregate.csv","role":"aggregate","sha256":"$(h "$1-agg")","size":1002},
+  {"file_id":"$1-img-1","name":"$1-img-1.png","role":"image","sha256":"$(h "$1-img-1")","size":2001},
+  {"file_id":"$1-img-2","name":"$1-img-2.png","role":"image","sha256":"$(h "$1-img-2")","size":2002}
+]
+JSON
+}
+fz_harvard() { # DIR DOMAIN DOI VERSION
+  jq -n --arg doi "$3" --arg domain "$2" --arg version "$4" \
+    --arg msha "$(h "harvard-meta-$2")" --arg lsha "$(h "license-$2")" \
+    --argjson files "$(fz_files "$2")" '
+    {receipt_version:"taste-harvard-receipt/v1", doi:$doi, domain:$domain,
+     dataset_version:$version,
+     endpoint:"https://dataverse.harvard.edu/api/datasets/:persistentId/?persistentId=\($doi)",
+     metadata_sha256:$msha,
+     license:{spdx:"CC0-1.0", url:"https://creativecommons.org/publicdomain/zero/1.0/", sha256:$lsha},
+     files:$files}' >"$1/$2.json"
+}
+fz_dataone() { # DIR DOMAIN DOI PID VERSION
+  jq -n --arg doi "$3" --arg domain "$2" --arg pid "$4" --arg version "$5" \
+    --argjson files "$(fz_files "$2")" '
+    {receipt_version:"taste-dataone-receipt/v1", pid:$pid, doi:$doi, domain:$domain,
+     dataset_version:$version, member_node:"urn:node:mnUCSB1",
+     license:{spdx:"CC0-1.0", url:"https://creativecommons.org/publicdomain/zero/1.0/"},
+     distributions:[$files[] | {file_id, name, sha256, size}]}' >"$1/$2.json"
+}
+FZ="$TMP/freeze"; mkdir -p "$FZ/harvard" "$FZ/dataone"
+fz_harvard "$FZ/harvard" e-commerce "$FZ_DOI_ECOM" "4.0"
+fz_harvard "$FZ/harvard" universities "$FZ_DOI_UNI" "3.0"
+fz_harvard "$FZ/harvard" commercial-banks "$FZ_DOI_BANK" "2.1"
+fz_dataone "$FZ/dataone" e-commerce "$FZ_DOI_ECOM" "$FZ_PID_ECOM" "4"
+fz_dataone "$FZ/dataone" universities "$FZ_DOI_UNI" "$FZ_PID_UNI" "3"
+fz_dataone "$FZ/dataone" commercial-banks "$FZ_DOI_BANK" "$FZ_PID_BANK" "2.1"
+assert_ok "$FREEZE_TOOL" compile "$FZ/harvard" "$FZ/dataone" "$TMP/freeze-plan.json"
+# fz_mutcase NAME SIDE DOMAIN JQ_PROGRAM — one disagreeing receipt is terminal.
+fz_mutcase() {
+  fzb="$TMP/freeze-mut-$1"
+  rm -rf "$fzb"; mkdir -p "$fzb"
+  cp -R "$FZ/harvard" "$fzb/harvard"; cp -R "$FZ/dataone" "$fzb/dataone"
+  jq "$4" "$fzb/$2/$3.json" >"$fzb/$2/$3.json.n" && mv "$fzb/$2/$3.json.n" "$fzb/$2/$3.json"
+  assert_fail "$FREEZE_TOOL" compile "$fzb/harvard" "$fzb/dataone" "$fzb/plan.json"
+}
+fz_mutcase doi        dataone e-commerce '.doi = "doi:10.7910/DVN/WRONG1"'
+fz_mutcase licence    dataone e-commerce '.license.spdx = "CC-BY-4.0"'
+fz_mutcase version    harvard e-commerce '.dataset_version = "9.9"'
+fz_mutcase dist-size  dataone e-commerce '.distributions[2].size = 999999'
+fz_mutcase dist-miss  dataone e-commerce '.distributions |= .[0:3]'
+fz_mutcase dist-extra dataone e-commerce '.distributions += [{"file_id":"ghost-1","name":"ghost.png","sha256":"4444444444444444444444444444444444444444444444444444444444444444","size":1}]'
+# challenge HTML pinned as a receipt document is parsed, not trusted
+fzb="$TMP/freeze-mut-html"
+rm -rf "$fzb"; mkdir -p "$fzb"
+cp -R "$FZ/harvard" "$fzb/harvard"; cp -R "$FZ/dataone" "$fzb/dataone"
+printf '%s' "$WAF_HTML" >"$fzb/dataone/e-commerce.json"
+assert_fail "$FREEZE_TOOL" compile "$fzb/harvard" "$fzb/dataone" "$fzb/plan.json"
 
-seam distribution-drift \
-  "no local interface verifies the declared distribution inventory (count/size/checksum per DataONE record) against fetched files; the dataone-metadata lane owns drift detection between declared distributions and acquired bytes" \
-  "$ROOT/bin/polylane-taste-dataone*.sh"
+# Wired seam (download-resume-ledger): the merged resumable campaign tool
+# proves bounded retries and atomic .part promotion hermetically in its
+# selftest; the full interruption matrix runs in
+# tests/test-taste-download-campaign.sh in the same frozen suite.
+DL_TOOL="$ROOT/benchmarks/taste-live/tools/taste-download-campaign.mjs"
+[ -f "$DL_TOOL" ] || fail "download-resume-ledger: merged download campaign tool missing"
+if command -v node >/dev/null 2>&1; then
+  assert_ok node "$DL_TOOL" --selftest
+else
+  seam download-resume-ledger \
+    "node unavailable on this host: the resumable download selftest cannot run here" \
+    "$DL_TOOL"
+fi
 
-seam download-resume-ledger \
-  "atomic .part publication is honoured by the cache reader (attack A4) but no resumable download ledger exists locally; the download-campaign lane must prove bounded retries and atomic promotion under interruption" \
-  "$ROOT/bin/polylane-taste-download*.sh"
+# Wired seam (benchmark-preflight-gate): the merged deterministic gate exists
+# and fails closed with a NOT-READY receipt and no closure hash on an invalid
+# configuration; the readiness matrix runs in
+# tests/test-taste-benchmark-preflight.sh in the same frozen suite.
+PF_TOOL="$ROOT/bin/polylane-taste-benchmark-preflight.sh"
+[ -x "$PF_TOOL" ] || fail "benchmark-preflight-gate: merged preflight tool missing"
+printf 'not json' >"$TMP/pf-bad-config.json"
+assert_fail "$PF_TOOL" run "$TMP/pf-bad-config.json" "$TMP/pf-receipt.json"
+jq -e '.status == "NOT-READY" and .closure_sha256 == null' "$TMP/pf-receipt.json" >/dev/null \
+  || fail "preflight must emit a fail-closed NOT-READY receipt"
+ok
 
-seam benchmark-preflight-gate \
-  "no single deterministic gate proves source, split, pairs, panel, cache, providers, and disk readiness before the generation wave; owned by the benchmark-preflight lane" \
-  "$ROOT/bin/polylane-taste-preflight*.sh" "$ROOT/bin/polylane-taste-benchmark-preflight*.sh"
-
-seam pair-manifest-freeze \
-  "unambiguous mirrored pair construction with bootstrap-interval rule and a frozen pair manifest has no local interface; owned by the pair-builder lane" \
-  "$ROOT/bin/polylane-taste-pair*.sh"
+# Wired seam (pair-manifest-freeze): the merged pair builder constructs the
+# frozen mirrored pair set deterministically (sealed sides/answers, verify
+# subcommand, byte-identical rebuild from the same seed).
+PAIRS_TOOL="$ROOT/bin/polylane-taste-pairs.sh"
+[ -x "$PAIRS_TOOL" ] || fail "pair-manifest-freeze: merged pair builder missing"
+PJ="$TMP/pair-items.jsonl"; : >"$PJ"
+for pd in dom-shop dom-univ dom-bank; do
+  pi=1
+  while [ "$pi" -le 8 ]; do
+    jq -nc --arg id "img-$pd-h$pi" --arg d "$pd" --arg a "$(h "asset-h-$pd-$pi")" \
+      '{id:$id,domain:$d,asset_sha256:$a,ratings:[5,4,5,4,5,4,5,5]}' >>"$PJ"
+    jq -nc --arg id "img-$pd-l$pi" --arg d "$pd" --arg a "$(h "asset-l-$pd-$pi")" \
+      '{id:$id,domain:$d,asset_sha256:$a,ratings:[2,1,2,1,2,2,1,2]}' >>"$PJ"
+    pi=$((pi + 1))
+  done
+done
+jq -s --arg receipt "$(rep64 1)" \
+  '{schema_version:"taste-pair-input/v1", run_id:"c41-adv", corpus_receipt_sha256:$receipt,
+    partition:"held_out", scale:{min:1,max:7}, items:.}' "$PJ" >"$TMP/pair-input.json"
+assert_ok env TASTE_NOW=2026-08-12T00:00:00Z bash "$PAIRS_TOOL" build "$TMP/pair-input.json" seed-adv "$TMP/pairs-out-1"
+assert_ok env TASTE_NOW=2026-08-12T00:00:00Z bash "$PAIRS_TOOL" verify "$TMP/pairs-out-1"
+assert_ok env TASTE_NOW=2026-08-12T00:00:00Z bash "$PAIRS_TOOL" build "$TMP/pair-input.json" seed-adv "$TMP/pairs-out-2"
+cmp -s "$TMP/pairs-out-1/pair-manifest.json" "$TMP/pairs-out-2/pair-manifest.json" \
+  || fail "pair manifest must be byte-identical across same-seed rebuilds"
+ok
 
 if [ "${POLYLANE_ADVERSARY_REQUIRE_SEAMS_CLOSED:-0}" = 1 ] && [ "$SEAMS" -gt 0 ]; then
   echo "FAIL seams must be closed in integrator mode (open=$SEAMS)" >&2
