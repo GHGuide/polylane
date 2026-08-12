@@ -15,6 +15,14 @@ git -C "$ROOT" commit -qm source
 REVISION=$(git -C "$ROOT" rev-parse HEAD)
 SOURCE_INPUT_SHA=$(printf '%s' "$REVISION" | shasum -a 256 | awk '{print $1}')
 
+# Fixed test clock: pin NOW an hour past the commit so the freshness window
+# ([source_epoch, now_epoch+5]) always brackets fixture mtimes regardless of
+# how slowly the negative cases run.  Before this, a frozen wall-clock NOW
+# expired against later-written PNGs and STALE_CAPTURE masked the intended
+# DUPLICATE_RENDER / VIEWPORT_MISMATCH rejections.
+COMMIT_EPOCH=$(git -C "$ROOT" log -1 --format=%ct HEAD)
+iso_from_epoch() { date -u -r "$1" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -d "@$1" '+%Y-%m-%dT%H:%M:%SZ'; }
+
 # These are local fixture pixels.  The production verifier has no Python
 # dependency: it executes only the declared, receipted decoder adapter.
 make_png() {
@@ -75,7 +83,7 @@ make_png "$ROOT/evidence/default-desktop.png" 1440 900 1
 make_png "$ROOT/evidence/default-mobile.png" 390 844 2
 make_png "$ROOT/evidence/loading-desktop.png" 1440 900 3
 make_png "$ROOT/evidence/loading-mobile.png" 390 844 4
-NOW=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+NOW=$(iso_from_epoch $((COMMIT_EPOCH + 3600)))
 export TASTE_NOW="$NOW"
 
 sha() { shasum -a 256 "$1" | awk '{print $1}'; }
@@ -152,7 +160,7 @@ jq '.captures[0].captured_at="2000-01-01T00:00:00Z"' "$MANIFEST" > "$MANIFEST.tm
 assert_contains "taste-pixels-rejects-stale-capture" "STALE_CAPTURE" "$(rejects)"
 write_manifest
 
-NOW=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+NOW=$(iso_from_epoch $((COMMIT_EPOCH + 3600)))
 export TASTE_NOW="$NOW"
 make_solid_png "$ROOT/evidence/default-desktop.png" 1440 900
 update_hash 0 evidence/default-desktop.png
@@ -164,4 +172,52 @@ write_manifest
 
 jq '.decoder.command_path="tools/missing-decoder"' "$MANIFEST" > "$MANIFEST.tmp" && mv "$MANIFEST.tmp" "$MANIFEST"
 assert_contains "taste-pixels-requires-decoder-adapter" "DECODER_UNAVAILABLE" "$(rejects)"
+make_png "$ROOT/evidence/default-desktop.png" 1440 900 1
+write_manifest
+
+# --- Receipt-producing mode (Cycle 39) -----------------------------------
+# Backward compatibility: the three-argument form still prints and writes no
+# receipt.  The optional fourth argument emits one atomic, hash-bound receipt.
+RECEIPT="$ROOT/evidence/pixels-receipt.json"
+rm -f "$RECEIPT"
+compat_out=$(pixels verify "$ROOT" "$MANIFEST" "$NOW" 2>&1) || true
+assert_eq "taste-pixels-three-arg-still-prints" "TASTE-PIXELS: VERIFIED captures=4" "$compat_out"
+[ ! -e "$RECEIPT" ] && compat_present=absent || compat_present=present
+assert_eq "taste-pixels-three-arg-writes-no-receipt" "absent" "$compat_present"
+
+receipt_rc=0
+receipt_out=$(pixels verify "$ROOT" "$MANIFEST" "$NOW" "$RECEIPT" 2>&1) || receipt_rc=$?
+assert_eq "taste-pixels-receipt-mode-verifies" "0" "$receipt_rc"
+assert_eq "taste-pixels-receipt-mode-keeps-print" "TASTE-PIXELS: VERIFIED captures=4" "$receipt_out"
+assert_eq "taste-pixels-receipt-schema" "taste-pixels-receipt/v1" "$(jq -r '.schema_version' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-status-derived" "VERIFIED" "$(jq -r '.status' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-classified-fixture" "fixture" "$(jq -r '.classification' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-binds-head" "$REVISION" "$(jq -r '.subject.project_head' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-binds-source-revision" "$REVISION" "$(jq -r '.subject.candidate_source_revision' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-binds-candidate" "cand-opaque-a" "$(jq -r '.subject.candidate_id' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-input-hash" "$(sha "$MANIFEST")" "$(jq -r '.input_sha256' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-manifest-hash-named" "$(sha "$MANIFEST")" "$(jq -r '.inputs.capture_manifest_sha256' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-decoder-command" "$DECODER_SHA" "$(jq -r '.inputs.decoder_command_sha256' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-browser-receipt-bound" "$(sha "$ROOT/evidence/browser-receipt.json")" "$(jq -r '.inputs.browser_adapter_receipt_sha256' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-validator-fingerprint" "$(sha "$PIXELS")" "$(jq -r '.validator.fingerprint' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-validator-id" "polylane-taste-pixels" "$(jq -r '.validator.id' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-capture-count" "4" "$(jq -r '.output.capture_count' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-binds-every-png" "4" "$(jq -r '[.captures[].screenshot_png_sha256] | length' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-binds-decoded-pixels" "4" "$(jq -r '[.captures[].decoded_pixel_sha256] | unique | length' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-records-matrix" "4" "$(jq -r '.matrix | length' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-freshness-window" "true" "$(jq -r '.freshness_window.now_epoch > .freshness_window.source_epoch' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-executed-at" "$NOW" "$(jq -r '.executed_at' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-empty-reason-codes" "0" "$(jq -r '.reason_codes | length' "$RECEIPT" 2>/dev/null)"
+assert_eq "taste-pixels-receipt-no-duplicate-keys" "" "$(jq --stream -r 'select(length==2)|.[0]|map(tostring)|join(".")' "$RECEIPT" 2>/dev/null | LC_ALL=C sort | uniq -d)"
+
+# Fail-closed: a rejected verification writes no receipt (no partial output).
+jq '.captures[0].viewport_css_px.width=1439' "$MANIFEST" > "$MANIFEST.tmp" && mv "$MANIFEST.tmp" "$MANIFEST"
+rm -f "$RECEIPT"
+fail_rc=0
+pixels verify "$ROOT" "$MANIFEST" "$NOW" "$RECEIPT" >/dev/null 2>&1 || fail_rc=$?
+assert_eq "taste-pixels-receipt-rejection-nonzero" "2" "$fail_rc"
+[ ! -e "$RECEIPT" ] && fail_present=absent || fail_present=present
+assert_eq "taste-pixels-receipt-fail-closed-no-partial" "absent" "$fail_present"
+write_manifest
+
 finish
