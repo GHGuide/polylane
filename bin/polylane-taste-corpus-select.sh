@@ -61,13 +61,13 @@ validate_inputs() {
     || invalid "source manifest must be frozen-domain images with unique ids and digests"
 
   jq -e '
-    type == "object"
+    .scale as $s
+    | type == "object"
     and ((keys - ["format_version", "ratings", "scale"]) == [])
     and .format_version == 1
     and (.scale | type == "object" and ((keys - ["max", "min"]) == [])
       and (.min | type == "number") and (.max | type == "number") and .min < .max)
-    and .scale as $s
-    | (.ratings | type == "array" and length > 0)
+    and (.ratings | type == "array" and length > 0)
     and all(.ratings[];
       type == "object"
       and ((keys - ["id", "mean", "sd", "support"]) == [])
