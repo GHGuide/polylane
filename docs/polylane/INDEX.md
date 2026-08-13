@@ -6,6 +6,15 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 42A contract freeze remains a historical **NO-GO**: [plan](cycle-42-plan.md) ·
+[outcome](cycle-42a-outcome.md) ·
+[host precheck](prechecks/c42a-host-precheck-20260813.json). Four builders and the
+integrator produced the v3 contract candidate, but the isolated worker host could not
+bind loopback sockets or create a private tmux socket. Its immutable handoff stays
+NO-GO. A separate host precheck of candidate `1e89f4f` passed 4,049 assertions in 170
+test files; that result is explicitly `PRECHECK_ONLY`, not authority to rewrite the
+old verdict or promote. Recovery uses a fresh contract-v3 nonce.
+
 Cycle 40 live harness (active): [plan](cycle-40-plan.md) ·
 [research lock](cycle-40-research.md) · [per-lane skills](cycle-40-suggestions.md).
 Fifteen isolated builders plus a deferred integrator own the primary human-corpus

@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "source-contract-freeze",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c42a-source-contract-freeze/docs/verify-source-contract-freeze.md",
+  "helped": [
+    {
+      "id": "data:statistical-analysis",
+      "effect": " distinguished equivalence"
+    },
+    {
+      "id": "data:validate-data",
+      "effect": " source/null/deduplication checks,"
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " organized coverage around"
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the behavior suite"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

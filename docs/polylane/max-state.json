@@ -3386,7 +3386,7 @@
     },
     {
       "sid": "m32.6",
-      "cmd": "bash tests/test-taste-execution-contract-v3.sh && bash tests/test-evidence-dag.sh && bash tests/test-taste-source-contract-v3.sh && bash tests/test-finalization-watchdog.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-supervisor.sh && shellcheck -S warning bin/polylane-taste-execution-contract.sh bin/polylane-evidence-dag.sh bin/polylane-taste-source-contract.sh bin/polylane-finalize.sh bin/polylane-memory.sh bin/polylane-run.sh bin/polylane-supervisor.sh assets/verify-gate.sh",
+      "cmd": "bash tests/test-taste-execution-contract-v3.sh && bash tests/test-evidence-dag.sh && bash tests/test-taste-source-contract-v3.sh && bash tests/test-finalization-watchdog.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-supervisor.sh && shellcheck -S warning bin/polylane-taste-execution-contract.sh bin/polylane-evidence-dag.sh bin/polylane-taste-source-contract.sh bin/polylane-finalize.sh bin/polylane-memory.sh bin/polylane-run.sh bin/polylane-supervisor.sh assets/verify-gate.sh && tests/run.sh && bin/polylane-markers.sh check-docs references/ && bash tests/test-skill-parity.sh && git diff --check",
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "taste-v3-contract-lock",

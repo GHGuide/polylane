@@ -502,3 +502,31 @@
 
 {"lane":"source-protocol","domain":"report","skill":"superpowers:test-driven-development","outcome":"helped","why":" RED first (stale-claim grep hits and the named-bin failure observed before edits), then doc changes, then GREEN re-run; adapted to docs where the pre-existing contract test is the failing-test harness."}
 
+{"lane":"execution-contract-freeze","domain":"data","skill":"engineering:system-design","outcome":"helped","why":" forced explicit component,"}
+
+{"lane":"execution-contract-freeze","domain":"data","skill":"engineering:testing-strategy","outcome":"helped","why":" organized fast contract tests"}
+
+{"lane":"execution-contract-freeze","domain":"data","skill":"superpowers:test-driven-development","outcome":"helped","why":" the missing-tool RED run"}
+
+{"lane":"evidence-policy-freeze","domain":"data","skill":"engineering:testing-strategy","outcome":"helped","why":" separated DAG contract,"}
+
+{"lane":"evidence-policy-freeze","domain":"data","skill":"operations:risk-assessment","outcome":"helped","why":" prioritized laundering, sample"}
+
+{"lane":"evidence-policy-freeze","domain":"data","skill":"superpowers:test-driven-development","outcome":"helped","why":" the full adversarial suite"}
+
+{"lane":"source-contract-freeze","domain":"data","skill":"data:statistical-analysis","outcome":"helped","why":" distinguished equivalence"}
+
+{"lane":"source-contract-freeze","domain":"data","skill":"data:validate-data","outcome":"helped","why":" source/null/deduplication checks,"}
+
+{"lane":"source-contract-freeze","domain":"data","skill":"engineering:testing-strategy","outcome":"helped","why":" organized coverage around"}
+
+{"lane":"source-contract-freeze","domain":"data","skill":"superpowers:test-driven-development","outcome":"helped","why":" the behavior suite"}
+
+{"lane":"lifecycle-external-routing","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" separated memory unit,"}
+
+{"lane":"lifecycle-external-routing","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" prioritized four critical/high"}
+
+{"lane":"lifecycle-external-routing","domain":"test","skill":"superpowers:systematic-debugging","outcome":"helped","why":" traced mutation,"}
+
+{"lane":"lifecycle-external-routing","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" each requested failure"}
+

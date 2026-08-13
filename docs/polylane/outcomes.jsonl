@@ -68,3 +68,7 @@
 {"lane":"generate-live","sig":"b4:hub0:crowd0","model":"claude-opus-4-8","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-12T20:39:47Z"}
 {"lane":"study-live","sig":"b6:hub0:crowd0","model":"claude-opus-4-8","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-12T20:39:47Z"}
 {"lane":"protocol-live","sig":"b7:hub0:crowd0","model":"claude-opus-4-8","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-12T20:39:47Z"}
+{"lane":"execution-contract-freeze","sig":"b6:hub0:crowd0","model":"gpt-5.6-sol","verdict":"NO-GO","ts":"2026-08-13T03:25:23Z"}
+{"lane":"evidence-policy-freeze","sig":"b6:hub0:crowd0","model":"gpt-5.6-sol","verdict":"NO-GO","ts":"2026-08-13T03:25:23Z"}
+{"lane":"source-contract-freeze","sig":"b6:hub0:crowd0","model":"gpt-5.6-sol","verdict":"NO-GO","ts":"2026-08-13T03:25:23Z"}
+{"lane":"lifecycle-external-routing","sig":"b23:hub0:crowd0","model":"gpt-5.6-sol","verdict":"NO-GO","ts":"2026-08-13T03:25:23Z"}

@@ -27,3 +27,5 @@
 {"cycle":38,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c38-taste-engine-20260811-a1"}
 {"cycle":41,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c41-source-calibration-20260812-a1"}
 {"cycle":41,"kind":"no-go","subject":"taste-calibration-integrator","evidence":"integrator verdict NO-GO in run c41-source-calibration-20260812-a1"}
+{"cycle":42,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c42a-taste-contracts-20260813-a2"}
+{"cycle":42,"kind":"no-go","subject":"taste-contract-integrator","evidence":"integrator verdict NO-GO in run c42a-taste-contracts-20260813-a2"}
