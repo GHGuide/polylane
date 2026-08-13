@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "dataverse-transport",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-dataverse-transport/docs/verify-dataverse-transport.md",
+  "helped": [
+    {
+      "id": "engineering:debug",
+      "effect": " the reproduce→isolate→diagnose structure"
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " shaped the pyramid — many"
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " identified session-material"
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " RED (`FAIL: adapter still"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

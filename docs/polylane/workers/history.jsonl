@@ -221,3 +221,35 @@
 {"event":"relay-import","id":"relay:/Users/leonardo/Downloads/polylane-taste-cert/.polylane/runtime/c38-taste-engine-20260811-a1/.polylane/coordination.jsonl:61","relay_source":"/Users/leonardo/Downloads/polylane-taste-cert/.polylane/runtime/c38-taste-engine-20260811-a1/.polylane/coordination.jsonl","relay_seq":61,"cycle":38,"relay":{"event":"decision","lane":"integrator","decision":"accept","rationale":"threat/certificate v1: only a clean four-axis receipt with no unresolved genericness review is consumable","seq":61,"at":"2026-08-11T19:53:03Z"},"run_id":"c38-taste-engine-20260811-a1","seq":221,"at":"2026-08-11T20:00:31Z"}
 {"event":"relay-import","id":"relay:/Users/leonardo/Downloads/polylane-taste-cert/.polylane/runtime/c38-taste-engine-20260811-a1/.polylane/coordination.jsonl:62","relay_source":"/Users/leonardo/Downloads/polylane-taste-cert/.polylane/runtime/c38-taste-engine-20260811-a1/.polylane/coordination.jsonl","relay_seq":62,"cycle":38,"relay":{"event":"claim","lane":"integrator","resource":"cross-module taste certification seam repairs and integration evidence","seq":62,"at":"2026-08-11T19:53:03Z"},"run_id":"c38-taste-engine-20260811-a1","seq":222,"at":"2026-08-11T20:00:31Z"}
 {"event":"relay-import","id":"relay:/Users/leonardo/Downloads/polylane-taste-cert/.polylane/runtime/c38-taste-engine-20260811-a1/.polylane/coordination.jsonl:63","relay_source":"/Users/leonardo/Downloads/polylane-taste-cert/.polylane/runtime/c38-taste-engine-20260811-a1/.polylane/coordination.jsonl","relay_seq":63,"cycle":38,"relay":{"event":"release","lane":"integrator","resource":"cross-module taste certification seam repairs and integration evidence","seq":63,"at":"2026-08-11T20:00:03Z"},"run_id":"c38-taste-engine-20260811-a1","seq":223,"at":"2026-08-11T20:00:31Z"}
+{"event":"capsule","id":"capsule:dataverse-transport:1","worker":"dataverse-transport","version":1,"cycle":41,"seq":224,"at":"2026-08-12T20:59:48Z"}
+{"event":"capsule","id":"capsule:dataone-metadata:1","worker":"dataone-metadata","version":1,"cycle":41,"seq":225,"at":"2026-08-12T20:59:48Z"}
+{"event":"capsule","id":"capsule:source-freeze:1","worker":"source-freeze","version":1,"cycle":41,"seq":226,"at":"2026-08-12T20:59:48Z"}
+{"event":"capsule","id":"capsule:download-campaign:1","worker":"download-campaign","version":1,"cycle":41,"seq":227,"at":"2026-08-12T20:59:48Z"}
+{"event":"capsule","id":"capsule:cache-integrity:1","worker":"cache-integrity","version":1,"cycle":41,"seq":228,"at":"2026-08-12T20:59:48Z"}
+{"event":"capsule","id":"capsule:ratings-normalize:1","worker":"ratings-normalize","version":1,"cycle":41,"seq":229,"at":"2026-08-12T20:59:48Z"}
+{"event":"capsule","id":"capsule:corpus-select:1","worker":"corpus-select","version":1,"cycle":41,"seq":230,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:pair-builder:1","worker":"pair-builder","version":1,"cycle":41,"seq":231,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:calibration-campaign:1","worker":"calibration-campaign","version":1,"cycle":41,"seq":232,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:calibration-audit:1","worker":"calibration-audit","version":1,"cycle":41,"seq":233,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:panel-freeze:1","worker":"panel-freeze","version":1,"cycle":41,"seq":234,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:benchmark-preflight:1","worker":"benchmark-preflight","version":1,"cycle":41,"seq":235,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:source-adversary:1","worker":"source-adversary","version":1,"cycle":41,"seq":236,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:source-runbook:1","worker":"source-runbook","version":1,"cycle":41,"seq":237,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:source-protocol:1","worker":"source-protocol","version":1,"cycle":41,"seq":238,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:taste-calibration-integrator:1","worker":"taste-calibration-integrator","version":1,"cycle":41,"seq":239,"at":"2026-08-12T20:59:49Z"}
+{"event":"capsule","id":"capsule:dataverse-transport:2","worker":"dataverse-transport","version":2,"cycle":41,"seq":240,"at":"2026-08-12T21:52:26Z"}
+{"event":"capsule","id":"capsule:dataone-metadata:2","worker":"dataone-metadata","version":2,"cycle":41,"seq":241,"at":"2026-08-12T21:52:26Z"}
+{"event":"capsule","id":"capsule:source-freeze:2","worker":"source-freeze","version":2,"cycle":41,"seq":242,"at":"2026-08-12T21:52:26Z"}
+{"event":"capsule","id":"capsule:download-campaign:2","worker":"download-campaign","version":2,"cycle":41,"seq":243,"at":"2026-08-12T21:52:26Z"}
+{"event":"capsule","id":"capsule:cache-integrity:2","worker":"cache-integrity","version":2,"cycle":41,"seq":244,"at":"2026-08-12T21:52:26Z"}
+{"event":"capsule","id":"capsule:ratings-normalize:2","worker":"ratings-normalize","version":2,"cycle":41,"seq":245,"at":"2026-08-12T21:52:27Z"}
+{"event":"capsule","id":"capsule:corpus-select:2","worker":"corpus-select","version":2,"cycle":41,"seq":246,"at":"2026-08-12T21:52:27Z"}
+{"event":"capsule","id":"capsule:pair-builder:2","worker":"pair-builder","version":2,"cycle":41,"seq":247,"at":"2026-08-12T21:52:27Z"}
+{"event":"capsule","id":"capsule:calibration-campaign:2","worker":"calibration-campaign","version":2,"cycle":41,"seq":248,"at":"2026-08-12T21:52:27Z"}
+{"event":"capsule","id":"capsule:calibration-audit:2","worker":"calibration-audit","version":2,"cycle":41,"seq":249,"at":"2026-08-12T21:52:27Z"}
+{"event":"capsule","id":"capsule:panel-freeze:2","worker":"panel-freeze","version":2,"cycle":41,"seq":250,"at":"2026-08-12T21:52:27Z"}
+{"event":"capsule","id":"capsule:benchmark-preflight:2","worker":"benchmark-preflight","version":2,"cycle":41,"seq":251,"at":"2026-08-12T21:52:28Z"}
+{"event":"capsule","id":"capsule:source-adversary:2","worker":"source-adversary","version":2,"cycle":41,"seq":252,"at":"2026-08-12T21:52:28Z"}
+{"event":"capsule","id":"capsule:source-runbook:2","worker":"source-runbook","version":2,"cycle":41,"seq":253,"at":"2026-08-12T21:52:28Z"}
+{"event":"capsule","id":"capsule:source-protocol:2","worker":"source-protocol","version":2,"cycle":41,"seq":254,"at":"2026-08-12T21:52:28Z"}
+{"event":"capsule","id":"capsule:taste-calibration-integrator:2","worker":"taste-calibration-integrator","version":2,"cycle":41,"seq":255,"at":"2026-08-13T00:09:26Z"}

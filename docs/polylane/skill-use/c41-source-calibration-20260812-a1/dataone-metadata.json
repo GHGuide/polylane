@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "dataone-metadata",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-dataone-metadata/docs/verify-dataone-metadata.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

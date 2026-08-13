@@ -2,9 +2,9 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 18,
-    "latest_cycle": 37,
-    "latest_evidence": "bounded packets built for run c37-taste-research-20260811-a1",
+    "observation_count": 19,
+    "latest_cycle": 38,
+    "latest_evidence": "bounded packets built for run c38-taste-engine-20260811-a1",
     "required_action": "propose-or-decline"
   },
   {

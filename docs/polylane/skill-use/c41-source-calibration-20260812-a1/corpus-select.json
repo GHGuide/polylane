@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "corpus-select",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-corpus-select/docs/verify-corpus-select.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "source-protocol",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-source-protocol/docs/verify-source-protocol.md",
+  "helped": [
+    {
+      "id": "deep-research",
+      "effect": " enforced source-identity discipline and the citation/uncertainty ledger pattern (URL checks with bounded per-source claims; explicit recorded-uncertainty section)."
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " scoped verification to the doc-contract layer (protocol/doc contract test + targeted stale-claim greps) instead of the full suite, per test cadence."
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " produced SOURCE-AUDIT §7's source-risk register (likelihood/impact/mitigation/status per risk)."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " RED first (stale-claim grep hits and the named-bin failure observed before edits), then doc changes, then GREEN re-run; adapted to docs where the pre-existing contract test is the failing-test harness."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

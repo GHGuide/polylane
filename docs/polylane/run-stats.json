@@ -1,495 +1,529 @@
 {
   "version": 1,
-  "run_id": "c40-live-harness-20260812-a3",
-  "started_at": 1786553276,
-  "updated_at": 1786567190,
-  "wall_s": 13914,
+  "run_id": "c41-source-calibration-20260812-a1",
+  "started_at": 1786568349,
+  "updated_at": 1786580198,
+  "wall_s": 11849,
   "lanes": {
-    "source-live": {
+    "dataverse-transport": {
       "launches": 1,
-      "restarts": 1
+      "restarts": 4
     },
-    "calibration-live": {
-      "launches": 1,
-      "restarts": 3
-    },
-    "judge-claude": {
-      "launches": 1,
-      "restarts": 2
-    },
-    "judge-codex": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "judge-runner": {
+    "dataone-metadata": {
       "launches": 1,
       "restarts": 6
     },
-    "ballot-live": {
+    "source-freeze": {
+      "launches": 1,
+      "restarts": 1
+    },
+    "download-campaign": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "cache-integrity": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "ratings-normalize": {
+      "launches": 1,
+      "restarts": 3
+    },
+    "corpus-select": {
+      "launches": 1,
+      "restarts": 4
+    },
+    "pair-builder": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "calibration-campaign": {
+      "launches": 1,
+      "restarts": 4
+    },
+    "calibration-audit": {
+      "launches": 1,
+      "restarts": 5
+    },
+    "panel-freeze": {
+      "launches": 1,
+      "restarts": 1
+    },
+    "benchmark-preflight": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "source-adversary": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "source-runbook": {
       "launches": 1,
       "restarts": 2
     },
-    "browser-live": {
+    "source-protocol": {
       "launches": 1,
-      "restarts": 2
+      "restarts": 0
     },
-    "decode-live": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "a11y-live": {
-      "launches": 1,
-      "restarts": 2
-    },
-    "task-live": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "corpus-20": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "prompts-live": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "generate-live": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "study-live": {
-      "launches": 1,
-      "restarts": 2
-    },
-    "protocol-live": {
-      "launches": 1,
-      "restarts": 1
-    },
-    "taste-live-integrator": {
+    "taste-calibration-integrator": {
       "launches": 1,
       "restarts": 1
     }
   },
-  "supervisor_restarts": 3,
+  "supervisor_restarts": 0,
   "terminal_gates": 0,
   "tokens": null,
   "token_state": "unknown",
   "usage_offsets": {
-    "source-live": 0,
-    "calibration-live": 0,
-    "judge-claude": 0,
-    "judge-codex": 0,
-    "judge-runner": 1355860,
-    "ballot-live": 0,
-    "browser-live": 1011698,
-    "decode-live": 0,
-    "a11y-live": 0,
-    "task-live": 0,
-    "corpus-20": 0,
-    "prompts-live": 0,
-    "generate-live": 0,
-    "study-live": 1150389,
-    "protocol-live": 0,
-    "taste-live-integrator": 1319824
+    "dataverse-transport": 562297,
+    "dataone-metadata": 701312,
+    "source-freeze": 337275,
+    "download-campaign": 314748,
+    "cache-integrity": 233295,
+    "ratings-normalize": 566838,
+    "corpus-select": 578315,
+    "pair-builder": 315560,
+    "calibration-campaign": 642879,
+    "calibration-audit": 1106776,
+    "panel-freeze": 350773,
+    "benchmark-preflight": 483888,
+    "source-adversary": 564563,
+    "source-runbook": 377440,
+    "source-protocol": 307846,
+    "taste-calibration-integrator": 2870416
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786553276
+      "at": 1786568349
     },
     {
       "type": "usage_capture",
-      "lane": "source-live",
-      "at": 1786553353,
+      "lane": "dataverse-transport",
+      "at": 1786568577,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "source-live",
-      "at": 1786553353
+      "lane": "dataverse-transport",
+      "at": 1786568577
     },
     {
       "type": "usage_capture",
-      "lane": "calibration-live",
-      "at": 1786553353,
+      "lane": "dataone-metadata",
+      "at": 1786568577,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "calibration-live",
-      "at": 1786553353
+      "lane": "dataone-metadata",
+      "at": 1786568577
     },
     {
       "type": "usage_capture",
-      "lane": "judge-claude",
-      "at": 1786553353,
+      "lane": "source-freeze",
+      "at": 1786568578,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "judge-claude",
-      "at": 1786553353
+      "lane": "source-freeze",
+      "at": 1786568578
     },
     {
       "type": "usage_capture",
-      "lane": "judge-codex",
-      "at": 1786553354,
+      "lane": "download-campaign",
+      "at": 1786568578,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "judge-codex",
-      "at": 1786553354
+      "lane": "download-campaign",
+      "at": 1786568578
     },
     {
       "type": "usage_capture",
-      "lane": "judge-runner",
-      "at": 1786553354,
+      "lane": "cache-integrity",
+      "at": 1786568578,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "judge-runner",
-      "at": 1786553354
+      "lane": "cache-integrity",
+      "at": 1786568579
     },
     {
       "type": "usage_capture",
-      "lane": "ballot-live",
-      "at": 1786553356,
+      "lane": "ratings-normalize",
+      "at": 1786568579,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "ballot-live",
-      "at": 1786553356
+      "lane": "ratings-normalize",
+      "at": 1786568579
     },
     {
       "type": "usage_capture",
-      "lane": "browser-live",
-      "at": 1786553359,
+      "lane": "corpus-select",
+      "at": 1786568580,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "browser-live",
-      "at": 1786553359
+      "lane": "corpus-select",
+      "at": 1786568580
     },
     {
       "type": "usage_capture",
-      "lane": "decode-live",
-      "at": 1786553361,
+      "lane": "pair-builder",
+      "at": 1786568581,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "decode-live",
-      "at": 1786553362
+      "lane": "pair-builder",
+      "at": 1786568581
     },
     {
       "type": "usage_capture",
-      "lane": "a11y-live",
-      "at": 1786553364,
+      "lane": "calibration-campaign",
+      "at": 1786568582,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "a11y-live",
-      "at": 1786553364
+      "lane": "calibration-campaign",
+      "at": 1786568582
     },
     {
       "type": "usage_capture",
-      "lane": "task-live",
-      "at": 1786553367,
+      "lane": "calibration-audit",
+      "at": 1786568583,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "task-live",
-      "at": 1786553367
+      "lane": "calibration-audit",
+      "at": 1786568583
     },
     {
       "type": "usage_capture",
-      "lane": "corpus-20",
-      "at": 1786553372,
+      "lane": "panel-freeze",
+      "at": 1786568584,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "corpus-20",
-      "at": 1786553372
+      "lane": "panel-freeze",
+      "at": 1786568584
     },
     {
       "type": "usage_capture",
-      "lane": "prompts-live",
-      "at": 1786553386,
+      "lane": "benchmark-preflight",
+      "at": 1786568585,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "prompts-live",
-      "at": 1786553390
+      "lane": "benchmark-preflight",
+      "at": 1786568585
     },
     {
       "type": "usage_capture",
-      "lane": "generate-live",
-      "at": 1786553397,
+      "lane": "source-adversary",
+      "at": 1786568586,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "generate-live",
-      "at": 1786553398
+      "lane": "source-adversary",
+      "at": 1786568586
     },
     {
       "type": "usage_capture",
-      "lane": "study-live",
-      "at": 1786553404,
+      "lane": "source-runbook",
+      "at": 1786568587,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "study-live",
-      "at": 1786553406
+      "lane": "source-runbook",
+      "at": 1786568587
     },
     {
       "type": "usage_capture",
-      "lane": "protocol-live",
-      "at": 1786553421,
+      "lane": "source-protocol",
+      "at": 1786568588,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "protocol-live",
-      "at": 1786553423
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786554793
-    },
-    {
-      "type": "initialized",
-      "at": 1786554794
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786554970
-    },
-    {
-      "type": "initialized",
-      "at": 1786554971
+      "lane": "source-protocol",
+      "at": 1786568588
     },
     {
       "type": "restarts",
-      "lane": "source-live",
-      "at": 1786556422
+      "lane": "dataverse-transport",
+      "at": 1786568756
     },
     {
       "type": "restarts",
-      "lane": "calibration-live",
-      "at": 1786556428
+      "lane": "dataone-metadata",
+      "at": 1786568757
     },
     {
       "type": "restarts",
-      "lane": "judge-claude",
-      "at": 1786556433
+      "lane": "ratings-normalize",
+      "at": 1786568761
     },
     {
       "type": "restarts",
-      "lane": "judge-codex",
-      "at": 1786556441
+      "lane": "calibration-audit",
+      "at": 1786568764
     },
     {
       "type": "restarts",
-      "lane": "judge-runner",
-      "at": 1786556459
+      "lane": "source-freeze",
+      "at": 1786568792
     },
     {
       "type": "restarts",
-      "lane": "ballot-live",
-      "at": 1786556480
+      "lane": "panel-freeze",
+      "at": 1786568825
     },
     {
       "type": "restarts",
-      "lane": "browser-live",
-      "at": 1786556510
+      "lane": "dataone-metadata",
+      "at": 1786568907
     },
     {
       "type": "restarts",
-      "lane": "decode-live",
-      "at": 1786556537
+      "lane": "corpus-select",
+      "at": 1786568910
     },
     {
       "type": "restarts",
-      "lane": "a11y-live",
-      "at": 1786556561
+      "lane": "calibration-audit",
+      "at": 1786568913
     },
     {
       "type": "restarts",
-      "lane": "task-live",
-      "at": 1786556587
+      "lane": "dataverse-transport",
+      "at": 1786568939
     },
     {
       "type": "restarts",
-      "lane": "corpus-20",
-      "at": 1786556623
+      "lane": "calibration-campaign",
+      "at": 1786568999
     },
     {
       "type": "restarts",
-      "lane": "prompts-live",
-      "at": 1786556641
+      "lane": "source-runbook",
+      "at": 1786569003
     },
     {
       "type": "restarts",
-      "lane": "generate-live",
-      "at": 1786556647
+      "lane": "dataone-metadata",
+      "at": 1786569054
     },
     {
       "type": "restarts",
-      "lane": "study-live",
-      "at": 1786556651
+      "lane": "calibration-audit",
+      "at": 1786569060
     },
     {
       "type": "restarts",
-      "lane": "protocol-live",
-      "at": 1786556655
+      "lane": "corpus-select",
+      "at": 1786569088
     },
     {
       "type": "restarts",
-      "lane": "a11y-live",
-      "at": 1786557057
+      "lane": "dataverse-transport",
+      "at": 1786569142
     },
     {
       "type": "restarts",
-      "lane": "judge-runner",
-      "at": 1786557091
+      "lane": "calibration-campaign",
+      "at": 1786569175
     },
     {
       "type": "restarts",
-      "lane": "calibration-live",
-      "at": 1786557128
+      "lane": "dataone-metadata",
+      "at": 1786569201
     },
     {
       "type": "restarts",
-      "lane": "ballot-live",
-      "at": 1786557166
+      "lane": "ratings-normalize",
+      "at": 1786569233
     },
     {
       "type": "restarts",
-      "lane": "judge-runner",
-      "at": 1786557285
+      "lane": "corpus-select",
+      "at": 1786569234
     },
     {
       "type": "restarts",
-      "lane": "study-live",
-      "at": 1786557371
+      "lane": "source-runbook",
+      "at": 1786569298
     },
     {
       "type": "restarts",
-      "lane": "judge-claude",
-      "at": 1786557420
+      "lane": "dataverse-transport",
+      "at": 1786569321
     },
     {
       "type": "restarts",
-      "lane": "calibration-live",
-      "at": 1786557795
+      "lane": "calibration-campaign",
+      "at": 1786569326
     },
     {
       "type": "restarts",
-      "lane": "judge-runner",
-      "at": 1786557798
+      "lane": "calibration-audit",
+      "at": 1786569327
     },
     {
       "type": "restarts",
-      "lane": "judge-runner",
-      "at": 1786558586
+      "lane": "dataone-metadata",
+      "at": 1786569354
     },
     {
       "type": "restarts",
-      "lane": "browser-live",
-      "at": 1786559164
-    },
-    {
-      "type": "supervisor_restart",
-      "at": 1786559951
-    },
-    {
-      "type": "initialized",
-      "at": 1786559971
+      "lane": "ratings-normalize",
+      "at": 1786569385
     },
     {
       "type": "restarts",
-      "lane": "judge-runner",
-      "at": 1786561889
+      "lane": "corpus-select",
+      "at": 1786569540
+    },
+    {
+      "type": "restarts",
+      "lane": "dataone-metadata",
+      "at": 1786569638
+    },
+    {
+      "type": "restarts",
+      "lane": "calibration-campaign",
+      "at": 1786569643
+    },
+    {
+      "type": "restarts",
+      "lane": "calibration-audit",
+      "at": 1786569877
     },
     {
       "type": "usage_capture",
-      "lane": "taste-live-integrator",
-      "at": 1786562117,
+      "lane": "taste-calibration-integrator",
+      "at": 1786571549,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "taste-live-integrator",
-      "at": 1786562117
+      "lane": "taste-calibration-integrator",
+      "at": 1786571549
+    },
+    {
+      "type": "usage_capture",
+      "lane": "dataverse-transport",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "dataone-metadata",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "source-freeze",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "download-campaign",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "cache-integrity",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "ratings-normalize",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "corpus-select",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "pair-builder",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "calibration-campaign",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "calibration-audit",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "panel-freeze",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "benchmark-preflight",
+      "at": 1786579767,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "source-adversary",
+      "at": 1786579768,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "source-runbook",
+      "at": 1786579768,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "source-protocol",
+      "at": 1786579768,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "taste-calibration-integrator",
+      "at": 1786579768,
+      "added": null
     },
     {
       "type": "restarts",
-      "lane": "taste-live-integrator",
-      "at": 1786563409
-    },
-    {
-      "type": "usage_capture",
-      "lane": "judge-runner",
-      "at": 1786566904,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "browser-live",
-      "at": 1786566904,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "study-live",
-      "at": 1786566904,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "taste-live-integrator",
-      "at": 1786566904,
-      "added": null
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1786567190
-    },
-    {
-      "type": "usage_capture",
-      "lane": "judge-runner",
-      "at": 1786567190,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "browser-live",
-      "at": 1786567190,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "study-live",
-      "at": 1786567190,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "taste-live-integrator",
-      "at": 1786567190,
-      "added": null
+      "lane": "taste-calibration-integrator",
+      "at": 1786580198
     }
   ]
 }

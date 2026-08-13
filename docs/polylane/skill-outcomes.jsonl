@@ -382,3 +382,123 @@
 
 {"lane":"protocol-live","domain":"test","skill":"legal:compliance-check","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c40-protocol-live/docs/verify-protocol-live.md"}
 
+{"lane":"dataverse-transport","domain":"test","skill":"engineering:debug","outcome":"helped","why":" the reproduce→isolate→diagnose structure"}
+
+{"lane":"dataverse-transport","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" shaped the pyramid — many"}
+
+{"lane":"dataverse-transport","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" identified session-material"}
+
+{"lane":"dataverse-transport","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" RED (`FAIL: adapter still"}
+
+{"lane":"dataone-metadata","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-dataone-metadata/docs/verify-dataone-metadata.md"}
+
+{"lane":"dataone-metadata","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-dataone-metadata/docs/verify-dataone-metadata.md"}
+
+{"lane":"dataone-metadata","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-dataone-metadata/docs/verify-dataone-metadata.md"}
+
+{"lane":"dataone-metadata","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-dataone-metadata/docs/verify-dataone-metadata.md"}
+
+{"lane":"source-freeze","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-freeze/docs/verify-source-freeze.md"}
+
+{"lane":"source-freeze","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-freeze/docs/verify-source-freeze.md"}
+
+{"lane":"source-freeze","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-freeze/docs/verify-source-freeze.md"}
+
+{"lane":"source-freeze","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-freeze/docs/verify-source-freeze.md"}
+
+{"lane":"download-campaign","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-download-campaign/docs/verify-download-campaign.md"}
+
+{"lane":"download-campaign","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-download-campaign/docs/verify-download-campaign.md"}
+
+{"lane":"download-campaign","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-download-campaign/docs/verify-download-campaign.md"}
+
+{"lane":"download-campaign","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-download-campaign/docs/verify-download-campaign.md"}
+
+{"lane":"cache-integrity","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-cache-integrity/docs/verify-cache-integrity.md"}
+
+{"lane":"cache-integrity","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-cache-integrity/docs/verify-cache-integrity.md"}
+
+{"lane":"cache-integrity","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-cache-integrity/docs/verify-cache-integrity.md"}
+
+{"lane":"cache-integrity","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-cache-integrity/docs/verify-cache-integrity.md"}
+
+{"lane":"ratings-normalize","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-ratings-normalize/docs/verify-ratings-normalize.md"}
+
+{"lane":"ratings-normalize","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-ratings-normalize/docs/verify-ratings-normalize.md"}
+
+{"lane":"ratings-normalize","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-ratings-normalize/docs/verify-ratings-normalize.md"}
+
+{"lane":"ratings-normalize","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-ratings-normalize/docs/verify-ratings-normalize.md"}
+
+{"lane":"corpus-select","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-corpus-select/docs/verify-corpus-select.md"}
+
+{"lane":"corpus-select","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-corpus-select/docs/verify-corpus-select.md"}
+
+{"lane":"corpus-select","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-corpus-select/docs/verify-corpus-select.md"}
+
+{"lane":"corpus-select","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-corpus-select/docs/verify-corpus-select.md"}
+
+{"lane":"pair-builder","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-pair-builder/docs/verify-pair-builder.md"}
+
+{"lane":"pair-builder","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-pair-builder/docs/verify-pair-builder.md"}
+
+{"lane":"pair-builder","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-pair-builder/docs/verify-pair-builder.md"}
+
+{"lane":"pair-builder","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-pair-builder/docs/verify-pair-builder.md"}
+
+{"lane":"calibration-campaign","domain":"test","skill":"engineering:debug","outcome":"helped","why":" reproduce-isolate loop on the rc-4 plan"}
+
+{"lane":"calibration-campaign","domain":"test","skill":"engineering:testing-strategy","outcome":"helped","why":" shaped the single hermetic"}
+
+{"lane":"calibration-campaign","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" the fail-closed guard list"}
+
+{"lane":"calibration-campaign","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" RED run exposed a real"}
+
+{"lane":"calibration-audit","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-calibration-audit/docs/verify-calibration-audit.md"}
+
+{"lane":"calibration-audit","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-calibration-audit/docs/verify-calibration-audit.md"}
+
+{"lane":"calibration-audit","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-calibration-audit/docs/verify-calibration-audit.md"}
+
+{"lane":"calibration-audit","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-calibration-audit/docs/verify-calibration-audit.md"}
+
+{"lane":"panel-freeze","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-panel-freeze/docs/verify-panel-freeze.md"}
+
+{"lane":"panel-freeze","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-panel-freeze/docs/verify-panel-freeze.md"}
+
+{"lane":"panel-freeze","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-panel-freeze/docs/verify-panel-freeze.md"}
+
+{"lane":"panel-freeze","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-panel-freeze/docs/verify-panel-freeze.md"}
+
+{"lane":"benchmark-preflight","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-benchmark-preflight/docs/verify-benchmark-preflight.md"}
+
+{"lane":"benchmark-preflight","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-benchmark-preflight/docs/verify-benchmark-preflight.md"}
+
+{"lane":"benchmark-preflight","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-benchmark-preflight/docs/verify-benchmark-preflight.md"}
+
+{"lane":"benchmark-preflight","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-benchmark-preflight/docs/verify-benchmark-preflight.md"}
+
+{"lane":"source-adversary","domain":"test","skill":"engineering:debug","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-adversary/docs/verify-source-adversary.md"}
+
+{"lane":"source-adversary","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-adversary/docs/verify-source-adversary.md"}
+
+{"lane":"source-adversary","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-adversary/docs/verify-source-adversary.md"}
+
+{"lane":"source-adversary","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane-c41-source-adversary/docs/verify-source-adversary.md"}
+
+{"lane":"source-runbook","domain":"report","skill":"deep-research","outcome":"unused","why":" primary-source reconciliation is owned by the `source-protocol` lane; this lane only cited the already-locked research file."}
+
+{"lane":"source-runbook","domain":"report","skill":"engineering:testing-strategy","outcome":"helped","why":" verification separates hermetic-unit (selftest), integration (focused lane tests), and external layers, and §6 records the coverage gap explicitly."}
+
+{"lane":"source-runbook","domain":"report","skill":"operations:risk-assessment","outcome":"helped","why":" runbook §§8–13 (interruption recovery, challenge rule, provider failures, stop conditions) were structured as controllable-risk → mitigation → owner-action pairs per the register format."}
+
+{"lane":"source-runbook","domain":"report","skill":"superpowers:test-driven-development","outcome":"helped","why":" label checks (§§1–2) were designed to fail first (a PLANNED file appearing or a REAL file missing flips a PASS to FAIL), keeping the runbook's claims falsifiable; no production code was written in this docs-only lane."}
+
+{"lane":"source-protocol","domain":"report","skill":"deep-research","outcome":"helped","why":" enforced source-identity discipline and the citation/uncertainty ledger pattern (URL checks with bounded per-source claims; explicit recorded-uncertainty section)."}
+
+{"lane":"source-protocol","domain":"report","skill":"engineering:testing-strategy","outcome":"helped","why":" scoped verification to the doc-contract layer (protocol/doc contract test + targeted stale-claim greps) instead of the full suite, per test cadence."}
+
+{"lane":"source-protocol","domain":"report","skill":"operations:risk-assessment","outcome":"helped","why":" produced SOURCE-AUDIT §7's source-risk register (likelihood/impact/mitigation/status per risk)."}
+
+{"lane":"source-protocol","domain":"report","skill":"superpowers:test-driven-development","outcome":"helped","why":" RED first (stale-claim grep hits and the named-bin failure observed before edits), then doc changes, then GREEN re-run; adapted to docs where the pre-existing contract test is the failing-test harness."}
+

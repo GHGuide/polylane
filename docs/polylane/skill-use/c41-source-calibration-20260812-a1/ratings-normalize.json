@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "ratings-normalize",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-ratings-normalize/docs/verify-ratings-normalize.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "run": "c41-source-calibration-20260812-a1",
+    "phase": "focused",
+    "command": "bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == \"TASTE-CERTIFIED\" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test(\"^[0-9a-f]{40}([0-9a-f]{24})?$\")) and (.validator_chain_sha256 | test(\"^[0-9a-f]{64}$\"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null",
+    "return_code": 1,
+    "timestamp": "2026-08-13T00:09:32Z",
+    "output_tail": ""
+  },
+  {
+    "run": "c41-source-calibration-20260812-a1",
+    "phase": "focused",
+    "command": "bash tests/test-taste-dataverse-transport.sh && bash tests/test-taste-dataone-metadata.sh && bash tests/test-taste-source-freeze.sh && bash tests/test-taste-download-campaign.sh && bash tests/test-taste-cache-integrity.sh && bash tests/test-taste-ratings-normalize.sh && bash tests/test-taste-corpus-select.sh && bash tests/test-taste-pair-builder.sh && bash tests/test-taste-calibration-campaign.sh && bash tests/test-taste-calibration-audit.sh && bash tests/test-taste-panel-freeze.sh && bash tests/test-taste-benchmark-preflight.sh && bash tests/test-taste-source-adversarial.sh && bash tests/test-taste-source-campaign-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
+    "return_code": 130,
+    "timestamp": "2026-08-13T00:16:36Z",
+    "output_tail": "PASS pair-reuse-48-unique-items\nPASS same-domain-every-pair\nPASS same-domain-bindings-agree\nPASS mirror-exact-flip-all-24\nPASS side-balance-12-left-12-right\nPASS answer-delta-floor-all-pairs\nPASS answer-bootstrap-excludes-zero-all-pairs\nPASS answer-bootstrap-n-frozen\nPASS answer-exposure-no-forbidden-keys\nPASS answer-exposure-no-item-ids-in-stimuli\nPASS answer-exposure-sealed-files-distinct\nPASS receipt-binds-pair_manifest\nPASS receipt-binds-side_assignment\nPASS receipt-binds-answer_key\nPASS receipt-binds-input\nPASS receipt-binds-corpus\nPASS receipt-frozen-thresholds\nPASS receipt-not-human-certified\nPASS determinism-rebuild-same-seed\nPASS determinism-same-seed-byte-identical\nPASS determinism-build-other-seed\nPASS determinism-different-seed-diverges\nPASS verify-passes-on-fresh-bundle\nPASS verify-fails-on-tampered-manifest\nPASS verify-fails-on-weakened-answer-key\ntest-taste-pair-builder.sh: 46 pass, 0 fail\nPASS plan-accepts-valid-campaign\nPASS run-all-substantive-rc0\nPASS run-invokes-every-unit-once\nPASS pointwise-runs-before-pairwise\nPASS ledger-has-three-sealed-entries\nPASS ledger-status-voted\nPASS ledger-response-hash-bound\nPASS ledger-invocation-hash-bound\nPASS no-shared-ballot-channel-isolated-run-dirs\nPASS ledger-hash-chain-verifies\nPASS summary-decides-eligibility-false\nPASS summary-carries-no-eligible-field\nPASS summary-counts-voted\nPASS resume-full-rerun-rc0\nPASS resume-does-not-reinvoke-adapter\nPASS resume-does-not-grow-ledger\nPASS partial-resume-completes-rc0\nPASS partial-resume-runs-only-unsealed-units\nPASS partial-resume-ledger-complete\nPASS partial-resume-chain-verifies\nPASS verify-ledger-detects-tamper\nPASS resume-refuses-tampered-ledger\nPASS foreign-campaign-dir-refused\nPASS duplicate-session-refused\nPASS duplicate-work-unit-refused\nPASS mirror-same-orientation-refused\nPASS unpinned-adapter-refused\nPASS identity-leak-in-image-path-refused\nPASS guard-violations-never-invoke-adapter\nPASS malformed-plan-refused\nPASS extra-plan-key-refused\nPASS missing-phases-refused\nPASS missing-work-unit-file-refused\nPASS infra-retry-recovers-rc0\nPASS infra-retry-bounded-two-calls\nPASS infra-retry-recorded-in-ledger\nPASS timeout-campaign-completes-rc1\nPASS timeout-sealed-failed-infra\nPASS malformed-output-campaign-rc1\nPASS malformed-output-sealed-failed-parse\nPASS parse-failure-never-retried\nPASS failed-unit-resume-replays-rc1\nPASS failed-unit-not-reinvoked-on-resume\nPASS abstention-substantive-rc0\nPASS abstention-sealed\nPASS abstention-decision-recorded\nPASS abstention-counted-not-failed\nPASS no-raw-nul-bytes-in-campaign-script\ntest-taste-calibration-campaign.sh: 48 pass, 0 fail\nPASS test-taste-calibration-audit assertions=21\nPASS: test-taste-panel-freeze (schema, identity, hash, tamper matrix)\nPASS test-taste-benchmark-preflight assertions=34\nPASS test-taste-source-adversarial assertions=70 seams=0\nPASS test-taste-source-campaign-e2e assertions=29 seams=0\n"
+  },
+  {
+    "run": "c41-source-calibration-20260812-a1",
+    "phase": "focused",
+    "command": "jq -e '.status == \"VALIDATED\" and .fixture_only == false and .domains == 3 and .calibration_images == 180 and .holdout_images == 72 and .eligible_judges >= 5 and .human_calibrated == true and .human_certified == false' docs/polylane/taste-certification/benchmark/calibration-summary.json >/dev/null",
+    "return_code": 2,
+    "timestamp": "2026-08-13T00:16:36Z",
+    "output_tail": "jq: error: Could not open file docs/polylane/taste-certification/benchmark/calibration-summary.json: No such file or directory\n"
+  }
+]

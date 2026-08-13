@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "download-campaign",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-download-campaign/docs/verify-download-campaign.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

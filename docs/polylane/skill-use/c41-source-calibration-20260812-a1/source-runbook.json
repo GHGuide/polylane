@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "lane": "source-runbook",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-source-runbook/docs/verify-source-runbook.md",
+  "helped": [
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " verification separates hermetic-unit (selftest), integration (focused lane tests), and external layers, and §6 records the coverage gap explicitly."
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " runbook §§8–13 (interruption recovery, challenge rule, provider failures, stop conditions) were structured as controllable-risk → mitigation → owner-action pairs per the register format."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " label checks (§§1–2) were designed to fail first (a PLANNED file appearing or a REAL file missing flips a PASS to FAIL), keeping the runbook's claims falsifiable; no production code was written in this docs-only lane."
+    }
+  ],
+  "unused": [
+    "deep-research"
+  ],
+  "hurt": []
+}
