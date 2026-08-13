@@ -209,6 +209,10 @@ Recovery never checkpoints `HANDOFF_PENDING`. The runner never authors, normaliz
 appends, deletes, or recommits worker-owned status/verdict bytes, and no partial or
 live-worker handoff can become DONE. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
 
+Contract-v2 compatibility remains explicit for old manifests: Builder POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. For an integrator, only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-<lane>.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit.
+
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored, commit it, and exit immediately. Integrator final handoff: write the only current-run verdict sentinel as the final line of `docs/verify-integration.md`; write `docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both handoff files if ignored, commit them, and exit immediately.
+
 Use `orchestration_contract: 3` with explicit run `evidence_kind` and explicit
 builder/integrator roles, validate scope and prompts, then run doctor and the
 supervisor. Surface only the truthful watch command, `tmux attach -t <session>`.

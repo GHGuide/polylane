@@ -152,6 +152,11 @@ mandatory:
 - exact `STATUS: <lane> DONE run=<run_id>` first-line marker, written only by that
   finalization transaction and trusted only with exact committed HEAD/hash/clean-tree evidence.
 
+Contract-v2 compatibility remains explicit for previously compiled manifests:
+Builder POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. For an integrator, only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-<lane>.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit.
+
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored, commit it, and exit immediately. Integrator final handoff: write the only current-run verdict sentinel as the final line of `docs/verify-integration.md`; write `docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both handoff files if ignored, commit them, and exit immediately.
+
 For a UI lane, additionally compose the visual block from
 [prompt-blocks.md](prompt-blocks.md) D.2: the five manifest-derived lines
 (`UI-CONTRACT`, `UI-IMPLEMENT`, `UI-CONTENT`, `UI-EVIDENCE`, `UI-REVIEW-BOUNDARY`),

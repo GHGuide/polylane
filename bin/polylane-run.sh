@@ -2187,8 +2187,16 @@ pane_cmd() {
     coord_file="${COORDINATION_FILE:-${POLYLANE_COORDINATION_FILE:-$project_root/.polylane/coordination.jsonl}}"
   fi
   qproject=$(printf '%q' "$project_root"); qcoord=$(printf '%q' "$coord_file"); qsource=$(printf '%q' "$wt")
-  worker=$(prime_hybrid_worker_for_worktree "$wt") || return 1
-  role=$(lane_role_get "$worker")
+  if worker=$(prime_hybrid_worker_for_worktree "$wt"); then
+    role=$(lane_role_get "$worker")
+  elif [ "${ORCHESTRATION_CONTRACT:-0}" -ge 3 ] 2>/dev/null; then
+    return 1
+  else
+    # Legacy/unit callers predate explicit worker-role mappings. Keep their
+    # launch surface intact; contract v3 still fails closed above.
+    worker=legacy
+    role=builder
+  fi
   qworker=$(printf '%q' "$worker"); qrole=$(printf '%q' "$role"); qrun=$(printf '%q' "${RUN_ID:-legacy}")
   qhybrid=$(prime_hybrid_pane_exports "$wt") || return 1
   [ -n "$effort" ] && pfx="POLYLANE_EFFORT=$(printf '%q' "$effort") "
@@ -3730,7 +3738,29 @@ lane_durable_activity_hash() {
 }
 
 pane_wedged() {
-  local name="$1" idx="$2" h prev epoch now limit interval state_dir state_file tmp
+  local name="$1" idx="$2" h prev cnt epoch now limit interval state_dir state_file tmp
+  if [ "${ORCHESTRATION_CONTRACT:-0}" -lt 3 ] 2>/dev/null; then
+    if pane_agent_live "$idx"; then
+      lane_active_command "$name" && return 1
+      if lane_terminal_or_idle "$name" "$idx"; then
+        h=$(lane_durable_activity_hash "$name")
+      else
+        h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
+      fi
+    else
+      h=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | cksum | cut -d' ' -f1)
+    fi
+    [ -n "$h" ] || return 1
+    prev=$(wedge_hash_get "$name"); cnt=$(wedge_cnt_get "$name")
+    if [ "$h" = "$prev" ]; then cnt=$((cnt + 1)); else cnt=0; fi
+    wedge_hash_set "$name" "$h"; wedge_cnt_set "$name" "$cnt"
+    limit="${POLYLANE_WEDGE_CHECKS:-4}"
+    if pane_agent_live "$idx"; then
+      lane_terminal_or_idle "$name" "$idx" || limit=$(lane_live_wedge_checks "$name")
+    fi
+    [ "$cnt" -ge "$limit" ]
+    return
+  fi
   h=$(lane_durable_activity_hash "$name")
   [ -n "$h" ] || return 1
   now="${POLYLANE_NOW_EPOCH:-$(date +%s)}"
@@ -4236,8 +4266,13 @@ contract_focused_proof_matches() {
 # its exact proof still matches; terminal mode runs only for eligible targets.
 report_acceptance_failures() {
   printf 'ACCEPTANCE-GATE: failed frozen checks:\n' >&2
-  jq -r '(.accept // [])[] | select(.status=="fail") | "\(.sid): \(.cmd) [\(.evidence_kind // "autonomous")/fail]"' \
-    "$STATE_FILE" >&2 || true
+  if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 3 ] 2>/dev/null; then
+    jq -r '(.accept // [])[] | select(.status=="fail") | "\(.sid): \(.cmd) [\(.evidence_kind // "autonomous")/fail]"' \
+      "$STATE_FILE" >&2 || true
+  else
+    jq -r '(.accept // [])[] | select(.status=="fail") | "\(.sid): \(.cmd) [fail]"' \
+      "$STATE_FILE" >&2 || true
+  fi
 }
 
 # Keep the host efficiency proof path and its run nonce atomic in every nested
@@ -4269,8 +4304,13 @@ contract_acceptance_gate() {
       export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
       export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
       export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
-      "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
-        --cycle "$CYCLE" --targets "$targets" --focused --evidence-kind autonomous
+      if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 3 ] 2>/dev/null; then
+        "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+          --cycle "$CYCLE" --targets "$targets" --focused --evidence-kind autonomous
+      else
+        "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+          --cycle "$CYCLE" --targets "$targets" --focused
+      fi
     ) || { report_acceptance_failures; return 1; }
   fi
   if contract_terminal_eligible; then
@@ -4286,8 +4326,13 @@ contract_acceptance_gate() {
       export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
       export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
       export POLYLANE_ACCEPT_FAILURE_PHASE="terminal"
-      "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
-        --cycle "$CYCLE" --targets "$targets" --only-terminal --evidence-kind autonomous
+      if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 3 ] 2>/dev/null; then
+        "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+          --cycle "$CYCLE" --targets "$targets" --only-terminal --evidence-kind autonomous
+      else
+        "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+          --cycle "$CYCLE" --targets "$targets" --only-terminal
+      fi
     ) || { report_acceptance_failures; return 1; }
   fi
   jq -e --arg targets ",$targets," --argjson terminal "$terminal_ran" '
@@ -4320,8 +4365,13 @@ contract_focused_acceptance_gate() {
     export POLYLANE_ACCEPT_FAILURE_ROOT="$failure_root"
     export POLYLANE_ACCEPT_FAILURE_RUN_ID="${RUN_ID:-}"
     export POLYLANE_ACCEPT_FAILURE_PHASE="focused"
-    "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
-      --cycle "$CYCLE" --targets "$targets" --focused --evidence-kind autonomous
+    if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 3 ] 2>/dev/null; then
+      "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+        --cycle "$CYCLE" --targets "$targets" --focused --evidence-kind autonomous
+    else
+      "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
+        --cycle "$CYCLE" --targets "$targets" --focused
+    fi
   ) || { FOCUSED_ACCEPTANCE_PROOF=""; report_acceptance_failures; return 1; }
   contract_focused_proof_capture || true
 }

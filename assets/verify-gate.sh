@@ -10,10 +10,12 @@ input=$(cat 2>/dev/null || true)
 case "$input" in *'"stop_hook_active":true'*) exit 0 ;; esac
 
 DIR="${CLAUDE_PROJECT_DIR:-.}"
-lane="${POLYLANE_WORKER_ID:-}"
-run_id="${POLYLANE_WORKER_RUN_ID:-}"
-role="${POLYLANE_WORKER_ROLE:-}"
+lane=""
+run_id=""
+role=""
+explicit=0
 while [ "$#" -gt 0 ]; do
+  explicit=1
   case "$1" in
     --project) DIR=${2:-}; shift 2 ;;
     --lane) lane=${2:-}; shift 2 ;;
@@ -22,7 +24,7 @@ while [ "$#" -gt 0 ]; do
     *) echo "usage: verify-gate.sh --project ROOT --lane NAME --run-id RUN --role builder|integrator" >&2; exit 2 ;;
   esac
 done
-if [ -n "$lane$run_id$role" ]; then
+if [ "$explicit" = 1 ]; then
   case "$lane" in ''|*[!A-Za-z0-9._-]*) echo "polylane verify-gate: explicit lane is invalid" >&2; exit 2 ;; esac
   case "$run_id" in ''|*[!A-Za-z0-9._-]*) echo "polylane verify-gate: explicit run is invalid" >&2; exit 2 ;; esac
   case "$role" in builder|integrator) : ;; *) echo "polylane verify-gate: explicit role is invalid" >&2; exit 2 ;; esac
@@ -50,6 +52,7 @@ for s in "$DIR"/docs/status-*.md; do
   head -1 "$s" 2>/dev/null | grep -q 'DONE' || continue
   lane=$(basename "$s" .md); lane=${lane#status-}
   ev="verify-$lane.md"
+  [ "$lane" = integrator ] && ev=verify-integration.md
   if [ ! -s "$DIR/docs/$ev" ]; then
     echo "polylane verify-gate: lane '$lane' claims DONE in $s but docs/$ev is missing/empty. Write the verification evidence (what you built + proof it works) before finishing." >&2
     exit 2
