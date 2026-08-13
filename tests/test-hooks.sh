@@ -83,6 +83,20 @@ assert_contains "hooks-codex-fragment-project-local" 'git rev-parse --show-tople
 assert_contains "hooks-claude-fragment-project-local" 'CLAUDE_PROJECT_DIR' "$(cat "$CLAUDE_FRAGMENT")"
 assert_ok "hooks-legacy-claude-snippet-json" jq -e '.hooks.Stop' "$ROOT/assets/settings-hook-snippet.json"
 
+# The completion gate receives role and run explicitly. A custom-named
+# integrator uses verify-integration.md; a builder with the same name does not.
+VERIFY_GATE="$ROOT/assets/verify-gate.sh"
+printf '%s\n' 'STATUS: verifier-x DONE run=explicit-run' > "$PROJECT/docs/status-verifier-x.md"
+printf '%s\n' 'proof' 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=explicit-run' > "$PROJECT/docs/verify-integration.md"
+assert_ok "verify-gate-explicit-integrator-role" "$VERIFY_GATE" \
+  --project "$PROJECT" --lane verifier-x --run-id explicit-run --role integrator
+assert_fail "verify-gate-role-is-not-inferred-from-name" "$VERIFY_GATE" \
+  --project "$PROJECT" --lane verifier-x --run-id explicit-run --role builder
+assert_contains "hooks-codex-stop-passes-explicit-role" 'POLYLANE_WORKER_ROLE' \
+  "$(jq -r '.hooks.Stop[0].hooks[0].command' "$CODEX_FRAGMENT")"
+assert_contains "hooks-claude-stop-passes-explicit-run" 'POLYLANE_WORKER_RUN_ID' \
+  "$(jq -r '.hooks.Stop[0].hooks[0].command' "$CLAUDE_FRAGMENT")"
+
 # --- installed-helper locator + project-scoped fragment rendering ------------
 # The shipped fragments carry a placeholder helper path; a stranger renders a
 # project-local fragment that resolves the ACTUAL installed helper, never the
@@ -119,7 +133,15 @@ for EV in SessionStart PreCompact PostCompact Stop; do
     Stop)         FX=claude-stop.json ;;
   esac
   CMD=$(printf '%s' "$RENDERED_CLAUDE" | jq -r --arg e "$EV" '.hooks[$e][0].hooks[0].command')
-  OUT=$(input_for "$FX" | env CLAUDE_PROJECT_DIR="$PROJECT" sh -c "$CMD")
+  if [ "$EV" = Stop ]; then
+    printf '%s\n' 'STATUS: fixture-lane DONE run=fixture-run' > "$PROJECT/docs/status-fixture-lane.md"
+    printf '%s\n' 'fixture evidence run=fixture-run: PASS' > "$PROJECT/docs/verify-fixture-lane.md"
+    OUT=$(input_for "$FX" | env CLAUDE_PROJECT_DIR="$PROJECT" \
+      POLYLANE_WORKER_ID=fixture-lane POLYLANE_WORKER_RUN_ID=fixture-run \
+      POLYLANE_WORKER_ROLE=builder sh -c "$CMD")
+  else
+    OUT=$(input_for "$FX" | env CLAUDE_PROJECT_DIR="$PROJECT" sh -c "$CMD")
+  fi
   assert_ok "hooks-render-exec-json-$EV" sh -c 'printf %s "$1" | jq -e . >/dev/null' sh "$OUT"
   assert_eq "hooks-render-exec-continue-$EV" true "$(printf '%s' "$OUT" | jq -r '.continue // true')"
 done

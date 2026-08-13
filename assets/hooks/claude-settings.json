@@ -28,7 +28,7 @@
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "h='__POLYLANE_HOOKS_HELPER__'; [ -x \"$h\" ] || exit 0; exec \"$h\" claude Stop --project \"$CLAUDE_PROJECT_DIR\"" }
+          { "type": "command", "command": "h='__POLYLANE_HOOKS_HELPER__'; v=\"$(dirname \"$h\")/../assets/verify-gate.sh\"; [ -x \"$v\" ] || exit 0; [ -n \"${POLYLANE_WORKER_ID:-}\" ] && [ -n \"${POLYLANE_WORKER_RUN_ID:-}\" ] && [ -n \"${POLYLANE_WORKER_ROLE:-}\" ] || { printf '{\"continue\":true}\\n'; exit 0; }; \"$v\" --project \"$CLAUDE_PROJECT_DIR\" --lane \"$POLYLANE_WORKER_ID\" --run-id \"$POLYLANE_WORKER_RUN_ID\" --role \"$POLYLANE_WORKER_ROLE\" || exit $?; printf '{\"continue\":true}\\n'" }
         ]
       }
     ]

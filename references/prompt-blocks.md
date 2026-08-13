@@ -162,11 +162,17 @@ Also write a `## DEFERRED` section at the END of docs/verify-<lane>.md: every fo
 
 ## K. Runtime finalization — compiled builder prompt
 ```
-POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit.
+POLYLANE-RUNTIME-FINALIZE: after final relay/inbox, focused verification, and the scoped implementation/evidence commit, invoke `"$POLYLANE_SOURCE_ROOT/bin/polylane-finalize.sh" --project-root "$POLYLANE_PROJECT_ROOT" --worktree "$POLYLANE_SOURCE_ROOT" --lane "$POLYLANE_WORKER_ID" --run-id "$POLYLANE_WORKER_RUN_ID" --role "$POLYLANE_WORKER_ROLE" [--verdict <verdict>]` as the final repository command, then exit immediately.
 ```
-The final relay command is `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; the final inbox command is `"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"`. `docs/parallel-status.md` remains post-cycle evidence, never the live relay. Builders create only `docs/status-<lane>.md`. Integrators: only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md; write `docs/status-<lane>.md` with only its DONE marker and no verdict. Keep the marker nonce, exact first line, clean-tree, exact-HEAD, and host-gate ownership language intact.
+The compiled block replaces manual marker instructions with one final call to
+`bin/polylane-finalize.sh`, passing explicit project root, worktree, lane, run id,
+and `builder|integrator` role; integrators also pass their verdict. The final relay
+command is `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; the final inbox command is `"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"`. `docs/parallel-status.md` remains post-cycle evidence, never the live relay.
 
-Builder final handoff: after the scoped implementation/evidence commit and clean-status check, write only its current-run `docs/status-<lane>.md`, force-add it if ignored, commit it, and exit immediately. Integrator final handoff: write the only current-run verdict sentinel as the final line of `docs/verify-integration.md`; write `docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both handoff files if ignored, commit them, and exit immediately. Neither role may perform repository work after that final commit.
+The worker-invoked helper alone authors and commits marker/verdict bytes. It records
+`WORKING → HANDOFF_PENDING → HANDOFF_COMMITTED`; the runner records `QUIESCING → DONE`
+only around process exit. Recovery cannot checkpoint a partial handoff, and the runner
+may verify but never normalize, append, delete, or recommit those bytes.
 
 ## Integrator lane (append when used)
 Compose A/B(top non-Fable available, xhigh — the integrator role clamp in `model-selection.md`)/C/E + a merge-build-install-verify-critic body:

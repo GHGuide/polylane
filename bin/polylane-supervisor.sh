@@ -76,11 +76,15 @@ PROJECT_ROOT=$(cd "$MDIR/.." && pwd -P)
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
 RUN_STATS="$PROJECT_ROOT/docs/polylane/run-stats.json"
 HEARTBEAT="$MDIR/supervisor-heartbeat"
+SUP_PROGRESS_FILE="$MDIR/supervisor-progress.json"
+SUP_PROGRESS_TIMEOUT="${POLYLANE_SUP_PROGRESS_TIMEOUT:-7200}"
 RUNNER_LOG="$MDIR/runner.log"
 SUP_LOCK="$MDIR/supervisor.lock"
 DECIDED=""            # lanes parked on a critical approval (notified once)
 SUP_START=$(date +%s)
 SUP_CHILD_PID=""
+SUP_PROGRESS_FP=""
+SUP_PROGRESS_EPOCH=$(date +%s)
 
 sup_log() { printf '[supervisor %s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
 
@@ -174,6 +178,45 @@ heartbeat() {
 # one watch tick (also the --check-once body): relay + heartbeat.
 tick() { drain_approvals; heartbeat "${1:-unknown}" "${2:-0}"; }
 
+# Durable progress is independent of runner PID and pane paint. It changes only
+# when source/HEAD, worker finalization, runner statistics, or the terminal
+# report changes. A spinner or endlessly repainting pane cannot feed it.
+supervisor_progress_fingerprint() {
+  {
+    jq -c '{run_id:(.run_id // ""),lanes:[.lanes[]|{name,worktree}],integrator:{name:.integrator.name,worktree:.integrator.worktree}}' "$SUP_MANIFEST" 2>/dev/null || true
+    while IFS='|' read -r _name wt; do
+      [ -d "$wt" ] || continue
+      git -C "$wt" rev-parse HEAD 2>/dev/null || true
+      git -C "$wt" status --porcelain --untracked-files=all 2>/dev/null || true
+    done < <(jq -r '(.lanes[] | "\(.name)|\(.worktree)"), (.integrator | "\(.name)|\(.worktree)")' "$SUP_MANIFEST")
+    for f in "$RUN_STATS" "$REPORT" "$MDIR/events.jsonl" "$MDIR/coordination.jsonl"; do
+      [ -f "$f" ] && cksum "$f"
+    done
+    if [ -d "$MDIR/finalization/$RUN_ID" ]; then
+      find "$MDIR/finalization/$RUN_ID" -type f -name '*.json' -exec cksum {} \; 2>/dev/null | sort
+    fi
+  } | cksum | awk '{print $1 ":" $2}'
+}
+
+supervisor_progress_watchdog() {
+  local fp now elapsed tmp
+  case "$SUP_PROGRESS_TIMEOUT" in ''|*[!0-9]*) SUP_PROGRESS_TIMEOUT=7200 ;; esac
+  [ "$SUP_PROGRESS_TIMEOUT" -gt 0 ] 2>/dev/null || return 0
+  fp=$(supervisor_progress_fingerprint)
+  now="${POLYLANE_NOW_EPOCH:-$(date +%s)}"
+  if [ "$fp" != "$SUP_PROGRESS_FP" ]; then
+    SUP_PROGRESS_FP="$fp"; SUP_PROGRESS_EPOCH="$now"
+    tmp=$(mktemp "$MDIR/.supervisor-progress.XXXXXX") || return 0
+    jq -cn --arg run "$RUN_ID" --arg fp "$fp" --argjson epoch "$now" \
+      '{version:1,run:$run,fingerprint:$fp,transition_epoch:$epoch}' > "$tmp" && mv "$tmp" "$SUP_PROGRESS_FILE"
+    return 0
+  fi
+  elapsed=$((now - SUP_PROGRESS_EPOCH))
+  [ "$elapsed" -lt "$SUP_PROGRESS_TIMEOUT" ] && return 0
+  sup_log "progress watchdog expired after ${elapsed}s without a durable transition"
+  return 1
+}
+
 tmux_watch_command() { polylane_tmux_watch_command "$TMUX_SESSION"; }
 
 # acquire_lock : only one supervisor may own a manifest. Atomic mkdir works on
@@ -233,6 +276,10 @@ supervisor_main() {
 
     while kill -0 "$pid" 2>/dev/null; do
       tick alive "$restarts"
+      if ! supervisor_progress_watchdog; then
+        kill -TERM "$pid" 2>/dev/null || true
+        break
+      fi
       sleep "$SUP_INTERVAL"
     done
     # a crashed child returns nonzero from `wait` — must NOT kill the supervisor

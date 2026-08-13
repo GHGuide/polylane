@@ -10,12 +10,46 @@ input=$(cat 2>/dev/null || true)
 case "$input" in *'"stop_hook_active":true'*) exit 0 ;; esac
 
 DIR="${CLAUDE_PROJECT_DIR:-.}"
+lane="${POLYLANE_WORKER_ID:-}"
+run_id="${POLYLANE_WORKER_RUN_ID:-}"
+role="${POLYLANE_WORKER_ROLE:-}"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --project) DIR=${2:-}; shift 2 ;;
+    --lane) lane=${2:-}; shift 2 ;;
+    --run-id) run_id=${2:-}; shift 2 ;;
+    --role) role=${2:-}; shift 2 ;;
+    *) echo "usage: verify-gate.sh --project ROOT --lane NAME --run-id RUN --role builder|integrator" >&2; exit 2 ;;
+  esac
+done
+if [ -n "$lane$run_id$role" ]; then
+  case "$lane" in ''|*[!A-Za-z0-9._-]*) echo "polylane verify-gate: explicit lane is invalid" >&2; exit 2 ;; esac
+  case "$run_id" in ''|*[!A-Za-z0-9._-]*) echo "polylane verify-gate: explicit run is invalid" >&2; exit 2 ;; esac
+  case "$role" in builder|integrator) : ;; *) echo "polylane verify-gate: explicit role is invalid" >&2; exit 2 ;; esac
+  marker="STATUS: $lane DONE run=$run_id"
+  status="$DIR/docs/status-$lane.md"
+  [ "$role" = integrator ] && ev=verify-integration.md || ev="verify-$lane.md"
+  if [ ! -f "$status" ] || [ "$(sed -n '1p' "$status")" != "$marker" ] || [ ! -s "$DIR/docs/$ev" ]; then
+    echo "polylane verify-gate: explicit $role '$lane' lacks exact current-run marker/evidence for run=$run_id" >&2
+    exit 2
+  fi
+  if [ "$role" = integrator ]; then
+    tail -n 1 "$DIR/docs/$ev" | grep -Eq "^POLYLANE-VERDICT: (GO|READY-FOR-HOST-GATE|EXTERNAL-EVIDENCE-OPEN|NO-GO) run=$run_id$" || {
+      echo "polylane verify-gate: integrator verdict is not the exact final current-run line" >&2
+      exit 2
+    }
+  elif ! grep -qF "run=$run_id" "$DIR/docs/$ev"; then
+    echo "polylane verify-gate: builder evidence is not tagged run=$run_id" >&2
+    exit 2
+  fi
+  exit 0
+fi
+
 for s in "$DIR"/docs/status-*.md; do
   [ -f "$s" ] || continue
   head -1 "$s" 2>/dev/null | grep -q 'DONE' || continue
   lane=$(basename "$s" .md); lane=${lane#status-}
-  # the integrator's evidence file is verify-integration.md, not verify-integrator.md
-  ev="verify-$lane.md"; [ "$lane" = integrator ] && ev="verify-integration.md"
+  ev="verify-$lane.md"
   if [ ! -s "$DIR/docs/$ev" ]; then
     echo "polylane verify-gate: lane '$lane' claims DONE in $s but docs/$ev is missing/empty. Write the verification evidence (what you built + proof it works) before finishing." >&2
     exit 2

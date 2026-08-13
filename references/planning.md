@@ -139,15 +139,18 @@ mandatory:
 - `EXTERNAL-EVIDENCE:` manual/physical and consequential-action evidence stays
   external while autonomous work continues; no live external action occurs without
   explicit approval;
+- frozen acceptance records use `evidence_kind: autonomous|external` independently
+  from cadence `tier: focused|terminal`; each subgoal is homogeneous, legacy means
+  autonomous, and autonomous manifests/gates never target or execute external checks;
 - when `prime_hybrid: true`, the runner-provided context-packet/inbox instruction
   from `prompt-blocks.md` (read the bounded packet once; use the durable inbox for
   follow-ups; global prompt/skill ideas remain skill-evolution proposals);
 - `docs/verify-<lane>.md` evidence contract;
-- Builder POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit; integrator: only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-<lane>.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit;
-- Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored, commit it, and exit immediately. Integrator final handoff: write the only current-run verdict sentinel as the final line of `docs/verify-integration.md`; write `docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both handoff files if ignored, commit them, and exit immediately;
+- worker-invoked `bin/polylane-finalize.sh` as the final repository command after the scoped implementation/evidence commit, with explicit project root, worktree, lane, run id, and role; integrators also pass the verdict;
+- persisted `WORKING → HANDOFF_PENDING → HANDOFF_COMMITTED → QUIESCING → DONE`; recovery refuses to checkpoint a partial handoff, and the runner never authors, normalizes, appends, deletes, or recommits worker-owned marker/verdict bytes;
 - prime-hybrid refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand;
-- exact `STATUS: <lane> DONE run=<run_id>` first-line marker, written last by that
-  finalization transaction.
+- exact `STATUS: <lane> DONE run=<run_id>` first-line marker, written only by that
+  finalization transaction and trusted only with exact committed HEAD/hash/clean-tree evidence.
 
 For a UI lane, additionally compose the visual block from
 [prompt-blocks.md](prompt-blocks.md) D.2: the five manifest-derived lines

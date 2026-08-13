@@ -37,7 +37,11 @@ verification and may promote as GO without a terminal boundary.
 ## What the runner does, in order
 
 ### 1. Collect DONE lanes
-Each lane signals completion by writing `docs/status-<lane>.md` with a first line `STATUS: <lane> DONE run=<RUN_ID>`. The runner reads these markers to know which lanes claim done. A lane with no `STATUS: … DONE run=<RUN_ID>` marker is treated as not-done and is left untouched.
+Each v3 lane invokes `bin/polylane-finalize.sh`, which writes and commits
+`docs/status-<lane>.md` with first line `STATUS: <lane> DONE run=<RUN_ID>` and a
+durable handoff receipt. The runner verifies exact committed marker/verdict/HEAD,
+hashes, clean tree, and worker exit. It never authors, normalizes, appends, deletes,
+or recommits worker-owned status/verdict bytes.
 
 ### 2. Verify merged — never lose work
 For every lane branch, the runner checks it is fully merged into the integration branch:
@@ -62,10 +66,11 @@ git worktree remove --force <lane-worktree-path>   # discards only build artifac
 git branch -d <lane-branch>                         # -d refuses an unmerged branch → safe by construction
 ```
 
-Then it clears its own scratch:
+Then it clears its own runner scratch:
 
 - remove `.polylane/` (the runner's working state)
-- remove `docs/status-*.md` (the DONE markers — scratch, their job is finished once merged)
+- v3 committed `docs/status-*.md` and verdict evidence remain immutable; legacy
+  pre-v3 cleanup retains its historical marker-removal behavior.
 
 ### 5. Keep the evidence
 The runner KEEPS, always:
@@ -75,7 +80,8 @@ The runner KEEPS, always:
 - `docs/polylane-report.md` — the end-of-run digest (step 6).
 - `docs/lane-logs/` — per-lane pane logs, when present.
 
-Deleting the status markers but keeping the verify files is the point: the transient DONE signal goes, the durable evidence stays.
+V3 keeps the status markers because they are part of the worker-authored committed
+receipt; their nonce prevents a later run from confusing them with current work.
 
 ### 6. Report
 The runner writes `docs/polylane-report.md` — a plain-language digest (outcome GO/NO-GO, per-lane results table, recent commits, suggested next steps) — on **both** GO and NO-GO, and prints: worktrees removed, branches deleted, scratch cleared, lanes skipped (if any were unmerged). The orchestrator reads the report and relays a simple summary to the user in the chat. Exactly one folder remains — the main project tree.
@@ -89,7 +95,9 @@ acceptance artifacts are never broadly allowlisted merely to make promotion pass
 
 - **Verify before remove.** No worktree or branch is removed until its lane branch shows 0 commits at risk (step 2). `git branch -d` (not `-D`) is a second guard — it refuses to delete an unmerged branch.
 - **Conflict → abort, delete nothing.** If merging a lane into the integration branch hits a conflict, the runner aborts the whole cleanup and deletes nothing. Resolve the conflict (keep BOTH lane sections verbatim in doc files like `docs/parallel-status.md`), re-run the integrator to GO, then re-run the runner.
-- **Never `rm` outside worktrees + `.polylane/` + status scratch.** The runner only ever calls `git worktree remove`, `git branch -d`, and removes `.polylane/` + `docs/status-*.md`. It never `rm`s the main tree, `docs/verify-*.md`, `docs/parallel-status.md`, `docs/polylane-report.md`, `docs/lane-logs/`, or any path outside that fixed set.
+- **Never mutate worker handoff bytes.** V3 runner cleanup only removes registered
+  worktrees/merged branches and runner scratch. Status/verdict bytes are verified,
+  promoted, and retained exactly as committed by the worker finalizer.
 
 ## Permissions note
 Removing worktrees may be gated by the harness auto-mode (destructive). If blocked, the runner surfaces the exact `git worktree remove` / `git branch -d` commands for the user to run or approve — it does not work around the guard.

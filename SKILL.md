@@ -63,8 +63,8 @@ Initialize measurable criteria and frozen acceptance before builders begin:
 "$MEM" "$STATE" add-criterion c1 "<observable finish condition>" 10
 "$MEM" "$STATE" add-milestone m1 "<deliverable group>"
 "$MEM" "$STATE" add-subgoal m1 m1.1 "<observable result>" 10
-"$MEM" "$STATE" add-accept m1.1 '<focused reproducible check>'
-"$MEM" "$STATE" add-accept m1.1 '<terminal certification>' --tier terminal
+"$MEM" "$STATE" add-accept m1.1 '<focused reproducible check>' --evidence-kind autonomous
+"$MEM" "$STATE" add-accept m1.1 '<terminal certification>' --tier terminal --evidence-kind autonomous
 ```
 
 If a criterion can only become true after the coordinator's terminal host gate, list
@@ -183,7 +183,13 @@ parallelism as theater or reopen a recorded failed approach.
 
 Each prompt must state the goal, project profile, lane ownership, selected installed
 skills, focused test cadence, scoped staging, `docs/verify-<lane>.md`, the exact
-completion marker `STATUS: <lane> DONE run=<RUN_ID>`, and builder POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. For an integrator, only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-<lane>.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit. Route expensive repeated checks
+completion marker `STATUS: <lane> DONE run=<RUN_ID>`, and the worker-invoked
+`bin/polylane-finalize.sh` command with explicit project root, worktree, lane,
+run id, and role (plus verdict for an integrator). The worker commits implementation
+and evidence first, invokes the finalizer as its last repository command, and exits.
+The finalizer alone authors and commits status/verdict bytes; the runner only verifies
+their exact committed marker, final verdict, HEAD, hashes, and clean tree. This is
+the compiled `POLYLANE-RUNTIME-FINALIZE` contract. Route expensive repeated checks
 through:
 
 ```bash
@@ -198,14 +204,19 @@ exactly one real `propose` or `decline` per eligible item; `propose-or-decline` 
 a subcommand. Global skill changes remain proposals to
 `bin/polylane-skill-evolve.sh`, not edits to an active skill.
 
-Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored,
-commit it, and exit immediately. Integrator final handoff: write the only current-run
-verdict sentinel as the final line of `docs/verify-integration.md`; write
-`docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both
-handoff files if ignored, commit them, and exit immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
+Finalization persists `WORKING → HANDOFF_PENDING → HANDOFF_COMMITTED → QUIESCING → DONE`.
+Recovery never checkpoints `HANDOFF_PENDING`. The runner never authors, normalizes,
+appends, deletes, or recommits worker-owned status/verdict bytes, and no partial or
+live-worker handoff can become DONE. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
 
-Use `orchestration_contract: 2`, validate scope and prompts, then run doctor and the
+Use `orchestration_contract: 3` with explicit run `evidence_kind` and explicit
+builder/integrator roles, validate scope and prompts, then run doctor and the
 supervisor. Surface only the truthful watch command, `tmux attach -t <session>`.
+Acceptance `evidence_kind: autonomous|external` is independent from cadence
+`tier: focused|terminal`; legacy entries default autonomous and each subgoal is
+homogeneous. Autonomous host gates execute only autonomous checks. External-open
+is routed only after every targeted autonomous proof passes, and external checks
+are never executed or repaired locally.
 The integrator checks seams, profile evidence, and focused failures, then uses
 `READY-FOR-HOST-GATE` only when the current target owns at least one terminal-tier
 acceptance and no open/doing autonomous subgoal remains outside that target. A

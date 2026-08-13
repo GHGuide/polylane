@@ -122,10 +122,10 @@ STATUS: integrator DONE run=live-run.
 EOF
 inject_runtime_prompt_contract "$INTEGRATOR_SOURCE" integrator "$INTEGRATOR_RUNTIME" integrator
 assert_contains "runtime-integrator-verdict-has-canonical-path" \
-  "write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md" \
+  'polylane-finalize.sh" --project-root' \
   "$(cat "$INTEGRATOR_RUNTIME")"
 assert_contains "runtime-integrator-status-forbids-verdict" \
-  "never write a POLYLANE-VERDICT line in docs/status-integrator.md" \
+  "worker-invoked finalizer alone writes the only current-run POLYLANE-VERDICT sentinel" \
   "$(cat "$INTEGRATOR_RUNTIME")"
 assert_ok "runtime-integrator-promptlint-strict" \
   env POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 \
