@@ -10,11 +10,19 @@ FAKE_BIN="$TEST_TMPDIR/bin"
 mkdir -p "$FAKE_BIN"
 cat > "$FAKE_BIN/tmux" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "${PANE_TEXT:-}"
+printf '%s\n' "$*" >> "${TMUX_ARGS_LOG:-/dev/null}"
+if [[ " $* " == *" capture-pane "* && " $* " == *" -J "* ]]; then
+  printf '%s\n' "${PANE_TEXT_JOINED:-${PANE_TEXT:-}}"
+else
+  printf '%s\n' "${PANE_TEXT:-}"
+fi
 EOF
 chmod +x "$FAKE_BIN/tmux"
 PATH="$FAKE_BIN:$PATH"
 TMUX_SESSION="pane-stalled-test"
+TMUX_ARGS_LOG="$TEST_TMPDIR/tmux-args.log"
+export TMUX_ARGS_LOG
+: > "$TMUX_ARGS_LOG"
 
 export PANE_TEXT='Source prose says usage limit, but no action is offered.'
 assert_fail "pane-stalled-prose-usage-limit-is-not-paywall" pane_stalled 0
@@ -70,14 +78,49 @@ unset POLYLANE_NOW_HM POLYLANE_ON_LIMIT
 # numbered menu, so it must enter the same sticky free-reset path instead of
 # being misclassified as a dead pane and burning every retry/repair attempt.
 export PANE_TEXT="You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Aug 18th, 2026 3:31 PM."
+pane_dead() { return 0; }
 assert_ok "pane-stalled-codex-dated-usage-cooldown" pane_stalled 0
 assert_ok "pane-session-cooldown-codex-exact-ui" pane_session_cooldown 0
-TZ=Europe/Chisinau
-export TZ
+POLYLANE_CODEX_TZ=Europe/Chisinau
 POLYLANE_NOW_EPOCH=1787056259
 assert_fail "pane-codex-reset-not-due-one-second-before" pane_session_reset_due 0
 POLYLANE_NOW_EPOCH=1787056260
 assert_ok "pane-codex-reset-due-at-time" pane_session_reset_due 0
+
+export PANE_TEXT="You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or Try again at Aug 18th, 2026 3:31 pm."
+assert_ok "pane-codex-reset-parser-is-case-insensitive" pane_session_cooldown 0
+assert_ok "pane-codex-reset-case-variant-due" pane_session_reset_due 0
+
+export PANE_TEXT=$'You\'ve hit your usage limit. Visit https://chatgpt.com/codex/settings/\nusage to purchase more credits or try again at Aug 18th, 2026 3:31 PM.'
+export PANE_TEXT_JOINED="You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Aug 18th, 2026 3:31 PM."
+assert_ok "pane-codex-wrapped-terminal-output-is-joined" pane_session_cooldown 0
+assert_contains "pane-codex-capture-requests-joined-lines" "capture-pane -J -S -20" "$(cat "$TMUX_ARGS_LOG")"
+unset PANE_TEXT_JOINED
+
+export PANE_TEXT="You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Aug 18th, 2026 3:31 PM."
+pane_dead() { return 1; }
+assert_fail "pane-codex-exact-message-in-live-work-is-not-cooldown" pane_session_cooldown 0
+pane_dead() { return 0; }
+
+for malformed in \
+  "Apr 31st, 2026 3:31 PM" \
+  "Feb 29th, 2027 3:31 PM" \
+  "Aug 0th, 2026 3:31 PM" \
+  "Aug 18th, 2026 0:31 PM"; do
+  export PANE_TEXT="You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at $malformed."
+  assert_fail "pane-codex-malformed-date-rejected-$malformed" pane_session_cooldown 0
+done
+
+export PANE_TEXT="You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Aug 18th, 2026 3:31 PM."
+TZ=UTC
+export TZ
+POLYLANE_CODEX_TZ=Europe/Chisinau
+assert_ok "pane-codex-explicit-display-timezone-wins" pane_session_reset_due 0
+POLYLANE_CODEX_TZ='../invalid'
+assert_fail "pane-codex-invalid-display-timezone-fails-closed" pane_session_cooldown 0
+POLYLANE_CODEX_TZ='Not/AZone'
+assert_fail "pane-codex-missing-display-timezone-fails-closed" pane_session_cooldown 0
+POLYLANE_CODEX_TZ=Europe/Chisinau
 
 STALLED_LANES=a
 RESPAWNS=0
@@ -92,7 +135,7 @@ resolve_stalls "a:$TEST_TMPDIR/wt" > "$TEST_TMPDIR/codex-resume.out"
 assert_eq "codex-cooldown-respawns-once-at-reset" "1" "$RESPAWNS"
 assert_eq "codex-cooldown-resumes-frozen-conversation" "resume" "$RESUME_MODE"
 assert_eq "codex-cooldown-clears-stall-after-resume" "" "$STALLED_LANES"
-unset POLYLANE_NOW_EPOCH POLYLANE_ON_LIMIT TZ
+unset POLYLANE_NOW_EPOCH POLYLANE_ON_LIMIT POLYLANE_CODEX_TZ TZ
 
 export PANE_TEXT="Documentation example: You've hit your session limit and it resets 8:40pm."
 assert_fail "pane-session-limit-prose-without-live-command-is-not-stalled" pane_stalled 0

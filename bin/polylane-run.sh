@@ -76,6 +76,9 @@ ENV:
                               wait     hold POLYLANE_STALL_MAX health-cycles, then
                                         mark the lane failed (halt with a report)
   POLYLANE_STALL_MAX        wait-policy: health-cycles to hold before failing (default 6)
+  POLYLANE_CODEX_TZ         IANA timezone used by Codex's dated free-reset text.
+                            Unset derives the host zone from /etc/localtime;
+                            malformed, ambiguous, or nonexistent times fail closed.
   POLYLANE_MAX_REPAIRS      Reflexion repairs before a lane is failed: once retries
                             are exhausted the lane respawns with a "reflect on your
                             prior transcript, then take a DIFFERENT approach" prompt
@@ -3016,38 +3019,92 @@ mark_lane_failed() {
 # just re-hit the paywall, and auto-answering would spend money without a
 # human. Detect it, notify once, surface it in the poll + report, and wait.
 
-# pane_codex_usage_cooldown IDX : 0 iff Codex has exited at its exact dated
-# account-wide usage screen.  The URL + dated retry clause distinguish this
-# terminal provider message from ordinary source/test prose mentioning limits.
-pane_codex_usage_cooldown() {
-  local idx="$1" txt
-  [ "$idx" -ge 0 ] 2>/dev/null || return 1
-  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
-  printf '%s' "$txt" | grep -qiF "You've hit your usage limit" &&
-    printf '%s' "$txt" | grep -qiF 'chatgpt.com/codex/settings/usage' &&
-    printf '%s' "$txt" | grep -qiE 'try again at [A-Za-z]{3} [0-9]{1,2}(st|nd|rd|th)?, [0-9]{4} [0-9]{1,2}:[0-9]{2} (AM|PM)'
+# codex_usage_timezone : resolve the IANA zone used by the Codex display. An
+# explicit safe POLYLANE_CODEX_TZ wins; otherwise inherit TZ or derive the host
+# zoneinfo symlink. A pathname, traversal, or unresolvable token fails closed.
+codex_usage_timezone() {
+  local zone="${POLYLANE_CODEX_TZ:-${TZ:-}}" link zone_file
+  if [ -z "$zone" ]; then
+    link=$(readlink /etc/localtime 2>/dev/null || true)
+    case "$link" in
+      */zoneinfo/*) zone=${link#*/zoneinfo/} ;;
+    esac
+  fi
+  case "$zone" in ''|/*|*..*|*[!A-Za-z0-9_+./-]*) return 1 ;; esac
+  zone_file="/usr/share/zoneinfo/$zone"
+  [ -f "$zone_file" ] || return 1
+  TZ="$zone" date '+%s' >/dev/null 2>&1 || return 1
+  printf '%s' "$zone"
 }
 
-# pane_codex_reset_epoch IDX : print the local epoch encoded in Codex's dated
-# cooldown. BSD and GNU date are both supported; malformed text fails closed.
-pane_codex_reset_epoch() {
-  local idx="$1" txt reset with_seconds epoch
-  [ "$idx" -ge 0 ] 2>/dev/null || return 1
-  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
-  if [[ "$txt" =~ try[[:space:]]again[[:space:]]at[[:space:]]([A-Za-z]{3}[[:space:]][0-9]{1,2}(st|nd|rd|th)?,[[:space:]][0-9]{4}[[:space:]][0-9]{1,2}:[0-9]{2}[[:space:]](AM|PM)) ]]; then
-    reset="${BASH_REMATCH[1]}"
+codex_usage_roundtrip() {
+  local zone="$1" epoch="$2" out
+  out=$(TZ="$zone" LC_ALL=C date -r "$epoch" '+%m %d %Y %H %M' 2>/dev/null || true)
+  [ -n "$out" ] || out=$(TZ="$zone" LC_ALL=C date -d "@$epoch" '+%m %d %Y %H %M' 2>/dev/null || true)
+  printf '%s' "$out"
+}
+
+# codex_usage_reset_epoch_from_text TEXT : strict, case-insensitive parser for
+# Codex's local wall-clock reset. It validates calendar fields before `date`,
+# round-trips normalization, and rejects DST folds/gaps rather than guessing.
+codex_usage_reset_epoch_from_text() {
+  local flat lower month day suffix year hour minute ampm month_num max_day leap=0 hour24
+  local zone reset with_seconds epoch expected shifted actual
+  flat=$(printf '%s' "$1" | tr '\r\n' '  ' | tr -s ' ')
+  lower=$(printf '%s' "$flat" | tr '[:upper:]' '[:lower:]')
+  case "$lower" in
+    *"you've hit your usage limit"*"chatgpt.com/codex/settings/usage"*) : ;;
+    *) return 1 ;;
+  esac
+  if [[ "$lower" =~ try[[:space:]]again[[:space:]]at[[:space:]]([a-z]{3})[[:space:]]([0-9]{1,2})(st|nd|rd|th)?,[[:space:]]([0-9]{4})[[:space:]]([0-9]{1,2}):([0-9]{2})[[:space:]](am|pm) ]]; then
+    month="${BASH_REMATCH[1]}"; day="${BASH_REMATCH[2]}"; suffix="${BASH_REMATCH[3]}"
+    year="${BASH_REMATCH[4]}"; hour="${BASH_REMATCH[5]}"; minute="${BASH_REMATCH[6]}"; ampm="${BASH_REMATCH[7]}"
   else
     return 1
   fi
-  reset=$(printf '%s' "$reset" | sed -E 's/([0-9])(st|nd|rd|th),/\1,/')
-  with_seconds=$(printf '%s' "$reset" | sed -E 's/ (AM|PM)$/:00 \1/')
-  epoch=$(LC_ALL=C date -j -f '%b %d, %Y %I:%M:%S %p' "$with_seconds" '+%s' 2>/dev/null || true)
-  if [ -z "$epoch" ]; then
-    epoch=$(LC_ALL=C date -d "$reset" '+%s' 2>/dev/null || true)
-  fi
+  case "$month" in
+    jan) month_num=1; max_day=31 ;; feb) month_num=2; max_day=28 ;;
+    mar) month_num=3; max_day=31 ;; apr) month_num=4; max_day=30 ;;
+    may) month_num=5; max_day=31 ;; jun) month_num=6; max_day=30 ;;
+    jul) month_num=7; max_day=31 ;; aug) month_num=8; max_day=31 ;;
+    sep) month_num=9; max_day=30 ;; oct) month_num=10; max_day=31 ;;
+    nov) month_num=11; max_day=30 ;; dec) month_num=12; max_day=31 ;;
+    *) return 1 ;;
+  esac
+  day=$((10#$day)); year=$((10#$year)); hour=$((10#$hour)); minute=$((10#$minute))
+  [ "$year" -ge 2000 ] && [ "$day" -ge 1 ] && [ "$hour" -ge 1 ] && [ "$hour" -le 12 ] && [ "$minute" -le 59 ] || return 1
+  if [ $((year % 400)) -eq 0 ] || { [ $((year % 4)) -eq 0 ] && [ $((year % 100)) -ne 0 ]; }; then leap=1; fi
+  [ "$month_num" -ne 2 ] || [ "$leap" -ne 1 ] || max_day=29
+  [ "$day" -le "$max_day" ] || return 1
+  hour24=$hour; [ "$hour24" -eq 12 ] && hour24=0; [ "$ampm" = pm ] && hour24=$((hour24 + 12))
+  zone=$(codex_usage_timezone) || return 1
+  reset=$(printf '%s %d, %d %d:%02d %s' "$month" "$day" "$year" "$hour" "$minute" "$ampm")
+  with_seconds=$(printf '%s' "$reset" | sed -E 's/ (am|pm)$/:00 \1/')
+  epoch=$(TZ="$zone" LC_ALL=C date -j -f '%b %d, %Y %I:%M:%S %p' "$with_seconds" '+%s' 2>/dev/null || true)
+  [ -n "$epoch" ] || epoch=$(TZ="$zone" LC_ALL=C date -d "$reset" '+%s' 2>/dev/null || true)
   case "$epoch" in ''|*[!0-9]*) return 1 ;; esac
+  expected=$(printf '%02d %02d %04d %02d %02d' "$month_num" "$day" "$year" "$hour24" "$minute")
+  actual=$(codex_usage_roundtrip "$zone" "$epoch")
+  [ "$actual" = "$expected" ] || return 1
+  for shifted in $((epoch - 3600)) $((epoch + 3600)); do
+    [ "$(codex_usage_roundtrip "$zone" "$shifted")" != "$expected" ] || return 1
+  done
   printf '%s' "$epoch"
 }
+
+# pane_codex_usage_reset_epoch IDX : capture the terminal paragraph with wrapped
+# lines joined and emit its validated epoch. The exact official message must be
+# on a dead Codex pane; live source/test prose can never park a lane.
+pane_codex_usage_reset_epoch() {
+  local idx="$1" txt epoch
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  pane_dead "$idx" || return 1
+  txt=$(tmux capture-pane -J -S -20 -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  epoch=$(codex_usage_reset_epoch_from_text "$txt") || return 1
+  printf '%s' "$epoch"
+}
+
+pane_codex_usage_cooldown() { pane_codex_usage_reset_epoch "$1" >/dev/null; }
 
 # pane_session_cooldown IDX : 0 iff Claude Code or Codex has ended the turn at
 # an exact free-reset screen. These screens have no numbered decision menu;
@@ -3072,8 +3129,7 @@ pane_session_reset_due() {
   local idx="$1" txt reset hour minute suffix zone="" now_hm now_h now_m reset_m now_total delta
   local reset_epoch now_epoch
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
-  if pane_codex_usage_cooldown "$idx"; then
-    reset_epoch=$(pane_codex_reset_epoch "$idx") || return 1
+  if reset_epoch=$(pane_codex_usage_reset_epoch "$idx"); then
     now_epoch="${POLYLANE_NOW_EPOCH:-$(date '+%s' 2>/dev/null || true)}"
     case "$now_epoch" in ''|*[!0-9]*) return 1 ;; esac
     [ "$now_epoch" -ge "$reset_epoch" ]
@@ -3142,8 +3198,78 @@ stall_check() {
     fi
   done
 }
-retry_get()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'; }
-retry_set()   { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_RETRIES[i]="$2"; }
+recovery_state_file() {
+  local name="$1" root="${PROJECT_ROOT:-${REPO_ROOT:-}}"
+  case "$name" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac
+  [ -n "$root" ] && [ -n "${RUN_ID:-}" ] || return 1
+  printf '%s/.polylane/recovery/%s/%s.json' "$root" "$RUN_ID" "$name"
+}
+
+recovery_state_field() {
+  local name="$1" field="$2" f
+  f=$(recovery_state_file "$name") || return 1
+  [ -s "$f" ] && [ ! -L "$f" ] || return 1
+  jq -e --arg run "$RUN_ID" --arg lane "$name" '
+    .version==1 and .run==$run and .lane==$lane and
+    (.prompt_path|type=="string") and
+    (.repair_count|type=="number" and floor==. and .>=0) and
+    (.retry_count|type=="number" and floor==. and .>=0)
+  ' "$f" >/dev/null 2>&1 || return 1
+  jq -r --arg field "$field" '.[$field]' "$f"
+}
+
+recovery_state_commit() {
+  local name="$1" prompt="$2" repairs="$3" retries="$4" f dir tmp i
+  case "$repairs:$retries" in *[!0-9:]*) return 1 ;; esac
+  i=$(pane_index_for "$name")
+  [ "$i" -lt 0 ] 2>/dev/null || { LANE_REPAIRS[i]="$repairs"; LANE_RETRIES[i]="$retries"; }
+  [ "${DRY_RUN:-0}" = 1 ] && return 0
+  f=$(recovery_state_file "$name") || return 0
+  dir=$(dirname "$f"); mkdir -p "$dir" || return 1
+  tmp="$f.tmp.$$"
+  jq -n --arg run "$RUN_ID" --arg lane "$name" --arg prompt "$prompt" \
+    --argjson repairs "$repairs" --argjson retries "$retries" \
+    '{version:1,run:$run,lane:$lane,prompt_path:$prompt,repair_count:$repairs,retry_count:$retries}' > "$tmp" \
+    && mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
+}
+
+recovery_state_restore_one() {
+  local name="$1" prompt repairs retries expected_prefix
+  [ "${RESUME:-0}" = 1 ] || return 0
+  prompt=$(recovery_state_field "$name" prompt_path) || return 0
+  repairs=$(recovery_state_field "$name" repair_count) || return 1
+  retries=$(recovery_state_field "$name" retry_count) || return 1
+  if [ "$repairs" -gt 0 ]; then
+    expected_prefix="${PROJECT_ROOT:-${REPO_ROOT:-}}/.polylane/lanes/$name.repair-"
+    case "$prompt" in "$expected_prefix"[0-9]*.txt) : ;; *) return 1 ;; esac
+    [ -f "$prompt" ] && [ ! -L "$prompt" ] || return 1
+    assert_prompt "$prompt" "$name" || return 1
+    lane_prompt_set "$name" "$prompt"
+  fi
+  local i; i=$(pane_index_for "$name")
+  [ "$i" -lt 0 ] 2>/dev/null || { LANE_REPAIRS[i]="$repairs"; LANE_RETRIES[i]="$retries"; }
+}
+
+recovery_state_restore_all() {
+  local name
+  [ "${RESUME:-0}" = 1 ] || return 0
+  for name in "${LANE_NAMES[@]}"; do recovery_state_restore_one "$name" || return 1; done
+  [ -z "${INT_NAME:-}" ] || recovery_state_restore_one "$INT_NAME"
+}
+
+retry_get() {
+  local i value
+  value=$(recovery_state_field "$1" retry_count 2>/dev/null || true)
+  case "$value" in *[!0-9]*|'') value="" ;; esac
+  [ -z "$value" ] || { printf '%s' "$value"; return; }
+  i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_RETRIES[$i]:-0}" || printf '0'
+}
+retry_set() {
+  local name="$1" value="$2" i repairs prompt
+  i=$(pane_index_for "$name"); [ "$i" -lt 0 ] 2>/dev/null || LANE_RETRIES[i]="$value"
+  repairs=$(repairs_get "$name"); prompt=$(lane_prompt_get "$name")
+  recovery_state_commit "$name" "$prompt" "$repairs" "$value"
+}
 
 # --- approval relay: auto-approve SAFE prompts, escalate CRITICAL ones ---------
 # Lanes run in acceptEdits mode, so file edits never prompt. A lane can still hit a
@@ -3531,8 +3657,19 @@ lane_prompt_set() {
   for i in "${!LANE_NAMES[@]}"; do [ "${LANE_NAMES[$i]}" = "$1" ] && { LANE_PROMPTS[i]="$2"; return; }; done
   [ "$1" = "${INT_NAME:-}" ] && INT_PROMPT="$2"
 }
-repairs_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_REPAIRS[$i]:-0}" || printf '0'; }
-repairs_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_REPAIRS[i]="$2"; }
+repairs_get() {
+  local i value
+  value=$(recovery_state_field "$1" repair_count 2>/dev/null || true)
+  case "$value" in *[!0-9]*|'') value="" ;; esac
+  [ -z "$value" ] || { printf '%s' "$value"; return; }
+  i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_REPAIRS[$i]:-0}" || printf '0'
+}
+repairs_set() {
+  local name="$1" value="$2" i retries prompt
+  i=$(pane_index_for "$name"); [ "$i" -lt 0 ] 2>/dev/null || LANE_REPAIRS[i]="$value"
+  retries=$(retry_get "$name"); prompt=$(lane_prompt_get "$name")
+  recovery_state_commit "$name" "$prompt" "$value" "$retries"
+}
 
 # build_repair_prompt SRC NAME K -> stdout : original prompt + a reflect-then-fix
 # addendum. Kept as a pure function so it is unit-testable without tmux.
@@ -3554,11 +3691,12 @@ build_repair_prompt() {
 # it, reset the transient-retry budget, and respawn. rc 1 if the file cannot be
 # written (caller then marks the lane failed).
 reflect_and_repair() {
-  local name="$1" wt="$2" idx="$3" k src dir repair candidate
-  k=$(repairs_get "$name"); k=$((k + 1))
+  local name="$1" wt="$2" idx="$3" k src dir repair candidate old_prompt old_repairs old_retries
+  old_repairs=$(repairs_get "$name"); k=$((old_repairs + 1))
+  old_retries=$(retry_get "$name"); old_prompt=$(lane_prompt_get "$name")
   dir="$REPO_ROOT/.polylane/lanes"; run mkdir -p "$dir" 2>/dev/null || true
-  src=$(lane_prompt_get "$name")
-  repair="$dir/$name.repair.txt"
+  src="$old_prompt"
+  repair="$dir/$name.repair-$k.txt"
   candidate="$repair.prepare.$$"
   if ! build_repair_prompt "$src" "$name" "$k" > "$candidate" 2>/dev/null; then
     rm -f "$candidate"
@@ -3571,12 +3709,18 @@ reflect_and_repair() {
     return 1
   fi
   mv "$candidate" "$repair" || { rm -f "$candidate"; return 1; }
-  lane_prompt_set "$name" "$repair"   # future respawns use the repaired prompt
-  repairs_set "$name" "$k"
-  retry_set "$name" 0                  # fresh transient budget after a repair
-  echo "reflexion: lane '$name' — repair attempt $k (reflect-then-fix), respawning pane $idx"
+  lane_prompt_set "$name" "$repair"
+  if ! respawn_lane "$idx" "$name" "$wt"; then
+    lane_prompt_set "$name" "$old_prompt"
+    return 1
+  fi
+  recovery_state_commit "$name" "$repair" "$k" 0 || {
+    lane_prompt_set "$name" "$old_prompt"
+    recovery_state_commit "$name" "$old_prompt" "$old_repairs" "$old_retries" || true
+    return 1
+  }
+  echo "reflexion: lane '$name' — repair attempt $k (reflect-then-fix), respawned pane $idx"
   notify_event stall "lane '$name': repair attempt $k (reflect + retry)"
-  respawn_lane "$idx" "$name" "$wt"
 }
 
 # resolve_stalls SPEC... : act on each usage-limit-stalled lane per POLYLANE_ON_LIMIT
@@ -5592,6 +5736,10 @@ main() {
   economy_plan_gate || exit 1
   emit_effective_model_policy
   preflight_contract
+  # Prompt compilation above reconstructs manifest-authored launch pointers.
+  # A resumed run must now restore its last successfully launched repair prompt
+  # and budgets before any resume, graph, worktree, or tmux decision is made.
+  recovery_state_restore_all || die "resume recovery state is invalid or incomplete"
   # Current-UI runs prove their authoritative visual configuration before any
   # worktree or tmux side effect exists. Legacy and non-UI runs are a no-op.
   visual_taste_preflight || { echo "Halt: current-UI visual-contract preflight failed before any worktree/tmux side effect. Nothing launched." >&2; exit 1; }

@@ -54,6 +54,9 @@ EXTERNAL-EVIDENCE: none.
 VERIFY: finish STATUS: x DONE run=repair-run.
 EOF
 REPO_ROOT="$TEST_TMPDIR/repeated"
+PROJECT_ROOT="$REPO_ROOT"
+RUN_ID=repair-run
+RESUME=1
 mkdir -p "$REPO_ROOT/.polylane/lanes"
 LANE_NAMES=(x); LANE_PROMPTS=("$strict"); LANE_REPAIRS=(0); LANE_PANE_IDX=(0)
 LANE_RETRIES=(0); LANE_WHASH=(""); LANE_WCNT=(0); LANE_PHASH=(""); LANE_PCNT=(0)
@@ -67,6 +70,21 @@ else
 fi
 assert_ok "repair-first-wave-strict" \
   "$SCRIPT_DIR/../bin/polylane-promptopt.sh" check "$(lane_prompt_get x)"
+first_prompt=$(lane_prompt_get x)
+first_state="$PROJECT_ROOT/.polylane/recovery/$RUN_ID/x.json"
+assert_ok "repair-first-wave-persists-recovery-state" test -s "$first_state"
+
+# Simulate the supervisor and runner both restarting: manifest arrays return to
+# their authored values.  Durable recovery must restore the selected prompt and
+# budgets before the next repair is considered.
+LANE_PROMPTS=("$strict"); LANE_REPAIRS=(0); LANE_RETRIES=(0)
+if recovery_state_restore_all >/dev/null 2>&1; then
+  pass "repair-state-restores-after-runner-restart"
+else
+  fail "repair-state-restores-after-runner-restart" "expected rc 0"
+fi
+assert_eq "repair-state-restores-prompt" "$first_prompt" "$(lane_prompt_get x)"
+assert_eq "repair-state-restores-count" "1" "$(repairs_get x)"
 if reflect_and_repair x "$TEST_TMPDIR/wt" 0 >/dev/null 2>&1; then
   pass "repair-second-wave"
 else
@@ -80,5 +98,30 @@ assert_contains "repair-second-wave-retains-first-reflection" "REPAIR ATTEMPT 1"
   "$(cat "$(lane_prompt_get x)")"
 assert_contains "repair-second-wave-adds-second-reflection" "REPAIR ATTEMPT 2" \
   "$(cat "$(lane_prompt_get x)")"
+
+# A failed pane replacement is not a committed repair attempt.  Prompt pointer,
+# counters, and durable state must all remain on the last launched repair.
+launched_prompt=$(lane_prompt_get x)
+launched_repairs=$(repairs_get x)
+launched_retries=$(retry_get x)
+state_before=$(cksum "$first_state")
+respawn_lane() { return 1; }
+assert_fail "repair-third-wave-respawn-fails" reflect_and_repair x "$TEST_TMPDIR/wt" 0
+assert_eq "repair-respawn-failure-restores-prompt" "$launched_prompt" "$(lane_prompt_get x)"
+assert_eq "repair-respawn-failure-restores-count" "$launched_repairs" "$(repairs_get x)"
+assert_eq "repair-respawn-failure-restores-retries" "$launched_retries" "$(retry_get x)"
+assert_eq "repair-respawn-failure-preserves-durable-state" "$state_before" "$(cksum "$first_state")"
+
+# Defining durable recovery is insufficient: the production main path must
+# restore it after source-prompt compilation and before resume/launch decisions.
+main_body=$(sed -n '/^main() {/,/^}$/p' "$RUNNER")
+restore_line=$(printf '%s\n' "$main_body" | grep -nF 'recovery_state_restore_all || die' | cut -d: -f1)
+contract_line=$(printf '%s\n' "$main_body" | grep -nF 'preflight_contract' | cut -d: -f1)
+resume_line=$(printf '%s\n' "$main_body" | grep -nF 'mark_resumed' | cut -d: -f1)
+if [ -n "$restore_line" ] && [ "$restore_line" -gt "$contract_line" ] && [ "$restore_line" -lt "$resume_line" ]; then
+  pass "repair-state-restored-by-main-before-resume-launch"
+else
+  fail "repair-state-restored-by-main-before-resume-launch" "restore call missing or ordered outside preflight_contract..mark_resumed"
+fi
 
 finish
