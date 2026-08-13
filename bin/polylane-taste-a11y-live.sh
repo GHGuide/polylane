@@ -327,21 +327,21 @@ audit() {
     ($M[0]) as $m | ($R[0]) as $r | ($P[0]) as $p |
     (if ($B|length) > 0 then $B[0] else null end) as $b |
     ($m.captures | map({key:.capture_id,value:{route,state,viewport}}) | from_entries) as $meta |
-    (if $b then ($b.results | map({key:(.route+" "+.state+" "+.viewport+" "+.criterion),value:.status}) | from_entries) else {} end) as $base |
-    ($p.scoped_exceptions | map({key:(.capture_id+" "+.criterion),value:.}) | from_entries) as $exc |
+    (if $b then ($b.results | map({key:(.route+"\u0000"+.state+"\u0000"+.viewport+"\u0000"+.criterion),value:.status}) | from_entries) else {} end) as $base |
+    ($p.scoped_exceptions | map({key:(.capture_id+"\u0000"+.criterion),value:.}) | from_entries) as $exc |
     [ $r.captures[] as $c | $c.checks[] | . + {capture_id:$c.capture_id} + ($meta[$c.capture_id]) ] as $checks |
     ($checks | map({capture_id,route,state,viewport,criterion,check_id,region,status,measured})) as $results |
     [ $checks[] | select(.status == "skipped")
       | {capture_id,route,state,viewport,criterion,check_id,region,measured,reason_code:"EVIDENCE_GAP"} ] as $gaps |
     [ $checks[] | select(.status == "fail")
-      | (.route+" "+.state+" "+.viewport+" "+.criterion) as $k
+      | (.route+"\u0000"+.state+"\u0000"+.viewport+"\u0000"+.criterion) as $k
       | ($base[$k]) as $bs
       | (if ($b | not) then "NEW_VIOLATION"
-         elif ($bs == "fail") then (if $exc[.capture_id+" "+.criterion] then "ACCEPTED_EXCEPTION" else "PREEXISTING_VIOLATION" end)
+         elif ($bs == "fail") then (if $exc[.capture_id+"\u0000"+.criterion] then "ACCEPTED_EXCEPTION" else "PREEXISTING_VIOLATION" end)
          else "REGRESSION" end) as $rc
       | {capture_id,route,state,viewport,criterion,check_id,region,measured,reason_code:$rc} ] as $classified |
     ($classified | map(select(.reason_code == "REGRESSION"))) as $regressions |
-    [ $classified[] | select(.reason_code == "ACCEPTED_EXCEPTION") | $exc[.capture_id+" "+.criterion] ] as $accepted |
+    [ $classified[] | select(.reason_code == "ACCEPTED_EXCEPTION") | $exc[.capture_id+"\u0000"+.criterion] ] as $accepted |
     ([ $classified[] | select(.reason_code | IN("REGRESSION","PREEXISTING_VIOLATION","NEW_VIOLATION")) ] | length > 0) as $veto |
     ($gaps | length > 0) as $gap |
     ($p.manual_external_criteria) as $man |

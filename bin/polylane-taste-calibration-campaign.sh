@@ -1,0 +1,346 @@
+#!/usr/bin/env bash
+# polylane-taste-calibration-campaign.sh — production calibration campaign
+# controller over the Cycle 40 isolated judge runner and frozen work units.
+#
+# It executes a frozen campaign plan (taste-calibration-campaign/v1): an ordered
+# set of sealed taste-judge-workunit/v1 manifests split into a pointwise phase
+# that always completes before the pairwise phase. Every unit runs through
+# polylane-taste-judge-run.sh in its own isolated run directory (unique session,
+# bounded single infra retry, abstention as a substantive terminal, immutable
+# raw-response receipts), and each terminal outcome is sealed into an
+# append-only, hash-chained ledger that binds the manifest, adapter fingerprint,
+# raw response hash, and invocation (request) hash.
+#
+# Fail-closed configuration guards run BEFORE any adapter invocation:
+#   - duplicate work-unit ids or session ids (a shared session or shared ballot
+#     channel) refuse the whole campaign;
+#   - mirror groups must be exactly a primary/mirror pair with flipped A/B
+#     display orders in distinct sessions;
+#   - every unit's adapter fingerprint must equal the campaign's pinned
+#     provider fingerprint (provider/model/config pinning);
+#   - candidate, provider, and model identity must not appear in any
+#     adapter-visible image path (blindness);
+#   - a campaign directory is claimed by exactly one frozen plan hash; a ledger
+#     that fails its hash-chain check refuses resume.
+#
+# Resume is idempotent: sealed units (voted, abstained, or failed) replay from
+# the ledger and are never re-invoked; unsealed units continue in plan order.
+#
+# This controller EXECUTES configurations. It never decides eligibility,
+# thresholds, correctness, or certification — the calibration audit owns that.
+#
+# Exit codes: 0 all units substantive (voted/abstained) · 1 campaign complete
+# with failed units · 2 usage · 3 configuration/isolation violation ·
+# 4 malformed plan or work unit.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+PARSE="$HERE/polylane-taste-judge-parse.sh"
+RUNNER="$HERE/polylane-taste-judge-run.sh"
+# Reuse the sibling parser's schema authority (sha256_file, duplicate-key-safe
+# JSON guard, validate_manifest_shape). Its main() is BASH_SOURCE-guarded.
+# shellcheck source=/dev/null
+. "$PARSE"
+
+ZERO64="0000000000000000000000000000000000000000000000000000000000000000"
+
+clog() { echo "TASTE-CALIBRATION-CAMPAIGN: $*" >&2; }
+now_iso() { printf '%s' "${POLYLANE_TASTE_NOW:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"; }
+
+sha256_stdin() {
+  if command -v shasum >/dev/null 2>&1; then shasum -a 256 | awk '{print $1}'
+  else sha256sum | awk '{print $1}'; fi
+}
+
+campaign_usage() {
+  cat >&2 <<'EOF'
+usage: polylane-taste-calibration-campaign.sh plan <campaign.json>
+       polylane-taste-calibration-campaign.sh run <campaign.json> <campaign-dir>
+       polylane-taste-calibration-campaign.sh verify-ledger <campaign-dir>
+EOF
+  return 2
+}
+
+# ---- plan validation --------------------------------------------------------
+
+validate_plan_shape() {
+  regular_json_without_duplicate_keys "$1" || return 1
+  jq -e '
+    (keys) == ["campaign_id","judge_id","phases","provider_pin","schema_version"]
+    and .schema_version == "taste-calibration-campaign/v1"
+    and (.campaign_id | type == "string" and test("^camp-[a-z0-9-]{2,}$"))
+    and (.judge_id | type == "string" and test("^judge-[a-z0-9-]{2,}$"))
+    and (.provider_pin | (keys) == ["adapter_fingerprint","config_sha256","model","provider"]
+         and (.adapter_fingerprint | type == "string" and test("^[a-f0-9]{64}$"))
+         and (.config_sha256 | type == "string" and test("^[a-f0-9]{64}$"))
+         and (.provider | type == "string" and length > 0)
+         and (.model | type == "string" and length > 0))
+    and (.phases | (keys) == ["pairwise","pointwise"]
+         and (.pointwise | type == "array" and all(.[]; type == "string" and length > 0))
+         and (.pairwise | type == "array" and all(.[]; type == "string" and length > 0))
+         and ((.pointwise | length) + (.pairwise | length) >= 1))
+  ' "$1" >/dev/null 2>&1
+}
+
+# build_units PLAN OUT — resolves every referenced work unit in frozen plan
+# order (pointwise first) into one array of {phase,path,manifest_sha256,manifest}.
+build_units() {
+  local plan="$1" out="$2" phase path
+  : > "$out.tmp"
+  for phase in pointwise pairwise; do
+    while IFS= read -r path; do
+      [ -n "$path" ] || continue
+      if [ ! -f "$path" ] || [ -L "$path" ]; then
+        clog "work unit not a regular file: $path"; rm -f "$out.tmp"; return 1
+      fi
+      if ! validate_manifest_shape "$path"; then
+        clog "work unit malformed or ineligible: $path"; rm -f "$out.tmp"; return 1
+      fi
+      jq -c --arg phase "$phase" --arg path "$path" --arg sha "$(sha256_file "$path")" \
+        '{phase:$phase,path:$path,manifest_sha256:$sha,manifest:.}' "$path" >> "$out.tmp"
+    done < <(jq -r ".phases.${phase}[]" "$plan")
+  done
+  jq -cs . "$out.tmp" > "$out"
+  rm -f "$out.tmp"
+}
+
+# check_cross_unit PLAN UNITS — fail-closed campaign-wide guards. All of them
+# run before any adapter is invoked; any violation refuses the whole campaign.
+check_cross_unit() {
+  local plan="$1" units="$2" judge fp provider model
+  judge=$(jq -r .judge_id "$plan")
+  fp=$(jq -r .provider_pin.adapter_fingerprint "$plan")
+  provider=$(jq -r .provider_pin.provider "$plan")
+  model=$(jq -r .provider_pin.model "$plan")
+  jq -e --arg judge "$judge" --arg fp "$fp" --arg provider "$provider" --arg model "$model" '
+    # one work unit id and one session per unit: no shared ballot channel
+    ([.[].manifest.work_unit_id] | length == (unique | length))
+    and ([.[].manifest.session_id] | length == (unique | length))
+    # pinned judge and pinned provider adapter fingerprint everywhere
+    and all(.[]; .manifest.judge_id == $judge)
+    and all(.[]; .manifest.adapter.fingerprint == $fp)
+    # blindness: candidate/provider/model identity never in an image path
+    and all(.[]; (.manifest.images.A + "\u0000" + .manifest.images.B) as $paths
+      | (.manifest.candidate_ids | all(. as $c | ($paths | contains($c)) | not))
+        and (($paths | contains($provider)) | not)
+        and (($paths | contains($model)) | not))
+    # mirrored orientations: a mirror group is one unit, or exactly a
+    # primary/mirror pair with flipped display orders over the same candidates
+    and (group_by(.manifest.mirror_group_id) | all(.[];
+      length == 1
+      or (length == 2
+          and ([.[].manifest.role] | sort) == ["mirror","primary"]
+          and ([.[].manifest.display_order] | sort) == ["A/B","B/A"]
+          and (.[0].manifest.candidate_ids | sort) == (.[1].manifest.candidate_ids | sort))))
+  ' "$units" >/dev/null 2>&1
+}
+
+# ---- hash-chained ledger ----------------------------------------------------
+
+# ledger_entry_for WU — the sealed ledger entry for a work unit id, or empty.
+ledger_entry_for() {
+  [ -s "$LEDGER" ] || return 0
+  jq -cs --arg wu "$1" 'map(select(.work_unit_id == $wu)) | .[0] // empty' "$LEDGER"
+}
+
+# append_ledger PHASE UNIT_JSON STATUS EXIT_CODE DECISION RSHA REQSHA ATTEMPTS RETRY
+append_ledger() {
+  local phase="$1" unit="$2" status="$3" code="$4" decision="$5" rsha="$6" reqsha="$7" attempts="$8" retry="$9"
+  local prev body esha
+  prev="$ZERO64"
+  [ -s "$LEDGER" ] && prev=$(tail -1 "$LEDGER" | jq -r .entry_sha256)
+  body=$(printf '%s' "$unit" | jq -cS \
+    --arg cid "$CAMPAIGN_ID" --arg phase "$phase" --arg status "$status" \
+    --argjson code "$code" --argjson decision "$decision" \
+    --arg rsha "$rsha" --arg reqsha "$reqsha" \
+    --argjson attempts "$attempts" --argjson retry "$retry" \
+    --arg prev "$prev" --arg now "$(now_iso)" '
+    {schema_version:"taste-campaign-ledger/v1",
+     campaign_id:$cid,phase:$phase,
+     work_unit_id:.manifest.work_unit_id,session_id:.manifest.session_id,
+     mirror_group_id:.manifest.mirror_group_id,role:.manifest.role,
+     display_order:.manifest.display_order,
+     manifest_sha256:.manifest_sha256,
+     adapter_fingerprint:.manifest.adapter.fingerprint,
+     terminal_status:$status,exit_code:$code,decision:$decision,
+     response_sha256:($rsha | if . == "" then null else . end),
+     request_sha256:($reqsha | if . == "" then null else . end),
+     attempts:$attempts,retry_used:$retry,
+     sealed_at:$now,prev_sha256:$prev}')
+  esha=$(printf '%s' "$body" | sha256_stdin)
+  printf '%s' "$body" | jq -c --arg e "$esha" '. + {entry_sha256:$e}' >> "$LEDGER"
+}
+
+# verify_ledger DIR — recompute the whole hash chain; any break fails.
+verify_ledger() {
+  local ledger="$1/ledger.jsonl" prev="$ZERO64" line body esha stored
+  [ -f "$ledger" ] || { clog "no ledger at $ledger"; return 1; }
+  while IFS= read -r line; do
+    printf '%s' "$line" | jq -e . >/dev/null 2>&1 || { clog "ledger line is not JSON"; return 1; }
+    [ "$(printf '%s' "$line" | jq -r '.prev_sha256 // ""')" = "$prev" ] \
+      || { clog "ledger hash chain break"; return 1; }
+    stored=$(printf '%s' "$line" | jq -r '.entry_sha256 // ""')
+    body=$(printf '%s' "$line" | jq -cS 'del(.entry_sha256)')
+    esha=$(printf '%s' "$body" | sha256_stdin)
+    [ "$esha" = "$stored" ] || { clog "ledger entry hash mismatch"; return 1; }
+    prev="$stored"
+  done < "$ledger"
+  # A raw-response digest reused across sealed ballots is a shared session
+  # channel: two units cannot legitimately produce identical transcripts.
+  if jq -s '[.[] | .response_sha256 | select(. != null and . != "")]
+            | length != (unique | length)' "$ledger" | grep -q true; then
+    clog "ledger reuses a raw-response digest across units"
+    return 1
+  fi
+  return 0
+}
+
+write_campaign_summary() {
+  local tmp="$CD/campaign-summary.json.tmp.$$"
+  jq -sS --arg cid "$CAMPAIGN_ID" --arg psha "$PLAN_SHA" --arg now "$(now_iso)" '
+    {schema_version:"taste-campaign-summary/v1",
+     campaign_id:$cid,campaign_sha256:$psha,
+     total:length,
+     counts:{
+       voted:(map(select(.terminal_status == "voted")) | length),
+       abstained:(map(select(.terminal_status == "abstained")) | length),
+       failed_infra:(map(select(.terminal_status == "failed-infra")) | length),
+       failed_parse:(map(select(.terminal_status == "failed-parse")) | length)},
+     decides_eligibility:false,
+     note:"terminal execution statuses only; the calibration audit owns eligibility",
+     sealed_at:$now}' "$LEDGER" > "$tmp"
+  mv "$tmp" "$CD/campaign-summary.json"
+}
+
+# ---- subcommands ------------------------------------------------------------
+
+# validate_campaign PLAN UNITS_OUT — shared by plan/run. rc 4 malformed, rc 3
+# configuration violation, rc 0 ok (UNITS_OUT holds the ordered unit array).
+validate_campaign() {
+  local plan="$1" units="$2"
+  [ -f "$plan" ] || { clog "campaign plan not found: $plan"; return 4; }
+  validate_plan_shape "$plan" || { clog "campaign plan is malformed"; return 4; }
+  build_units "$plan" "$units" || return 4
+  check_cross_unit "$plan" "$units" || { clog "configuration violation: sessions, mirrors, pinning, or blindness"; return 3; }
+  return 0
+}
+
+plan_cmd() {
+  local plan="$1" units rc=0
+  units=$(mktemp -t taste-campaign-units) || return 4
+  validate_campaign "$plan" "$units" || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    clog "plan OK units=$(jq length "$units")"
+  fi
+  rm -f "$units"
+  return "$rc"
+}
+
+run_cmd() {
+  local plan="$1"; CD="$2"
+  local units rc=0
+  units=$(mktemp -t taste-campaign-units) || return 4
+  validate_campaign "$plan" "$units" || { rc=$?; rm -f "$units"; return "$rc"; }
+
+  PLAN_SHA=$(sha256_file "$plan")
+  CAMPAIGN_ID=$(jq -r .campaign_id "$plan")
+  mkdir -p "$CD"
+  LEDGER="$CD/ledger.jsonl"
+
+  # Claim FIRST: a campaign dir is bound to exactly one frozen plan.
+  if [ -f "$CD/claim.json" ]; then
+    if [ "$(jq -r '.campaign_sha256 // ""' "$CD/claim.json" 2>/dev/null)" != "$PLAN_SHA" ]; then
+      clog "isolation refusal: campaign dir claimed by a different frozen plan"
+      rm -f "$units"; return 3
+    fi
+  else
+    jq -n --arg cid "$CAMPAIGN_ID" --arg psha "$PLAN_SHA" --arg now "$(now_iso)" \
+      --argjson pin "$(jq -c .provider_pin "$plan")" '
+      {schema_version:"taste-campaign-claim/v1",campaign_id:$cid,
+       campaign_sha256:$psha,provider_pin:$pin,claimed_at:$now}' > "$CD/claim.json"
+  fi
+
+  # A resumed ledger must verify before it is trusted for skip decisions.
+  if [ -s "$LEDGER" ]; then
+    verify_ledger "$CD" || { clog "isolation refusal: ledger fails hash-chain verification"; rm -f "$units"; return 3; }
+  fi
+
+  local total i unit wu phase msha path entry status code decision rsha reqsha attempts retry rd urc failed=0
+  total=$(jq length "$units")
+  i=0
+  while [ "$i" -lt "$total" ]; do
+    unit=$(jq -c ".[$i]" "$units")
+    wu=$(printf '%s' "$unit" | jq -r .manifest.work_unit_id)
+    phase=$(printf '%s' "$unit" | jq -r .phase)
+    msha=$(printf '%s' "$unit" | jq -r .manifest_sha256)
+    path=$(printf '%s' "$unit" | jq -r .path)
+
+    entry=$(ledger_entry_for "$wu")
+    if [ -n "$entry" ]; then
+      # Sealed: replay idempotently, never re-invoking the adapter — including
+      # failed units (no retry storms after a terminal seal).
+      if [ "$(printf '%s' "$entry" | jq -r .manifest_sha256)" != "$msha" ]; then
+        clog "isolation refusal: ledger entry for $wu is bound to a different work unit"
+        rm -f "$units"; return 3
+      fi
+      case "$(printf '%s' "$entry" | jq -r .terminal_status)" in
+        failed-*) failed=1 ;;
+      esac
+      i=$((i + 1)); continue
+    fi
+
+    # Pointwise before pairwise, also across resumes: an unsealed pointwise
+    # unit with pairwise entries already in the ledger is a phase-order breach.
+    if [ "$phase" = "pointwise" ] && [ -s "$LEDGER" ] \
+       && jq -se 'any(.[]; .phase == "pairwise")' "$LEDGER" >/dev/null 2>&1; then
+      clog "isolation refusal: pairwise sealed before pointwise completed"
+      rm -f "$units"; return 3
+    fi
+
+    rd="$CD/runs/$wu"
+    urc=0
+    "$RUNNER" run "$path" "$rd" >/dev/null 2>&1 || urc=$?
+    case "$urc" in
+      0|1|2) : ;;                                  # terminal: sealed by the runner
+      *) clog "judge runner refused unit $wu (rc $urc)"; rm -f "$units"; return "$urc" ;;
+    esac
+    [ -f "$rd/summary.json" ] || { clog "runner left no summary for $wu"; rm -f "$units"; return 1; }
+
+    status=$(jq -r .terminal_status "$rd/summary.json")
+    code=$(jq -r .exit_code "$rd/summary.json")
+    decision=$(jq -c .decision "$rd/summary.json")
+    rsha=$(jq -r '.response_sha256 // ""' "$rd/summary.json")
+    attempts=$(jq -r .attempts "$rd/summary.json")
+    retry=$(jq -r .retry_used "$rd/summary.json")
+    reqsha=""
+    [ -f "$rd/attempts/$attempts/request.json" ] && reqsha=$(sha256_file "$rd/attempts/$attempts/request.json")
+
+    # Session uniqueness at seal time: refuse a transcript digest that another
+    # unit already sealed instead of appending a ledger that can never verify.
+    if [ -n "$rsha" ] && [ -s "$LEDGER" ] \
+       && jq -se --arg r "$rsha" 'any(.[]; .response_sha256 == $r)' "$LEDGER" >/dev/null 2>&1; then
+      clog "isolation refusal: raw-response digest already sealed for another unit"
+      rm -f "$units"; return 3
+    fi
+    append_ledger "$phase" "$unit" "$status" "$code" "$decision" "$rsha" "$reqsha" "$attempts" "$retry"
+    case "$status" in failed-*) failed=1 ;; esac
+    i=$((i + 1))
+  done
+  rm -f "$units"
+
+  write_campaign_summary
+  clog "campaign sealed: $(jq -r '.counts | to_entries | map("\(.key)=\(.value)") | join(" ")' "$CD/campaign-summary.json")"
+  return "$failed"
+}
+
+main() {
+  command -v jq >/dev/null 2>&1 || { clog "jq is required"; return 4; }
+  case "${1:-}" in
+    plan)          [ $# -eq 2 ] || { campaign_usage; return 2; }; plan_cmd "$2" ;;
+    run)           [ $# -eq 3 ] || { campaign_usage; return 2; }; run_cmd "$2" "$3" ;;
+    verify-ledger) [ $# -eq 2 ] || { campaign_usage; return 2; }; verify_ledger "$2" ;;
+    *)             campaign_usage ;;
+  esac
+}
+
+if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then main "$@"; fi
