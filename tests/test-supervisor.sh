@@ -50,6 +50,8 @@ if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
     halted-needs-user) echo lane-a > "$D/needs-user"; printf '**Outcome:** HALTED\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
     slow-go)       trap 'echo term > "$D/child-term"; exit 143' TERM
                    sleep 2; printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
+    stalled)       trap 'echo watchdog-term > "$D/watchdog-term"; exit 143' TERM
+                   while :; do sleep 1; done ;;
     always-crash)  exit 137 ;;
   esac
 fi
@@ -65,6 +67,7 @@ reset_proj() {
   rm -f "$PROJ/.polylane/calls.log" "$PROJ/.polylane/crashed" \
     "$PROJ/.polylane/halted" "$PROJ/.polylane/needs-user" \
     "$PROJ/.polylane/child-term" \
+    "$PROJ/.polylane/watchdog-term" \
     "$PROJ/docs/polylane-report.md"
 }
 
@@ -176,6 +179,18 @@ rc=$?
 assert_eq "sup-cap-rc1" "1" "$rc"
 assert_contains "sup-cap-halt" "restart cap" "$(cat "$TEST_TMPDIR/out3")"
 assert_eq "sup-cap-launches" "3" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"   # 1 + 2 revives
+
+# The supervisor owns an independent durable-progress watchdog. A live runner
+# that produces no transition cannot hide behind PID liveness forever.
+reset_proj; echo stalled > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 \
+  POLYLANE_SUP_PROGRESS_TIMEOUT=1 POLYLANE_SUP_MAX_RESTARTS=0 \
+  "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-watchdog" 2>&1
+watchdog_rc=$?
+assert_eq "sup-progress-watchdog-halts" "1" "$watchdog_rc"
+assert_ok "sup-progress-watchdog-terminates-child" test -f "$PROJ/.polylane/watchdog-term"
+assert_contains "sup-progress-watchdog-diagnostic" "progress watchdog" "$(cat "$TEST_TMPDIR/out-watchdog")"
+assert_eq "sup-progress-watchdog-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
 
 # Resource pressure is a wait state, not a runner crash.  A deterministic probe
 # returns low once then healthy; no real disk is consumed and no restart budget is used.

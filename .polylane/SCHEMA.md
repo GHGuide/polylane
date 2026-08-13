@@ -10,7 +10,8 @@ lanes L2/L3/L4 depend on them.
 
 ```json
 {
-  "orchestration_contract": 2,
+  "orchestration_contract": 3,
+  "evidence_kind": "autonomous",
   "write_plan_contract": 1,
   "prime_hybrid": true,
   "run_id": "cycle-7-unique-nonce",
@@ -45,6 +46,7 @@ lanes L2/L3/L4 depend on them.
   },
   "integrator": {
     "name": "integrator",
+    "role": "integrator",
     "model": "gpt-5.6-sol",
     "branch": "lane/integrator",
     "worktree": "../pl-integrator",
@@ -54,6 +56,7 @@ lanes L2/L3/L4 depend on them.
   "lanes": [
     {
       "name": "api",
+      "role": "builder",
       "model": "gpt-5.6-terra",
       "branch": "lane/api",
       "worktree": "../pl-api",
@@ -71,7 +74,8 @@ lanes L2/L3/L4 depend on them.
 
 | Key | Type | Meaning |
 |---|---|---|
-| `orchestration_contract` | integer | Set to `2` for reliable Codex runs. Enables pre-launch gates for state, plans, prompts, skills, scope, acceptance, and prior-cycle artifacts. Fresh Codex runs reject legacy manifests unless `POLYLANE_ALLOW_LEGACY=1` is explicitly set for migration. A `--resume` may grandfather a legacy manifest only when it has a non-empty `run_id` and at least one already-materialized lane worktree, preventing an upgrade from stranding real in-flight work without weakening new launches. |
+| `orchestration_contract` | integer | Set to `3` for new runs. V3 adds typed evidence routing, transactional worker finalization, immutable handoff verification, and durable transition watchdogs to the v2 pre-launch gates. V2 and legacy manifests remain readable for in-flight recovery. |
+| `evidence_kind` | string | Required by v3: `autonomous` or `external`. Legacy omission means `autonomous`. An autonomous manifest cannot target a subgoal whose frozen acceptance is external-kind. |
 | `write_plan_contract` | integer | *(new generated manifests: `1`)* Enables planned-write admission before any worktree or tmux side effect. Every builder must declare a non-empty, unique `planned_writes` array of safe exact repository-relative paths, and each path must match that lane’s `own_globs`. Legacy manifests that omit this opt-in remain valid. |
 | `prime_hybrid` | boolean | *(optional, default `false`)* Retained-worker and evidence-gated refinement runtime for long product work. Requires contract v2. Before panes open, it initializes canonical `docs/polylane/harness` and `docs/polylane/workers`, validates pending prior-cycle refinements, refreshes the deduplicated propose-or-decline queue, imports the live relay, and creates one bounded `.polylane/context/<lane>.md` per builder and integrator. Legacy manifests are unchanged. |
 | `run_id` | string | Fresh per-run nonce baked into every DONE marker and verdict sentinel. |
@@ -100,6 +104,7 @@ Each **lane** object (and the **integrator** object) has:
 | Key | Type | Meaning |
 |---|---|---|
 | `name` | string | Lane id. Used in the DONE file name and tmux window name. Keep it filesystem-safe. |
+| `role` | string | Explicit execution role: `builder` or `integrator`. V3 hooks, finalization, and verdict lookup use this field; role is never inferred from the literal lane name. |
 | `model` | string | Model id passed to the agent's `--model` (e.g. `claude-opus-4-8`, `claude-fable-5`, or `gpt-5-codex` for the codex agent). |
 | `branch` | string | Branch created for this lane (`git worktree add -b <branch> <base>`). |
 | `worktree` | string | Path of the lane's git worktree. Relative paths resolve from the repo root. |
@@ -144,6 +149,9 @@ Environment: `POLYLANE_POLL_INTERVAL` — DONE-file poll (default `2`) ·
 `POLYLANE_SUP_INTERVAL` — supervisor tick (default `5`) ·
 `POLYLANE_MAX_RETRIES` — transient retries (default `3`) ·
 `POLYLANE_INTEGRATOR_REPAIRS` — verdict repair waves (default `3`).
+`POLYLANE_SUP_PROGRESS_TIMEOUT` — maximum elapsed seconds without a durable
+source, HEAD, finalization, statistics, or report transition before the independent
+supervisor watchdog terminates and resumes the stalled runner (default `7200`).
 `POLYLANE_PROGRESS_CHECKS` — unchanged-source health sweeps before a churn replan
 (default `12`) · `POLYLANE_PROGRESS_MIN_COMMANDS` — command executions required
 before that replan (default `20`) · `POLYLANE_PROGRESS_REPLANS` — narrowed,
@@ -203,6 +211,19 @@ itself does not call it.
 
 ---
 
+## Acceptance evidence kind
+
+`bin/polylane-memory.sh add-accept` accepts
+`--evidence-kind autonomous|external` independently from
+`--tier focused|terminal`. Missing kind in an old state file means autonomous.
+All acceptance entries for one subgoal must have one kind; mixed registration is
+rejected. Autonomous host gates execute only autonomous entries. External entries
+are never locally executed or repaired, and can route to
+`EXTERNAL-EVIDENCE-OPEN` only after every targeted autonomous entry passes.
+Evidence kind participates in memo fingerprints, keyed dedupe, reports, and READY
+proof receipts, so identical commands or keys on different trust boundaries never
+collide.
+
 ## DONE-file convention
 
 Each lane signals completion by writing:
@@ -222,6 +243,13 @@ and treats the lane as done only when that first line matches. Anything else
 (missing file, DONE on a later line, different text) = not done.
 
 The integrator uses the same convention: `docs/status-<integrator.name>.md`.
+For v3, the worker invokes `bin/polylane-finalize.sh` after committing its
+implementation and evidence. The helper persists
+`WORKING → HANDOFF_PENDING → HANDOFF_COMMITTED`; the runner records `QUIESCING`
+and `DONE` only around verified process exit. A v3 handoff is authoritative only
+when the exact marker (and, for an explicit integrator role, the exact final verdict),
+recorded HEAD, hashes, and clean tree agree. A recovery checkpoint refuses
+`HANDOFF_PENDING`, so it cannot commit half a handoff.
 
 ---
 
@@ -245,9 +273,10 @@ then skips identical repair waves. This does not complete the goal: the outer
 orchestrator records the external evidence boundary and routes other autonomous
 subgoals.
 
-Prose never counts. Any matching NO-GO wins; a missing, stale-nonce, or malformed
-sentinel is `UNKNOWN` and enters the same bounded repair path. A council verdict
-outside this file is advisory and cannot terminate a run.
+Prose never counts. V3 requires exactly one current-run sentinel as the final line;
+a missing, duplicate, stale-nonce, non-final, or malformed sentinel is `UNKNOWN`.
+The runner may verify these worker-owned bytes but never authors, normalizes,
+appends, deletes, or recommits them. A council verdict outside this file is advisory.
 
 ---
 
@@ -265,7 +294,7 @@ parse args → preflight (jq, git + valid JSON, then manifest-selected agent CLI
   → assert no unmerged paths (conflict → exit 1, worktrees intact)
   → stamp durable goal state/progress
   → cleanup: one confirm (unless --yes) → git worktree remove --force,
-             git branch -d (merged only), rm .polylane + docs/status-*.md
+             git branch -d (merged only); v3 worker-owned status/verdict bytes remain immutable
 ```
 
 ### Pane command

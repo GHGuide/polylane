@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090,SC2034,SC2164
 # A NO-GO/UNKNOWN integration verdict is repaired in-process; it is not reported
 # as a cycle boundary until the autonomous repair budget is actually exhausted.
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
@@ -143,6 +144,15 @@ assert_eq "repair-admission-failure-preserves-prompt-selection" "$PROMPT_BEFORE"
 assert_eq "repair-admission-failure-preserves-pane-identity" "$PANE_BEFORE" "$INT_PANE_IDX"
 assert_eq "repair-admission-failure-performs-no-pane-action" "" "$(cat "$TX_LOG" 2>/dev/null || true)"
 assert_eq "repair-admission-failure-preserves-restart-telemetry" "0" "$RESTART_EVENTS"
+
+# Even after replacement admission succeeds, runner-owned recovery may archive
+# and relaunch but never delete or rewrite the worker's committed status/verdict.
+: > "$TX_LOG"
+assert_prompt() { return 0; }
+repair_integrator_verdict 1 >/dev/null 2>&1; immutable_repair_rc=$?
+assert_eq "repair-admitted-relaunches" "0" "$immutable_repair_rc"
+assert_eq "repair-admitted-preserves-status-bytes" "$STATUS_BEFORE" "$(cksum "$INT_WORKTREE/docs/status-integrator.md")"
+assert_eq "repair-admitted-preserves-verdict-bytes" "$VERDICT_BEFORE" "$(cksum "$INT_WORKTREE/docs/verify-integration.md")"
 
 # READY-FOR-HOST-GATE is a nonce-bound candidate, not a self-authorized GO.
 # The outer merge gate runs the frozen coordinator checks once, then converts

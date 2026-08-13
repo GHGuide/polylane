@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1010
 # polylane-memory.sh — the /polylane-max blackboard + HTN goal-tree. Exercised as
 # a CLI (it runs on invocation), asserting output + exit codes.
 
@@ -172,6 +173,41 @@ assert_eq "accept-terminal-deferred" "unchecked" "$(jq -r '.accept[1].status' "$
 assert_eq "accept-other-deferred" "unchecked" "$(jq -r '.accept[2].status' "$T")"
 assert_ok "accept-terminal-only" "$MEM" "$T" check-accept --only-terminal
 assert_eq "accept-terminal-pass" "pass" "$(jq -r '.accept[1].status' "$T")"
+
+# Evidence authority is independent from cadence. Legacy registrations are
+# autonomous, every subgoal is homogeneous, and keyed dedupe never crosses the
+# autonomous/external trust boundary.
+K="$TEST_TMPDIR/evidence-kind.json"
+"$MEM" "$K" init g >/dev/null; "$MEM" "$K" add-milestone m1 M >/dev/null
+"$MEM" "$K" add-subgoal m1 auto autonomous >/dev/null
+"$MEM" "$K" add-subgoal m1 ext external >/dev/null
+"$MEM" "$K" add-accept auto "printf 'autonomous-ran\n' >> '$TEST_TMPDIR/kind-runs'" --key same >/dev/null
+assert_eq "accept-legacy-kind-defaults-autonomous" autonomous \
+  "$(jq -r '.accept[0].evidence_kind' "$K")"
+assert_fail "accept-mixed-kind-subgoal-rejected" \
+  "$MEM" "$K" add-accept auto "true" --evidence-kind external
+"$MEM" "$K" add-accept ext "printf 'external-ran\n' >> '$TEST_TMPDIR/kind-runs'" \
+  --evidence-kind external --tier focused --key same >/dev/null
+"$MEM" "$K" add-accept auto "printf 'autonomous-ran\n' >> '$TEST_TMPDIR/kind-runs'" \
+  --evidence-kind autonomous --tier terminal --key same >/dev/null
+assert_ok "accept-kind-filter-runs-only-autonomous" \
+  "$MEM" "$K" check-accept --evidence-kind autonomous
+assert_eq "accept-kind-filter-never-executes-external" "0" \
+  "$(grep -c '^external-ran$' "$TEST_TMPDIR/kind-runs" 2>/dev/null || true)"
+assert_eq "accept-dedupe-key-includes-kind-and-cadence-independent" "1" \
+  "$(grep -c '^autonomous-ran$' "$TEST_TMPDIR/kind-runs")"
+assert_eq "accept-external-remains-unchecked" unchecked \
+  "$(jq -r '.accept[] | select(.sid=="ext") | .status' "$K")"
+assert_ok "accept-kind-filter-runs-external-independently" \
+  "$MEM" "$K" check-accept --evidence-kind external
+assert_eq "accept-dedupe-key-does-not-collide-across-kinds" "1" \
+  "$(grep -c '^external-ran$' "$TEST_TMPDIR/kind-runs")"
+
+# Old state files without the v3 field retain autonomous meaning on read.
+LEGACY_KIND="$TEST_TMPDIR/legacy-kind.json"
+jq '(.accept[] | del(.evidence_kind))' "$K" > "$LEGACY_KIND"
+assert_ok "accept-legacy-state-filtered-as-autonomous" \
+  "$MEM" "$LEGACY_KIND" check-accept --targets auto --evidence-kind autonomous
 
 # --- temporal regression guard (#3) -----------------------------------------
 RS="$TEST_TMPDIR/regstate.json"

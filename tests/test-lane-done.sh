@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1010,SC1090,SC2034,SC2164
 # lane_done WORKTREE NAME -> 0 iff first line of <wt>/docs/status-<name>.md
 # is exactly "STATUS: <name> DONE" (frozen DONE contract).
 

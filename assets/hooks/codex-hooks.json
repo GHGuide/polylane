@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "h='__POLYLANE_HOOKS_HELPER__'; [ -x \"$h\" ] || exit 0; exec \"$h\" codex Stop --project \"$(git rev-parse --show-toplevel)\"",
+            "command": "h='__POLYLANE_HOOKS_HELPER__'; v=\"$(dirname \"$h\")/../assets/verify-gate.sh\"; [ -x \"$v\" ] || exit 0; [ -n \"${POLYLANE_WORKER_ID:-}\" ] && [ -n \"${POLYLANE_WORKER_RUN_ID:-}\" ] && [ -n \"${POLYLANE_WORKER_ROLE:-}\" ] || { printf '{\"continue\":true}\\n'; exit 0; }; p=\"$(git rev-parse --show-toplevel)\"; \"$v\" --project \"$p\" --lane \"$POLYLANE_WORKER_ID\" --run-id \"$POLYLANE_WORKER_RUN_ID\" --role \"$POLYLANE_WORKER_ROLE\" || exit $?; printf '{\"continue\":true}\\n'",
             "timeout": 5,
             "statusMessage": "Checking current-run Polylane evidence"
           }
