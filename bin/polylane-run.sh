@@ -3016,13 +3016,47 @@ mark_lane_failed() {
 # just re-hit the paywall, and auto-answering would spend money without a
 # human. Detect it, notify once, surface it in the poll + report, and wait.
 
-# pane_session_cooldown IDX : 0 iff Claude Code has ended the turn at its exact
-# account-session-limit screen. This screen offers `/usage-credits` as prose but
-# no numbered decision menu; treating it as ordinary work leaves a live process
-# idle forever, while selecting credits would spend money without authority.
+# pane_codex_usage_cooldown IDX : 0 iff Codex has exited at its exact dated
+# account-wide usage screen.  The URL + dated retry clause distinguish this
+# terminal provider message from ordinary source/test prose mentioning limits.
+pane_codex_usage_cooldown() {
+  local idx="$1" txt
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  printf '%s' "$txt" | grep -qiF "You've hit your usage limit" &&
+    printf '%s' "$txt" | grep -qiF 'chatgpt.com/codex/settings/usage' &&
+    printf '%s' "$txt" | grep -qiE 'try again at [A-Za-z]{3} [0-9]{1,2}(st|nd|rd|th)?, [0-9]{4} [0-9]{1,2}:[0-9]{2} (AM|PM)'
+}
+
+# pane_codex_reset_epoch IDX : print the local epoch encoded in Codex's dated
+# cooldown. BSD and GNU date are both supported; malformed text fails closed.
+pane_codex_reset_epoch() {
+  local idx="$1" txt reset with_seconds epoch
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  if [[ "$txt" =~ try[[:space:]]again[[:space:]]at[[:space:]]([A-Za-z]{3}[[:space:]][0-9]{1,2}(st|nd|rd|th)?,[[:space:]][0-9]{4}[[:space:]][0-9]{1,2}:[0-9]{2}[[:space:]](AM|PM)) ]]; then
+    reset="${BASH_REMATCH[1]}"
+  else
+    return 1
+  fi
+  reset=$(printf '%s' "$reset" | sed -E 's/([0-9])(st|nd|rd|th),/\1,/')
+  with_seconds=$(printf '%s' "$reset" | sed -E 's/ (AM|PM)$/:00 \1/')
+  epoch=$(LC_ALL=C date -j -f '%b %d, %Y %I:%M:%S %p' "$with_seconds" '+%s' 2>/dev/null || true)
+  if [ -z "$epoch" ]; then
+    epoch=$(LC_ALL=C date -d "$reset" '+%s' 2>/dev/null || true)
+  fi
+  case "$epoch" in ''|*[!0-9]*) return 1 ;; esac
+  printf '%s' "$epoch"
+}
+
+# pane_session_cooldown IDX : 0 iff Claude Code or Codex has ended the turn at
+# an exact free-reset screen. These screens have no numbered decision menu;
+# treating them as dead work burns retries, while selecting credits would spend
+# money without authority.
 pane_session_cooldown() {
   local idx="$1" txt
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  pane_codex_usage_cooldown "$idx" && return 0
   txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
   printf '%s' "$txt" | grep -qiF "You've hit your session limit" &&
     printf '%s' "$txt" | grep -qiE 'resets[[:space:]]+[0-9]{1,2}:[0-9]{2}(am|pm)' &&
@@ -3036,7 +3070,15 @@ pane_session_cooldown() {
 # token. Parse failure stays not-due, so malformed UI cannot cause retry churn.
 pane_session_reset_due() {
   local idx="$1" txt reset hour minute suffix zone="" now_hm now_h now_m reset_m now_total delta
+  local reset_epoch now_epoch
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  if pane_codex_usage_cooldown "$idx"; then
+    reset_epoch=$(pane_codex_reset_epoch "$idx") || return 1
+    now_epoch="${POLYLANE_NOW_EPOCH:-$(date '+%s' 2>/dev/null || true)}"
+    case "$now_epoch" in ''|*[!0-9]*) return 1 ;; esac
+    [ "$now_epoch" -ge "$reset_epoch" ]
+    return
+  fi
   txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
   reset=$(printf '%s\n' "$txt" | grep -ioE 'resets[[:space:]]+[0-9]{1,2}:[0-9]{2}(am|pm)([[:space:]]+\([^)]*\))?' | tail -n 1 || true)
   [ -n "$reset" ] || return 1
@@ -3497,7 +3539,8 @@ repairs_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_REPAIR
 build_repair_prompt() {
   local src="$1" name="$2" k="$3"
   local transcript="${REPO_ROOT:-.}/docs/lane-logs/$name.log"
-  cat "$src" 2>/dev/null
+  [ -f "$src" ] || return 1
+  cat "$src" 2>/dev/null || return 1
   printf '\n\n── REPAIR ATTEMPT %s (a prior attempt did NOT reach DONE) ──────────────\n' "$k"
   printf 'FIRST, before any new work: read the tail of `%s` (your own\n' "$transcript"
   printf 'prior transcript) and any docs/verify-%s.md. Write a 3-line reflection into\n' "$name"
@@ -3511,13 +3554,23 @@ build_repair_prompt() {
 # it, reset the transient-retry budget, and respawn. rc 1 if the file cannot be
 # written (caller then marks the lane failed).
 reflect_and_repair() {
-  local name="$1" wt="$2" idx="$3" k src dir repair
+  local name="$1" wt="$2" idx="$3" k src dir repair candidate
   k=$(repairs_get "$name"); k=$((k + 1))
   dir="$REPO_ROOT/.polylane/lanes"; run mkdir -p "$dir" 2>/dev/null || true
   src=$(lane_prompt_get "$name")
   repair="$dir/$name.repair.txt"
-  build_repair_prompt "$src" "$name" "$k" > "$repair" 2>/dev/null \
-    || { echo "reflexion: could not write $repair for '$name'" >&2; return 1; }
+  candidate="$repair.prepare.$$"
+  if ! build_repair_prompt "$src" "$name" "$k" > "$candidate" 2>/dev/null; then
+    rm -f "$candidate"
+    echo "reflexion: could not write $repair for '$name'" >&2
+    return 1
+  fi
+  if ! assert_prompt "$candidate" "$name"; then
+    rm -f "$candidate"
+    echo "reflexion: repaired prompt failed admission for '$name'" >&2
+    return 1
+  fi
+  mv "$candidate" "$repair" || { rm -f "$candidate"; return 1; }
   lane_prompt_set "$name" "$repair"   # future respawns use the repaired prompt
   repairs_set "$name" "$k"
   retry_set "$name" 0                  # fresh transient budget after a repair
