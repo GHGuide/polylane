@@ -605,7 +605,7 @@
     },
     {
       "id": "c87",
-      "text": "A champion needs at least ten varied briefs, five eligible votes per brief, at least seventy percent preference, a positive confidence bound, and zero accessibility regression",
+      "text": "A champion needs exactly twenty varied independent briefs, five eligible votes per brief, at least fifteen wins, a Wilson 95% lower bound above one half, exact two-sided sign p at most 0.05, and zero accessibility regression",
       "weight": 137,
       "status": "open",
       "score": 0
@@ -628,6 +628,27 @@
       "id": "c90",
       "text": "Claude and Codex packages ship the same taste contract and a fresh install passes focused, full, shell, capture, benchmark, and live workflow checks",
       "weight": 134,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c91",
+      "text": "Every certification claim is derived through a verified evidence DAG whose least-trusted ancestor controls the effective grade; fixture evidence is absorbing",
+      "weight": 150,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c92",
+      "text": "The machine benchmark uses exactly twenty independent briefs, zero ties or abstentions, at least fifteen wins, Wilson 95% lower bound above one half, and exact two-sided sign p at most 0.05",
+      "weight": 149,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c93",
+      "text": "A production panel contains at least five unique configuration fingerprints across at least two independently routed provider families and passes frozen calibration plus bias vetoes",
+      "weight": 148,
       "status": "open",
       "score": 0
     }
@@ -1539,11 +1560,11 @@
         },
         {
           "id": "m32.4",
-          "text": "Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm",
+          "text": "Run the pinned real-source and provider campaign required to calibrate the independent judge swarm",
           "weight": 137,
-          "status": "doing",
+          "status": "external",
           "cycle": 41,
-          "evidence": "cycle 41 source acquisition and held-out judge calibration frozen"
+          "evidence": "External source/provider campaign preserved from cycle 41; resume only after v3 contracts and lifecycle routing are promoted"
         },
         {
           "id": "m32.5",
@@ -1560,6 +1581,46 @@
           "status": "done",
           "cycle": 40,
           "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 40"
+        },
+        {
+          "id": "m32.6",
+          "text": "Freeze executable v3 execution, provenance, source-calibration, statistics, and lifecycle contracts",
+          "weight": 160,
+          "status": "doing",
+          "cycle": 42,
+          "evidence": "Cycle 42A contract/lifecycle freeze planned"
+        },
+        {
+          "id": "m32.7",
+          "text": "Implement the production evidence chain, selected-source transport, calibrated judge bridge, UI v3 contract, and prompt tournament against the frozen lock",
+          "weight": 159,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.8",
+          "text": "Acquire the pinned selected real-image corpus and qualify at least five judge configurations across at least two provider families",
+          "weight": 158,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.9",
+          "text": "Run an exactly twenty-brief development benchmark and repair only measured failures without changing the frozen protocol",
+          "weight": 157,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.10",
+          "text": "Run an untouched confirmatory benchmark and publish the truthful human-calibrated-machine certification record",
+          "weight": 156,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
         }
       ]
     }
@@ -1888,6 +1949,12 @@
       "kind": "decision",
       "text": "Close production taste authority before benchmarking: three rendered candidates, trusted transitive receipts, durable two-repair event replay, provider-native installs, and evidence-scoped memory.",
       "meta": "adversarial swarm consensus"
+    },
+    {
+      "cycle": 42,
+      "kind": "decision",
+      "text": "Freeze executable trust and lifecycle contracts before any producer or benchmark implementation",
+      "meta": "four disjoint Codex builders; integrator owns sole contract lock and claim registry"
     }
   ],
   "accept": [
@@ -3245,7 +3312,7 @@
       "cmd": "bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == \"TASTE-CERTIFIED\" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test(\"^[0-9a-f]{40}([0-9a-f]{24})?$\")) and (.validator_chain_sha256 | test(\"^[0-9a-f]{64}$\"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null",
       "tier": "focused",
       "key": "taste-live-corpus",
-      "status": "unchecked",
+      "status": "fail",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -3285,7 +3352,7 @@
       "cmd": "bash tests/test-taste-dataverse-transport.sh && bash tests/test-taste-dataone-metadata.sh && bash tests/test-taste-source-freeze.sh && bash tests/test-taste-download-campaign.sh && bash tests/test-taste-cache-integrity.sh && bash tests/test-taste-ratings-normalize.sh && bash tests/test-taste-corpus-select.sh && bash tests/test-taste-pair-builder.sh && bash tests/test-taste-calibration-campaign.sh && bash tests/test-taste-calibration-audit.sh && bash tests/test-taste-panel-freeze.sh && bash tests/test-taste-benchmark-preflight.sh && bash tests/test-taste-source-adversarial.sh && bash tests/test-taste-source-campaign-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
       "tier": "focused",
       "key": "",
-      "status": "unchecked",
+      "status": "fail",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -3295,6 +3362,16 @@
       "cmd": "jq -e '.status == \"VALIDATED\" and .fixture_only == false and .domains == 3 and .calibration_images == 180 and .holdout_images == 72 and .eligible_judges >= 5 and .human_calibrated == true and .human_certified == false' docs/polylane/taste-certification/benchmark/calibration-summary.json >/dev/null",
       "tier": "focused",
       "key": "",
+      "status": "fail",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.6",
+      "cmd": "bash tests/test-taste-execution-contract-v3.sh && bash tests/test-evidence-dag.sh && bash tests/test-taste-source-contract-v3.sh && bash tests/test-finalization-watchdog.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-supervisor.sh && shellcheck -S warning bin/polylane-taste-execution-contract.sh bin/polylane-evidence-dag.sh bin/polylane-taste-source-contract.sh bin/polylane-finalize.sh bin/polylane-memory.sh bin/polylane-run.sh bin/polylane-supervisor.sh assets/verify-gate.sh",
+      "tier": "focused",
+      "key": "taste-v3-contract-lock",
       "status": "unchecked",
       "deps": [],
       "fp": "",

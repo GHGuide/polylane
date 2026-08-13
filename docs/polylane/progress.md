@@ -2,20 +2,25 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 40
+## Cycle 42
 
-subgoals: 90/93 done · criteria: 82/90 done · 93%
+subgoals: 90/98 done · criteria: 82/93 done · 90%
 
-**Route:** `CONTINUE m32.4  Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm`
+**Route:** `CONTINUE m32.6  Freeze executable v3 execution, provenance, source-calibration, statistics, and lifecycle contracts`
 
 ## Open autonomous work
 
-- `m32.4` [open, w137] — Run a real ten-brief old-versus-new rendered benchmark with a calibrated independent judge swarm
 - `m32.5` [open, w136] — Install both provider packages and certify the complete workflow end to end
+- `m32.6` [doing, w160] — Freeze executable v3 execution, provenance, source-calibration, statistics, and lifecycle contracts
+- `m32.7` [open, w159] — Implement the production evidence chain, selected-source transport, calibrated judge bridge, UI v3 contract, and prompt tournament against the frozen lock
+- `m32.8` [open, w158] — Acquire the pinned selected real-image corpus and qualify at least five judge configurations across at least two provider families
+- `m32.9` [open, w157] — Run an exactly twenty-brief development benchmark and repair only measured failures without changing the frozen protocol
+- `m32.10` [open, w156] — Run an untouched confirmatory benchmark and publish the truthful human-calibrated-machine certification record
 
 ## External/user evidence
 
 - `m12.4` — Keep Claude and Codex contracts aligned and certify the new loop against the old workflow — real 10-product rendered old-vs-new blind corpus remains external
+- `m32.4` — Run the pinned real-source and provider campaign required to calibrate the independent judge swarm — External source/provider campaign preserved from cycle 41; resume only after v3 contracts and lifecycle routing are promoted
 
 ## Blocked
 
@@ -109,16 +114,22 @@ subgoals: 90/93 done · criteria: 82/90 done · 93%
 - `c84` [open] — Visual promotion reads real browser-rendered desktop/mobile/state pixels with provenance and rejects missing, duplicate, stale, or synthetic-placeholder evidence
 - `c85` [open] — Taste judges are calibrated against openly licensed human-rated UI examples and weak or inconsistent judges cannot vote
 - `c86` [open] — Every comparison is identity-hidden, pointwise-before-pairwise, side-mirrored, independent, and checked for position bias and instruction leakage
-- `c87` [open] — A champion needs at least ten varied briefs, five eligible votes per brief, at least seventy percent preference, a positive confidence bound, and zero accessibility regression
+- `c87` [open] — A champion needs exactly twenty varied independent briefs, five eligible votes per brief, at least fifteen wins, a Wilson 95% lower bound above one half, exact two-sided sign p at most 0.05, and zero accessibility regression
 - `c88` [open] — UI builders explore divergent directions and rendered candidates, then perform at most two evidence-targeted repairs without forgetting the frozen goal or design lock
 - `c89` [open] — Taste scoring rewards product fit, hierarchy, typography, color, spatial rhythm, craftsmanship, originality, and coherent states while penalizing cross-brief template sameness
 - `c90` [open] — Claude and Codex packages ship the same taste contract and a fresh install passes focused, full, shell, capture, benchmark, and live workflow checks
+- `c91` [open] — Every certification claim is derived through a verified evidence DAG whose least-trusted ancestor controls the effective grade; fixture evidence is absorbing
+- `c92` [open] — The machine benchmark uses exactly twenty independent briefs, zero ties or abstentions, at least fifteen wins, Wilson 95% lower bound above one half, and exact two-sided sign p at most 0.05
+- `c93` [open] — A production panel contains at least five unique configuration fingerprints across at least two independently routed provider families and passes frozen calibration plus bias vetoes
 
 ## Acceptance checks
 
-- Total: 106
+- Total: 109
 - Pass: 104
-- Fail: 0
+- Fail: 3
 - Unchecked: 2
-  - `m32.4` [unchecked] — bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == "TASTE-CERTIFIED" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test("^[0-9a-f]{40}([0-9a-f]{24})?$")) and (.validator_chain_sha256 | test("^[0-9a-f]{64}$"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null
+  - `m32.4` [fail] — bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == "TASTE-CERTIFIED" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test("^[0-9a-f]{40}([0-9a-f]{24})?$")) and (.validator_chain_sha256 | test("^[0-9a-f]{64}$"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null
   - `m32.5` [unchecked] — bash tests/run.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bin/polylane-doctor.sh --rehearse
+  - `m32.4` [fail] — bash tests/test-taste-dataverse-transport.sh && bash tests/test-taste-dataone-metadata.sh && bash tests/test-taste-source-freeze.sh && bash tests/test-taste-download-campaign.sh && bash tests/test-taste-cache-integrity.sh && bash tests/test-taste-ratings-normalize.sh && bash tests/test-taste-corpus-select.sh && bash tests/test-taste-pair-builder.sh && bash tests/test-taste-calibration-campaign.sh && bash tests/test-taste-calibration-audit.sh && bash tests/test-taste-panel-freeze.sh && bash tests/test-taste-benchmark-preflight.sh && bash tests/test-taste-source-adversarial.sh && bash tests/test-taste-source-campaign-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh
+  - `m32.4` [fail] — jq -e '.status == "VALIDATED" and .fixture_only == false and .domains == 3 and .calibration_images == 180 and .holdout_images == 72 and .eligible_judges >= 5 and .human_calibrated == true and .human_certified == false' docs/polylane/taste-certification/benchmark/calibration-summary.json >/dev/null
+  - `m32.6` [unchecked] — bash tests/test-taste-execution-contract-v3.sh && bash tests/test-evidence-dag.sh && bash tests/test-taste-source-contract-v3.sh && bash tests/test-finalization-watchdog.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-supervisor.sh && shellcheck -S warning bin/polylane-taste-execution-contract.sh bin/polylane-evidence-dag.sh bin/polylane-taste-source-contract.sh bin/polylane-finalize.sh bin/polylane-memory.sh bin/polylane-run.sh bin/polylane-supervisor.sh assets/verify-gate.sh
