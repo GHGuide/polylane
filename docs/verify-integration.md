@@ -231,3 +231,5 @@ split/pairs, run the declared panel through the bridges, audit, preflight.
   translation rather than force a panel this run.
 
 POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c41-source-calibration-20260812-a1
+
+ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.
