@@ -112,9 +112,23 @@ assert_contains "nogo-nothing-merged" "Nothing merged"      "$nogo"
 assert_contains "nogo-open-item"      "NEEDS DECISION: who owns schema v2?" "$nogo"
 assert_contains "nogo-external-item" "Physical proof still needed" "$nogo"
 assert_contains "nogo-integration-open-item" "Re-run after credentials arrive" "$nogo"
+assert_contains "nogo-does-not-present-unknown-cost-as-zero" "total unavailable" "$nogo"
 if printf '%s' "$nogo" | grep -qF -- "arbitrary lane prose"; then fail "nogo-arbitrary-prose-excluded" "arbitrary prose leaked"; else pass "nogo-arbitrary-prose-excluded"; fi
 if printf '%s' "$nogo" | grep -qF -- "Historical deferred item"; then fail "nogo-historical-evidence-excluded" "historical evidence leaked"; else pass "nogo-historical-evidence-excluded"; fi
 if printf '%s' "$nogo" | grep -qF -- "shell output must not leak"; then fail "nogo-shell-output-excluded" "shell output leaked"; else pass "nogo-shell-output-excluded"; fi
+
+# A READY integrator can be rejected by a runner-owned host gate. The durable
+# report must attribute that NO-GO to the host check and point at its evidence,
+# not falsely claim that the integrator withheld GO.
+RUN_ID=host-report-run
+POLYLANE_MIN_DISK_GB=0 host_gate_failure "efficiency proof failed because restarts=1 exceeds max_restarts=0"
+write_report NO-GO
+host_nogo=$(cat "$TEST_TMPDIR/docs/polylane-report.md")
+assert_contains "host-nogo-attributed-to-runner-gate" "runner-owned host gate rejected the READY handoff" "$host_nogo"
+assert_contains "host-nogo-carries-real-reason" "restarts=1 exceeds max_restarts=0" "$host_nogo"
+assert_contains "host-nogo-points-to-canonical-evidence" "docs/polylane/host-gate-failures/host-report-run.md" "$host_nogo"
+if printf '%s' "$host_nogo" | grep -qF -- "integrator withheld GO"; then fail "host-nogo-does-not-blame-integrator" "host failure was attributed to integrator"; else pass "host-nogo-does-not-blame-integrator"; fi
+unset RUN_ID
 
 # --- HALTED report with a failed lane -----------------------------------------
 make_tmpdir
@@ -128,5 +142,15 @@ assert_contains "halted-verdict-line" "**Outcome:** HALTED" "$halted"
 assert_contains "halted-failed-row"   "| beta | claude-haiku-4-5 | lane/beta | FAILED — errored after retries |" "$halted"
 assert_contains "halted-retry-hint"   "could not recover after retries: **beta**" "$halted"
 FAILED_LANES=""
+
+# ENOSPC/failing output must not tear or replace a prior truthful report, and
+# callers need a non-zero result to avoid announcing a report that was not made.
+printf 'OLD VALID REPORT\n' > "$TEST_TMPDIR/docs/polylane-report.md"
+POLYLANE_TEST_REPORT_WRITE_FAIL=1
+write_report HALTED >/dev/null 2>&1
+report_fail_rc=$?
+unset POLYLANE_TEST_REPORT_WRITE_FAIL
+assert_eq "report-write-fail-returns-nonzero" "1" "$report_fail_rc"
+assert_eq "report-write-fail-preserves-old-report" "OLD VALID REPORT" "$(cat "$TEST_TMPDIR/docs/polylane-report.md")"
 
 finish

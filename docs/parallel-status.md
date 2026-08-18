@@ -1,27 +1,18 @@
-# Cycle 15 integration status
+# Cycle 20 integration status
 
-Run: `c15-domain-general-20260808` · branch: `lane/c15-integrator`.
+Run: `c20-clean-cert-20260809-a1` · branch: `lane/c20-integrator` · merged builder
+tip: `716624affb45b6e8ba75945e0fb135ea229bd59a` via `20aa4e1c`.
 
-| Lane | Tip | Integration state | Fresh focused evidence |
+| Lane | Exact tip | Integration state | Independently reproduced evidence |
 | --- | --- | --- | --- |
-| domain contract | `faa7f4d` | merged | profile router, concise provider triggers, conditional UI contract, and truthful external-action language inspected |
-| project runtime | `85dc6a6` | merged | seven-profile corpus, artifact-lane compilation, custom/mixed acceptance, and unsafe trading rejection |
-| integrator | `c4e03b9` + current seam repairs | merged and seam-repaired | durable Markdown/JSON profile gate; restored Codex manifest identity; strengthened provider-parity coverage |
+| restart accounting audit | `716624a` | nonce-matched evidence-only tip merged; range added only its verification and status documents | Cycle 19 restart attribution retained; no production surface changed |
+| integrator | `f58d3cb` | the planning root cause plus three live orchestration/reporting seams were reproduced and repaired; READY was rejected by the host efficiency proof, not by the integrator | original focused matrix 153/0; runtime/prompt/parity 381/0; host-proof/report matrix 261/0; scope/prompt/preflight matrix 292/0; docs truth 25/0; ShellCheck clean |
 
-Focused commands and results:
-
-- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- tests/test-project-generality.sh` — **35/35** TAP assertions passed: software, trading strategy research, literature review, incident-response playbook, content campaign, dataset-quality pipeline, and mixed custom profiles all validate and compile to non-overlapping artifact lanes.
-- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-skill-parity.sh` — **48/0** provider-parity checks passed.
-- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-visual-loop-integration.sh` — **28/0** visual-loop contract checks passed after restoring six obligations dropped by entrypoint compaction.
-- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bash tests/test-installers.sh` — **34/0** checks passed from a fresh copied checkout: Codex package **20/0**, Claude package **13/0**, and one shared-core checksum assertion.
-- `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- bin/polylane-markers.sh check-docs references/` — passed with no marker error.
-
-The final terminal boundary is `bash tests/run.sh && shellcheck -S warning bin/*.sh` over
-**101 test files** and **52 Bash scripts**. The durable integrator inbox was empty.
-Both eligible refinement records were explicitly declined in the canonical harness:
-`context/compaction:12` has no new packet defect, and `integrator/no-go:4` is covered
-by the current project-profile, parity, installer, full-suite, and ShellCheck matrix.
-
-`m15.1` and `c40` are closed in durable state subject to that one host-owned terminal acceptance.
-The only remaining global external item is `m12.4`/`c28`: a real ten-product rendered
-old-vs-new blind visual corpus. It remains external and is not represented as a pass.
+Canonical run stats prove one builder restart, two launches, one host-boundary entry,
+zero full terminal acceptance runs, 4,424,983 known tokens, and retained cleanup. Commits
+`763fb00`, `e1de56a`, and `f58d3cb` add marker/relay recovery, canonical nonce-scoped host
+proofs, truthful report attribution, and prelaunch rejection of noncanonical status
+contracts. Cycle 21 owns the untouched terminal full-suite and
+hermetic GO plus NO-GO rehearsal outcomes that can decide `m20.1`, `m18.3`, and `c56`.
+No live external action occurred; approval hashes remain mandatory and trading remains
+research/backtest/paper-only. This file is a durable post-cycle summary, never live IPC.

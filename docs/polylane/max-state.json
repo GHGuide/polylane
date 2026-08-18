@@ -285,68 +285,110 @@
       "id": "c41",
       "text": "Real cross-domain trials use public-source snapshots plus optional live canaries, not only synthetic fixtures",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c42",
       "text": "Domain adapters declare capabilities, dependencies, provenance, side effects, and deterministic offline fallbacks",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c43",
       "text": "Profile-aware graders verify domain validity, including temporal leakage and overfitting for trading research",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c44",
       "text": "Outcome memory learns only from accepted evidence and recommends changes with sample and confidence guards",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c45",
       "text": "Skill suggestions are lane-specific, benchmarked before admission, explainable, and safe by default",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c46",
       "text": "A resumable accelerated soak and fault harness proves long-run recovery and supports a real 6-to-24-hour mode",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c47",
       "text": "Economy policy optimizes verified progress per token and minute across model, effort, lane count, and context",
       "weight": 10,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c48",
       "text": "Discovery uses domain-specific question trees with deeper follow-ups and measurable stopping conditions",
       "weight": 9,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c49",
       "text": "Final deliverables are profile-specific, complete, provenance-bearing, and decision-ready",
       "weight": 9,
-      "status": "open",
+      "status": "done",
       "score": 0
     },
     {
       "id": "c50",
       "text": "Every consequential external action has a deterministic impact preview, simulation receipt, and explicit approval boundary",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c51",
+      "text": "Pre-verdict gates remain hermetic in unit tests and live high-effort workers are never restarted from stale progress messages",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c52",
+      "text": "Selected skills can be armed only from reproducible fingerprint-matched benchmark evidence while legacy delivery tests remain truthful",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c53",
+      "text": "A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c54",
+      "text": "Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c55",
+      "text": "Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c56",
+      "text": "A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion",
       "weight": 10,
       "status": "open",
       "score": 0
@@ -797,33 +839,121 @@
           "id": "m16.1",
           "text": "Implement domain adapters, profile-aware graders, domain question trees, deliverable contracts, and external-action preview",
           "weight": 60,
-          "status": "doing",
+          "status": "done",
           "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "evidence": "focused domain runtime contract passed 76/0; profile symlink and action receipt tampering fail closed"
         },
         {
           "id": "m16.2",
           "text": "Implement accepted-outcome learning, benchmark-gated skill recommendations, and empirical economy optimization",
           "weight": 58,
-          "status": "doing",
+          "status": "done",
           "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "evidence": "focused learning economy contract passed 57/0; benchmark duplicate admission is atomic"
         },
         {
           "id": "m16.3",
           "text": "Implement real cross-domain trials plus resumable accelerated and 6-to-24-hour soak fault testing",
           "weight": 56,
-          "status": "doing",
+          "status": "done",
           "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "evidence": "focused source-pinned trials 15/0 and accelerated/resumable soak 21/0 passed"
         },
         {
           "id": "m16.4",
           "text": "Integrate both provider skills and certify all cycle-16 mechanisms end to end",
           "weight": 54,
-          "status": "doing",
-          "cycle": 16,
-          "evidence": "Cycle 16 frozen before builder launch"
+          "status": "open",
+          "cycle": 17,
+          "evidence": "Cycle 16 terminal gate found 9 compatibility failures; fresh Cycle 17 certification required"
+        }
+      ]
+    },
+    {
+      "id": "m17",
+      "text": "Cycle 16 recovery, compatibility, and terminal certification",
+      "subgoals": [
+        {
+          "id": "m17.1",
+          "text": "Repair graph and verdict gate test isolation plus live-turn liveness classification",
+          "weight": 62,
+          "status": "done",
+          "cycle": 17,
+          "evidence": "Reproduced c17-recovery-cert-20260809-a1: graph authority 56/0, verdict repair 36/0, wedge 27/0; each merge attempt invokes domain_grade_gate and an old agent_message retains high-effort live-turn grace."
+        },
+        {
+          "id": "m17.2",
+          "text": "Align selected-skill delivery and Cycle 14 compatibility with benchmark-gated admission",
+          "weight": 60,
+          "status": "done",
+          "cycle": 17,
+          "evidence": "Reproduced c17-recovery-cert-20260809-a1: skill delivery 31/0 and Cycle-14 contract 13/0; arming revalidates exact trusted fingerprint, domain, and lane shape through the public benchmark gate."
+        },
+        {
+          "id": "m17.3",
+          "text": "Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities",
+          "weight": 58,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
+    },
+    {
+      "id": "m18",
+      "text": "Walk-away recovery truth, skill delivery, and final certification",
+      "subgoals": [
+        {
+          "id": "m18.1",
+          "text": "Harden startup detection, committed-DONE resume, disk-pressure event/report writes, and supervisor recovery",
+          "weight": 70,
+          "status": "done",
+          "cycle": 18,
+          "evidence": "docs/verify-integration.md: reproduced runtime recovery matrix via integrator cache"
+        },
+        {
+          "id": "m18.2",
+          "text": "Compile exact benchmark-admitted selected skill paths and share canonical graph context into recovery roots",
+          "weight": 68,
+          "status": "done",
+          "cycle": 18,
+          "evidence": "docs/verify-integration.md: reproduced selected-skill delivery and same-repository graph fallback"
+        },
+        {
+          "id": "m18.3",
+          "text": "Integrate Cycle 18 fixes and complete one clean terminal certification",
+          "weight": 66,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        }
+      ]
+    },
+    {
+      "id": "m19",
+      "text": "Cycle 19 — generic-project rehearsal recovery",
+      "subgoals": [
+        {
+          "id": "m19.1",
+          "text": "Guard optional domain-grade post-processing and prove both absent and requested paths",
+          "weight": 74,
+          "status": "done",
+          "cycle": 19,
+          "evidence": "Merged optional-domain gate af221ab2; fresh cached Cycle-16 contract 35/0 proves explicit not-requested no-op and requested bundle/grade/PASS persistence."
+        }
+      ]
+    },
+    {
+      "id": "m20",
+      "text": "Cycle 20 — clean process-start terminal certification",
+      "subgoals": [
+        {
+          "id": "m20.1",
+          "text": "Audit restart attribution and complete one zero-restart process-start certification",
+          "weight": 76,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
         }
       ]
     }
@@ -972,6 +1102,90 @@
       "kind": "decision",
       "text": "Implement all ten requested improvements as executable, evidence-gated mechanisms across three isolated lanes and one independent integrator.",
       "meta": ""
+    },
+    {
+      "cycle": 16,
+      "kind": "decision",
+      "text": "Focused cycle-16 contracts reproduced; terminal host gate remains the only completion boundary",
+      "meta": "domain 76/0, economy 57/0, trials 15/0, soak 21/0, cross-contract 29/0"
+    },
+    {
+      "cycle": 17,
+      "kind": "learning",
+      "text": "Cycle 16 correctly halted after its single terminal gate exposed stale domain-gate mocks and benchmark-free skill-delivery fixtures; preserve the NO-GO evidence and repair in a fresh run.",
+      "meta": "2,088 checks passed; 9 failed in test-cycle-14-contract.sh, test-graph-authority.sh, and test-skill-delivery.sh."
+    },
+    {
+      "cycle": 17,
+      "kind": "decision",
+      "text": "Integrated both Cycle 17 recovery tips and completed focused plus cross-contract evidence; only the coordinator terminal matrix remains.",
+      "meta": "gate 56/0+36/0+27/0; skill 31/0+13/0; C16 29/0; parity 57/0; installers 50/0+39/0; ShellCheck/markers/seams clean"
+    },
+    {
+      "cycle": 17,
+      "kind": "decision",
+      "text": "Independent recovery integration reproduced focused and Cycle-16 cross-contract evidence; leave the single terminal matrix to the coordinator.",
+      "meta": "gate 56/0+36/0+27/0; skill 31/0+13/0; learning 57/0; C16 29/0; parity 57/0; installers 50/0+39/0; ShellCheck/markers/diff/seams clean"
+    },
+    {
+      "cycle": 18,
+      "kind": "attempt",
+      "text": "Cycle 17 terminal certification under disk exhaustion",
+      "meta": "First host gate lost writes at ENOSPC; resumed suite reached 2103/2104 with a transient supervisor failure; isolated rerun passed 2104/2104. Preserve NO-GO and repair recovery truth in a fresh run."
+    },
+    {
+      "cycle": 18,
+      "kind": "learning",
+      "text": "Selected skill names were compiled but exact selected paths were omitted",
+      "meta": "prepare_compiled_prompts called compile, never compile-selected; workers therefore reported installed selected skills unavailable and audits marked them unused."
+    },
+    {
+      "cycle": 18,
+      "kind": "learning",
+      "text": "Runner-owned host failure prose dirtied the completed integrator worktree",
+      "meta": "lane_done then failed clean-tree validation on resume, causing a committed DONE integrator to be adopted and respawned."
+    },
+    {
+      "cycle": 18,
+      "kind": "decision",
+      "text": "Cycle 18 local recovery and exact skill-delivery integration is ready for the single host gate.",
+      "meta": "runtime 29/26/40/47/33/26/11; delivery 44/0; runner delivery 44/0; C16 29/0; parity 57/0; installers 50/0+39/0; terminal/rehearsal untouched"
+    },
+    {
+      "cycle": 18,
+      "kind": "learning",
+      "text": "The terminal suite passed, but the hermetic GO rehearsal stopped before its terminal gate because domain_grade_gate tried to stage absent optional-domain artifacts after ADVANCED reported not-requested.",
+      "meta": "REHEARSE-GO ready=0 promoted=0 terminal_gates=0 cleaned=0 leaks=1; fatal pathspec docs/polylane/domain-runtime/bundle.json"
+    },
+    {
+      "cycle": 19,
+      "kind": "decision",
+      "text": "Run one narrow Polylane recovery lane for optional-domain no-op semantics, then a fresh integrator and one fresh terminal certification.",
+      "meta": "Root cause confirmed by standalone POLYLANE_REHEARSE_DEBUG=1 reproduction; no speculative fixes."
+    },
+    {
+      "cycle": 19,
+      "kind": "decision",
+      "text": "Cycle 19 optional-domain boundary is locally verified and ready for the coordinator host gate.",
+      "meta": "merged af221ab2; c16 35/0; verdict-repair 40/0; selected-skill delivery 44/0; cycle13 44/0; parity 57/0; installers 50/0+39/0; ShellCheck clean; terminal m18.3 remains open"
+    },
+    {
+      "cycle": 19,
+      "kind": "learning",
+      "text": "The live recovery runner rejected its own same-repository Graphify helper because lane_done compared only with the recovery root, causing one redundant builder respawn.",
+      "meta": "Runner paused before integrator respawn; ownership now requires a real graph under a registered sibling worktree in the exact Git common directory; lane-done 27/0 and share-graph 11/0."
+    },
+    {
+      "cycle": 19,
+      "kind": "attempt",
+      "text": "Cycle 19 reached its verifier but correctly halted on the efficiency canary.",
+      "meta": "NO-GO; launches=2; restarts=3>1; terminal_gates=1; cleanup=pending; no promotion."
+    },
+    {
+      "cycle": 20,
+      "kind": "decision",
+      "text": "Start a fresh process from the Cycle 19 integrated tip and require a zero-restart terminal certification.",
+      "meta": "base=23cabdf; outer domain_runtime omitted; one evidence-only builder; coordinator owns full suite and GO+NO-GO rehearsal."
     }
   ],
   "accept": [
@@ -1527,6 +1741,96 @@
       "tier": "terminal",
       "key": "cycle16-terminal",
       "status": "fail",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m17.1",
+      "cmd": "bash tests/test-graph-authority.sh && bash tests/test-verdict-repair.sh && bash tests/test-wedge.sh",
+      "tier": "focused",
+      "key": "recovery-gates",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m17.2",
+      "cmd": "bash tests/test-skill-delivery.sh && bash tests/test-cycle-14-contract.sh",
+      "tier": "focused",
+      "key": "skill-admission-recovery",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m17.3",
+      "cmd": "bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
+      "tier": "focused",
+      "key": "recovery-integration",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.1",
+      "cmd": "bash tests/test-wedge.sh && bash tests/test-lane-done.sh && bash tests/test-verdict-repair.sh && bash tests/test-graph-events.sh && bash tests/test-write-report.sh && bash tests/test-supervisor.sh",
+      "tier": "focused",
+      "key": "cycle18-runtime",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.2",
+      "cmd": "bash tests/test-skill-delivery.sh && bash tests/test-prompt-compiler.sh && bash tests/test-share-graph.sh",
+      "tier": "focused",
+      "key": "cycle18-skill-context",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.3",
+      "cmd": "bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
+      "tier": "focused",
+      "key": "cycle18-integration",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m18.3",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "cycle16-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m19.1",
+      "cmd": "bash tests/test-cycle-16-contract.sh",
+      "tier": "focused",
+      "key": "cycle19-domain-optional",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m20.1",
+      "cmd": "bash tests/test-lane-done.sh && bash tests/test-share-graph.sh && bash tests/test-cycle-16-contract.sh && bash tests/test-verdict-repair.sh && bash tests/test-supervisor.sh && bash tests/test-efficiency-canary.sh",
+      "tier": "focused",
+      "key": "cycle20-process-start",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

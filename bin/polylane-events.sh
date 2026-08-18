@@ -29,6 +29,20 @@ valid_integer() {
   esac
 }
 
+# The writer's source of truth is append-only, so fail before any durable write
+# when the host cannot provide the configured headroom.  Tests can inject a
+# tiny probe; production uses df and never fills the real volume.
+event_disk_guard() {
+  local dir="$1" floor="${POLYLANE_MIN_DISK_GB:-2}" free
+  if [ -n "${POLYLANE_DISK_PROBE:-}" ] && [ -x "$POLYLANE_DISK_PROBE" ]; then
+    free=$("$POLYLANE_DISK_PROBE" "$dir" 2>/dev/null | sed -n '1p')
+  else
+    free=$(df -Pk "$dir" 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}')
+  fi
+  [ -n "$free" ] || return 0
+  [ "$free" -ge "$floor" ] 2>/dev/null
+}
+
 allowed_transition() {
   case "$1:$2" in
     pending:ready|pending:blocked|pending:skipped|ready:running|ready:blocked|ready:skipped|running:succeeded|running:failed|running:blocked|failed:ready|failed:blocked)
@@ -287,6 +301,7 @@ append_event() {
     return 2
   }
   mkdir -p "$(dirname "$ledger")" || return 1
+  event_disk_guard "$(dirname "$ledger")" || return 1
   acquire_lock "$ledger" || return $?
   trap 'release_lock' EXIT HUP INT TERM
   validate_ledger "$ledger" "$run_id" "$graph_id" || return $?
@@ -351,7 +366,10 @@ EOF
        graph_id: $graph_id, node: $node, from: $from, to: $to, attempt: $attempt,
        idempotency_key: $idempotency_key, reason: $reason, artifact_hash: ""}
     ')
-  printf '%s\n' "$row" >> "$ledger"
+  # The row is a single bounded write under the lock.  A deterministic failure
+  # is injected before that write, so a valid prior ledger is never modified.
+  [ "${POLYLANE_TEST_EVENT_APPEND_FAIL:-0}" != 1 ] || return 1
+  printf '%s\n' "$row" >> "$ledger" || return 1
   if [ "$checkpoint_ready" = true ]; then
     update_checkpoint_after_append "$ledger" "$run_id" "$graph_id" "$node" "$to" "$attempt" \
       "$next_seq" "$idempotency_key" || true

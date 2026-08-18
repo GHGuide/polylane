@@ -200,6 +200,10 @@ graph_authority_require() { printf 'require:%s\n' "$1" >> "$GATE_ORDER"; }
 graph_authority_record_ready_node() {
   printf 'record:%s:%s:%s\n' "$1" "$2" "${3:-0}" >> "$GATE_ORDER"
 }
+# This block exercises graph admission around a mocked merge flow.  The real
+# pre-verdict domain gate is covered in test-verdict-repair; make this fixture
+# explicitly hermetic so no ambient bundle/evidence can prevent merge_gate.
+domain_grade_gate() { return 0; }
 merge_gate() {
   GATE_MERGES=$((GATE_MERGES + 1))
   printf 'merge:%s\n' "$GATE_MERGES" >> "$GATE_ORDER"

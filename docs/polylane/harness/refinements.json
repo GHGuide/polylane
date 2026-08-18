@@ -33,6 +33,22 @@
       "reason": "Cycle-14 source reproductions and the named self-hosting-truth contract cover the recorded cycle-13 failure modes; the remaining physical rehearsal is a host gate, not a new local refinement.",
       "trigger_kind": "no-go",
       "observation_count": 3
+    },
+    "decline:context:compaction:12": {
+      "id": "decline:context:compaction:12",
+      "subject": "context",
+      "cycle": 16,
+      "reason": "Bounded packets remain repeatable and current cycle-16 contract coverage found no context-loss defect or distinct safe check-backed local repair.",
+      "trigger_kind": "compaction",
+      "observation_count": 12
+    },
+    "decline:integrator:no-go:6": {
+      "id": "decline:integrator:no-go:6",
+      "subject": "integrator",
+      "cycle": 16,
+      "reason": "The repeated cycle-15 NO-GO signal is now covered by fresh profile-grade, runner, parity, installer, seam, and host-gate evidence; no distinct integrator-local repair is indicated.",
+      "trigger_kind": "no-go",
+      "observation_count": 6
     }
   }
 }

@@ -96,6 +96,56 @@ Apply the selected profile’s gate from `project-types.md`:
   emoji-as-product-art and default-font sameness. Promotion needs >=10 varied prompts and >=70% creative/polish wins.
   Require no accessibility regression and a visual certification record.
 
+## Evidence-driven domain autonomy
+
+For a selected profile, seed discovery with the typed adapter tree:
+
+```bash
+bin/polylane-discovery.sh init .polylane/discovery.json "<brief>" <software|trading|research|operations|content|data|custom|mixed>
+bin/polylane-discovery.sh next .polylane/discovery.json
+```
+
+Keep **Go deeper** domain-specific: a trading answer leads to chronological
+splits/costs/paper boundaries, research to sources/inclusion/uncertainty, and so
+on. After a promoted cycle, ask an emergent question only when its answer could
+change deliverables, evidence, risk, or next focus; otherwise continue autonomously.
+The short report always precedes `Next:` and any question.
+
+Before builders launch, register the chosen profile’s executable bundle grader in
+the manifest’s optional `domain_runtime` object (profile, bundle, grade, and
+registration paths). The runner registers it before pane creation and reruns it
+against the integrator worktree before promotion. A missing, checksum-mismatched,
+or profile-incomplete deliverable bundle is a gate failure—not a generic
+file-exists pass. See [evidence-driven domain autonomy](references/evidence-driven-domain-autonomy.md).
+
+Use source-pinned real-domain trials as deterministic completion evidence:
+
+```bash
+bin/polylane-domain-trials.sh validate benchmarks/domain-trials/v1
+bin/polylane-domain-trials.sh run benchmarks/domain-trials/v1 .polylane/trials
+```
+
+`--live` is an explicitly requested, read-only canary; `SKIP` is not `PASS` and
+can never make offline CI flaky. For long-run certification, prove faults now with
+the accelerated harness, then give operators the exact 6/12/24-hour resumable
+commands and status path; do not wait in an integration cycle.
+
+When `outcome_learning` is configured, the runner calls the empirical optimizer at
+the plan gate and writes its recommendation/reason. It applies only a measured,
+available, role-safe single model or effort change; thin samples, ties, unavailable
+models, and lane/context topology changes preserve the user intensity/default.
+After a promoted accepted cycle it writes an accepted-outcome receipt. Unknown
+telemetry stays unknown and is not supplied as made-up optimizer evidence.
+
+Skill scouting is lane-specific. Candidates with no matching benchmark, a failed
+benchmark, or a changed fingerprint may be offered but are never recommended,
+armed, or auto-installed; **None** remains an explicit choice. Before every
+consequential action, prepare and verify the exact action-preview/simulation
+receipt, surface critical approval in the main chat, and bind approval to its
+receipt hash. Approval never authorizes an altered payload, and this helper has no
+execution path. Trading remains paper/backtest research unless the user separately
+authorizes live capital and supplies actual execution proof.
+
 ## Plan and launch a cycle
 
 Read the current brief, profile, strategy, accepted decisions, and only relevant
@@ -155,6 +205,10 @@ Write a cycle digest with delivered artifacts, evidence, provenance, decisions,
 regressions, external blockers, and reproduction notes; update the profile, strategy,
 goal tree, `INDEX.md`, and handoff instructions before the next wave. The council can
 add a frozen-acceptance subgoal or prioritize work, but cannot declare completion.
+
+Profile-specific final handoffs name the actual artifacts and provenance, bundle-grade
+result, risks/uncertainty, open external evidence, and material next questions. Never
+promote an ungraded deliverable bundle or describe a prepared/simulated action as done.
 
 When initially requested work is verified, generate exactly 30 concise, in-scope
 suggestions, validate them, and take only the highest-leverage additions as one

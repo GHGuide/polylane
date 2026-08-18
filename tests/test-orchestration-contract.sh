@@ -79,7 +79,7 @@ cat > "$MANIFEST" <<JSON
     "name":"builder","model":"gpt-5.6-terra","branch":"lane/builder",
     "worktree":"$P/.polylane/wt/builder",
     "prompt_file":".polylane/lanes/builder.txt",
-    "own_globs":["src/**"],"target_subgoals":["s1"]
+    "own_globs":["src/**","docs/status-builder.md"],"target_subgoals":["s1"]
   }]
 }
 JSON
@@ -87,6 +87,18 @@ JSON
 MANIFEST="$MANIFEST"
 load_manifest
 assert_ok "contract-valid-before-launch" preflight_contract
+
+jq '(.lanes[0].own_globs)=["src/**","docs/status-short.md"]' "$MANIFEST" > "$P/.polylane/bad-status-scope.json"
+MANIFEST="$P/.polylane/bad-status-scope.json"; load_manifest
+assert_rc "contract-rejects-noncanonical-status-scope" 2 preflight_contract
+
+cp "$PROMPT" "$P/.polylane/lanes/builder-wrong-status.txt"
+printf '%s\n' 'Write docs/status-short.md as the DONE marker.' >> "$P/.polylane/lanes/builder-wrong-status.txt"
+jq '(.lanes[0].prompt_file)=".polylane/lanes/builder-wrong-status.txt"' \
+  "$P/.polylane/run.json" > "$P/.polylane/bad-status-prompt.json"
+MANIFEST="$P/.polylane/bad-status-prompt.json"; load_manifest
+assert_rc "contract-rejects-conflicting-status-prompt" 2 preflight_contract
+MANIFEST="$P/.polylane/run.json"; load_manifest
 
 jq '.prime_hybrid=true' "$MANIFEST" > "$P/.polylane/prime-hybrid.json"
 MANIFEST="$P/.polylane/prime-hybrid.json"; load_manifest

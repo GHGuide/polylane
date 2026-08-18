@@ -277,12 +277,15 @@ arm_role() {
 # candidate selected by the planner. The record is re-resolved before persistence
 # so stale recommendation metadata cannot arm a changed or untrusted file.
 arm_recommendation() {
-  local f="$1" lane="$2" role="$3" recommendation="$4" id="$5" candidate candidate_path canonical_candidate current ids
+  local f="$1" lane="$2" role="$3" recommendation="$4" id="$5" candidate candidate_path canonical_candidate current ids benchmark helper gate_file gate
   case "$role" in predefined|specific) ;; *) echo "polylane-scout: role must be predefined or specific" >&2; return 2 ;; esac
   [ -f "$recommendation" ] || { echo "polylane-scout: recommendation file is missing" >&2; return 2; }
   candidate=$(jq -c --arg id "$id" '(.candidates // [])[] | select(.id == $id)' "$recommendation" | head -n 1)
   [ -n "$candidate" ] || { echo "polylane-scout: recommendation does not select '$id'" >&2; return 2; }
-  jq -e '(.id | type == "string") and (.path | type == "string") and (.reason | type == "string" and length > 0) and (.source | type == "string") and (.fingerprint | type == "string")' <<<"$candidate" >/dev/null || {
+  jq -e '.status == "recommended" and .safe_to_apply == true' <<<"$candidate" >/dev/null || {
+    echo "polylane-scout: candidate is not benchmark-recommended and safe to apply" >&2; return 2;
+  }
+  jq -e '(.id | type == "string") and (.path | type == "string") and (.reason | type == "string" and length > 0) and (.source | type == "string") and (.fingerprint | type == "string") and (.domain | type == "string" and length > 0) and (.lane_shape | type == "string" and length > 0)' <<<"$candidate" >/dev/null || {
     echo "polylane-scout: recommendation lacks typed selected-skill metadata" >&2; return 2;
   }
   candidate_path=$(jq -r '.path' <<<"$candidate")
@@ -294,6 +297,20 @@ arm_recommendation() {
     .id == $current.id and $path == $current.path and .source == $current.source and .fingerprint == $current.fingerprint
   ' <<<"$candidate" >/dev/null || {
     echo "polylane-scout: recommendation identity no longer matches trusted resolved skill" >&2; return 2;
+  }
+  benchmark="${POLYLANE_SKILL_BENCHMARK_LEDGER:-}"
+  [ -n "$benchmark" ] || {
+    echo "polylane-scout: benchmark ledger is required to arm a recommendation" >&2; return 2;
+  }
+  helper="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-skill-benchmark.sh"
+  [ -x "$helper" ] || { echo "polylane-scout: benchmark helper missing" >&2; return 2; }
+  gate_file=$(mktemp "${TMPDIR:-/tmp}/polylane-skill-arm-gate.XXXXXX") || return 1
+  trap 'rm -f "$gate_file"' RETURN
+  jq -n --argjson current "$current" --argjson candidate "$candidate" \
+    '{id:$current.id,fingerprint:$current.fingerprint,domain:$candidate.domain,lane_shape:$candidate.lane_shape}' > "$gate_file"
+  gate=$(bash "$helper" gate "$benchmark" "$gate_file") || return $?
+  jq -e '.status == "recommended" and .safe_to_apply == true' <<<"$gate" >/dev/null || {
+    echo "polylane-scout: real benchmark gate does not admit this candidate" >&2; return 2;
   }
   ids=$(jq -cn --arg id "$id" '[$id]')
   write_armed_role "$f" "$lane" "$role" "$ids" "[$current]"

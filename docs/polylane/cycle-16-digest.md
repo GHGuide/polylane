@@ -1,0 +1,3 @@
+# Cycle 16 digest — evidence-driven domain autonomy
+
+Cycle 16 integrated the three merged runtime, learning-economy, and trials-soak tips; reproduced domain 76/0, economy 57/0, trials 15/0, soak 21/0, and cross-contract 29/0 behavior; wired typed discovery, profile-specific grading, source-pinned trials, benchmark-gated skills, resumable soak, accepted-outcome recommendations, and receipt-bound action previews while preserving Bash 3.2, jq-only runtime, nonce-bound tmux isolation, transactional promotion, and paper-only trading. `Next:` run the coordinator-owned terminal suite and rehearsal only after final parity, installer, ShellCheck, marker, profile, and seam evidence is recorded; optional 6/12/24-hour soak and any consequential action remain explicit operator work.

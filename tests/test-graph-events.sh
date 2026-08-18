@@ -68,6 +68,17 @@ assert_ok "events-idempotent-duplicate" event "$IDEM" alpha pending ready 0 idem
 assert_eq "events-idempotent-one-row" "1" "$(wc -l < "$IDEM" | tr -d ' ')"
 assert_fail "events-idempotency-conflict" event "$IDEM" alpha ready running 1 idem-1 changed
 
+# A deterministic pre-append ENOSPC failpoint must leave the old JSONL history
+# byte-for-byte valid.  This never allocates real disk space.
+ATOMIC="$TEST_TMPDIR/atomic.jsonl"
+assert_ok "events-atomic-setup" event "$ATOMIC" alpha pending ready 0 atomic-1
+atomic_before=$(cat "$ATOMIC")
+POLYLANE_TEST_EVENT_APPEND_FAIL=1 event "$ATOMIC" alpha ready running 1 atomic-2 >/dev/null 2>&1
+atomic_rc=$?
+assert_eq "events-append-fail-returns-nonzero" "1" "$atomic_rc"
+assert_eq "events-append-fail-preserves-ledger" "$atomic_before" "$(cat "$ATOMIC")"
+assert_ok "events-append-fail-ledger-replayable" "$EVENTS" verify "$ATOMIC" run-a graph-a
+
 # Hand-authored bad rows prove verify identifies history corruption, not merely
 # failures at the append boundary.
 GAP="$TEST_TMPDIR/gap.jsonl"

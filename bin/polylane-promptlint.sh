@@ -36,6 +36,17 @@ lint_one() {
     grep -qi 'EXTERNAL-EVIDENCE:' "$f"    || miss="$miss external-evidence-routing"
     exact_once_labels "$f" || miss="$miss duplicate-exact-once-label"
   fi
+  if [ "${POLYLANE_RUNTIME_COMPILED:-0}" = "1" ]; then
+    grep -qF 'POLYLANE-RUNTIME-RELAY:' "$f" || miss="$miss runtime-relay-contract"
+    grep -qF 'COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"' "$f" || miss="$miss runtime-relay-command"
+    grep -qF 'docs/parallel-status.md is post-cycle evidence only, never the live relay.' "$f" || miss="$miss runtime-relay-boundary"
+    grep -qF "POLYLANE-RUNTIME-DONE: write only docs/status-$lane.md;" "$f" || miss="$miss runtime-done-path"
+    grep -qF "STATUS: $lane DONE run=" "$f" || miss="$miss runtime-done-marker"
+    runtime_exact_once "$f" || miss="$miss duplicate-runtime-contract"
+    if [ "$role" = builder ]; then
+      builder_status_paths_canonical "$f" "$lane" || miss="$miss conflicting-status-path"
+    fi
+  fi
   if [ "$prime_hybrid" = true ]; then
     grep -q 'POLYLANE_CONTEXT_PACKET' "$f" || miss="$miss prime-hybrid-context-packet"
     grep -qi 'durable inbox' "$f" || miss="$miss prime-hybrid-durable-inbox"
@@ -46,6 +57,23 @@ lint_one() {
   fi
   if [ -n "$miss" ]; then echo "PROMPT-LINT: $lane missing$miss"; return 6; fi
   return 0
+}
+
+builder_status_paths_canonical() {
+  local f="$1" lane="$2" canonical="docs/status-$2.md" path paths
+  paths=$(grep -oE 'docs/status-[A-Za-z0-9._-]+\.md' "$f" 2>/dev/null | LC_ALL=C sort -u || true)
+  [ -n "$paths" ] || return 1
+  for path in $paths; do
+    [ "$path" = "$canonical" ] || return 1
+  done
+}
+
+runtime_exact_once() {
+  local f="$1" label count
+  for label in POLYLANE-RUNTIME-RELAY POLYLANE-RUNTIME-DONE; do
+    count=$(grep -cF "$label:" "$f" || true)
+    [ "$count" -eq 1 ] || return 1
+  done
 }
 
 # Hard scalar contracts are not ordinary repeatable prose. Keep the check local

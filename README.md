@@ -61,6 +61,30 @@ publication, sent communications, production changes, purchases, and physical ex
 always need explicit user authority and actual evidence; a plan or simulation is not a
 completed action. See [project profiles](references/project-types.md).
 
+### Evidence-driven domain autonomy
+
+Profile adapters now seed domain-specific discovery questions, register an executable
+deliverable-bundle grader before builders launch, and require its checksum/provenance
+grade before promotion. Real-domain trials use source-pinned offline snapshots; a live
+read-only canary is explicit and `SKIP` never counts as a pass. The runner records only
+accepted outcome receipts, recommends model/effort changes only from comparable measured
+evidence, and preserves the chosen default when confidence is thin. Skill candidates need
+a matching fingerprinted lane benchmark before they can be recommended or armed.
+
+Run accelerated recovery now, or configure a resumable operator soak without blocking a
+cycle:
+
+```bash
+bin/polylane-soak.sh run .polylane/soak/accelerated --accelerated --iterations 8 --seed 41
+bin/polylane-soak.sh configure .polylane/soak/6h --hours 6 --seed 41
+bin/polylane-soak.sh run .polylane/soak/6h --hours 6 --seed 41
+```
+
+The same pattern supports `--hours 12` and `--hours 24`; re-run `run` to resume and
+inspect that directory’s `state.json`, backup, events, fault receipts, and summary. For
+the manifest fields, action-preview receipt boundary, exact trial commands, and complete
+6/12/24-hour procedure, see [evidence-driven domain autonomy](references/evidence-driven-domain-autonomy.md).
+
 ---
 
 ## Why polylane (vs "swarm" / autonomous multi-agent frameworks)

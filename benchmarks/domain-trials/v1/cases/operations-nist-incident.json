@@ -1,0 +1,20 @@
+{
+  "schema": "polylane-domain-trial/v1",
+  "id": "operations-nist-incident",
+  "domain": "operations",
+  "title": "NIST incident-response standard",
+  "task": "Draft a recovery-oriented operations checklist that names its authoritative standard and does not claim an incident was performed.",
+  "expected_verdict": "pass",
+  "adapter": "offline-standard-snapshot",
+  "grading": {"checks": ["authoritative_standard", "recovery_owner_present", "no_unperformed_claim"]},
+  "source": {
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+    "query": {"publication": "SP 800-61r3", "format": "metadata extract"},
+    "retrieval_timestamp": "2026-08-09T00:00:00Z",
+    "content_checksum": "4e80f2eaa170dd1a430b3e81ff53bcb486597827e969360c60a51f64237616d5",
+    "license_terms_note": "NIST publications are U.S. government works; verify any downstream use against the publication's notice.",
+    "schema_version_or_vintage": "NIST SP 800-61r3, final, 2025",
+    "transformations": ["selected publication identity fields", "omitted full publication text"],
+    "raw": "raw/operations-nist-incident.json"
+  }
+}

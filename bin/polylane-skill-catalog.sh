@@ -129,7 +129,7 @@ lane_domain() {
 }
 
 recommend_catalog() {
-  local catalog="$1" lane_file="$2" ledger="$3" lane domain outcomes
+  local catalog="$1" lane_file="$2" ledger="$3" lane domain outcomes base benchmark shape helper candidate gate rows='[]' row gate_file
   [ -f "$catalog" ] && [ -f "$lane_file" ] || { echo "SKILL-CATALOG: catalog and lane JSON are required" >&2; return 2; }
   jq -e '.schema == 1 and (.skills | type == "array")' "$catalog" >/dev/null || { echo "SKILL-CATALOG: invalid catalog" >&2; return 2; }
   jq -e '(.role | type == "string") and (.goal | type == "string") and (.activities | type == "array") and (.own_globs | type == "array") and (.agent | type == "string") and (.required_tools | type == "array")' "$lane_file" >/dev/null || { echo "SKILL-CATALOG: invalid lane specification" >&2; return 2; }
@@ -137,7 +137,7 @@ recommend_catalog() {
   domain=$(lane_domain "$(jq -r '.own_globs | join(" ")' "$lane_file")")
   outcomes='[]'
   if [ -f "$ledger" ]; then outcomes=$(jq -cs '.' "$ledger" 2>/dev/null) || outcomes='[]'; fi
-  jq --argjson lane "$lane" --argjson outcomes "$outcomes" --arg domain "$domain" '
+  base=$(jq --argjson lane "$lane" --argjson outcomes "$outcomes" --arg domain "$domain" '
     def tokens($s): ($s | tostring | ascii_downcase | gsub("[^a-z0-9]+"; " ") | split(" ") | map(select(length >= 4 and . != "with" and . != "that" and . != "from" and . != "into")) | unique);
     def domain_terms($d): if $d == "ui" then ["ui", "browser", "screenshot", "visual", "render"] elif $d == "api" then ["api", "route", "endpoint", "http"] elif $d == "data" then ["data", "sql", "schema", "migration"] elif $d == "mobile" then ["mobile", "ios", "android"] elif $d == "test" then ["test", "verify", "assert"] elif $d == "report" then ["report", "document", "markdown"] else [] end;
     .skills | map(. as $skill | (($skill.id + " " + $skill.name + " " + $skill.description) | ascii_downcase) as $hay
@@ -150,7 +150,26 @@ recommend_catalog() {
       | select($hurt == 0) | select(($skill.compatibility | length) == 0 or ($skill.compatibility | map(ascii_downcase) | index($lane.agent | ascii_downcase))) | select(($lane.required_tools | length) == ($tool_matches | length)) | select(($activity_matches | length) > 0 or (($goal_matches | length) >= 2 and ($domain_matches | length) > 0))
       | {id:$skill.id,path:$skill.path,source:$skill.source,fingerprint:$skill.fingerprint,score:(($activity_matches | length) * 30 + ($goal_matches | length) * 4 + ($domain_matches | length) * 6 + ($tool_matches | length) * 5 + $helped * 10 - $unused * 3),helped:$helped,unused:$unused,reason:("activities:" + ($activity_matches | join(",")) + "; globs:" + $domain + "; agent:" + $lane.agent + "; tools:" + ($tool_matches | join(",")) + " — capability: " + $skill.description)}
     ) | sort_by(-.score, .id, .path) | .[0:3] | {schema:1,role:$lane.role,domain:$domain,candidates:.}
-  ' "$catalog"
+  ' "$catalog")
+  # Textual relevance is discovery only.  A candidate becomes recommended only
+  # when a configured ledger proves this exact fingerprint on the same lane shape.
+  benchmark="${POLYLANE_SKILL_BENCHMARK_LEDGER:-}"
+  if [ -z "$benchmark" ]; then
+    jq '.candidates |= map(. + {status:"candidate",safe_to_apply:false,samples:0,confidence:{strength:"none",percent:0},benchmark_reason:"benchmark evidence is unconfigured"})' <<<"$base"
+    return
+  fi
+  helper="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/polylane-skill-benchmark.sh"
+  shape=$(jq -r '.lane_shape // .role' "$lane_file")
+  gate_file=$(mktemp "${TMPDIR:-/tmp}/polylane-skill-gate.XXXXXX") || return 1
+  while IFS= read -r candidate; do
+    gate=$(jq -n --argjson c "$candidate" --arg domain "$domain" --arg shape "$shape" '{id:$c.id,fingerprint:$c.fingerprint,domain:$domain,lane_shape:$shape}')
+    printf '%s\n' "$gate" > "$gate_file"
+    gate=$(bash "$helper" gate "$benchmark" "$gate_file")
+    row=$(jq --argjson gate "$gate" --arg domain "$domain" --arg shape "$shape" '. + {domain:$domain,lane_shape:$shape,status:$gate.status,safe_to_apply:$gate.safe_to_apply,samples:$gate.samples,confidence:$gate.confidence,benchmark_reason:$gate.reason}' <<<"$candidate")
+    rows=$(jq --argjson row "$row" '. + [$row]' <<<"$rows")
+  done < <(jq -c '.candidates[]' <<<"$base")
+  rm -f "$gate_file"
+  jq --argjson rows "$rows" '.candidates=$rows | .candidates |= sort_by(if .status == "recommended" then 0 else 1 end, -.score, .id, .path)' <<<"$base"
 }
 
 append_outcome() {

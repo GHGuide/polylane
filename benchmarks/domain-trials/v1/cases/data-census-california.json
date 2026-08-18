@@ -1,0 +1,20 @@
+{
+  "schema": "polylane-domain-trial/v1",
+  "id": "data-census-california",
+  "domain": "data",
+  "title": "Census API data-quality extract",
+  "task": "Validate and describe the supplied tabular extract, preserving its variable and geography provenance.",
+  "expected_verdict": "pass",
+  "adapter": "offline-tabular-snapshot",
+  "grading": {"checks": ["header_preserved", "geography_preserved", "source_checksum"]},
+  "source": {
+    "url": "https://api.census.gov/data/2023/acs/acs5?get=NAME,B01003_001E&for=state:06",
+    "query": {"dataset": "2023/acs/acs5", "get": "NAME,B01003_001E", "for": "state:06"},
+    "retrieval_timestamp": "2026-08-09T00:00:00Z",
+    "content_checksum": "8067f6df8b3bc26e5b5a58a228388a453a1a6b424c3000d018c6ab091fdf7722",
+    "license_terms_note": "U.S. Census Bureau data is public information; this fixture retains a compact response extract and query.",
+    "schema_version_or_vintage": "ACS 2023 5-year API response",
+    "transformations": ["selected one API response row", "preserved header and string encoding"],
+    "raw": "raw/data-census-california.json"
+  }
+}

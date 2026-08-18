@@ -11,6 +11,9 @@
 # Host sandboxes may export an unrelated CODEX_SANDBOX value. This fixture owns
 # that runner-internal variable and sets every policy it asserts explicitly.
 unset CODEX_SANDBOX
+# The integration runner may own a private tmux socket. This adapter fixture
+# verifies the legacy watch command, so do not inherit an unrelated live run.
+unset POLYLANE_TMUX_SOCKET_DIR POLYLANE_TMUX_SOCKET POLYLANE_TMUX_TMPDIR POLYLANE_TMUX_AUTO TMUX_TMPDIR TMUX
 
 # --- template selection by profile ------------------------------------------
 AGENT=claude; unset POLYLANE_AGENT POLYLANE_AGENT_CMD

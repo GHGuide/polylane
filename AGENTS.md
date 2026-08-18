@@ -30,3 +30,10 @@ Self-hosting marathon certified COMPLETE in cycle 10: 25/25 subgoals, 22/22
 criteria, full suite, ShellCheck, fresh installs, and live GO/NO-GO rehearsal green.
 Evidence and future informational experiments live in `docs/polylane/`
 (`INDEX.md` is the front page).
+
+## Cycle-16 evidence gates
+For profile-aware work, use the typed domain discovery/grader and the deterministic
+source-pinned trial helpers in [references/evidence-driven-domain-autonomy.md](references/evidence-driven-domain-autonomy.md).
+Run accelerated soak faults locally; 6/12/24-hour soaks are resumable operator
+certifications, not CI waits. Prepared action receipts are approval-bound simulations
+only: the repository never authorizes execution, and trading remains paper research.

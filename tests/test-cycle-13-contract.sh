@@ -119,7 +119,7 @@ write_manifest() {
   "target_subgoals":["s1"],
   "base":"main",
   "integrator":{"name":"integrator","model":"$model","effort":"high","branch":"lane/integrator","worktree":"$P/.polylane/wt/integrator","prompt_file":".polylane/lanes/integrator.txt"},
-  "lanes":[{"name":"builder","role":"mechanical","model":"$model","effort":"high","branch":"lane/builder","worktree":"$P/.polylane/wt/builder","prompt_file":".polylane/lanes/builder.txt","own_globs":["src/**"],"target_subgoals":["s1"]}]
+  "lanes":[{"name":"builder","role":"mechanical","model":"$model","effort":"high","branch":"lane/builder","worktree":"$P/.polylane/wt/builder","prompt_file":".polylane/lanes/builder.txt","own_globs":["src/**","docs/status-builder.md"],"target_subgoals":["s1"]}]
 }
 JSON
 }
@@ -138,6 +138,25 @@ if preflight_contract; then pass "cycle13-codex-plan-manifest-preflight"; else f
 assert_contains "cycle13-codex-launches-compiled-prompt" "/compiled-prompts/c13-codex/builder.txt" "${LANE_PROMPTS[0]}"
 assert_eq "cycle13-source-prompt-unchanged" "2" "$(grep -c '^Keep the frozen contracts truthful\.$' "$BUILDER_PROMPT")"
 assert_eq "cycle13-compiled-prompt-deduped" "1" "$(grep -c '^Keep the frozen contracts truthful\.$' "${LANE_PROMPTS[0]}")"
+BUILDER_RECORD=$(jq -r '.lanes.builder.selected.predefined[0] | "SELECTED-SKILL: \(.id) | \(.path) | \(.source) | \(.fingerprint) | \(.reason)"' "$KIT")
+assert_contains "cycle13-runner-delivers-exact-selected-record" "$BUILDER_RECORD" "$(cat "${LANE_PROMPTS[0]}")"
+assert_eq "cycle13-runner-delivers-all-trusted-records" "4" "$(grep -c '^SELECTED-SKILL:' "${LANE_PROMPTS[0]}")"
+assert_eq "cycle13-runner-places-records-beside-kit" "yes" "$(awk '
+  /Read only the named kit once/ { named = NR; next }
+  named && /^SELECTED-SKILL:/ { print (NR == named + 2 ? "yes" : "no"); exit }
+' "${LANE_PROMPTS[0]}")"
+assert_contains "cycle13-runner-requires-selected-read-receipts" "SKILL-READ: id | path | fingerprint" "$(cat "${LANE_PROMPTS[0]}")"
+RUNTIME_RELAY='COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"'
+assert_contains "cycle13-builder-gets-live-relay-command" "$RUNTIME_RELAY" "$(cat "${LANE_PROMPTS[0]}")"
+assert_contains "cycle13-integrator-gets-live-relay-command" "$RUNTIME_RELAY" "$(cat "$INT_PROMPT")"
+assert_eq "cycle13-builder-gets-one-live-relay-contract" "1" "$(grep -cF 'POLYLANE-RUNTIME-RELAY:' "${LANE_PROMPTS[0]}" || true)"
+assert_eq "cycle13-integrator-gets-one-live-relay-contract" "1" "$(grep -cF 'POLYLANE-RUNTIME-RELAY:' "$INT_PROMPT" || true)"
+assert_contains "cycle13-runtime-rejects-parallel-status-as-live" \
+  'docs/parallel-status.md is post-cycle evidence only, never the live relay.' \
+  "$(cat "$INT_PROMPT")"
+assert_contains "cycle13-builder-gets-literal-done-path" \
+  'POLYLANE-RUNTIME-DONE: write only docs/status-builder.md; first line exactly `STATUS: builder DONE run=c13-codex`.' \
+  "$(cat "${LANE_PROMPTS[0]}")"
 CODEX_POLICY=$(apply_overrides; emit_effective_model_policy)
 assert_contains "cycle13-codex-policy-visible" "policy lane=builder role=mechanical source=role-clamp model=gpt-5.6-terra effort=medium" "$CODEX_POLICY"
 assert_contains "cycle13-codex-integrator-clamp" "policy lane=integrator role=integrator source=role-clamp model=gpt-5.6-sol effort=xhigh" "$CODEX_POLICY"

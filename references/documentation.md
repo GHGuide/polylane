@@ -81,3 +81,6 @@ Update the profile, strategy, tree, provenance, and `AGENTS.md` as part of closi
 cycle, before the next execution wave. Record reproduction/validation commands, decisions,
 and handoff state; a claim of external execution needs authority plus actual proof. A doc
 that lies is worse than no doc—if a run invalidates a decision, edit and link the record.
+Profile-specific final handoffs additionally name actual artifact paths and provenance,
+the executable bundle-grade result, risk/uncertainty, open external evidence, and only
+questions whose answers would materially change the next cycle.

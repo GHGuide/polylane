@@ -1,0 +1,6 @@
+{
+  "schema": "polylane-domain-trial-corpus/v1",
+  "version": "v1",
+  "description": "Offline, source-pinned cross-domain trial corpus. Live checks never replace these golden extracts.",
+  "cases": ["software-git-release", "trading-sp500-window", "research-crossref-record", "operations-nist-incident", "content-wikidata-q42", "data-census-california", "custom-rfc9110"]
+}

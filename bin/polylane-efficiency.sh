@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: polylane-efficiency.sh capture --manifest FILE --stats FILE --proof FILE --phase gate|final | verify --proof FILE [--phase gate|final]" >&2
+  echo "usage: polylane-efficiency.sh capture --manifest FILE --stats FILE --proof FILE --phase gate|final | verify --proof FILE [--phase gate|final] [--run-id ID]" >&2
   exit 2
 }
 
@@ -94,11 +94,12 @@ capture() {
 }
 
 verify() {
-  local proof="" phase=""
+  local proof="" phase="" run_id=""
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --proof) proof="${2:-}"; shift 2 ;;
       --phase) phase="${2:-}"; shift 2 ;;
+      --run-id) run_id="${2:-}"; shift 2 ;;
       *) usage ;;
     esac
   done
@@ -106,6 +107,7 @@ verify() {
   grep -qF -- '- Status: PASS' "$proof" || return 1
   grep -qF -- '- Terminal gates: 1' "$proof" || return 1
   grep -qF -- '- Unexpected launches: 0' "$proof" || return 1
+  [ -z "$run_id" ] || grep -qF -- "- Run: $run_id" "$proof" || return 1
   [ -z "$phase" ] || grep -qF -- "- Phase: $phase" "$proof"
 }
 

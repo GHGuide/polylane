@@ -1,0 +1,20 @@
+{
+  "schema": "polylane-domain-trial/v1",
+  "id": "content-wikidata-q42",
+  "domain": "content",
+  "title": "Wikidata factual-content card",
+  "task": "Create a short factual content card strictly from the supplied entity extract and cite it.",
+  "expected_verdict": "pass",
+  "adapter": "offline-knowledge-record-snapshot",
+  "grading": {"checks": ["factual_scope_bounded", "source_cited", "source_checksum"]},
+  "source": {
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q42.json",
+    "query": {"entity": "Q42", "fields": "id,labels.en,descriptions.en"},
+    "retrieval_timestamp": "2026-08-09T00:00:00Z",
+    "content_checksum": "60b586bec602b6357235b8397fe9dcd30bbab72d119ed6097d028acd277d77b6",
+    "license_terms_note": "Wikidata structured data is available under CC0; attribution is still retained here for provenance.",
+    "schema_version_or_vintage": "Wikibase entity JSON; selected English label and description",
+    "transformations": ["selected id and English label/description", "removed unrelated claims and identifiers"],
+    "raw": "raw/content-wikidata-q42.json"
+  }
+}

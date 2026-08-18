@@ -1,181 +1,100 @@
 {
   "version": 1,
-  "run_id": "c16-evidence-autonomy-20260809-a1",
-  "started_at": 1786282832,
-  "updated_at": 1786286288,
-  "wall_s": 3456,
-  "lanes": {
-    "domain-runtime": {
-      "launches": 1,
-      "restarts": 4
-    },
-    "learning-economy": {
-      "launches": 1,
-      "restarts": 3
-    },
-    "trials-soak": {
-      "launches": 1,
-      "restarts": 4
-    },
-    "integrator": {
-      "launches": 1,
-      "restarts": 2
-    }
-  },
-  "supervisor_restarts": 1,
-  "terminal_gates": 1,
+  "run_id": "c17-1787054491",
+  "started_at": 1787054534,
+  "updated_at": 1787054586,
+  "wall_s": 52,
+  "lanes": {},
+  "supervisor_restarts": 10,
+  "terminal_gates": 0,
   "tokens": null,
   "token_state": "unknown",
-  "usage_offsets": {
-    "domain-runtime": 0,
-    "learning-economy": 0,
-    "trials-soak": 0,
-    "integrator": 2774216
-  },
+  "usage_offsets": {},
   "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1786282832
-    },
-    {
-      "type": "usage_capture",
-      "lane": "domain-runtime",
-      "at": 1786282877,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "domain-runtime",
-      "at": 1786282877
-    },
-    {
-      "type": "usage_capture",
-      "lane": "learning-economy",
-      "at": 1786282877,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "learning-economy",
-      "at": 1786282877
-    },
-    {
-      "type": "usage_capture",
-      "lane": "trials-soak",
-      "at": 1786282878,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "trials-soak",
-      "at": 1786282878
-    },
-    {
-      "type": "restarts",
-      "lane": "domain-runtime",
-      "at": 1786282892
-    },
-    {
-      "type": "restarts",
-      "lane": "learning-economy",
-      "at": 1786282893
-    },
-    {
-      "type": "restarts",
-      "lane": "trials-soak",
-      "at": 1786282893
-    },
-    {
-      "type": "restarts",
-      "lane": "domain-runtime",
-      "at": 1786282904
-    },
-    {
-      "type": "restarts",
-      "lane": "learning-economy",
-      "at": 1786282905
-    },
-    {
-      "type": "restarts",
-      "lane": "trials-soak",
-      "at": 1786282905
-    },
-    {
-      "type": "restarts",
-      "lane": "domain-runtime",
-      "at": 1786282916
-    },
-    {
-      "type": "restarts",
-      "lane": "learning-economy",
-      "at": 1786282917
-    },
-    {
-      "type": "restarts",
-      "lane": "trials-soak",
-      "at": 1786282917
+      "at": 1787054534
     },
     {
       "type": "supervisor_restart",
-      "at": 1786282930
+      "at": 1787054539
     },
     {
       "type": "initialized",
-      "at": 1786282930
+      "at": 1787054539
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787054544
     },
     {
       "type": "initialized",
-      "at": 1786283051
+      "at": 1787054544
     },
     {
-      "type": "restarts",
-      "lane": "domain-runtime",
-      "at": 1786283153
-    },
-    {
-      "type": "restarts",
-      "lane": "trials-soak",
-      "at": 1786283277
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786283871,
-      "added": null
-    },
-    {
-      "type": "launches",
-      "lane": "integrator",
-      "at": 1786283871
-    },
-    {
-      "type": "restarts",
-      "lane": "integrator",
-      "at": 1786285083
+      "type": "supervisor_restart",
+      "at": 1787054550
     },
     {
       "type": "initialized",
-      "at": 1786285301
+      "at": 1787054550
     },
     {
-      "type": "restarts",
-      "lane": "integrator",
-      "at": 1786285763
+      "type": "supervisor_restart",
+      "at": 1787054555
     },
     {
       "type": "initialized",
-      "at": 1786286224
+      "at": 1787054555
     },
     {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1786286272,
-      "added": null
+      "type": "supervisor_restart",
+      "at": 1787054560
     },
     {
-      "type": "terminal_gate",
-      "at": 1786286288
+      "type": "initialized",
+      "at": 1787054560
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787054565
+    },
+    {
+      "type": "initialized",
+      "at": 1787054565
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787054570
+    },
+    {
+      "type": "initialized",
+      "at": 1787054571
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787054576
+    },
+    {
+      "type": "initialized",
+      "at": 1787054576
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787054581
+    },
+    {
+      "type": "initialized",
+      "at": 1787054581
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787054586
+    },
+    {
+      "type": "initialized",
+      "at": 1787054586
     }
   ]
 }

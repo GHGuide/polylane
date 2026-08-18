@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "kind": "trading",
+  "outcome": "Evaluate a local paper-only strategy with reproducible evidence",
+  "deliverables": [
+    {"artifact": "analysis", "path": "strategy.md", "description": "Strategy and evaluation report"},
+    {"artifact": "dataset", "path": "evidence.json", "description": "Offline evaluation evidence"}
+  ],
+  "evidence_modes": ["chronological-backtest", "walk-forward", "paper-simulation"],
+  "risk_tier": "high",
+  "external_action_policy": {"mode": "approval-required", "actions": [{"name": "paper-review", "consequential": true, "approval_required": true, "execution": "paper-simulation"}]},
+  "domain_runtime": {"checks": {"chronological_split": true}}
+}

@@ -56,6 +56,19 @@ POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-rejects-nonlocal-cache" lint_
 sed 's/Read only the named kit once; do not browse skill inventories after launch./Browse all installed skills before editing./' "$GOOD" > "$TEST_TMPDIR/strict-inventory-dump.txt"
 POLYLANE_STRICT_PROMPTS=1 assert_fail "lint-strict-rejects-inventory-dump" lint_one "$TEST_TMPDIR/strict-inventory-dump.txt" x
 
+RUNTIME_GOOD="$TEST_TMPDIR/runtime-good.txt"
+cp "$GOOD" "$RUNTIME_GOOD"
+cat >> "$RUNTIME_GOOD" <<'P'
+POLYLANE-RUNTIME-RELAY: run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; docs/parallel-status.md is post-cycle evidence only, never the live relay.
+POLYLANE-RUNTIME-DONE: write only docs/status-x.md; first line exactly `STATUS: x DONE run=run-1`.
+P
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_ok \
+  "lint-runtime-builder-canonical-status-path" lint_one "$RUNTIME_GOOD" x false builder
+cp "$RUNTIME_GOOD" "$TEST_TMPDIR/runtime-wrong-status.txt"
+printf '%s\n' 'Also write docs/status-short.md before completion.' >> "$TEST_TMPDIR/runtime-wrong-status.txt"
+POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 assert_fail \
+  "lint-runtime-builder-rejects-conflicting-status-path" lint_one "$TEST_TMPDIR/runtime-wrong-status.txt" x false builder
+
 # the message names what's missing
 out=$(lint_one "$TEST_TMPDIR/nonce.txt" nonce 2>&1 || true)
 assert_contains "lint-names-gap" "nonce(run=" "$out"

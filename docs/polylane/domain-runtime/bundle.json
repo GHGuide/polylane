@@ -1,0 +1,67 @@
+{
+  "artifact_root": "/Users/leonardo/Downloads/polylane-c19/.polylane/worktrees/c19-integrator",
+  "bundle_id": "W3sicGF0aCI6ImJpbi9wb2x5bGFuZS1wcm9qZWN0LnNoIiwiY2hlY2tzdW0iOiIxNDU0MTA0MjY2OjY3NTQifSx7InBhdGgiOiJTS0lMTC5tZCIsImNoZWNrc3VtIjoiNjMzNzQ3MzUzOjEyNTI0In0seyJwYXRoIjoiY29kZXgvU0tJTEwubWQiLCJjaGVja3N1bSI6IjYyOTAxMjAwMzoxMjIzNSJ9LHsicGF0aCI6InJlZmVyZW5jZXMvcHJvamVjdC10eXBlcy5tZCIsImNoZWNrc3VtIjoiMzM0Nzg4MTc3MTo0OTM0In0seyJwYXRoIjoidGVzdHMvdGVzdC1wcm9qZWN0LWdlbmVyYWxpdHkuc2giLCJjaGVja3N1bSI6IjI4NDkwMzM0NDU6MzgzNyJ9LHsicGF0aCI6ImJpbi9wb2x5bGFuZS1kb21haW4uc2giLCJjaGVja3N1bSI6IjI1ODExNjQ4NDg6MTUyMDUifSx7InBhdGgiOiJiaW4vcG9seWxhbmUtYWN0aW9uLXByZXZpZXcuc2giLCJjaGVja3N1bSI6IjM2ODg4OTE2MzU6NjQzMSJ9LHsicGF0aCI6ImJpbi9wb2x5bGFuZS1vcHRpbWl6ZS5zaCIsImNoZWNrc3VtIjoiNTg1MTA2MDUwOjc5MjMifSx7InBhdGgiOiJiaW4vcG9seWxhbmUtc2tpbGwtYmVuY2htYXJrLnNoIiwiY2hlY2tzdW0iOiIyOTI0ODM0OTUzOjM1NDkifSx7InBhdGgiOiJiaW4vcG9seWxhbmUtZG9tYWluLXRyaWFscy5zaCIsImNoZWNrc3VtIjoiMzMyOTMyNzUwMToxMDE2MSJ9LHsicGF0aCI6ImJpbi9wb2x5bGFuZS1zb2FrLnNoIiwiY2hlY2tzdW0iOiI2Mzc2MTM5NDM6MTE2MjMifSx7InBhdGgiOiJ0ZXN0cy90ZXN0LWN5Y2xlLTE2LWNvbnRyYWN0LnNoIiwiY2hlY2tzdW0iOiIzNjk3Mjk5MDU4OjEwMzAwIn0seyJwYXRoIjoicmVmZXJlbmNlcy9ldmlkZW5jZS1kcml2ZW4tZG9tYWluLWF1dG9ub215Lm1kIiwiY2hlY2tzdW0iOiIxODE2NjE1MTg0OjQ4NjIifV0=",
+  "entries": [
+    {
+      "checksum": "1454104266:6754",
+      "path": "bin/polylane-project.sh"
+    },
+    {
+      "checksum": "633747353:12524",
+      "path": "SKILL.md"
+    },
+    {
+      "checksum": "629012003:12235",
+      "path": "codex/SKILL.md"
+    },
+    {
+      "checksum": "3347881771:4934",
+      "path": "references/project-types.md"
+    },
+    {
+      "checksum": "2849033445:3837",
+      "path": "tests/test-project-generality.sh"
+    },
+    {
+      "checksum": "2581164848:15205",
+      "path": "bin/polylane-domain.sh"
+    },
+    {
+      "checksum": "3688891635:6431",
+      "path": "bin/polylane-action-preview.sh"
+    },
+    {
+      "checksum": "585106050:7923",
+      "path": "bin/polylane-optimize.sh"
+    },
+    {
+      "checksum": "2924834953:3549",
+      "path": "bin/polylane-skill-benchmark.sh"
+    },
+    {
+      "checksum": "3329327501:10161",
+      "path": "bin/polylane-domain-trials.sh"
+    },
+    {
+      "checksum": "637613943:11623",
+      "path": "bin/polylane-soak.sh"
+    },
+    {
+      "checksum": "3697299058:10300",
+      "path": "tests/test-cycle-16-contract.sh"
+    },
+    {
+      "checksum": "1816615184:4862",
+      "path": "references/evidence-driven-domain-autonomy.md"
+    }
+  ],
+  "kind": "mixed",
+  "provenance": {
+    "collected_at": "2026-08-09T00:00:00Z",
+    "fixture_or_public": "fixture",
+    "input_hash": "cycle-16-integration-source",
+    "method": "deterministic-local-integration",
+    "source_id": "polylane-cycle-16-local-repository"
+  },
+  "version": "domain-runtime/bundle-v1"
+}

@@ -122,7 +122,7 @@ compile() {
 # labels, then append the typed selected records exactly once. It reads JSON
 # metadata only; SKILL.md bodies are intentionally never loaded here.
 compile_selected() {
-  local prompt="$1" kit="$2" lane="$3" output="$4" raw line previous="" seen="" records paths duplicate tmp
+  local prompt="$1" kit="$2" lane="$3" output="$4" raw line previous="" seen="" inventory records paths duplicate tmp injected=""
   require_prompt "$prompt" || return $?
   strict_blocks "$prompt" || return $?
   [ -f "$kit" ] && jq -e --arg lane "$lane" '
@@ -137,15 +137,25 @@ compile_selected() {
   ' "$kit" >/dev/null 2>&1 || {
     echo "polylane-promptopt: missing or invalid typed selected-skill records for lane '$lane'" >&2; return 5;
   }
-  records=$(jq -c --arg lane "$lane" '((.lanes[$lane].selected.predefined // []) + (.lanes[$lane].selected.specific // [])) | unique_by(.id, .path)' "$kit")
+  inventory=$(jq -c --arg lane "$lane" '(.lanes[$lane].selected.predefined // []) + (.lanes[$lane].selected.specific // [])' "$kit")
+  jq -e '
+    group_by([.id, .path])
+    | map(select(length > 1)
+          | select((map({source, fingerprint, reason}) | unique | length) > 1))
+    | length == 0
+  ' <<<"$inventory" >/dev/null || {
+    echo "polylane-promptopt: conflicting immutable selected-skill record" >&2; return 5;
+  }
+  records=$(jq -c 'sort_by(.id, .path, .source, .fingerprint, .reason) | unique_by(.id, .path)' <<<"$inventory")
   [ "$(jq 'length' <<<"$records")" -le 4 ] || { echo "polylane-promptopt: selected skill inventory exceeds four" >&2; return 5; }
   paths=$(jq -r '.[].path' <<<"$records")
   duplicate=$(printf '%s\n' "$paths" | LC_ALL=C sort | uniq -d)
   [ -z "$duplicate" ] || { echo "polylane-promptopt: selected skill path duplicated" >&2; return 5; }
   tmp="$output.tmp.$$"
+  : > "$tmp"
   while IFS= read -r raw || [ -n "$raw" ]; do
     line=$(trim_line "$raw")
-    case "$line" in SELECTED-SKILL:*) continue ;; esac
+    case "$line" in SELECTED-SKILL:*|SKILL-DELIVERY:*|SKILL-RECEIPTS:*) continue ;; esac
     if [ -z "$line" ]; then
       [ -z "$previous" ] || printf '\n' >> "$tmp"
       previous=""
@@ -153,10 +163,15 @@ compile_selected() {
     fi
     case "|$seen|" in *"|$line|"*) continue ;; *) seen="$seen|$line" ;; esac
     printf '%s\n' "$line" >> "$tmp"
+    if [ "$injected" = "" ] && printf '%s\n' "$line" | grep -q '^Read only the named kit once'; then
+      printf 'SKILL-DELIVERY: exact selected records for lane %s; no discovery or inventory.\n' "$lane" >> "$tmp"
+      jq -r '.[] | "SELECTED-SKILL: \(.id) | \(.path) | \(.source) | \(.fingerprint) | \(.reason)"' <<<"$records" >> "$tmp"
+      printf 'SKILL-RECEIPTS: For each selected skill, record SKILL-READ: id | path | fingerprint; final verification must include SKILL-EVIDENCE: id — helped|unused|hurt: specific observation.\n' >> "$tmp"
+      injected=1
+    fi
     previous="$line"
   done < "$prompt"
-  printf '\nSKILL-DELIVERY: Read only these exact selected SKILL.md files; do not rediscover or inventory skills.\n' >> "$tmp"
-  jq -r '.[] | "SELECTED-SKILL: \(.id) | \(.path) | \(.source) | \(.fingerprint) | \(.reason)"' <<<"$records" >> "$tmp"
+  [ "$injected" = "1" ] || { rm -f "$tmp"; echo "polylane-promptopt: missing named-kit instruction" >&2; return 3; }
   mv "$tmp" "$output"
 }
 

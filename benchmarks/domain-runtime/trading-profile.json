@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "trading",
+  "outcome": "Evaluate a local paper-only strategy with reproducible evidence",
+  "deliverables": [
+    {"artifact": "analysis", "path": "strategy.md", "description": "Strategy and evaluation report"},
+    {"artifact": "dataset", "path": "evidence.json", "description": "Offline evaluation evidence"}
+  ],
+  "evidence_modes": ["chronological-backtest", "walk-forward", "paper-simulation"],
+  "risk_tier": "high",
+  "external_action_policy": {
+    "mode": "approval-required",
+    "actions": [{"name": "paper-review", "consequential": true, "approval_required": true, "execution": "paper-simulation"}]
+  },
+  "domain_runtime": {
+    "provenance": {"source_id": "fixture://trading-market-v1", "input_hash": "fixture-input-v1", "collected_at": "2026-08-09T00:00:00Z", "method": "deterministic offline fixture", "fixture_or_public": "fixture"},
+    "checks": {"chronological_split": true, "holdout_or_walk_forward": true, "costs_and_slippage": true, "leakage": false, "robustness_or_sensitivity": true, "drawdown_or_risk_limits": true, "trial_count_or_selection_bias_disclosure": true, "paper_or_simulation_only": true},
+    "actions": [{"name": "paper-review", "side_effect_class": "simulation", "affected_systems": ["local-fixture"], "affected_people": [], "reversibility": "fully reversible", "worst_credible_impact": "incorrect simulated conclusion", "simulation_evidence": "evidence.json"}]
+  }
+}

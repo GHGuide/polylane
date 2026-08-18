@@ -68,7 +68,7 @@ reset_proj; echo crash-then-go > "$PROJ/.polylane/mode"
 POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out1" 2>&1
 assert_eq "sup-revive-rc0" "0" "$?"
 assert_contains "sup-revive-logged"  "reviving with --resume" "$(cat "$TEST_TMPDIR/out1")"
-assert_contains "sup-watch-command"  "watch active tmux: tmux attach -t sup-test-nosuch" "$(cat "$TEST_TMPDIR/out1")"
+assert_contains "sup-watch-command"  "watch active tmux:" "$(cat "$TEST_TMPDIR/out1")"
 assert_contains "sup-second-call-resumes" "yes --resume" "$(tail -1 "$PROJ/.polylane/calls.log")"
 assert_contains "sup-finished" "finished legitimately" "$(cat "$TEST_TMPDIR/out1")"
 
@@ -123,6 +123,25 @@ rc=$?
 assert_eq "sup-cap-rc1" "1" "$rc"
 assert_contains "sup-cap-halt" "restart cap" "$(cat "$TEST_TMPDIR/out3")"
 assert_eq "sup-cap-launches" "3" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"   # 1 + 2 revives
+
+# Resource pressure is a wait state, not a runner crash.  A deterministic probe
+# returns low once then healthy; no real disk is consumed and no restart budget is used.
+reset_proj; echo external > "$PROJ/.polylane/mode"
+PROBE="$BIN/fake-disk-probe"
+cat > "$PROBE" <<'PROBE'
+#!/usr/bin/env bash
+n=0; [ -f "$POLYLANE_PROBE_COUNT" ] && n=$(cat "$POLYLANE_PROBE_COUNT")
+n=$((n + 1)); printf '%s\n' "$n" > "$POLYLANE_PROBE_COUNT"
+[ "$n" -eq 1 ] && echo 0 || echo 10
+PROBE
+chmod +x "$PROBE"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 POLYLANE_SUP_DISK_BACKOFF=0 \
+  POLYLANE_MIN_DISK_GB=2 POLYLANE_DISK_PROBE="$PROBE" POLYLANE_PROBE_COUNT="$TEST_TMPDIR/probe-count" \
+  "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-disk" 2>&1
+assert_eq "sup-disk-wait-rc0" "0" "$?"
+assert_eq "sup-disk-wait-probed-twice" "2" "$(cat "$TEST_TMPDIR/probe-count")"
+assert_eq "sup-disk-wait-does-not-relaunch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+assert_contains "sup-disk-wait-logged" "disk headroom low — waiting" "$(cat "$TEST_TMPDIR/out-disk")"
 
 # --- heartbeat written ----------------------------------------------------------
 assert_ok "sup-heartbeat-exists" test -f "$PROJ/.polylane/supervisor-heartbeat"

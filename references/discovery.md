@@ -15,6 +15,10 @@ route in [project-types.md](project-types.md). Do not presume the outcome is an 
 - Reflect the evolving profile after about three answers, surface contradictions,
   and converge once new answers stop changing deliverables, evidence, risk, or
   finish conditions. Research unknown facts before presenting choices.
+- After each promoted cycle, use `polylane-discovery.sh after-cycle`: `none`
+  continues autonomously, while `deliverables`, `evidence`, `risk`, or
+  `next-focus` requires the one material question that changed. Write the short
+  report before its `Next:` line and before asking that question.
 - A user-facing UI is conditional work, not a discovery default. When one exists,
   follow [visual-intelligence.md](visual-intelligence.md); otherwise do not ask UI
   style questions or require visual certification.

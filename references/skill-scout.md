@@ -154,3 +154,9 @@ installed-only and ranks by the append-only outcome ledger. Do not fill a kit to
 reach a count: each role needs at least one relevant skill and the lane may use at
 most four unique skills. The complete cycle-9 contract is in
 [cycle-9-control-room.md](cycle-9-control-room.md).
+
+For a lane-shaped benchmark, a lexical match is a `candidate`, not a default.
+Only a current fingerprint with sufficient accepted hard-passing receipts becomes
+`recommended` and `safe_to_apply`. Failed, unbenchmarked, or fingerprint-changed
+candidates remain visible but cannot be armed; present **None** explicitly instead
+of inventing an unsafe recommendation.

@@ -2,15 +2,18 @@
 
 Generated mechanically from `max-state.json`. Conversation summaries are not authoritative.
 
-## Cycle 15
+## Cycle 20
 
-subgoals: 43/44 done · criteria: 39/40 done · 97%
+subgoals: 51/56 done · criteria: 54/56 done · 93%
 
-**Route:** `NEEDS-USER external=[m12.4: Keep Claude and Codex contracts aligned and certify the new loop against the old workflow]`
+**Route:** `CONTINUE m20.1  Audit restart attribution and complete one zero-restart process-start certification`
 
 ## Open autonomous work
 
-- None
+- `m16.4` [open, w54] — Integrate both provider skills and certify all cycle-16 mechanisms end to end
+- `m17.3` [open, w58] — Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities
+- `m18.3` [open, w66] — Integrate Cycle 18 fixes and complete one clean terminal certification
+- `m20.1` [open, w76] — Audit restart attribution and complete one zero-restart process-start certification
 
 ## External/user evidence
 
@@ -62,10 +65,28 @@ subgoals: 43/44 done · criteria: 39/40 done · 97%
 - `c38` [done] — Selected skills reach builders as trusted readable paths and usefulness receipts reflect actual use
 - `c39` [done] — A cycle-14 certification reproduces and closes every failure discovered by the cycle-13 self-run
 - `c40` [done] — Polylane discovers, plans, executes, and verifies software, trading/research, operations, and content/data projects without forcing app vocabulary or unsafe real-world claims
+- `c41` [done] — Real cross-domain trials use public-source snapshots plus optional live canaries, not only synthetic fixtures
+- `c42` [done] — Domain adapters declare capabilities, dependencies, provenance, side effects, and deterministic offline fallbacks
+- `c43` [done] — Profile-aware graders verify domain validity, including temporal leakage and overfitting for trading research
+- `c44` [done] — Outcome memory learns only from accepted evidence and recommends changes with sample and confidence guards
+- `c45` [done] — Skill suggestions are lane-specific, benchmarked before admission, explainable, and safe by default
+- `c46` [done] — A resumable accelerated soak and fault harness proves long-run recovery and supports a real 6-to-24-hour mode
+- `c47` [done] — Economy policy optimizes verified progress per token and minute across model, effort, lane count, and context
+- `c48` [done] — Discovery uses domain-specific question trees with deeper follow-ups and measurable stopping conditions
+- `c49` [done] — Final deliverables are profile-specific, complete, provenance-bearing, and decision-ready
+- `c50` [done] — Every consequential external action has a deterministic impact preview, simulation receipt, and explicit approval boundary
+- `c51` [done] — Pre-verdict gates remain hermetic in unit tests and live high-effort workers are never restarted from stale progress messages
+- `c52` [done] — Selected skills can be armed only from reproducible fingerprint-matched benchmark evidence while legacy delivery tests remain truthful
+- `c53` [done] — A failed or interrupted run never corrupts its ledger or report, never relaunches a committed DONE lane, and never types into prose that only mentions a startup dialog
+- `c54` [done] — Every selected builder skill reaches the compiled prompt as an exact trusted path with fingerprint and observable read evidence, and recovery worktrees inherit the canonical project graph
+- `c55` [done] — Optional domain grading is a true no-op when absent while requested profile grading still commits reproducible evidence
+- `c56` [open] — A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion
 
 ## Acceptance checks
 
-- Total: 53
-- Pass: 53
+- Total: 67
+- Pass: 65
 - Fail: 0
-- Unchecked: 0
+- Unchecked: 2
+  - `m16.4` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
+  - `m18.3` [unchecked] — POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse

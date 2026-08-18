@@ -28,6 +28,20 @@ lanes L2/L3/L4 depend on them.
   "prompt_byte_budget": 32768,
   "terminal_cache_tools": ["shellcheck", "tmux"],
   "available_models": ["gpt-5.6-sol", "gpt-5.6-terra"],
+  "domain_runtime": {
+    "enabled": true,
+    "profile": "docs/polylane/PROJECT_PROFILE.json",
+    "registration": ".polylane/domain-runtime/grader-registration.json",
+    "bundle": "docs/polylane/domain-runtime/bundle.json",
+    "grade": "docs/polylane/domain-runtime/grade.json"
+  },
+  "outcome_learning": {
+    "enabled": true,
+    "ledger": "docs/polylane/accepted-outcomes.jsonl",
+    "domain": "software",
+    "lane_shapes": {"api": "software-api-v1"},
+    "minimum_samples": 3
+  },
   "integrator": {
     "name": "integrator",
     "model": "gpt-5.6-sol",
@@ -73,6 +87,8 @@ lanes L2/L3/L4 depend on them.
 | `terminal_cache_tools` | string[] | *(optional)* Extra host executables whose resolved paths and file contents join the run-scoped terminal-PASS fingerprint. Bash, Git, jq, ShellCheck, tmux, and the fingerprinting utilities are included automatically. Declare any additional non-project executable reached by terminal acceptance. A missing, malformed, changed, or unresolvable tool disables reuse and reruns the gate. |
 | `intensity` | string | *(optional)* Preset the generator tuned this manifest for: `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** — records provenance; the per-lane `model`/`effort` are already baked to match it. The engine does **not** re-resolve from this at runtime; use the `--intensity` flag to remap live. `custom` = hand-tuned, no preset. |
 | `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh` or the Codex model probe used by the generator). Required only if you pass `--intensity`; empty/absent then → error. Rank strongest first for Codex manifests; when no Claude ladder id matches, presets fall back to this first available id and vary effort. |
+| `domain_runtime` | object | *(optional)* Enables a profile-specific executable bundle gate. `profile`, `bundle`, and `grade` are project-relative paths; `registration` must remain under `.polylane/` runner scratch. The runner validates/records the grader before builders launch, then emits a checksum bundle and requires a `PASS` profile grade in the integrator worktree before promotion. |
+| `outcome_learning` | object | *(optional)* Enables accepted-outcome recommendations. `ledger` is project-relative; `domain`, per-lane `lane_shapes`, and `minimum_samples` describe comparable evidence. Only measured, available, builder-safe one-field model/effort recommendations apply before launch. Topology/context suggestions remain a logged next-plan input. |
 | `integrator` | object | The lane that runs **last**: merges lane branches, writes the verdict. |
 | `lanes[]` | array | One object per parallel builder. |
 

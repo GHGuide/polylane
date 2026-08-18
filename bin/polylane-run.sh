@@ -124,9 +124,10 @@ run_stats() {
 }
 
 # write_efficiency_proof PHASE : manifests may opt into a mechanically graded
-# walk-away budget. At the host gate the candidate lives in the integration
-# worktree so frozen acceptance can inspect it; after cleanup the final proof is
-# written into the promoted base. Runs without an efficiency_canary are unchanged.
+# walk-away budget. Gate evidence is canonical runner-owned state keyed by run
+# nonce; it never dirties the completed integrator checkout. Terminal acceptance
+# receives that exact path through the environment. After cleanup the final proof
+# is written into the promoted base. Runs without an efficiency_canary are unchanged.
 write_efficiency_proof() {
   local phase="$1" proof helper="${SCRIPT_DIR:-.}/polylane-efficiency.sh"
   [ "${DRY_RUN:-0}" = "1" ] && return 0
@@ -136,7 +137,10 @@ write_efficiency_proof() {
     echo "efficiency canary configured but helper is missing: $helper" >&2; return 1;
   }
   case "$phase" in
-    gate) proof="$INT_WORKTREE/docs/polylane/efficiency-proof.md" ;;
+    gate)
+      proof="$PROJECT_ROOT/docs/polylane/efficiency-proofs/${RUN_ID:-legacy}-gate.md"
+      EFFICIENCY_GATE_PROOF="$proof"
+      ;;
     final) proof="$PROJECT_ROOT/docs/polylane/efficiency-proof.md" ;;
     *) return 2 ;;
   esac
@@ -269,6 +273,96 @@ advanced_runtime() {
   "$helper" "$action" "$MANIFEST" "$@"
 }
 
+# Empirical tuning is deliberately a pre-launch, builder-only policy.  It never
+# invents a model, changes topology/context after planning, or weakens a role
+# clamp.  A measured model/effort recommendation can be applied; every other
+# recommendation remains a visible plan-gate handoff for the next planner.
+outcome_learning_requested() {
+  jq -e '.outcome_learning? | type == "object" and ((.enabled // true) == true)' "$MANIFEST" >/dev/null 2>&1
+}
+
+economy_log_recommendation() { # LANE REPORT APPLIED
+  local lane="$1" report="$2" applied="$3" dir out tmp
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  dir="$PROJECT_ROOT/docs/polylane/economy-recommendations"
+  out="$dir/${RUN_ID:-legacy}.jsonl"
+  mkdir -p "$dir" || return 1
+  tmp=$(mktemp "$dir/.${RUN_ID:-legacy}.XXXXXX") || return 1
+  jq -c --arg lane "$lane" --argjson applied "$applied" \
+    '. + {lane:$lane,applied:$applied}' <<<"$report" > "$tmp" || { rm -f "$tmp"; return 1; }
+  sed -n '1p' "$tmp" >> "$out"
+  rm -f "$tmp"
+}
+
+economy_plan_gate() {
+  local i lane report changed model effort applied lane_count="${#LANE_NAMES[@]}" context="${PROMPT_TOKEN_BUDGET:-8000}"
+  outcome_learning_requested || return 0
+  for i in "${!LANE_NAMES[@]}"; do
+    lane="${LANE_NAMES[$i]}"
+    report=$(advanced_runtime economy-plan "$lane" "${LANE_MODELS[$i]}" "${LANE_EFFORTS[$i]:-medium}" \
+      "${LANE_ROLES[$i]:-builder}" "$lane_count" "$context") || return 1
+    printf 'ECONOMY-PLAN: lane=%s %s\n' "$lane" "$report"
+    applied=false
+    if jq -e '.safe_to_apply == true and (.changed_fields | length == 1)' <<<"$report" >/dev/null 2>&1; then
+      changed=$(jq -r '.changed_fields[0]' <<<"$report")
+      model=$(jq -r '.recommendation.model // empty' <<<"$report")
+      effort=$(jq -r '.recommendation.effort // empty' <<<"$report")
+      case "$changed" in
+        model)
+          if [ -n "$model" ] && model_available "$model"; then
+            LANE_MODELS[i]="$model"
+            # shellcheck disable=SC2034 # consumed by emit_effective_model_policy
+            LANE_POLICY_SOURCES[i]='empirical accepted-outcome recommendation'
+            applied=true
+          fi
+          ;;
+        effort)
+          if model_policy_effort_valid "$effort"; then
+            LANE_EFFORTS[i]="$effort"
+            # shellcheck disable=SC2034 # consumed by emit_effective_model_policy
+            LANE_POLICY_SOURCES[i]='empirical accepted-outcome recommendation'
+            applied=true
+          fi
+          ;;
+        lane_count|context_tokens)
+          # Planning owns lane topology and prompt scope; changing either here
+          # after scope validation would invalidate isolation and prompt proof.
+          applied=false
+          ;;
+      esac
+    fi
+    economy_log_recommendation "$lane" "$report" "$applied" || return 1
+    if [ "$applied" = true ]; then
+      echo "ECONOMY-PLAN: applied lane=$lane changed=$(jq -r '.changed_fields[0]' <<<"$report")"
+    else
+      echo "ECONOMY-PLAN: preserved lane=$lane reason=$(jq -r '.reason' <<<"$report")"
+    fi
+  done
+}
+
+domain_grade_gate() {
+  local output rc=0 bundle grade evidence
+  output=$(advanced_runtime domain-grade "$INT_WORKTREE" 2>&1) || rc=$?
+  printf '%s\n' "$output"
+  [ "$rc" -eq 0 ] || return "$rc"
+  [ "${DRY_RUN:-0}" = "1" ] && return 0
+  jq -e '.domain_runtime? | type == "object" and ((.enabled // true) == true)' "$MANIFEST" >/dev/null 2>&1 || return 0
+  bundle=$(jq -r '.domain_runtime.bundle // "docs/polylane/domain-runtime/bundle.json"' "$MANIFEST")
+  grade=$(jq -r '.domain_runtime.grade // "docs/polylane/domain-runtime/grade.json"' "$MANIFEST")
+  case "$bundle:$grade" in docs/polylane/domain-runtime/*:docs/polylane/domain-runtime/*) ;; *)
+    echo 'DOMAIN-GRADER: unsafe durable evidence path' >&2; return 1 ;;
+  esac
+  evidence="$INT_WORKTREE/docs/verify-integration.md"
+  [ -f "$evidence" ] || { echo 'DOMAIN-GRADER: integration evidence is missing' >&2; return 1; }
+  grep -F "DOMAIN-GRADER: PASS bundle=$bundle grade=$grade" "$evidence" >/dev/null 2>&1 ||
+    printf '\nDOMAIN-GRADER: PASS bundle=%s grade=%s\n' "$bundle" "$grade" >> "$evidence"
+  git -C "$INT_WORKTREE" add -- "$bundle" "$grade" docs/verify-integration.md || return 1
+  if ! git -C "$INT_WORKTREE" diff --cached --quiet -- "$bundle" "$grade" docs/verify-integration.md; then
+    git -C "$INT_WORKTREE" commit --only -m 'polylane: record profile bundle grade' -- \
+      "$bundle" "$grade" docs/verify-integration.md || return 1
+  fi
+}
+
 quality_judges_requested() {
   jq -e '.quality_judges | type == "array" and length > 0' "$MANIFEST" >/dev/null 2>&1
 }
@@ -398,6 +492,10 @@ safe_rm() {
 
 # disk_free_gb DIR : whole GB free on the volume holding DIR (empty if unreadable).
 disk_free_gb() {
+  if [ -n "${POLYLANE_DISK_PROBE:-}" ] && [ -x "$POLYLANE_DISK_PROBE" ]; then
+    "$POLYLANE_DISK_PROBE" "${1:-.}" 2>/dev/null | sed -n '1p'
+    return
+  fi
   df -Pk "${1:-.}" 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}'
 }
 
@@ -636,11 +734,31 @@ prompt_budget_check() {
     }
 }
 
+# inject_runtime_prompt_contract INPUT NAME OUTPUT : add the runner-owned facts
+# that an authored/optimized prompt cannot safely infer. This is intentionally
+# applied AFTER semantic optimization and selected-skill delivery: it gives every
+# provider and role the exact live relay command and canonical DONE path, even if
+# a hand-authored prompt merely says "read coordination" or names a near-miss
+# marker. The source prompt remains immutable.
+inject_runtime_prompt_contract() {
+  local input="$1" name="$2" output="$3" marker
+  if [ -n "${RUN_ID:-}" ]; then
+    marker="STATUS: $name DONE run=$RUN_ID"
+  else
+    marker="STATUS: $name DONE"
+  fi
+  {
+    cat "$input"
+    printf '\nPOLYLANE-RUNTIME-RELAY: at start and immediately before completion run `COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"`; handle requests addressed to %s. docs/parallel-status.md is post-cycle evidence only, never the live relay.\n' "$name"
+    printf 'POLYLANE-RUNTIME-DONE: write only docs/status-%s.md; first line exactly `%s`.\n' "$name" "$marker"
+  } > "$output"
+}
+
 # compile_prompt SOURCE NAME ROLE : produce the launch-only normalized prompt.
 # The authored prompt remains immutable. A compiled copy may remove only
 # byte-identical ordinary prose after the frozen contracts are compared again.
 compile_prompt() {
-  local source="$1" name="$2" role="$3" dir tmp compiled metrics prime
+  local source="$1" name="$2" role="$3" dir tmp selected runtime compiled metrics prime
   case "$name" in ''|*[!A-Za-z0-9._-]*) die "unsafe prompt lane name '$name'" ;; esac
   [ -s "$source" ] || { echo "PROMPT-COMPILE: $name source is missing or empty" >&2; return 1; }
   dir="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}"
@@ -657,10 +775,29 @@ compile_prompt() {
     echo "PROMPT-COMPILE: $name lost a frozen contract" >&2
     return 1
   fi
+  # Selected kits are added only after ordinary normalization. The optimizer
+  # owns the injected-record format; this runner forwards the single typed
+  # lane-skill kit that preflight already validated, never a SKILL.md path.
+  if [ "$role" = builder ]; then
+    selected=$(mktemp "$dir/.${name}.selected.XXXXXX") || { rm -f "$tmp"; return 1; }
+    if ! "$SCRIPT_DIR/polylane-promptopt.sh" compile-selected "$tmp" "$LANE_SKILLS_FILE" "$name" "$selected"; then
+      rm -f "$tmp" "$selected"
+      echo "PROMPT-COMPILE: $name selected-kit compilation failed" >&2
+      return 1
+    fi
+    mv "$selected" "$tmp"
+  fi
+  runtime=$(mktemp "$dir/.${name}.runtime.XXXXXX") || { rm -f "$tmp"; return 1; }
+  if ! inject_runtime_prompt_contract "$tmp" "$name" "$runtime"; then
+    rm -f "$tmp" "$runtime"
+    echo "PROMPT-COMPILE: $name runtime-contract injection failed" >&2
+    return 1
+  fi
+  mv "$runtime" "$tmp"
   mv "$tmp" "$compiled"
   prime=false
   prime_hybrid_enabled && prime=true
-  POLYLANE_STRICT_PROMPTS=1 "$SCRIPT_DIR/polylane-promptlint.sh" \
+  POLYLANE_STRICT_PROMPTS=1 POLYLANE_RUNTIME_COMPILED=1 "$SCRIPT_DIR/polylane-promptlint.sh" \
     lint "$compiled" "$name" "$prime" "$role" || {
       echo "PROMPT-COMPILE: $name failed strict generated-prompt lint" >&2
       return 1
@@ -743,6 +880,8 @@ preflight_contract() {
 
   "$SCRIPT_DIR/polylane-scope.sh" check-static "$MANIFEST" ||
     die "contract v2 scope isolation failed"
+  "$SCRIPT_DIR/polylane-scope.sh" check-status "$MANIFEST" ||
+    die "contract v2 status-marker ownership failed"
   POLYLANE_STRICT_PROMPTS=1 "$SCRIPT_DIR/polylane-promptlint.sh" lint-run "$MANIFEST" ||
     die "contract v2 prompt lint failed"
   "$SCRIPT_DIR/polylane-scout.sh" validate "$LANE_SKILLS_FILE" "$MANIFEST" ||
@@ -1308,11 +1447,54 @@ add_worktree() {
 # contract: the orchestrator refreshes ONCE per cycle before launch; lanes only
 # query (their prompts no longer run /graphify-auto).
 share_graph() {
-  local wt="$1" src="$REPO_ROOT/graphify-out"
+  local wt="$1" src="$REPO_ROOT/graphify-out" common line candidate
   [ "${DRY_RUN:-0}" = "1" ] && { [ -d "$src" ] && echo "+ (dry-run) would symlink graphify-out into $wt"; return 0; }
-  [ -d "$src" ] || return 0                      # no graph in this project — nothing to share
-  [ -e "$wt/graphify-out" ] && return 0          # already there (resumed/reused worktree)
+  # A recovery root is often a graphless Git worktree.  Search only sibling
+  # worktrees from its exact common Git directory; never borrow another repo.
+  if [ ! -d "$src" ]; then
+    common=$(git -C "$REPO_ROOT" rev-parse --git-common-dir 2>/dev/null) || return 0
+    case "$common" in /*) : ;; *) common="$REPO_ROOT/$common" ;; esac
+    while IFS= read -r line; do
+      case "$line" in
+        worktree\ *) candidate="${line#worktree }"
+                    [ "$candidate" = "$wt" ] && continue
+                    [ -d "$candidate/graphify-out" ] && { src="$candidate/graphify-out"; break; }
+                    ;;
+      esac
+    done < <(git --git-dir="$common" worktree list --porcelain 2>/dev/null)
+  fi
+  [ -d "$src" ] || return 0                      # no graph in this repository — nothing to share
+  { [ -e "$wt/graphify-out" ] || [ -L "$wt/graphify-out" ]; } && return 0
   ln -s "$src" "$wt/graphify-out" 2>/dev/null || true   # best-effort; lanes have the Explore fallback
+}
+
+# shared_graph_link_owned WT : true only when WT/graphify-out resolves to a
+# real graph directory owned by ANOTHER worktree from WT's exact Git common
+# directory. Recovery roots may not have a local graph, so comparing only with
+# REPO_ROOT rejects the same sibling link that share_graph deliberately creates.
+# Enumerating the common-dir worktree registry also prevents a foreign-repo or
+# arbitrary filesystem link from being laundered as runner-owned scratch.
+shared_graph_link_owned() {
+  local wt="$1" link="$1/graphify-out" source common line candidate candidate_root candidate_graph wt_root
+  [ -L "$link" ] || return 1
+  source=$(cd "$link" 2>/dev/null && pwd -P) || return 1
+  wt_root=$(cd "$wt" 2>/dev/null && pwd -P) || return 1
+  common=$(git -C "$wt" rev-parse --git-common-dir 2>/dev/null) || return 1
+  case "$common" in /*) : ;; *) common="$wt/$common" ;; esac
+  common=$(cd "$common" 2>/dev/null && pwd -P) || return 1
+  while IFS= read -r line; do
+    case "$line" in
+      worktree\ *)
+        candidate="${line#worktree }"
+        candidate_root=$(cd "$candidate" 2>/dev/null && pwd -P) || continue
+        [ "$candidate_root" != "$wt_root" ] || continue
+        [ -d "$candidate_root/graphify-out" ] && [ ! -L "$candidate_root/graphify-out" ] || continue
+        candidate_graph=$(cd "$candidate_root/graphify-out" 2>/dev/null && pwd -P) || continue
+        [ "$source" = "$candidate_graph" ] && return 0
+        ;;
+    esac
+  done < <(git --git-dir="$common" worktree list --porcelain 2>/dev/null)
+  return 1
 }
 
 # clear_stale_markers WT NAME : a fresh worktree checks out BASE and thus inherits
@@ -2050,30 +2232,43 @@ launch_panes() {
 # closes the marker-before-commit race where the runner could merge an older tip
 # while the live agent was still staging its evidence.
 lane_done() {
-  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" rel="docs/status-$2.md" dirty
-  [ -f "$f" ] || return 1
-  # `|| true`: read returns non-zero at EOF-before-newline but STILL populates $first,
-  # so a marker written without a trailing newline (markers.sh done emits none) is read
-  # correctly instead of reading as not-done forever. Empty file -> first="" -> != DONE.
-  IFS= read -r first < "$f" || true
-  if [ -n "${RUN_ID:-}" ]; then
-    [ "$first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
-  else
-    [ "$first" = "STATUS: $name DONE" ] || return 1
+  local wt="$1" name="$2" f="$1/docs/status-$2.md" first="" head_first="" rel="docs/status-$2.md" dirty completion="status"
+  if [ ! -f "$f" ]; then
+    # A contract-v2 integrator may truthfully finish its local branch while the
+    # coordinator-owned terminal gate is still pending. READY is not GO, but it
+    # is a complete handoff: requiring a DONE marker that a prompt defers until
+    # host GO creates a circular wait (host gate waits for DONE; DONE waits for
+    # host GO). Accept only the current nonce-bound READY evidence, then apply
+    # the same clean, committed checkpoint checks as an ordinary DONE marker.
+    f="$wt/docs/verify-integration.md"
+    rel="docs/verify-integration.md"
+    if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null &&
+       [ "$name" = "${INT_NAME:-}" ] && [ -f "$f" ] && [ ! -L "$f" ] &&
+       [ "$(parse_verdict "$f")" = "READY-FOR-HOST-GATE" ]; then
+      completion="ready"
+    else
+      return 1
+    fi
+  fi
+  if [ "$completion" = "status" ]; then
+    # `|| true`: read returns non-zero at EOF-before-newline but STILL populates $first,
+    # so a marker written without a trailing newline (markers.sh done emits none) is read
+    # correctly instead of reading as not-done forever. Empty file -> first="" -> != DONE.
+    IFS= read -r first < "$f" || true
+    if [ -n "${RUN_ID:-}" ]; then
+      [ "$first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
+    else
+      [ "$first" = "STATUS: $name DONE" ] || return 1
+    fi
   fi
   if [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null; then
     git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
     dirty=$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null) || return 1
     # `share_graph` creates exactly this untracked symlink in a lane. Accept it
-    # only when it resolves to this runner's canonical graph directory; every
-    # other dirty/untracked path remains a completion blocker.
-    if [ -L "$wt/graphify-out" ] && [ -d "${REPO_ROOT:-}/graphify-out" ]; then
-      local graph_link graph_owner
-      graph_link=$(cd "$wt/graphify-out" 2>/dev/null && pwd -P) || graph_link=""
-      graph_owner=$(cd "${REPO_ROOT:-}/graphify-out" 2>/dev/null && pwd -P) || graph_owner=""
-      if [ -n "$graph_link" ] && [ "$graph_link" = "$graph_owner" ]; then
-        dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
-      fi
+    # only when its source is a registered sibling worktree in the same Git
+    # common directory; every foreign/local dirty path remains a blocker.
+    if shared_graph_link_owned "$wt"; then
+      dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
     fi
     # The runner transports the current compiled prompt into the worktree so a
     # long-lived tmux server does not need host permission for the canonical
@@ -2089,6 +2284,7 @@ lane_done() {
     fi
     [ -z "$dirty" ] || return 1
     git -C "$wt" cat-file -e "HEAD:$rel" 2>/dev/null || return 1
+    [ "$completion" = "ready" ] && return 0
     IFS= read -r head_first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
     if [ -n "${RUN_ID:-}" ]; then
       [ "$head_first" = "STATUS: $name DONE run=$RUN_ID" ] || return 1
@@ -2097,6 +2293,59 @@ lane_done() {
     fi
   fi
   return 0
+}
+
+# normalize_status_marker WORKTREE NAME : repair one narrow, mechanically safe
+# lane-output mistake before spending a restart. Contract-v2 only. The canonical
+# marker must be absent and HEAD must contain exactly one regular status file
+# whose first line is the exact lane + current-run DONE line. The whole tracked
+# tree must be clean and the only tolerated untracked paths are runner-owned
+# helpers already accepted by lane_done. The repair is an auditable rename-only
+# commit; stale, foreign, dirty, uncommitted, symlink, and ambiguous candidates
+# all remain hard failures.
+normalize_status_marker() {
+  local wt="$1" name="$2" canonical="docs/status-$2.md" expected rel first
+  local candidate="" count=0 dirty runtime_prompt="" expected_prompt=""
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  [ -n "${RUN_ID:-}" ] || return 1
+  case "$name" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac
+  [ ! -e "$wt/$canonical" ] && [ ! -L "$wt/$canonical" ] || return 1
+  git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  expected="STATUS: $name DONE run=$RUN_ID"
+
+  dirty=$(git -C "$wt" status --porcelain --untracked-files=all --ignore-submodules=all 2>/dev/null) || return 1
+  if shared_graph_link_owned "$wt"; then
+    dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? graphify-out"')
+  fi
+  if declare -p LANE_NAMES >/dev/null 2>&1; then
+    runtime_prompt=$(pane_runtime_prompt_path "$wt")
+    expected_prompt=$(lane_prompt_get "$name")
+    if [ -f "$runtime_prompt" ] && [ ! -L "$runtime_prompt" ] &&
+       [ -n "$expected_prompt" ] && [ -f "$expected_prompt" ] &&
+       cmp -s "$runtime_prompt" "$expected_prompt"; then
+      dirty=$(printf '%s\n' "$dirty" | awk '$0 != "?? .polylane-prompt.txt"')
+    fi
+  fi
+  [ -z "$dirty" ] || return 1
+
+  while IFS= read -r rel; do
+    case "$rel" in docs/status-*.md) : ;; *) continue ;; esac
+    [ "$rel" != "$canonical" ] || continue
+    [ -f "$wt/$rel" ] && [ ! -L "$wt/$rel" ] || continue
+    git -C "$wt" diff --quiet HEAD -- "$rel" || continue
+    IFS= read -r first < <(git -C "$wt" show "HEAD:$rel" 2>/dev/null) || true
+    [ "$first" = "$expected" ] || continue
+    candidate="$rel"
+    count=$((count + 1))
+  done < <(git -C "$wt" ls-tree -r --name-only HEAD -- docs 2>/dev/null)
+  [ "$count" -eq 1 ] || return 1
+
+  git -C "$wt" mv -- "$candidate" "$canonical" || return 1
+  if ! git -C "$wt" commit -q -m "polylane: normalize status marker for $name"; then
+    git -C "$wt" mv -- "$canonical" "$candidate" >/dev/null 2>&1 || true
+    return 1
+  fi
+  lane_done "$wt" "$name"
 }
 
 # --- health-check + auto-retry (transient API/network errors) ----------------
@@ -2271,12 +2520,13 @@ startup_check() {
     idx=$(pane_index_for "$name")
     [ "$idx" -ge 0 ] 2>/dev/null || continue
     txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
-    if printf '%s' "$txt" | grep -qiE 'Do you trust the files in this (folder|directory)|Trust this (folder|workspace)'; then
+    if printf '%s' "$txt" | grep -qiE 'Do you trust the files in this (folder|directory)|Trust this (folder|workspace)' \
+      && printf '%s\n' "$txt" | grep -qiE '^[[:space:]❯>]*1\.[[:space:]]*(Yes|Trust|Proceed|Allow)'; then
       # option 1 = "Yes, proceed" — our own worktree, always trusted
       tmux send-keys -t "$TMUX_SESSION:0.$idx" '1' 2>/dev/null
       tmux send-keys -t "$TMUX_SESSION:0.$idx" Enter 2>/dev/null
       echo "startup: lane '$name' — answered folder-trust dialog"
-    elif printf '%s' "$txt" | grep -qiE 'Press Enter to continue|to get started'; then
+    elif printf '%s\n' "$txt" | grep -qiE '^[[:space:]]*(Welcome!?[[:space:]]+)?(Press Enter to continue|Press return to continue|Press Enter to get started)[[:space:]]*$'; then
       tmux send-keys -t "$TMUX_SESSION:0.$idx" Enter 2>/dev/null
       echo "startup: lane '$name' — cleared an onboarding banner"
     fi
@@ -2726,9 +2976,9 @@ lane_terminal_turn() {
   [ -f "$log" ] || return 1
   # Codex emits agent_message items as mid-turn progress, then may reason or
   # launch more tools without painting the pane. Treating any recent message as
-  # terminal gives a live high-effort turn the short dead-pane window and can
-  # respawn healthy work. Only the latest turn-boundary event is authoritative;
-  # a newer turn.started also clears an older completion/error from the log.
+  # terminal gave a live xhigh turn the short dead-pane window and caused false
+  # restarts. Only the latest turn-boundary event is authoritative; a newer
+  # turn.started also clears an older completion/error from an appended log.
   last=$(tail -n 200 "$log" 2>/dev/null |
     grep -E '"type":"(turn\.started|turn\.completed|turn\.failed|error)"' |
     tail -n 1 || true)
@@ -2919,6 +3169,10 @@ health_check() {
     # (claude exited without DONE — amnesia), or is WEDGED (alive but frozen).
     if ! pane_exists "$idx"; then
       why="a missing mapped pane"
+      if normalize_status_marker "$wt" "$name"; then
+        echo "health: lane '$name' committed DONE under one wrong status filename — normalized before restart"
+        continue
+      fi
       n=$(retry_get "$name"); n=$((n + 1))
       if [ "$n" -le "$max" ] && recreate_lane_pane "$name" "$wt"; then
         retry_set "$name" "$n"
@@ -2935,6 +3189,15 @@ health_check() {
     elif pane_wedged "$name" "$idx"; then why="a wedged pane (no output for $(( ${POLYLANE_WEDGE_CHECKS:-4} * ${POLYLANE_HEALTH_INTERVAL:-15} ))s)"
     else continue
     fi
+    case "$why" in
+      *wedged*) : ;;
+      *)
+        if normalize_status_marker "$wt" "$name"; then
+          echo "health: lane '$name' committed DONE under one wrong status filename — normalized before restart"
+          continue
+        fi
+        ;;
+    esac
     n=$(retry_get "$name"); n=$((n + 1))
     if [ "$n" -le "$max" ]; then
       echo "health: lane '$name' — $why — retry $n/$max, respawning pane $idx"
@@ -2966,6 +3229,10 @@ verify_seeds() {
     name="${LANE_NAMES[$i]}"
     lane_done "${LANE_WORKTREES[$i]}" "$name" && continue
     if pane_dead "${LANE_PANE_IDX[$i]}"; then
+      if normalize_status_marker "${LANE_WORKTREES[$i]}" "$name"; then
+        echo "launch: lane '$name' committed DONE under one wrong status filename — normalized before startup restart"
+        continue
+      fi
       echo "launch: lane '$name' process exited during startup — restarting"
       respawn_lane "${LANE_PANE_IDX[$i]}" "$name" "${LANE_WORKTREES[$i]}" 0
     fi
@@ -3132,6 +3399,8 @@ contract_acceptance_gate() {
   (
     cd "$INT_WORKTREE"
     export REPO="$PWD" REPO_ROOT="$PWD"
+    export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
+    export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
       --cycle "$CYCLE" --targets "$targets" --focused
   ) || { report_acceptance_failures; return 1; }
@@ -3167,6 +3436,8 @@ contract_acceptance_gate() {
         (
           cd "$INT_WORKTREE"
           export REPO="$PWD" REPO_ROOT="$PWD"
+          export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
+          export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
           "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
             --cycle "$CYCLE" --targets "$terminal_targets" --only-terminal
         ) || { report_acceptance_failures; return 1; }
@@ -3186,6 +3457,8 @@ contract_acceptance_gate() {
       (
           cd "$INT_WORKTREE"
           export REPO="$PWD" REPO_ROOT="$PWD"
+          export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
+          export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
           "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
             --cycle "$CYCLE" --targets "$targets" --only-terminal
         ) || { report_acceptance_failures; return 1; }
@@ -3210,6 +3483,8 @@ contract_focused_acceptance_gate() {
   (
     cd "$INT_WORKTREE"
     export REPO="$PWD" REPO_ROOT="$PWD"
+    export POLYLANE_EFFICIENCY_PROOF="${EFFICIENCY_GATE_PROOF:-}"
+    export POLYLANE_EXPECTED_RUN_ID="${RUN_ID:-}"
     "$SCRIPT_DIR/polylane-memory.sh" "$STATE_FILE" check-accept \
       --cycle "$CYCLE" --targets "$targets" --focused
   ) || { report_acceptance_failures; return 1; }
@@ -3227,10 +3502,30 @@ contract_ready_verdict() {
   fi
 }
 
+# Host gates are runner-owned.  Never annotate a completed integrator checkout:
+# that would dirty its committed READY/DONE handoff and relaunch finished work on
+# resume.  The canonical root receives one atomic, run-scoped failure record.
+host_gate_failure() {
+  local detail="$1" dir f tmp when
+  VERDICT_ORIGIN="host-gate"
+  disk_guard || return 1
+  dir="$REPO_ROOT/docs/polylane/host-gate-failures"
+  mkdir -p "$dir" || return 1
+  f="$dir/${RUN_ID:-legacy}.md"
+  tmp=$(mktemp "$dir/.${RUN_ID:-legacy}.XXXXXX") || return 1
+  when=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo '?')
+  {
+    printf '# Host gate failure\n\n'
+    printf 'run=%s\nwhen=%s\n\n%s\n' "${RUN_ID:-legacy}" "$when" "$detail"
+  } > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
+}
+
 # merge_gate : returns 0 for verified engineering outcomes. External evidence is a
 # routing state, not a reason to discard verified code or end the autonomous loop.
 merge_gate() {
   local f="$INT_WORKTREE/docs/verify-integration.md" v host_verdict terminal_cache_hit=0
+  VERDICT_ORIGIN="integrator"
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would read integrator verdict from $f (proceed only on GO)"
     VERDICT_RESULT="GO"
@@ -3245,11 +3540,11 @@ merge_gate() {
     # boundary it is currently entering. Pass the count into acceptance so the
     # same READY boundary is never counted twice.
     if ! contract_focused_acceptance_gate; then
-      printf '\nACCEPTANCE-GATE: focused checks failed before the terminal boundary; repair and hand off again.\n' >> "$f"
+      host_gate_failure "focused checks failed before the terminal boundary; repair and hand off again" || true
       v="NO-GO"; VERDICT_REPAIRABLE="YES"
     else
       if ! host_verdict=$(contract_ready_verdict); then
-        printf '\nACCEPTANCE-GATE: could not resolve the honest post-gate routing state.\n' >> "$f"
+        host_gate_failure "could not resolve the honest post-gate routing state" || true
         v="NO-GO"; VERDICT_REPAIRABLE="YES"
       else
         if terminal_gate_pass_receipt_valid "$host_verdict"; then
@@ -3259,7 +3554,7 @@ merge_gate() {
           run_stats terminal-gate
         fi
         if ! write_efficiency_proof gate; then
-          printf '\nACCEPTANCE-GATE: efficiency proof failed; terminal gate is exhausted for this run.\n' >> "$f"
+          host_gate_failure "efficiency proof failed at ${EFFICIENCY_GATE_PROOF:-unknown}; terminal gate is exhausted for this run" || true
           v="NO-GO"; VERDICT_REPAIRABLE="NO"
         elif [ "$terminal_cache_hit" = 1 ]; then
           v="$host_verdict"
@@ -3270,7 +3565,7 @@ merge_gate() {
         else
           # The coordinator owns one terminal attempt. A model repair cannot make
           # that same attempt unused; it would only add a restart and a second gate.
-          printf '\nACCEPTANCE-GATE: frozen checks failed; terminal gate is exhausted for this run.\n' >> "$f"
+          host_gate_failure "frozen checks failed; terminal gate is exhausted for this run" || true
           v="NO-GO"; VERDICT_REPAIRABLE="NO"
         fi
       fi
@@ -3295,10 +3590,14 @@ merge_gate() {
       return 0
       ;;
     *)
-      prime_hybrid_observe no-go "$INT_NAME" "integrator verdict $v in run ${RUN_ID:-legacy}" || return 1
-      echo "Integrator verdict: $v — engineering gate did not pass. Nothing deleted." >&2
+      prime_hybrid_observe no-go "$INT_NAME" "${VERDICT_ORIGIN:-integrator} verdict $v in run ${RUN_ID:-legacy}" || return 1
+      if [ "${VERDICT_ORIGIN:-integrator}" = host-gate ]; then
+        echo "Host gate verdict: $v — runner-owned verification did not pass. Nothing deleted." >&2
+      else
+        echo "Integrator verdict: $v — engineering gate did not pass. Nothing deleted." >&2
+      fi
       [ -f "$f" ] && { echo "--- $f ---" >&2; cat "$f" >&2; }
-      notify_event no-go "integrator verdict $v — nothing merged, worktrees intact"
+      notify_event no-go "${VERDICT_ORIGIN:-integrator} verdict $v — nothing merged, worktrees intact"
       return 1
       ;;
   esac
@@ -3444,7 +3743,7 @@ gate_with_repairs() {
   local attempt=0 max="${POLYLANE_INTEGRATOR_REPAIRS:-3}"
   while :; do
     graph_authority_require verifier "run verifier gate attempt $attempt" || return 1
-    if merge_gate; then
+    if domain_grade_gate && merge_gate; then
       return 0
     fi
     graph_authority_record_ready_node verifier failed "$attempt" verifier-failed || return 1
@@ -3515,6 +3814,11 @@ assert_no_conflict() {
 # narrow: user source, evidence, prompts, and reports never qualify.
 runner_owned_promotion_path() {
   local path="$1" lane
+  if [ "$path" = "docs/polylane/outcome-receipts/${RUN_ID:-legacy}.json" ] ||
+     [ "$path" = "docs/polylane/economy-recommendations/${RUN_ID:-legacy}.jsonl" ] ||
+     [ "$path" = "docs/polylane/efficiency-proofs/${RUN_ID:-legacy}-gate.md" ]; then
+    return 0
+  fi
   if [ -n "${RUN_ID:-}" ] &&
      [ "$path" = "docs/polylane/terminal-gates/$RUN_ID.json" ]; then
     return 0
@@ -3524,6 +3828,7 @@ runner_owned_promotion_path() {
     docs/polylane/run-stats.json|docs/polylane/spend-ledger.jsonl|\
     docs/polylane/efficiency-proof.md|\
     docs/polylane/outcomes.jsonl|docs/polylane/hubs.txt|\
+    docs/polylane/accepted-outcomes.jsonl|\
     docs/polylane/harness/*.json|docs/polylane/harness/*.jsonl|\
     docs/polylane/workers/history.jsonl|docs/polylane/workers/capsules/*.json)
       return 0
@@ -3951,8 +4256,20 @@ report_open_items() {
   "$SCRIPT_DIR/polylane-report-items.sh" "${evidence_paths[@]}"
 }
 
+# report_host_gate_failure : read only this run's canonical runner-owned failure
+# record. A report may be regenerated after a process restart, so durable evidence
+# is authoritative; never infer host failure from the final NO-GO token alone.
+report_host_gate_failure() {
+  local f="$REPO_ROOT/docs/polylane/host-gate-failures/${RUN_ID:-legacy}.md"
+  [ -f "$f" ] && [ ! -L "$f" ] || return 1
+  awk '
+    /^when=/ { after_when=1; next }
+    after_when && (started || NF) { started=1; print }
+  ' "$f"
+}
+
 write_report() {
-  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state
+  local verdict="$1" f="$REPO_ROOT/docs/polylane-report.md" tmp i when steps subdone=0 subtotal=0 telemetry telemetry_tokens="" promotion_state cleanup_state host_failure_detail="" host_failure_path=""
   # dry-run must never touch the tree — print the intent, write nothing.
   if [ "${DRY_RUN:-0}" = "1" ]; then
     printf '+ would write run report (%s) to %s\n' "$verdict" "$f"
@@ -3961,7 +4278,9 @@ write_report() {
   when=$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo "?")
   promotion_state="${PROMOTION_STATE:-not-attempted}"
   cleanup_state="${CLEANUP_STATE:-retained}"
-  mkdir -p "$REPO_ROOT/docs" 2>/dev/null || true
+  disk_guard || { echo "write_report: disk headroom is below the safety floor" >&2; return 1; }
+  mkdir -p "$REPO_ROOT/docs" || return 1
+  tmp=$(mktemp "$REPO_ROOT/docs/.polylane-report.XXXXXX") || return 1
   if [ -n "${STATE_FILE:-}" ] && [ -f "$STATE_FILE" ]; then
     subdone=$(jq '[.milestones[].subgoals[] | select(.status=="done")] | length' "$STATE_FILE" 2>/dev/null || echo 0)
     subtotal=$(jq '[.milestones[].subgoals[]] | length' "$STATE_FILE" 2>/dev/null || echo 0)
@@ -3973,6 +4292,10 @@ write_report() {
   if [ -n "$telemetry" ] && printf '%s\n' "$telemetry" | jq -e '.tokens != null' >/dev/null 2>&1; then
     telemetry_tokens=$(printf '%s\n' "$telemetry" | jq -r '.tokens')
   fi
+  if [ "$verdict" = "NO-GO" ]; then
+    host_failure_detail=$(report_host_gate_failure 2>/dev/null || true)
+    [ -z "$host_failure_detail" ] || host_failure_path="docs/polylane/host-gate-failures/${RUN_ID:-legacy}.md"
+  fi
 
   {
     echo "# polylane run report"
@@ -3983,7 +4306,7 @@ write_report() {
     echo
     echo "| Lane | Model | Branch | Result | Tokens | Est. \$ |"
     echo "|---|---|---|---|---|---|"
-    local _total="0.00" _tokens_total=0 _tok _price _cost
+    local _total="0.00" _tokens_total=0 _tok _price _cost _unknown_cost=0
     for i in "${!LANE_NAMES[@]}"; do
       local _r="${LANE_STATS[$i]:-completed}"
       lane_failed "${LANE_NAMES[$i]}" && _r="FAILED — errored after retries"
@@ -3994,6 +4317,8 @@ write_report() {
         _cost=$(est_cost "$_tok" "$_price")
         _total=$(LC_ALL=C awk -v a="$_total" -v b="$_cost" 'BEGIN{printf "%.2f", a + b}')
         _cost="\$$_cost"
+      else
+        _unknown_cost=1
       fi
       [ -n "$_tok" ] && _tokens_total=$(( _tokens_total + _tok ))
       printf '| %s | %s | %s | %s | %s | %s |\n' \
@@ -4001,7 +4326,11 @@ write_report() {
         "${_tok:-?}" "$_cost"
     done
     echo
-    echo "**Estimated total: \$${_total}** — rough, output-rate pricing from \`references/model-selection.md\`; lanes without a token count are excluded."
+    if [ "$_unknown_cost" = 1 ]; then
+      echo "**Estimated total unavailable.** Known-priced subtotal: \$${_total}; at least one lane lacks a token count or a verified model price, so zero is not claimed."
+    else
+      echo "**Estimated total: \$${_total}** — rough, output-rate pricing from \`references/model-selection.md\`."
+    fi
     if [ -n "$telemetry" ] && printf '%s\n' "$telemetry" | jq -e . >/dev/null 2>&1; then
       echo "**Run telemetry:** $(printf '%s\n' "$telemetry" | jq -r '"wall_s=" + (.wall_s|tostring) + " · launches=" + ([.lanes[]?.launches] | add // 0 | tostring) + " · restarts=" + (([.lanes[]?.restarts] | add // 0) + .supervisor_restarts | tostring) + " · terminal_gates=" + (.terminal_gates|tostring) + " · cleanup=" + .cleanup + " · tokens=" + (if .tokens == null then "unknown" else (.tokens|tostring) end)')"
       [ -n "$telemetry_tokens" ] && _tokens_total="$telemetry_tokens"
@@ -4014,7 +4343,7 @@ write_report() {
         --lanes "${#LANE_NAMES[@]}" --wall "${SECONDS:-0}" >/dev/null 2>&1 || true
     fi
     echo
-    echo "## Integrator verdict"
+    echo "## Verification outcome"
     echo
     if [ "$promotion_state" = promoted ]; then
       if [ "$cleanup_state" != complete ] || [ -n "${CLEANUP_WARNING:-}" ]; then
@@ -4035,6 +4364,13 @@ write_report() {
       echo "**${verdict}** — promotion did not complete. Nothing merged, nothing cleaned; the lane worktrees are retained for resolution and re-run."
     elif [ "$verdict" = "GO" ] || [ "$verdict" = "EXTERNAL-EVIDENCE-OPEN" ]; then
       echo "**${verdict}** — integrator evidence is favorable, but promotion state is unknown. Nothing is claimed merged or cleaned; inspect the base and retained worktrees."
+    elif [ -n "$host_failure_detail" ]; then
+      echo "**${verdict}** — the integrator produced a READY handoff, but the runner-owned host gate rejected the READY handoff. Nothing merged, nothing deleted; lane worktrees remain intact."
+      echo
+      echo "Host-gate reason:"
+      printf '%s\n' "$host_failure_detail" | sed 's/^/> /'
+      echo
+      echo "Canonical evidence: \`${host_failure_path}\`."
     else
       echo "**${verdict}** — integrator withheld GO. Nothing merged, nothing deleted; the lane worktrees are left intact so you can fix and re-run. See \`docs/verify-integration.md\`."
     fi
@@ -4048,6 +4384,8 @@ write_report() {
     echo
     if [ "$promotion_state" = promoted ]; then
       echo "- Review the merged result, then \`git push\` to back it up."
+    elif [ -n "$host_failure_detail" ]; then
+      echo "- Read \`${host_failure_path}\` for the runner-owned gate failure; preserve the integrator's READY evidence and repair the host condition in a fresh run."
     elif [ -n "${FAILED_LANES:-}" ]; then
       echo "- Lane(s) errored out and could not recover after retries: **${FAILED_LANES}**."
       echo "  A transient API/network error (e.g. 500 / overloaded) kept firing. Their"
@@ -4068,7 +4406,13 @@ write_report() {
     else
       echo "- No open items were flagged by the lanes."
     fi
-  } > "$f" 2>/dev/null || echo "write_report: could not write $f" >&2
+  } > "$tmp" || { rm -f "$tmp"; echo "write_report: could not write $f" >&2; return 1; }
+  if [ "${POLYLANE_TEST_REPORT_WRITE_FAIL:-0}" = 1 ]; then
+    rm -f "$tmp"
+    echo "write_report: simulated write failure" >&2
+    return 1
+  fi
+  mv "$tmp" "$f" || { rm -f "$tmp"; echo "write_report: could not publish $f" >&2; return 1; }
   return 0
 }
 
@@ -4136,8 +4480,7 @@ recover_post_promote_run() {
     echo "== push: current branch =="
     run git -C "$REPO_ROOT" push
   fi
-  write_report "$VERDICT_RESULT" || true
-  echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+  write_report "$VERDICT_RESULT" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
 }
 
 main() {
@@ -4157,6 +4500,7 @@ main() {
   fi
   preflight_agent
   apply_overrides   # policy resolves BEFORE any worktree/pane exists
+  economy_plan_gate || exit 1
   emit_effective_model_policy
   preflight_contract
   prime_hybrid_prepare || exit 1
@@ -4204,9 +4548,8 @@ main() {
     echo "Halt: lane(s) failed after retries: ${FAILED_LANES:-?}. Not integrating." >&2
     notify_event halt "lane(s) failed after retries: ${FAILED_LANES:-?}"
     capture_stats
-    write_report "HALTED" || true
+    write_report "HALTED" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     advanced_runtime record HALTED
-    echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
 
@@ -4228,9 +4571,8 @@ main() {
     echo "Halt: integrator failed after retries. Nothing merged." >&2
     notify_event halt "integrator failed after retries — nothing merged"
     capture_stats
-    write_report "HALTED" || true
+    write_report "HALTED" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     advanced_runtime record HALTED
-    echo "Report written: $REPO_ROOT/docs/polylane-report.md"
     exit 1
   fi
   graph_authority_record_ready_node integrator succeeded 0 integrator-done || exit 1
@@ -4276,12 +4618,16 @@ main() {
     graph_authority_require promote "promote verified integration" || exit 1
     echo "== promote: base -> integrator branch (verified outcome) =="
     if ! promote_to_main; then
-      write_report "${VERDICT_RESULT:-GO}" || true
-      echo "Promote failed — base intact, worktrees kept. See report." >&2
+      if write_report "${VERDICT_RESULT:-GO}"; then
+        echo "Promote failed — base intact, worktrees kept. See report." >&2
+      else
+        echo "Promote failed — base intact, worktrees kept; the report could not be written." >&2
+      fi
       exit 1
     fi
     graph_authority_record_ready_node promote succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     finalize_cycle_state
+    advanced_runtime accepted-receipt "${RUN_ID:-legacy}" "$CYCLE" "${VERDICT_RESULT:-GO}" || exit 1
     graph_authority_require complete "complete verified run" || exit 1
     graph_authority_record_ready_node complete succeeded 0 "${VERDICT_RESULT:-GO}" || exit 1
     advanced_runtime record "${VERDICT_RESULT:-GO}"
@@ -4302,8 +4648,7 @@ main() {
   fi
 
   echo "== report =="
-  write_report "${VERDICT_RESULT:-UNKNOWN}" || true
-  echo "Report written: $REPO_ROOT/docs/polylane-report.md"
+  write_report "${VERDICT_RESULT:-UNKNOWN}" && echo "Report written: $REPO_ROOT/docs/polylane-report.md"
   [ "${VERDICT_RESULT:-}" = "GO" ] || [ "${VERDICT_RESULT:-}" = "EXTERNAL-EVIDENCE-OPEN" ] || exit 1
 }
 

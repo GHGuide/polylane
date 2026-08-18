@@ -66,12 +66,42 @@ assert_fail "done-v2-rejects-dirty-checkpoint" lane_done "$G" alpha
 (cd "$G" && git add docs/verify-alpha.md && git commit -qm evidence)
 assert_ok "done-v2-accepts-final-clean-checkpoint" lane_done "$G" alpha
 
+# A current, committed READY handoff completes only the integrator's local turn;
+# it does not self-authorize GO. This breaks the circular wait where a prompt
+# defers STATUS:DONE until the host gate, while the host gate waits for DONE.
+INT_NAME=integrator
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=run-2\n' > "$G/docs/verify-integration.md"
+assert_fail "done-v2-ready-rejects-uncommitted-evidence" lane_done "$G" integrator
+(cd "$G" && git add docs/verify-integration.md && git commit -qm ready)
+assert_ok "done-v2-ready-accepts-committed-integrator-handoff" lane_done "$G" integrator
+printf 'POLYLANE-VERDICT: NO-GO run=run-2\n' > "$G/docs/verify-integration.md"
+(cd "$G" && git add docs/verify-integration.md && git commit -qm no-go)
+assert_fail "done-v2-ready-rejects-no-go" lane_done "$G" integrator
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=stale-run\n' > "$G/docs/verify-integration.md"
+(cd "$G" && git add docs/verify-integration.md && git commit -qm stale-ready)
+assert_fail "done-v2-ready-rejects-stale-nonce" lane_done "$G" integrator
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=run-2\n' > "$G/docs/verify-integration.md"
+(cd "$G" && git add docs/verify-integration.md && git commit -qm current-ready)
+assert_ok "done-v2-ready-restores-current-nonce" lane_done "$G" integrator
+
 # The runner-created graph link is an untracked helper, not unfinished lane work.
-# Any other untracked path remains a real dirty checkpoint and must still block DONE.
-mkdir -p "$TEST_TMPDIR/runner-graph"
-ln -s "$TEST_TMPDIR/runner-graph" "$G/graphify-out"
+# A recovery root may borrow it from another registered worktree in the exact
+# same Git common directory. A foreign-repo link and every other untracked path
+# remain real dirty checkpoints and must still block DONE.
+GRAPH_OWNER="$TEST_TMPDIR/graph-owner"
+git -C "$G" worktree add -q -b graph-owner "$GRAPH_OWNER"
+mkdir -p "$GRAPH_OWNER/graphify-out"
+ln -s "$GRAPH_OWNER/graphify-out" "$G/graphify-out"
 REPO_ROOT="$G" ORCHESTRATION_CONTRACT=2 RUN_ID=run-2
-assert_ok "done-v2-ignores-owned-graphify-symlink" lane_done "$G" alpha
+assert_ok "done-v2-ignores-same-repository-graphify-symlink" lane_done "$G" alpha
+rm -f "$G/graphify-out"
+FOREIGN_GRAPH="$TEST_TMPDIR/foreign-graph"
+git init -q -b main "$FOREIGN_GRAPH"
+mkdir -p "$FOREIGN_GRAPH/graphify-out"
+ln -s "$FOREIGN_GRAPH/graphify-out" "$G/graphify-out"
+assert_fail "done-v2-rejects-foreign-repository-graphify-symlink" lane_done "$G" alpha
+rm -f "$G/graphify-out"
+ln -s "$GRAPH_OWNER/graphify-out" "$G/graphify-out"
 printf 'authoritative prompt\n' > "$TEST_TMPDIR/authoritative-prompt.txt"
 cp "$TEST_TMPDIR/authoritative-prompt.txt" "$G/.polylane-prompt.txt"
 LANE_NAMES=(alpha)

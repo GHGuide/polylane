@@ -4,6 +4,13 @@
 . "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 . "$RUNNER"
 
+# This unit exercises verdict-repair control flow, not the profile bundle
+# grader. Keep the newly-added pre-verdict gate hermetic so ambient project
+# manifests/evidence cannot short-circuit the mocked merge gate below, while
+# counting calls so the production repair loop cannot silently bypass it.
+DOMAIN_GRADE_CALLS=0
+domain_grade_gate() { DOMAIN_GRADE_CALLS=$((DOMAIN_GRADE_CALLS + 1)); return 0; }
+
 make_tmpdir
 LOG="$TEST_TMPDIR/calls"
 : > "$LOG"
@@ -32,7 +39,9 @@ poll_done() { printf 'poll\n' >> "$LOG"; return 0; }
 capture_stats() { printf 'capture\n' >> "$LOG"; }
 
 POLYLANE_INTEGRATOR_REPAIRS=3
-assert_ok "repair-eventually-go" gate_with_repairs
+gate_with_repairs; repair_eventually_go_rc=$?
+assert_eq "repair-eventually-go" "0" "$repair_eventually_go_rc"
+assert_eq "repair-calls-domain-grader-before-each-merge" "3" "$DOMAIN_GRADE_CALLS"
 assert_eq "repair-two-waves" "2" "$(grep -c '^repair$' "$LOG")"
 assert_eq "repair-polls-each-wave" "2" "$(grep -c '^poll$' "$LOG")"
 assert_eq "repair-captures-each-wave" "2" "$(grep -c '^capture$' "$LOG")"
@@ -64,6 +73,8 @@ assert_eq "unrepairable-spawns-zero-repairs" "0" "$(wc -l < "$LOG" | tr -d ' ')"
 # only a passing result to GO. A failed terminal gate is immutable for this run:
 # retrying it would exceed the one-gate efficiency contract.
 . "$RUNNER"
+DOMAIN_GRADE_CALLS=0
+domain_grade_gate() { DOMAIN_GRADE_CALLS=$((DOMAIN_GRADE_CALLS + 1)); return 0; }
 make_tmpdir
 INT_WORKTREE="$TEST_TMPDIR/int"; mkdir -p "$INT_WORKTREE/docs"
 MANIFEST="$TEST_TMPDIR/manifest.json"
@@ -123,6 +134,28 @@ assert_eq "ready-host-gate-failure-is-not-go" "1" "$host_fail_rc"
 assert_eq "ready-host-gate-failure-runs-once" "1" "$HOST_GATES"
 assert_eq "ready-host-gate-failure-proves-once" "1" "$EFFICIENCY_PROOFS"
 assert_eq "ready-host-gate-failure-stops-repair" "NO" "$VERDICT_REPAIRABLE"
+
+# Host gate diagnostics belong to canonical host state, never the completed
+# integrator checkout.  A committed current READY handoff must remain clean and
+# continue to satisfy lane_done on resume after a terminal host failure.
+HOST_ROOT="$TEST_TMPDIR/host-root"; HOST_INT="$HOST_ROOT/integrator"
+mkdir -p "$HOST_INT/docs"; (
+  cd "$HOST_INT"; git init -q -b main; git config user.email t@t; git config user.name t
+  printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > docs/verify-integration.md
+  git add docs/verify-integration.md; git commit -qm ready
+)
+REPO_ROOT="$HOST_ROOT"; INT_WORKTREE="$HOST_INT"; INT_NAME=integrator
+ORCHESTRATION_CONTRACT=2
+HOST_GATES=0; EFFICIENCY_PROOFS=0; TERMINAL_EVENTS=0
+contract_focused_acceptance_gate() { return 0; }
+contract_ready_verdict() { printf 'GO'; }
+write_efficiency_proof() { return 0; }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 1; }
+merge_gate >/dev/null 2>&1; host_clean_rc=$?
+assert_eq "host-failure-is-no-go" "1" "$host_clean_rc"
+assert_eq "host-failure-keeps-integrator-clean" "" "$(git -C "$HOST_INT" status --porcelain)"
+assert_ok "host-failure-ready-still-resumable" lane_done "$HOST_INT" integrator
+assert_ok "host-failure-recorded-canonically" test -f "$HOST_ROOT/docs/polylane/host-gate-failures/host-gate-run.md"
 
 HOST_GATES=0
 EFFICIENCY_PROOFS=0
