@@ -1570,7 +1570,7 @@
           "id": "m32.5",
           "text": "Install both provider packages and certify the complete workflow end to end",
           "weight": 136,
-          "status": "open",
+          "status": "done",
           "cycle": null,
           "evidence": ""
         },
@@ -1974,6 +1974,12 @@
       "cycle": 42,
       "kind": "decision",
       "text": "2026-08-18 host session: promoted codex lineage c21-42a to main (deb2d78); fixed codex model detection (.models[].slug cache read); added provider-auth preflight + auth-park after a live dual-provider outage (claude OAuth expired, codex quota until Aug 20 15:03); c42a recovery remains external on provider auth — see docs/polylane/provider-outage-20260818.md",
+      "meta": ""
+    },
+    {
+      "cycle": 42,
+      "kind": "decision",
+      "text": "2026-08-18 host: m32.5 closed — both provider packages installed from main (claude-code/install.sh, codex/install.sh) and the frozen terminal acceptance (full suite 4040/0, shellcheck, installers, fresh-install, parity, codex-taste-install, doctor --rehearse GO+NO-GO) passed via check-accept",
       "meta": ""
     }
   ],
@@ -3343,7 +3349,7 @@
       "cmd": "bash tests/run.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "taste-terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
