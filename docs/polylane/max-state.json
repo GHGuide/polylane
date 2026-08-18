@@ -1969,6 +1969,12 @@
       "kind": "learning",
       "text": "The proposed 20-brief 15-win rule was underpowered and its Wilson/sign gates were redundant; abort before launch and replace it with HCM-v2 human calibration plus a 1,000-brief practical-superiority confirmation",
       "meta": "15/20 has about 0.416 power at true p=0.70; 729/1000 gives one-sided exact alpha about 0.02381 against p0=0.70 and power about 0.94082 at p=0.75"
+    },
+    {
+      "cycle": 42,
+      "kind": "decision",
+      "text": "2026-08-18 host session: promoted codex lineage c21-42a to main (deb2d78); fixed codex model detection (.models[].slug cache read); added provider-auth preflight + auth-park after a live dual-provider outage (claude OAuth expired, codex quota until Aug 20 15:03); c42a recovery remains external on provider auth — see docs/polylane/provider-outage-20260818.md",
+      "meta": ""
     }
   ],
   "accept": [
