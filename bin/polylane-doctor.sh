@@ -288,6 +288,38 @@ check_claude() {
   fi
 }
 
+# check_auth — an expired provider login turns every lane into an unanswerable
+# "Login expired · Please run /login" pane; respawning cannot mint credentials.
+# Probe BEFORE any worktree/pane exists. Offline and instant for both agents.
+check_auth() {
+  [ -n "${POLYLANE_AGENT_CMD:-}" ] && return 0   # custom command: operator-owned
+  local a abin out
+  a=$(doctor_agent); abin=$(agent_bin "$a")
+  command -v "$abin" >/dev/null 2>&1 || return 0  # dep FAIL already covers absence
+  case "$a" in
+    claude)
+      out=$("$abin" auth status 2>/dev/null || true)
+      if printf '%s' "$out" | grep -q '"loggedIn":[[:space:]]*true'; then
+        row PASS "claude: auth" "logged in"
+      elif printf '%s' "$out" | grep -q '"loggedIn":[[:space:]]*false'; then
+        row FAIL "claude: auth" "not logged in — run 'claude' and use /login, then relaunch"
+      else
+        # older CLI without `auth status` — unknown, never a false FAIL
+        row WARN "claude: auth" "cannot verify login (no 'auth status') — verify manually"
+      fi ;;
+    codex|gpt)
+      out=$("$abin" login status 2>&1 || true)
+      # order matters: "Not logged in" contains "logged in"
+      if printf '%s' "$out" | grep -qi 'not logged in'; then
+        row FAIL "codex: auth" "not logged in — run 'codex login', then relaunch"
+      elif printf '%s' "$out" | grep -qi 'logged in'; then
+        row PASS "codex: auth" "$(printf '%s' "$out" | head -1)"
+      else
+        row FAIL "codex: auth" "login status unreadable — run 'codex login', then relaunch"
+      fi ;;
+  esac
+}
+
 # --- render -------------------------------------------------------------------------
 
 render() {
@@ -336,6 +368,7 @@ doctor_main() {
   check_disk
   check_tmux_session
   check_claude
+  check_auth
   render
 
   [ "$N_FAIL" -eq 0 ] && exit 0

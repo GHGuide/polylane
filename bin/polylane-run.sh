@@ -3036,6 +3036,16 @@ startup_check() {
     elif printf '%s\n' "$txt" | grep -qiE '^[[:space:]]*(Welcome!?[[:space:]]+)?(Press Enter to continue|Press return to continue|Press Enter to get started)[[:space:]]*$'; then
       tmux send-keys -t "$TMUX_SESSION:0.$idx" Enter 2>/dev/null
       echo "startup: lane '$name' — cleared an onboarding banner"
+    elif printf '%s\n' "$txt" | grep -qiE '^[[:space:]]*[^[:alnum:]]*[[:space:]]*(Login expired[^[:alnum:]]|Not logged in[^[:alnum:]]|OAuth session expired)'; then
+      # Expired provider login: no keystroke can answer this and a respawn lands
+      # on the same screen (observed 2026-08-18: 4 lanes frozen, restart cap
+      # exhausted with a misleading "runner died" diagnosis). Park once and
+      # surface; only a human can mint credentials.
+      if ! lane_needs_decision "$name"; then
+        NEEDS_DECISION_LANES="${NEEDS_DECISION_LANES:+$NEEDS_DECISION_LANES }$name"
+        echo "startup: lane '$name' — provider login EXPIRED; parked (run '$(agent_selected)' and re-authenticate, then --resume)" >&2
+        notify_event auth "lane '$name': provider login expired — re-authenticate '$(agent_selected)' in a terminal, then resume the run"
+      fi
     fi
   done
 }
@@ -3736,6 +3746,7 @@ health_check() {
       continue
     fi
     lane_stalled "$name" && continue   # still mid-resolution this cycle
+    lane_needs_decision "$name" && continue  # parked for a human — respawn can't answer auth/approval
     idx=$(pane_index_for "$name")
     # Pane indices are not identities: tmux may renumber a live pane after a
     # neighbor exits. Rebind by canonical worktree before treating a stale
