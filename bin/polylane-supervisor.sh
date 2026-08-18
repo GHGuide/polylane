@@ -207,7 +207,7 @@ release_lock() {
 
 # --- main ----------------------------------------------------------------------
 supervisor_main() {
-  local restarts=0 rc pid args_line outcome
+  local restarts=0 rc pid args_line outcome last_err
   acquire_lock || return 1
   trap release_lock EXIT
   trap 'supervisor_stop INT 130' INT
@@ -283,16 +283,20 @@ supervisor_main() {
     fi
 
     restarts=$((restarts + 1))
+    # A bare rc is undiagnosable from outside (a die() preflight loop burned the
+    # whole cap opaquely on 2026-08-18); always surface the runner's dying words.
+    last_err=$(tail -n 5 "$RUNNER_LOG" 2>/dev/null | grep -E 'polylane-run:|error|fatal|FAIL' | tail -n 1 || true)
+    [ -n "$last_err" ] || last_err=$(tail -n 1 "$RUNNER_LOG" 2>/dev/null || true)
     if [ "$restarts" -gt "$SUP_MAX_RESTARTS" ]; then
-      sup_log "runner died without a report and the restart cap ($SUP_MAX_RESTARTS) is exhausted — halting"
-      notify_event halt "supervisor: runner crashed ${restarts}x without finishing — halted, worktrees intact"
+      sup_log "runner died without a report and the restart cap ($SUP_MAX_RESTARTS) is exhausted — halting. last error: ${last_err:-<empty runner.log>}"
+      notify_event halt "supervisor: runner crashed ${restarts}x without finishing — halted, worktrees intact. last error: ${last_err:-<empty runner.log>}"
       heartbeat halted "$restarts"
       return 1
     fi
     if [ "$rc" = 75 ]; then
       sup_log "runner lost its owned tmux session (recoverable rc=75) — resuming without duplicate panes (${restarts}/${SUP_MAX_RESTARTS})"
     else
-      sup_log "runner DIED without a report (rc=$rc) — reviving with --resume (${restarts}/${SUP_MAX_RESTARTS})"
+      sup_log "runner DIED without a report (rc=$rc) — last error: ${last_err:-<empty runner.log>} — reviving with --resume (${restarts}/${SUP_MAX_RESTARTS})"
     fi
     notify_event stall "supervisor revived the runner (crash ${restarts}/${SUP_MAX_RESTARTS})"
     case " $args_line " in *" --resume "*) : ;; *) args_line="$args_line --resume" ;; esac
