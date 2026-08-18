@@ -37,7 +37,7 @@
   "lanes": [
     {
       "name": "contract-import",
-      "model": "claude-opus-4-8",
+      "model": "claude-opus-5",
       "branch": "lane/c43-contract-import",
       "worktree": ".polylane/worktrees/c43-contract-import",
       "prompt_file": ".polylane/lanes/c43-contract-import.txt",
