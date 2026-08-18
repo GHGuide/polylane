@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1010,SC1090,SC2034
 # Contract-v2 acceptance runs focused target checks per cycle, defers terminal
 # checks until the last autonomous route, and permits only declared external
 # subgoals to remain unverified under EXTERNAL-EVIDENCE-OPEN.
@@ -168,5 +169,57 @@ mv "$REUSE_STATE.tmp" "$REUSE_STATE"
 contract_acceptance_gate GO 1 1; definition_reuse_rc=$?
 assert_eq "ready-focused-proof-reruns-when-definition-changes" "0" "$definition_reuse_rc"
 assert_eq "ready-focused-proof-definition-change-runs-new-command" "1" "$(grep -c '^focused-definition$' "$REUSE_LOG")"
+
+# A fresh autonomous run cannot target an external-authority subgoal, and a
+# malformed mixed-kind state is rejected before any host command executes.
+ROUTE_STATE="$TEST_TMPDIR/route-state.json"
+"$MEM" "$ROUTE_STATE" init goal >/dev/null
+"$MEM" "$ROUTE_STATE" add-milestone m1 build >/dev/null
+"$MEM" "$ROUTE_STATE" add-subgoal m1 auto autonomous >/dev/null
+"$MEM" "$ROUTE_STATE" add-subgoal m1 ext external >/dev/null
+"$MEM" "$ROUTE_STATE" add-accept auto true --evidence-kind autonomous >/dev/null
+"$MEM" "$ROUTE_STATE" add-accept ext false --evidence-kind external >/dev/null
+printf '%s\n' '{"evidence_kind":"autonomous","target_subgoals":["ext"]}' > "$MANIFEST"
+STATE_FILE="$ROUTE_STATE"
+assert_fail "accept-autonomous-manifest-rejects-external-target" contract_validate_evidence_routing
+jq '.accept += [{sid:"auto",cmd:"false",tier:"terminal",key:"",status:"unchecked",deps:[],fp:"",regressed_cycle:null,evidence_kind:"external"}]' \
+  "$ROUTE_STATE" > "$ROUTE_STATE.tmp" && mv "$ROUTE_STATE.tmp" "$ROUTE_STATE"
+printf '%s\n' '{"evidence_kind":"autonomous","target_subgoals":["auto"]}' > "$MANIFEST"
+assert_fail "accept-mixed-kind-state-rejected" contract_validate_evidence_routing
+
+# EXTERNAL-EVIDENCE-OPEN is resolved only after every targeted autonomous
+# proof passes. An unrelated external gap cannot mask a failing autonomous check.
+MASK_STATE="$TEST_TMPDIR/external-mask.json"
+"$MEM" "$MASK_STATE" init goal >/dev/null
+"$MEM" "$MASK_STATE" add-milestone m1 build >/dev/null
+"$MEM" "$MASK_STATE" add-subgoal m1 auto autonomous >/dev/null
+"$MEM" "$MASK_STATE" add-subgoal m1 ext external >/dev/null
+"$MEM" "$MASK_STATE" add-accept auto false --evidence-kind autonomous >/dev/null
+"$MEM" "$MASK_STATE" add-accept ext false --evidence-kind external >/dev/null
+"$MEM" "$MASK_STATE" set-status ext external "human proof unresolved" 1 >/dev/null
+printf '%s\n' '{"evidence_kind":"autonomous","target_subgoals":["auto"]}' > "$MANIFEST"
+STATE_FILE="$MASK_STATE"; INT_WORKTREE="$REUSE_INT"; REPO_ROOT="$REUSE"
+assert_fail "accept-external-open-never-masks-failed-autonomous" \
+  contract_acceptance_gate EXTERNAL-EVIDENCE-OPEN
+
+# Cycle 41 m32.4 authority is source-pinned: the external certificate call needs
+# SUBJECT_ROOT, v2 exposes wilson_lower_bound, and an unregistered summary is not
+# independently authoritative. The shared state repair belongs to its owning lane.
+if jq -e '
+  [.accept[] | select(.sid=="m32.4")] as $a
+  | any($a[]; (.cmd | contains("SUBJECT_ROOT=")) and (.cmd | contains("wilson_lower_bound")) and ((.cmd | contains("confidence_lower")) | not))
+  and all($a[]; ((.cmd | contains("calibration-summary.json")) | not))
+' "$CANONICAL_STATE" >/dev/null; then
+  pass "accept-m32.4-current-certificate-predicate"
+else
+  assert_ok "accept-m32.4-stale-predicate-is-external-and-nonauthoritative" jq -e '
+    [.accept[] | select(.sid=="m32.4")] as $a |
+    ($a | length == 3) and
+    all($a[]; .evidence_kind == "external" and .status != "pass") and
+    any($a[]; (.cmd | contains("polylane-taste.sh certify")) and
+      (.cmd | contains("SUBJECT_ROOT=") | not) and (.cmd | contains("confidence_lower"))) and
+    any($a[]; .cmd | contains("calibration-summary.json"))
+  ' "$CANONICAL_STATE"
+fi
 
 finish
