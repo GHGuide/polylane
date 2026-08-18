@@ -3050,6 +3050,29 @@ startup_check() {
   done
 }
 
+# approval_is_safe_read "<pane text>" : 0 iff the pending dialog is a plain file
+# READ whose target is not secret-bearing. A read cannot mutate state, and the
+# whole-screen critical scan misfires on it: Claude renders home paths as ~/…,
+# so a lane reading its own armed kit under ~/.codex/plugins matched the ~/. token
+# and parked for an hour (live 2026-08-18). Secrets are judged on the Read(...)
+# target line only — surrounding prompt text must not decide.
+approval_is_safe_read() {
+  local txt="$1" target
+  printf '%s' "$txt" | grep -qE 'Read file|Read\(' || return 1
+  target=$(printf '%s' "$txt" | grep -oE 'Read\([^)]*\)' | tail -1)
+  [ -n "$target" ] || return 1
+  printf '%s' "$target" | grep -qiE '\.ssh|\.env|\.aws|credential|keychain|secret|password|api[_-]?key|token|\.pem|id_rsa' && return 1
+  return 0
+}
+
+# unpark_lane NAME : drop NAME from NEEDS_DECISION_LANES once its dialog is gone —
+# a human (or the safe-read path) answered it, so health recovery may resume.
+unpark_lane() {
+  local out="" x
+  for x in ${NEEDS_DECISION_LANES:-}; do [ "$x" = "$1" ] || out="${out:+$out }$x"; done
+  NEEDS_DECISION_LANES="$out"
+}
+
 # approval_is_critical "<pane text>" : 0 iff the requested action looks dangerous —
 # then it is escalated instead of auto-approved. Conservative: anything network,
 # destructive, secret-touching, force-pushing, or reaching outside the worktree.
@@ -3069,6 +3092,15 @@ approval_check() {
     idx=$(pane_index_for "$name")
     pane_awaiting_approval "$idx" || continue
     txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p -S -20 2>/dev/null || true)
+    if approval_is_safe_read "$txt"; then
+      if printf '%s' "$txt" | grep -qE '2\.[[:space:]]*Yes'; then
+        tmux send-keys -t "$TMUX_SESSION:0.$idx" '2' 2>/dev/null
+      else
+        tmux send-keys -t "$TMUX_SESSION:0.$idx" '1' 2>/dev/null
+      fi
+      echo "approval: auto-approved a safe file read for lane '$name'"
+      continue
+    fi
     if approval_is_critical "$txt"; then
       lane_needs_decision "$name" && continue        # already escalated — leave parked
       NEEDS_DECISION_LANES="${NEEDS_DECISION_LANES:+$NEEDS_DECISION_LANES }$name"
@@ -3746,7 +3778,18 @@ health_check() {
       continue
     fi
     lane_stalled "$name" && continue   # still mid-resolution this cycle
-    lane_needs_decision "$name" && continue  # parked for a human — respawn can't answer auth/approval
+    if lane_needs_decision "$name"; then
+      idx=$(pane_index_for "$name")
+      # parked for a human — respawn can't answer auth/approval. But once the
+      # dialog is gone (someone answered it), the lane rejoins health recovery.
+      if [ "$idx" -ge 0 ] 2>/dev/null && ! pane_awaiting_approval "$idx" &&
+         ! tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null | grep -qiE 'Login expired|Not logged in|OAuth session expired'; then
+        unpark_lane "$name"
+        echo "health: lane '$name' dialog answered — unparked, monitoring resumed"
+      else
+        continue
+      fi
+    fi
     idx=$(pane_index_for "$name")
     # Pane indices are not identities: tmux may renumber a live pane after a
     # neighbor exits. Rebind by canonical worktree before treating a stale
