@@ -17,7 +17,7 @@
 set -uo pipefail
 
 # Curated fallback — the models polylane tunes against, newest-family first.
-FALLBACK=(claude-fable-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5)
+FALLBACK=(claude-fable-5 claude-opus-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5)
 CODEX_FALLBACK="gpt-5.6-terra"
 CODEX_TIERS=$'gpt-5.6-luna\ngpt-5.6-terra\ngpt-5.6-sol'
 
@@ -37,14 +37,29 @@ result) it prints the curated fallback list. Always exits 0.
 EOF
 }
 
-fallback() { printf '%s\n' "${FALLBACK[@]}"; }
+fallback() {
+  # stderr marker lets automation tell a live probe from a curated guess;
+  # stdout stays pure model ids for manifest generators.
+  echo "MODELS-FALLBACK: curated list (no live probe)" >&2
+  printf '%s\n' "${FALLBACK[@]}"
+}
 
 codex_models() {
-  local cache="${CODEX_HOME:-$HOME/.codex}/models_cache.json" ids
+  local cache ids max_days
+  cache="${POLYLANE_CODEX_MODELS_CACHE:-${CODEX_HOME:-$HOME/.codex}/models_cache.json}"
   if [ -f "$cache" ] && command -v jq >/dev/null 2>&1; then
-    ids=$(jq -r '.. | objects | .id? // empty' "$cache" 2>/dev/null \
-      | awk '/^gpt-[[:alnum:]._-]+$/ && !seen[$0]++')
+    # Real codex-cli caches store launchable ids under .models[].slug (the .id
+    # field holds unrelated strings like "priority"); some older caches used
+    # .models[].id. Read slug first, fall back to id, and keep only gpt/codex
+    # ids so a stray field or a claude id never becomes a launch target.
+    ids=$(jq -r '.models[]? | (.slug? // .id? // empty)' "$cache" 2>/dev/null \
+      | awk '/^(gpt|codex)-[[:alnum:]._-]+$/ && !seen[$0]++')
     if [ -n "$ids" ]; then
+      # A stale cache silently pins vanished models; find -mtime is BSD+GNU safe.
+      max_days="${POLYLANE_MODELS_MAX_AGE_DAYS:-30}"
+      if [ -n "$(find "$cache" -mtime +"$max_days" 2>/dev/null)" ]; then
+        echo "MODELS-STALE: cache older than ${max_days}d — run codex once to refresh" >&2
+      fi
       printf '%s\n' "$ids"
       return 0
     fi

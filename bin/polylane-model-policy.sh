@@ -15,6 +15,7 @@ model_policy_tier() {
   case "$agent:$model" in
     claude:claude-haiku-4-5) printf '%s' 1 ;;
     claude:claude-sonnet-5)  printf '%s' 2 ;;
+    claude:claude-opus-5)   printf '%s' 3 ;;
     claude:claude-opus-4-8)  printf '%s' 3 ;;
     claude:claude-fable-5)   printf '%s' 4 ;;
     codex:gpt-5.6-luna)      printf '%s' 1 ;;

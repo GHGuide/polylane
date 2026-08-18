@@ -3285,7 +3285,7 @@ next_fallback_model() {
   local cur="$1" past=0 m ladder
   case "$(agent_selected)" in
     codex|gpt|openai) ladder="gpt-5.6-sol gpt-5.6-terra" ;;
-    *)                ladder="claude-fable-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5" ;;
+    *)                ladder="claude-fable-5 claude-opus-5 claude-opus-4-8 claude-sonnet-5 claude-haiku-4-5" ;;
   esac
   for m in $ladder; do
     if [ "$past" = "1" ]; then model_available "$m" && { printf '%s' "$m"; return 0; }; fi
@@ -4986,6 +4986,7 @@ parse_tokens() {
 model_out_price() {
   case "$1" in
     claude-fable-5*)   echo 50 ;;
+    claude-opus-5*)    echo 25 ;;
     claude-opus-4-8*)  echo 25 ;;
     claude-sonnet-5*)  echo 15 ;;
     claude-haiku-4-5*) echo 5 ;;
