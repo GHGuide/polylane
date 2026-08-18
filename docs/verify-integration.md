@@ -1,67 +1,74 @@
-# verify — lane `integrator` (run `c43-recovery-20260818-a1`, target m32.6)
+# verify — lane `integrator` (run `c43c-recovery-20260819-a1`, target m32.6)
 
-Integration of `lane/c43-contract-import` onto the integrator branch, with fresh
-verification of the imported v3 contracts, the ported runtime deltas, and the
-frozen m32.6 focused acceptance. Every count below is observed output from
-commands run fresh in this worktree during this lane, not carried over from the
-builder's report.
+Integration of this run's fresh precheck evidence and the prior run's fully
+verified candidate onto the integrator branch, with fresh re-verification of
+the imported v3 contracts, the ported runtime deltas, main's post-handoff
+fixes, and the frozen m32.6 focused acceptance. Every count and hash below is
+observed output from commands run fresh in this worktree during this lane —
+nothing is carried over from the precheck, builder, or prior-integrator
+reports, which were read and then independently re-derived.
 
-## Branch tips and merge
+## Branch tips, ancestry, and merges
 
 | ref | commit |
 |---|---|
-| `lane/c43-integrator` pre-merge (== `main`) | `b6772b17a964f4bd82415409d77f1dfddfaf58b6` |
-| `lane/c43-contract-import` tip at merge | `77a83b33c7d3fde581a57e32d1ebeaa2521bddca` |
-| merge-base(main, contract-import) | `279139d98da959be0fcf016bb337347bd59677da` |
-| merge commit (`--no-ff`, ort, zero conflicts) | `1feb098cca80261a8d5327b266376cd743e45da1` |
-| import handoff source | `4851bc12e22ab2260c2baeb1d28c69d3ddebd23d` |
+| `main` == lane HEAD at start | `37079b303115a8f3bd6460ce061632731aa909fe` |
+| `lane/c43c-precheck` tip at merge | `c9ee548e751477e10579b70db7f46b6253a0cf04` |
+| `lane/c43-integrator` (candidate) tip at merge | `f16e19649557042ecf242c4c22d4371c050514b0` |
+| merge-base(main, candidate) | `b6772b17a964f4bd82415409d77f1dfddfaf58b6` |
+| merge 1 (`--no-ff`, ort, zero conflicts): precheck | `16ad45b` |
+| merge 2 (`--no-ff`, ort, zero conflicts): candidate | `72be7a4` |
 
-The lane tip moved mid-session: the builder's handoff was `6d8048f`, and the
-host added `77a83b3` ("import the 4851bc1 test-lane-done-live update the lane
-scoping missed") at 23:35 local, minutes after this lane's first ref read. Per
-the brief ("current branch tip, not a memorized hash") the merge was taken from
-the live ref; `HEAD^2 = 77a83b3` confirms the repair commit is included.
+The brief named `lane/c43b-precheck`; that run was cleaned up before this run
+launched and no such branch exists. This run's precheck lane is
+`lane/c43c-precheck` (its `docs/status-precheck.md` first line carries this
+run's nonce `run=c43c-recovery-20260819-a1`), and per the brief's controlling
+rule — "merge current branch tips, not memorized hashes" — that live tip is
+what was merged. The candidate tip `f16e196` matches the hash the precheck
+lane verified (READY sentinel on line 178, intact content addresses,
+conflict-free merge-tree onto `main`).
 
-## Relay request handled
+After both merges, all four input refs are ancestors of HEAD
+(`git merge-base --is-ancestor` exit 0 for each): `main`,
+`lane/c43c-precheck`, `lane/c43-integrator`, `lane/c43-contract-import`.
 
-`contract-import` relayed (seq=1) a scope gap: the c42a lifecycle delta to
-`bin/polylane-run.sh` needs a paired 4-line assertion update in
-`tests/test-lane-done-live.sh`, which no c43 lane owns. Handling:
+## Both verify files read
 
-- Host commit `77a83b3` had already applied it on the lane branch. I verified
-  the applied hunk is exactly the `main → 4851bc1` delta for that file and that
-  the resulting file is **byte-identical** to the `4851bc1` blob
-  (`eebfa0c7a0bfed9e282e9ffbed4c9dabb464bfefbee37336c4af03906d49da3e` both
-  sides). No divergent or hand-rewritten variant slipped in.
-- A `decision` event was appended to the relay recording the resolution; no
-  ownership extension was needed and no further repair was required. The
-  builder-reported blocker assertion (`runtime-integrator-verdict-has-canonical-path`)
-  now passes: `test-lane-done-live.sh` is 18 pass / 0 fail (was 17/1 in the
-  builder's worktree).
+- `lane/c43c-precheck:docs/verify-precheck.md` — five read-only checks, all
+  PASS/RECORDED; proves candidate integrity and textual mergeability, and
+  explicitly defers semantic verification and the `4851bc1` hash-equality
+  proof to this lane (its limitations 1, 2, 4). Both deferred items are closed
+  below.
+- `lane/c43-integrator:docs/verify-integration.md` — the prior run's 178-line
+  evidence ending `POLYLANE-VERDICT: READY-FOR-HOST-GATE
+  run=c43-recovery-20260818-a1`; historical, left committed in history. The
+  file at this path now carries this run's evidence; the prior content remains
+  at the merged ref. (The brief named the builder file
+  `docs/verify-import-verify.md`; no such path exists on any branch — the
+  builder's actual evidence is `docs/verify-contract-import.md`, read from the
+  candidate ref.)
 
-## Import verified as port, not overwrite
+## Candidate did not lose main's post-handoff fixes
 
-Ancestry: `main` is **not** an ancestor of the lane branch (it forked at
-`279139d`, one commit before `b6772b1`), so the merge — not the import — is
-what reconciles `b6772b1`. Checked both sides independently by grep on the
-lane tip and then on the merged files:
+The candidate forked from `main` at `b6772b1`, so the one commit it could not
+contain is `37079b3` (model-specific usage-limit stall detection). Checked
+every named fix by grep in the **merged worktree**:
 
-| main's post-handoff gain | lane tip (pre-merge) | merged worktree |
-|---|---|---|
-| doctor `check_auth` | 3 refs | 3 refs |
-| login-expired parking (`Login expired` in run.sh) | present | present |
-| parked lanes skip respawn (`lane_needs_decision`) | 4 refs | 4 refs |
-| model detection / `claude-opus-5` ladder + pricing | 2 refs | 2 refs |
-| supervisor dying-words (`last_err`) | 6 refs | 6 refs |
-| `b6772b1` safe-read auto-approve (`approval_is_safe_read`) | 0 refs (forked before it) | 3 refs (restored by merge) |
-| imported lifecycle (`finalization_transition`) | 5 refs | 5 refs |
+| main's post-handoff fix | merged tree |
+|---|---|
+| doctor `check_auth` preflight | 3 refs in `bin/polylane-doctor.sh` |
+| login-expired parking (`Login expired`) | 2 refs in `bin/polylane-run.sh` |
+| safe-read approvals (`approval_is_safe_read`) | 3 refs in `bin/polylane-run.sh` |
+| parked lanes skip respawn (`lane_needs_decision`) | 4 refs in `bin/polylane-run.sh` |
+| supervisor dying-words (`last_err`) | 6 refs in `bin/polylane-supervisor.sh` |
+| model detection / `claude-opus-5` ladder | 2 refs in `bin/polylane-run.sh` |
+| `37079b3` usage-limit stall (`usage-credits`) | 4 refs in `bin/polylane-run.sh`; `tests/test-pane-stalled.sh` present, 3 refs, 21 pass / 0 fail |
+| imported lifecycle (`finalization_transition`) | 5 refs in `bin/polylane-run.sh` |
 
-The one main-side fix the lane branch could not contain (`b6772b1`) is present
-after the merge alongside the imported lifecycle helpers — nothing was
-overwritten in either direction. `git diff --check` clean; `bin/polylane-seams.sh
-scan .` rc=0.
+Nothing was overwritten in either direction: the merge combined `37079b3`
+(main side) with the imported lifecycle + ported deltas (candidate side).
 
-## Imported-contract SHA-256s, cross-checked
+## Imported-contract SHA-256s, cross-checked fresh
 
 Both frozen hashes in `docs/polylane/cycle-42a-outcome.md` were re-derived
 from `4851bc1` in this worktree and match exactly:
@@ -71,9 +78,9 @@ from `4851bc1` in this worktree and match exactly:
 - integration-evidence SHA-256 `4eb179e6c543b04e181efa996815b8623821c8bb2a678ab720889e3d98e5fee2`
   = sha256(`4851bc1:docs/verify-integration.md`)
 
-All 16 imported artifacts were re-hashed from the **merged worktree** and each
-is byte-identical to its `4851bc1` blob and to the hash in the builder's
-`docs/verify-contract-import.md` tables:
+All 16 imported artifacts were re-hashed from the merged worktree; every one
+is byte-identical to the hash in the builder's `docs/verify-contract-import.md`
+tables (and, for the two the precheck lane addressed, to its recorded values):
 
 | SHA-256 | file |
 |---|---|
@@ -95,20 +102,51 @@ is byte-identical to its `4851bc1` blob and to the hash in the builder's
 | `d7d53c4ef2e24713a06386270881d559703e70bd94566bda332280a9540b2be2` | `tests/test-taste-source-contract-v3.sh` |
 
 Ported shared files in the merged tree: `bin/polylane-memory.sh`
-`726e1cea…46fd8` and `bin/polylane-supervisor.sh` `d0cee637…e0f312` match the
-builder's post-port hashes; `bin/polylane-run.sh` is
-`0dd7013bc5127ae6a87d6faff0e8cced29c2d1db484d44b90b0c93cfdebf8370`, which
-intentionally differs from the builder's hash because the merge layered
-`b6772b1`'s safe-read/unpark delta on top; `tests/test-lane-done-live.sh`
-`eebfa0c7…49da3e` equals the `4851bc1` blob.
+`726e1ceac471b595268eb522c14788a4b27f10466c0c6193bd4622c6ffb46fd8` and
+`tests/test-contract-acceptance.sh`
+`f5757fd56fc5f72d7985f7053c351754e872b2e7486eaf3e4a18ae39d645e072` match the
+builder's post-port hashes; `bin/polylane-supervisor.sh`
+`d0cee637fa8a74f839a9fa7c397a73bbe744c9621bf394472e2e5b59c1e0f312` matches the
+prior integrator's merged hash; `tests/test-lane-done-live.sh`
+`eebfa0c7a0bfed9e282e9ffbed4c9dabb464bfefbee37336c4af03906d49da3e` is
+byte-identical to the `4851bc1` blob (re-derived both sides this session).
+`bin/polylane-run.sh` is
+`35d8115b05ecb496fad65c87de0a742e5a47f5bcef47f7d3e652af2b3fb70ec1`, which
+intentionally differs from the prior run's `0dd7013b…` because this merge
+layers `37079b3`'s stall-detection delta on top of the same base.
+
+## Relay request handled
+
+The only pending request is `contract-import → integrator` seq=1 (the
+`tests/test-lane-done-live.sh` 4-line needle swap) from run
+`c43-recovery-20260818-a1`. It was resolved before this run: host commit
+`77a83b3`, contained in the merged candidate, applied exactly the
+`main → 4851bc1` delta. This lane re-proved the merged file byte-identical to
+the `4851bc1` blob (hash above), watched the blocker assertion pass fresh
+(`test-lane-done-live.sh`: 18 pass / 0 fail), and appended a `decision` event
+to this run's relay recording the resolution. No ownership extension needed;
+no repair needed. The `pending` view lists request events forever by design,
+so seq=1 remains visible; the decision event is the durable record. No other
+requests addressed to `integrator` at start, mid-run, or at the final read.
+
+## Seams and repairs
+
+`bin/polylane-seams.sh scan .` rc=0 and `git diff --check` clean, both run
+before the acceptance chain. **No repairs were needed this run** — zero merge
+conflicts, zero test failures, zero shellcheck findings.
 
 ## Fresh test totals — frozen m32.6 focused acceptance
 
 The command was taken verbatim from `docs/polylane/max-state.json`
-(`.accept[] | select(.sid=="m32.6") | .cmd`) and run **once** through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"` on the merged
-tree. Cache result: `CHECK-CACHE: PASS source=2859499042:14317`, full log
-`.polylane/check-cache/integrator/2121586317-894.output`. **Overall rc=0** —
+(`.accept[] | select(.sid=="m32.6") | .cmd`) and run **once to completion**
+through `bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"` on the
+merged tree. A first attempt was killed at the harness's 10-minute tool
+timeout (SIGTERM, rc=143) mid-suite; it cached **nothing** (no `.result`
+entry — verified before relaunch, so no poisoned failure entry exists) and the
+relaunched run is the sole and complete evidence. Cache receipt:
+`CHECK-CACHE: PASS source=2445884898:185`, result file `2500133966-895.result`
+= `2445884898:185|0`, full 5334-line log
+`.polylane/check-cache/integrator/2500133966-895.output`. **Overall rc=0** —
 the `&&` chain completed through every link:
 
 | link | result |
@@ -120,36 +158,41 @@ the `&&` chain completed through every link:
 | `tests/test-contract-acceptance.sh` | 42 pass, 0 fail |
 | `tests/test-verdict-repair.sh` | 61 pass, 0 fail |
 | `tests/test-lane-done.sh` | 27 pass, 0 fail |
-| `tests/test-lane-done-live.sh` | **18 pass, 0 fail** (builder's blocker cleared) |
+| `tests/test-lane-done-live.sh` | 18 pass, 0 fail |
 | `tests/test-supervisor.sh` | 38 pass, 0 fail |
 | `shellcheck -S warning` (8 scripts incl. merged run.sh/supervisor/memory) | clean (chain continued) |
-| `tests/run.sh` (full suite) | **SUMMARY: 4070 passed, 0 failed, 173 test files** |
+| `tests/run.sh` (full suite) | **SUMMARY: 4073 passed, 0 failed, 173 test files** |
 | `bin/polylane-markers.sh check-docs references/` | clean |
 | `tests/test-skill-parity.sh` | 72 pass, 0 fail |
 | `git diff --check` | clean (chain rc=0) |
 
-The builder's two full-suite failures are both resolved in this run:
-`test-lane-done-live.sh` by the `77a83b3` repair, and
-`test-graph-benchmark.sh` (a load-induced wall-clock flake per the builder's
-3× standalone re-runs) did not recur — the suite is 0 failed with zero `not ok`
-lines in the log.
+The suite total is 4073 vs the prior run's 4070: the three new passes are
+`37079b3`'s `tests/test-pane-stalled.sh` assertions (21 pass / 0 fail in this
+log), present here because this merge includes `37079b3` and the prior run's
+candidate predates it. Same 173 files. Zero `not ok` lines in the log; all 22
+`FAIL`-word hits were inspected and every one is fixture text inside passing
+tests (promote-failure fixtures, `TASTE-A11Y`/`TASTE-TASK` negative-case
+fixtures, and `FAIL=0` counters).
 
 ## Limitations
 
-- The remaining m32.6 certification is the coordinator's **host-owned terminal
-  gate**; nothing here claims it. This lane produced a certified candidate at
-  merge commit `1feb098` only.
+- The remaining m32.6 certification is the coordinator's **host-owned
+  terminal gate**; nothing here claims it. This lane produced a certified
+  candidate at merge commit `72be7a4` only.
 - `tests/test-graph-benchmark.sh` carries a timing-sensitive assertion
-  (`benchmark-warm-append-under-250ms`). Green here on an unloaded host; a
+  (`benchmark-warm-append-under-250ms`). Green in this log on the suite run; a
   loaded host-gate run could still flake it, which would be load, not a
   regression from this merge.
-- The three TAP-format imported tests (43/95/60 assertions) are excluded from
-  `tests/run.sh`'s `PASS`-line tally but are gated by exit code
-  (`tests/run.sh:24`); their 198 assertions are counted in the per-link table
-  above, not in the 4070.
-- The relay's `pending` view lists request events forever (no consumed flag);
-  seq=1 remains visible by design. The appended `decision` event is the durable
-  record that it was handled.
+- The three TAP-format imported tests (43/95/60 assertions) are gated by exit
+  code in `tests/run.sh` but excluded from its `PASS`-line tally; their 198
+  assertions are counted in the per-link table, not in the 4073.
+- The prior run's actual host-gate failure was `restarts=1>0` — a runtime
+  property of the run, not of the candidate. This lane cannot make a restart
+  less likely; it only re-proves candidate integrity.
+- Prior-run status/verify files arrived via the merge and are historical
+  evidence at their merged refs; the working-tree copies of
+  `docs/verify-integration.md` and `docs/status-integrator.md` now carry this
+  run's nonce.
 - No provider installs, no external actions, no subagents, no writes outside
   the integrator branch and the two owned handoff docs.
 
@@ -158,21 +201,21 @@ lines in the log.
 - SKILL-READ: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | 2811424084-1279
 - SKILL-READ: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/verification-before-completion/SKILL.md | 1896692335-3646
 
-SKILL-EVIDENCE: engineering:testing-strategy — unused: the test plan for this
-lane is frozen by the m32.6 acceptance command in `docs/polylane/max-state.json`
-and the brief's seams-first cadence, so there were no coverage or
-test-architecture decisions left for the skill to shape; the cheap-before-
-expensive ordering (grep symbol checks, then seams, then the one cached suite
-run) was already mandated by TEST-CADENCE.
+SKILL-EVIDENCE: engineering:testing-strategy — unused: the test plan is frozen
+by the m32.6 acceptance command in `docs/polylane/max-state.json` and the
+brief's seams-first cadence, so no coverage or test-architecture decision
+remained for the skill to shape; the lane added no tests and changed no test
+strategy.
 
-SKILL-EVIDENCE: superpowers:verification-before-completion — helped: it forced
-independent re-derivation instead of trusting the builder's report, which
-surfaced a real discrepancy — the builder's verify file states it never edited
-`tests/test-lane-done-live.sh`, yet the branch diff showed a 4-line change to
-exactly that file. Following "agent said success → verify independently" led to
-the host commit `77a83b3` (made minutes into this session), and to proving the
-applied hunk equals the `4851bc1` delta byte-for-byte before accepting the
-merge; it also kept the acceptance claim tied to this run's fresh rc=0 log
-rather than the builder's pre-repair rc=1 numbers.
-
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c43-recovery-20260818-a1
+SKILL-EVIDENCE: superpowers:verification-before-completion — helped: three
+concrete places. (1) It forced independent re-derivation of all 19 artifact
+hashes and both frozen c42a hashes from `4851bc1` in this worktree instead of
+accepting the precheck/builder/prior-integrator tables — which is exactly the
+equality proof the precheck lane's limitation 2 left open. (2) When the first
+acceptance attempt died at the 10-minute tool timeout, the "no completion
+claims without fresh evidence" rule meant treating rc=143 as no evidence at
+all: the cache dir was inspected to confirm no poisoned `.result` entry before
+relaunching, and only the completed rerun's rc=0 log is cited. (3) The
+"read full output, count failures" step drove the `not ok`/`FAIL` scans of the
+5334-line log, classifying all 22 `FAIL`-word hits as fixture text rather than
+letting a grep count stand unexplained.
