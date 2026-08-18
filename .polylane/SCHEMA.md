@@ -26,6 +26,7 @@ lanes L2/L3/L4 depend on them.
   "codex_sandbox": "workspace-write",
   "prompt_token_budget": 8000,
   "prompt_byte_budget": 32768,
+  "terminal_cache_tools": ["shellcheck", "tmux"],
   "available_models": ["gpt-5.6-sol", "gpt-5.6-terra"],
   "integrator": {
     "name": "integrator",
@@ -69,6 +70,7 @@ lanes L2/L3/L4 depend on them.
 | `codex_profile` | string | *(optional, default `lean`)* `lean` adds `--ephemeral --ignore-user-config`; `user` preserves normal Codex user configuration. |
 | `prompt_token_budget` | integer | *(optional, default `8000`)* Maximum whitespace-token estimate admitted by the strict prompt gate before launch. |
 | `prompt_byte_budget` | integer | *(optional)* Maximum prompt bytes admitted by the same gate. Absent means no separate byte ceiling. |
+| `terminal_cache_tools` | string[] | *(optional)* Extra host executables whose resolved paths and file contents join the run-scoped terminal-PASS fingerprint. Bash, Git, jq, ShellCheck, tmux, and the fingerprinting utilities are included automatically. Declare any additional non-project executable reached by terminal acceptance. A missing, malformed, changed, or unresolvable tool disables reuse and reruns the gate. |
 | `intensity` | string | *(optional)* Preset the generator tuned this manifest for: `economy` \| `balanced` \| `performance` \| `max` \| `custom`. **Advisory metadata** — records provenance; the per-lane `model`/`effort` are already baked to match it. The engine does **not** re-resolve from this at runtime; use the `--intensity` flag to remap live. `custom` = hand-tuned, no preset. |
 | `available_models` | string[] | *(optional)* Model ids the `--intensity` flag resolves against (typically the output of `bin/polylane-models.sh` or the Codex model probe used by the generator). Required only if you pass `--intensity`; empty/absent then → error. Rank strongest first for Codex manifests; when no Claude ladder id matches, presets fall back to this first available id and vary effort. |
 | `integrator` | object | The lane that runs **last**: merges lane branches, writes the verdict. |
@@ -239,7 +241,8 @@ parse args → preflight (jq, git + valid JSON, then manifest-selected agent CLI
   → integrator: its own worktree + seeded pane; poll its DONE
   → gate: verified verdict + frozen focused acceptance required
   → NO-GO/UNKNOWN: preserve evidence → integrator repair → gate again
-  → final autonomous targets: terminal acceptance suite once
+  → final autonomous targets: terminal acceptance suite once; after a post-PASS
+    coordinator crash, reuse only an exact current-run fingerprint receipt
   → assert no unmerged paths (conflict → exit 1, worktrees intact)
   → stamp durable goal state/progress
   → cleanup: one confirm (unless --yes) → git worktree remove --force,

@@ -17,3 +17,5 @@
 {"cycle":15,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c15-domain-general-20260808"}
 {"cycle":15,"kind":"no-go","subject":"integrator","evidence":"integrator verdict NO-GO in run c15-domain-general-20260808"}
 {"cycle":15,"kind":"no-go","subject":"integrator","evidence":"integrator verdict NO-GO in run c15-domain-general-20260808"}
+{"cycle":16,"kind":"compaction","subject":"context","evidence":"bounded packets built for run c16-evidence-autonomy-20260809-a1"}
+{"cycle":16,"kind":"no-go","subject":"integrator","evidence":"integrator verdict NO-GO in run c16-evidence-autonomy-20260809-a1"}

@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "learning-economy",
+  "verify_file": ".polylane/worktrees/c16-learning-economy/docs/verify-learning-economy.md",
+  "helped": [],
+  "unused": [
+    "data-analytics:product-business-analysis",
+    "engineering:testing-strategy",
+    "operations:process-optimization",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

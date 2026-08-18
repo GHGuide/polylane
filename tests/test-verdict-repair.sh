@@ -83,6 +83,10 @@ write_efficiency_proof() {
   EFFICIENCY_PROOFS=$((EFFICIENCY_PROOFS + 1))
   [ "$TERMINAL_EVENTS" = 1 ]
 }
+# These gate tests isolate READY routing; the receipt implementation has its own
+# real git/state/toolchain fixture in test-terminal-cache.sh.
+terminal_gate_pass_receipt_valid() { return 1; }
+terminal_gate_pass_receipt_record() { return 0; }
 contract_acceptance_gate() {
   HOST_GATES=$((HOST_GATES + 1))
   [ "${2:-0}" = 1 ]
@@ -156,6 +160,28 @@ assert_eq "ready-efficiency-proof-failure-is-not-go" "1" "$proof_fail_rc"
 assert_eq "ready-efficiency-proof-failure-skips-acceptance" "0" "$HOST_GATES"
 assert_eq "ready-efficiency-proof-failure-is-no-go" "NO-GO" "$VERDICT_RESULT"
 assert_eq "ready-efficiency-proof-failure-stops-repair" "NO" "$VERDICT_REPAIRABLE"
+
+# A matching durable PASS receipt avoids a second terminal attempt after a
+# coordinator crash, while the cheap focused gate and current efficiency proof
+# still run at the resumed boundary.
+printf 'POLYLANE-VERDICT: READY-FOR-HOST-GATE run=host-gate-run\n' > "$INT_WORKTREE/docs/verify-integration.md"
+HOST_GATES=0
+EFFICIENCY_PROOFS=0
+TERMINAL_EVENTS=0
+RECEIPT_RECORDS=0
+contract_focused_acceptance_gate() { return 0; }
+contract_ready_verdict() { printf 'GO'; }
+terminal_gate_pass_receipt_valid() { return 0; }
+terminal_gate_pass_receipt_record() { RECEIPT_RECORDS=$((RECEIPT_RECORDS + 1)); }
+contract_acceptance_gate() { HOST_GATES=$((HOST_GATES + 1)); return 0; }
+write_efficiency_proof() { EFFICIENCY_PROOFS=$((EFFICIENCY_PROOFS + 1)); return 0; }
+merge_gate; cache_hit_rc=$?
+assert_eq "ready-terminal-cache-hit-passes" "0" "$cache_hit_rc"
+assert_eq "ready-terminal-cache-hit-skips-command" "0" "$HOST_GATES"
+assert_eq "ready-terminal-cache-hit-does-not-count-new-gate" "0" "$TERMINAL_EVENTS"
+assert_eq "ready-terminal-cache-hit-refreshes-efficiency-proof" "1" "$EFFICIENCY_PROOFS"
+assert_eq "ready-terminal-cache-hit-does-not-rewrite-receipt" "0" "$RECEIPT_RECORDS"
+assert_eq "ready-terminal-cache-hit-converts-to-go" "GO" "$VERDICT_RESULT"
 unset RUN_ID
 
 finish

@@ -20,7 +20,7 @@
 - [selected] Record actual skill reads and use, not prompt-name presence.
 - [selected] Add one cycle-14 reproduction and certification command.
 - [selected] Re-run physical GO and NO-GO lifecycle rehearsal after integration.
-- [follow-on] Persist an integration-source fingerprint for terminal-gate deduplication.
+- [implemented] Persist an exact run-scoped integration fingerprint for terminal-gate deduplication.
 - [follow-on] Measure repair-loop test impact before re-running the full suite.
 - [follow-on] Expose lifecycle transaction state in the control-room dashboard.
 - [follow-on] Add crash injection between pre-promotion staging and merge.

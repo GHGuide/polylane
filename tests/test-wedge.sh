@@ -32,14 +32,23 @@ mkdir -p "$TEST_TMPDIR/wt/docs"
 FAKE_AGENT_LIVE=0
 pane_agent_live() { [ "$FAKE_AGENT_LIVE" = "1" ]; }
 
-# A completed shell command is not a completed agent turn. Codex emits both;
-# only a terminal agent message/error may shorten the live-turn grace.
+# A completed shell command or agent progress message is not a completed turn.
+# Codex emits agent_message items between later tools and silent reasoning.
 REPO_ROOT="$TEST_TMPDIR"
 mkdir -p "$REPO_ROOT/docs/lane-logs"
 printf '%s\n' '{"type":"item.completed","item":{"type":"command_execution","status":"completed"}}' > "$REPO_ROOT/docs/lane-logs/a.log"
 assert_fail "completed-command-is-not-terminal-turn" lane_terminal_turn a
 printf '%s\n' '{"type":"item.completed","item":{"type":"agent_message"}}' >> "$REPO_ROOT/docs/lane-logs/a.log"
-assert_ok "completed-agent-message-is-terminal-turn" lane_terminal_turn a
+assert_fail "agent-message-is-progress-not-terminal" lane_terminal_turn a
+printf '%s\n' '{"type":"turn.completed"}' >> "$REPO_ROOT/docs/lane-logs/a.log"
+assert_ok "completed-turn-is-terminal" lane_terminal_turn a
+printf '%s\n' '{"type":"turn.started"}' >> "$REPO_ROOT/docs/lane-logs/a.log"
+assert_fail "new-turn-clears-stale-terminal-event" lane_terminal_turn a
+printf '%s\n' '{"type":"turn.failed"}' >> "$REPO_ROOT/docs/lane-logs/a.log"
+assert_ok "failed-turn-is-terminal" lane_terminal_turn a
+printf '%s\n' '{"type":"turn.started"}' >> "$REPO_ROOT/docs/lane-logs/a.log"
+printf '%s\n' '{"type":"error","message":"provider failed"}' >> "$REPO_ROOT/docs/lane-logs/a.log"
+assert_ok "latest-error-is-terminal" lane_terminal_turn a
 rm -f "$REPO_ROOT/docs/lane-logs/a.log"
 
 # --- 1. startup_check answers the trust dialog -------------------------------

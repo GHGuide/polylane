@@ -61,4 +61,9 @@ planning/prompt, model-policy, skill-routing, graph/runtime/recovery,
 integration/learning, install/parity, and targeted ShellCheck layers. Run
 `bin/polylane-certify.sh terminal` exactly once at the current source boundary
 for a fresh full suite, both fresh installs, all ShellCheck, and the doctor
-GO/NO-GO rehearsal. Terminal evidence is not reused after source changes.
+GO/NO-GO rehearsal. The full suite already contains the focused, parity, and
+installer test files, so terminal certification never invokes those files twice.
+After a coordinator crash, a current-run terminal PASS is reusable only when its
+durable receipt exactly matches the integration commit, manifest, selected
+acceptance state, declared tool binaries, platform, and exported environment.
+Any mismatch—including a source or tool change—reruns the gate.

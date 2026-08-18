@@ -38,3 +38,27 @@
 
 {"lane":"project-runtime","domain":"test","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /private/tmp/polylane-c15-worktrees/project-runtime/docs/verify-project-runtime.md"}
 
+{"lane":"domain-runtime","domain":"test","skill":"deep-research","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-domain-runtime/docs/verify-domain-runtime.md"}
+
+{"lane":"domain-runtime","domain":"test","skill":"engineering:architecture","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-domain-runtime/docs/verify-domain-runtime.md"}
+
+{"lane":"domain-runtime","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-domain-runtime/docs/verify-domain-runtime.md"}
+
+{"lane":"domain-runtime","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-domain-runtime/docs/verify-domain-runtime.md"}
+
+{"lane":"learning-economy","domain":"test","skill":"data-analytics:product-business-analysis","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-learning-economy/docs/verify-learning-economy.md"}
+
+{"lane":"learning-economy","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-learning-economy/docs/verify-learning-economy.md"}
+
+{"lane":"learning-economy","domain":"test","skill":"operations:process-optimization","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-learning-economy/docs/verify-learning-economy.md"}
+
+{"lane":"learning-economy","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in .polylane/worktrees/c16-learning-economy/docs/verify-learning-economy.md"}
+
+{"lane":"trials-soak","domain":"test","skill":"engineering:incident-response","outcome":"unused","why":"missing SKILL-EVIDENCE record in .polylane/worktrees/c16-trials-soak/docs/verify-trials-soak.md"}
+
+{"lane":"trials-soak","domain":"test","skill":"engineering:testing-strategy","outcome":"unused","why":"missing SKILL-EVIDENCE record in .polylane/worktrees/c16-trials-soak/docs/verify-trials-soak.md"}
+
+{"lane":"trials-soak","domain":"test","skill":"operations:risk-assessment","outcome":"unused","why":"missing SKILL-EVIDENCE record in .polylane/worktrees/c16-trials-soak/docs/verify-trials-soak.md"}
+
+{"lane":"trials-soak","domain":"test","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing SKILL-EVIDENCE record in .polylane/worktrees/c16-trials-soak/docs/verify-trials-soak.md"}
+

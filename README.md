@@ -161,6 +161,11 @@ Lifecycle hook fragments are optional and project-scoped: review
 merging either into a target project. They never modify global settings or
 replace the supervisor. Use `bin/polylane-certify.sh focused` during integration
 and `bin/polylane-certify.sh terminal` once for the fresh terminal matrix.
+The terminal command runs `tests/run.sh` once—its parity and installer tests are
+not repeated as separate layers. If the coordinator dies after that gate passes,
+`--resume` reuses the durable PASS only when the run id, integrator commit,
+manifest, acceptance state, tool binaries, platform, and exported environment
+still match exactly; every mismatch reruns the terminal gate.
 
 ### Cross-lane relay
 

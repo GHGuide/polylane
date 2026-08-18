@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "trials-soak",
+  "verify_file": ".polylane/worktrees/c16-trials-soak/docs/verify-trials-soak.md",
+  "helped": [],
+  "unused": [
+    "engineering:incident-response",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:systematic-debugging"
+  ],
+  "hurt": []
+}

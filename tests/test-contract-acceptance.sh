@@ -20,6 +20,11 @@ assert_ok "c12-frozen-acceptance-uses-bash" jq -e '
   and ($terminal | length == 1)
   and ($terminal[0].cmd == "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh")
 ' "$CANONICAL_STATE"
+assert_ok "current-terminal-suite-does-not-repeat-covered-tests" jq -e '
+  [.accept[] | select(.sid == "m16.4" and .tier == "terminal")] as $terminal
+  | ($terminal | length == 1)
+  and ($terminal[0].cmd == "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse")
+' "$CANONICAL_STATE"
 
 make_tmpdir
 P="$TEST_TMPDIR/project"

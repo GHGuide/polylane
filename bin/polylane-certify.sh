@@ -68,11 +68,12 @@ focused() {
 }
 
 terminal() {
-  focused
-  tests install/parity test-installers.sh test-install-fresh.sh
+  # tests/run.sh already contains every focused, install, parity, and fresh-
+  # install test. Run that matrix once, then only the non-test-file host layers.
+  command_layer 'full suite (discovery through install/parity and integration/learning)' \
+    bash "$ROOT/tests/run.sh"
   command_layer ShellCheck shellcheck -S warning "$ROOT/bin/"*.sh
   command_layer rehearsal env POLYLANE_MIN_DISK_GB=0 bash "$ROOT/bin/polylane-doctor.sh" --rehearse
-  command_layer integration/learning bash "$ROOT/tests/run.sh"
 }
 
 case "${1:-}" in

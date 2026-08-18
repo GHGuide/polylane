@@ -128,6 +128,10 @@ The integrator checks seams, profile evidence, focused failures, then terminal c
 at final certification and writes one nonce-bearing verdict. `NO-GO` names repairs;
 `EXTERNAL-EVIDENCE-OPEN` promotes verified repository work but never passes missing
 external proof.
+After a post-PASS coordinator crash, the runner may reuse only its durable current-run
+terminal receipt when the integration commit, manifest, acceptance state, tools,
+platform, and exported environment still match exactly. List extra host executables in
+`terminal_cache_tools`; any missing declaration or mismatch reruns the terminal gate.
 
 ## Shared measured assurance
 

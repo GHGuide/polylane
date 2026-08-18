@@ -1486,7 +1486,7 @@
       "cmd": "bash tests/test-domain-runtime.sh",
       "tier": "focused",
       "key": "domain-runtime",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1496,7 +1496,7 @@
       "cmd": "bash tests/test-learning-economy.sh",
       "tier": "focused",
       "key": "learning-economy",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1506,7 +1506,7 @@
       "cmd": "bash tests/test-domain-trials.sh && bash tests/test-soak.sh",
       "tier": "focused",
       "key": "trials-soak",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1516,17 +1516,17 @@
       "cmd": "bash tests/test-cycle-16-contract.sh",
       "tier": "focused",
       "key": "cycle16-contract",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
     },
     {
       "sid": "m16.4",
-      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle16-terminal",
-      "status": "unchecked",
+      "status": "fail",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

@@ -58,8 +58,8 @@ CI or completion dependency.
 ```bash
 POLYLANE_MIN_DISK_GB=0 bash tests/run.sh
 shellcheck -S warning bin/*.sh
-bash tests/test-skill-parity.sh
-bash tests/test-installers.sh
 POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse
 ```
 
+`tests/run.sh` already includes provider parity and installer coverage; the terminal
+boundary does not execute those test files a second time.

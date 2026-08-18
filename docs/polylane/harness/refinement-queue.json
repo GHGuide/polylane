@@ -2,9 +2,9 @@
   {
     "subject": "context",
     "kind": "compaction",
-    "observation_count": 12,
-    "latest_cycle": 15,
-    "latest_evidence": "bounded packets built for run c15-domain-general-20260808",
+    "observation_count": 13,
+    "latest_cycle": 16,
+    "latest_evidence": "bounded packets built for run c16-evidence-autonomy-20260809-a1",
     "required_action": "propose-or-decline"
   },
   {

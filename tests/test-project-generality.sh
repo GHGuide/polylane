@@ -31,7 +31,7 @@ assert_fail() {
   shift 2
   if "$@" >"$TMP/out" 2>"$TMP/err"; then
     not_ok "$name (unexpected success)"
-  elif rg -F "$expected" "$TMP/err" >/dev/null; then
+  elif grep -F "$expected" "$TMP/err" >/dev/null; then
     ok "$name"
   else
     cat "$TMP/err" >&2
@@ -67,7 +67,7 @@ done
 assert_ok "gate durable PROJECT_PROFILE.md before goal decomposition" \
   "$PROJECT" gate "$PROFILE_RECORD" "$FIXTURES/app.json"
 
-rg -v '^Evidence:' "$PROFILE_RECORD" >"$TMP/incomplete-project-profile.md"
+grep -v '^Evidence:' "$PROFILE_RECORD" >"$TMP/incomplete-project-profile.md"
 assert_fail "reject incomplete PROJECT_PROFILE.md record" "PROJECT_PROFILE.md requires Evidence" \
   "$PROJECT" gate "$TMP/incomplete-project-profile.md" "$FIXTURES/app.json"
 

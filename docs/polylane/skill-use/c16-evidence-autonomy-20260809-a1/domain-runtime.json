@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "domain-runtime",
+  "verify_file": ".polylane/worktrees/c16-domain-runtime/docs/verify-domain-runtime.md",
+  "helped": [],
+  "unused": [
+    "deep-research",
+    "engineering:architecture",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

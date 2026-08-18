@@ -145,6 +145,104 @@ write_efficiency_proof() {
     --proof "$proof" --phase "$phase"
 }
 
+# A successful terminal gate is expensive and may finish immediately before the
+# coordinator dies. Preserve a run-scoped PASS receipt so an unchanged resume
+# can promote without replaying the same suite. The fingerprint is deliberately
+# broad and fail-closed: exact integration commit, manifest, selected acceptance
+# state, tool binaries, platform, and exported environment must all match.
+terminal_gate_receipt_path() {
+  local run_id="${RUN_ID:-}" root="${PROJECT_ROOT:-}"
+  case "$run_id" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac
+  [ -n "$root" ] || return 1
+  printf '%s/docs/polylane/terminal-gates/%s.json' "$root" "$run_id"
+}
+
+terminal_gate_toolchain_rows() {
+  local tools='bash git jq shellcheck tmux env grep sort uname' extra tool path seen=' ' content_hash
+  [ -f "${MANIFEST:-}" ] || return 1
+  extra=$(jq -r '(.terminal_cache_tools // [])[]' "$MANIFEST" 2>/dev/null) || return 1
+  tools="$tools $extra"
+  for tool in $tools; do
+    case "$tool" in ''|*[!A-Za-z0-9._+-]*) return 1 ;; esac
+    case "$seen" in *" $tool "*) continue ;; esac
+    seen="$seen$tool "
+    path=$(command -v "$tool" 2>/dev/null) || return 1
+    case "$path" in /*) : ;; *) return 1 ;; esac
+    [ -f "$path" ] && [ -x "$path" ] || return 1
+    content_hash=$(git hash-object "$path" 2>/dev/null) || return 1
+    printf '%s\t%s\t%s\n' "$tool" "$path" "$content_hash" || return 1
+  done
+}
+
+terminal_gate_fingerprint() {
+  local verdict="$1" head manifest_hash state_json state_hash tool_rows tool_hash
+  local platform_hash environment environment_hash targets
+  [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
+  terminal_gate_receipt_path >/dev/null || return 1
+  [ -f "${MANIFEST:-}" ] && [ -f "${STATE_FILE:-}" ] && [ -d "${INT_WORKTREE:-}" ] || return 1
+  head=$(git -C "$INT_WORKTREE" rev-parse HEAD 2>/dev/null) || return 1
+  manifest_hash=$(git -C "$INT_WORKTREE" hash-object "$MANIFEST" 2>/dev/null) || return 1
+  targets=$(jq -c '(.target_subgoals // []) | sort' "$MANIFEST" 2>/dev/null) || return 1
+  state_json=$(jq -cS --argjson targets "$targets" '
+    {
+      subgoals: [.milestones[].subgoals[]
+        | select(.id as $id | ($targets | index($id)) != null)
+        | {id,status}] | sort_by(.id),
+      acceptance: [(.accept // [])[]
+        | select(.sid as $sid | ($targets | index($sid)) != null)
+        | {sid,cmd,tier:(.tier // "focused"),key:(.key // ""),
+           deps:((.deps // []) | sort),status:(.status // "unchecked"),
+           regressed_cycle:(.regressed_cycle // null)}]
+        | sort_by(.sid,.tier,.cmd)
+    }
+  ' "$STATE_FILE" 2>/dev/null) || return 1
+  state_hash=$(printf '%s' "$state_json" | git -C "$INT_WORKTREE" hash-object --stdin 2>/dev/null) || return 1
+  tool_rows=$(terminal_gate_toolchain_rows) || return 1
+  tool_hash=$(printf '%s' "$tool_rows" | git -C "$INT_WORKTREE" hash-object --stdin 2>/dev/null) || return 1
+  platform_hash=$({ uname -a; command -v sw_vers >/dev/null 2>&1 && sw_vers; } |
+    git -C "$INT_WORKTREE" hash-object --stdin 2>/dev/null) || return 1
+  environment=$(env | grep -v '^_=' | LC_ALL=C sort) || return 1
+  environment_hash=$(printf '%s' "$environment" |
+    git -C "$INT_WORKTREE" hash-object --stdin 2>/dev/null) || return 1
+  {
+    printf 'terminal-cache-v1\nrun=%s\ncycle=%s\nverdict=%s\n' "$RUN_ID" "${CYCLE:-}" "$verdict"
+    printf 'head=%s\nmanifest=%s\nstate=%s\ntools=%s\nplatform=%s\nenvironment=%s\n' \
+      "$head" "$manifest_hash" "$state_hash" "$tool_hash" "$platform_hash" "$environment_hash"
+  } | git -C "$INT_WORKTREE" hash-object --stdin 2>/dev/null
+}
+
+terminal_gate_pass_receipt_valid() {
+  local verdict="$1" receipt fingerprint head
+  receipt=$(terminal_gate_receipt_path) || return 1
+  [ -f "$receipt" ] && [ ! -L "$receipt" ] || return 1
+  fingerprint=$(terminal_gate_fingerprint "$verdict") || return 1
+  head=$(git -C "$INT_WORKTREE" rev-parse HEAD 2>/dev/null) || return 1
+  jq -e --arg run "$RUN_ID" --arg fp "$fingerprint" --arg head "$head" --arg verdict "$verdict" '
+    .version == 1 and .status == "pass" and .run_id == $run
+    and .fingerprint == $fp and .integrator_commit == $head
+    and .verdict == $verdict
+  ' "$receipt" >/dev/null 2>&1
+}
+
+terminal_gate_pass_receipt_record() {
+  local verdict="$1" receipt dir tmp fingerprint head now
+  receipt=$(terminal_gate_receipt_path) || return 1
+  fingerprint=$(terminal_gate_fingerprint "$verdict") || return 1
+  head=$(git -C "$INT_WORKTREE" rev-parse HEAD 2>/dev/null) || return 1
+  dir=$(dirname "$receipt")
+  mkdir -p "$dir" || return 1
+  tmp=$(mktemp "$dir/.terminal-gate.XXXXXX") || return 1
+  now=$(date +%s)
+  if ! jq -n --arg run "$RUN_ID" --arg verdict "$verdict" --arg fp "$fingerprint" \
+      --arg head "$head" --argjson at "$now" \
+      '{version:1,run_id:$run,status:"pass",verdict:$verdict,
+        fingerprint:$fp,integrator_commit:$head,recorded_at:$at}' > "$tmp"; then
+    rm -f "$tmp"; return 1
+  fi
+  mv "$tmp" "$receipt" || { rm -f "$tmp"; return 1; }
+  printf 'TERMINAL-CACHE: recorded PASS receipt %s\n' "$receipt"
+}
+
 # notify_event EVENT MSG : best-effort hook into bin/polylane-notify.sh (a
 # sibling script another lane may install). Fires ONLY if it exists and is
 # executable; missing/broken hook is never fatal to the run.
@@ -2624,9 +2722,17 @@ lane_active_command() {
 }
 
 lane_terminal_turn() {
-  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log"
+  local log="${REPO_ROOT:-.}/docs/lane-logs/$1.log" last
   [ -f "$log" ] || return 1
-  tail -n 100 "$log" 2>/dev/null | grep -qE '"type":"(turn\.completed|error)"|"type":"item.completed".*"type":"agent_message"'
+  # Codex emits agent_message items as mid-turn progress, then may reason or
+  # launch more tools without painting the pane. Treating any recent message as
+  # terminal gives a live high-effort turn the short dead-pane window and can
+  # respawn healthy work. Only the latest turn-boundary event is authoritative;
+  # a newer turn.started also clears an older completion/error from the log.
+  last=$(tail -n 200 "$log" 2>/dev/null |
+    grep -E '"type":"(turn\.started|turn\.completed|turn\.failed|error)"' |
+    tail -n 1 || true)
+  printf '%s' "$last" | grep -qE '"type":"(turn\.completed|turn\.failed|error)"'
 }
 
 # lane_live_wedge_checks NAME : bound a quiet live turn according to the
@@ -3124,7 +3230,7 @@ contract_ready_verdict() {
 # merge_gate : returns 0 for verified engineering outcomes. External evidence is a
 # routing state, not a reason to discard verified code or end the autonomous loop.
 merge_gate() {
-  local f="$INT_WORKTREE/docs/verify-integration.md" v host_verdict
+  local f="$INT_WORKTREE/docs/verify-integration.md" v host_verdict terminal_cache_hit=0
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "+ (dry-run) would read integrator verdict from $f (proceed only on GO)"
     VERDICT_RESULT="GO"
@@ -3146,12 +3252,21 @@ merge_gate() {
         printf '\nACCEPTANCE-GATE: could not resolve the honest post-gate routing state.\n' >> "$f"
         v="NO-GO"; VERDICT_REPAIRABLE="YES"
       else
-        run_stats terminal-gate
+        if terminal_gate_pass_receipt_valid "$host_verdict"; then
+          terminal_cache_hit=1
+          echo "TERMINAL-CACHE: HIT run=$RUN_ID"
+        else
+          run_stats terminal-gate
+        fi
         if ! write_efficiency_proof gate; then
           printf '\nACCEPTANCE-GATE: efficiency proof failed; terminal gate is exhausted for this run.\n' >> "$f"
           v="NO-GO"; VERDICT_REPAIRABLE="NO"
+        elif [ "$terminal_cache_hit" = 1 ]; then
+          v="$host_verdict"
         elif contract_acceptance_gate "$host_verdict" 1; then
           v="$host_verdict"
+          terminal_gate_pass_receipt_record "$host_verdict" ||
+            echo "TERMINAL-CACHE: could not record PASS receipt; future resume will rerun the gate" >&2
         else
           # The coordinator owns one terminal attempt. A model repair cannot make
           # that same attempt unused; it would only add a restart and a second gate.
@@ -3400,6 +3515,10 @@ assert_no_conflict() {
 # narrow: user source, evidence, prompts, and reports never qualify.
 runner_owned_promotion_path() {
   local path="$1" lane
+  if [ -n "${RUN_ID:-}" ] &&
+     [ "$path" = "docs/polylane/terminal-gates/$RUN_ID.json" ]; then
+    return 0
+  fi
   case "$path" in
     docs/polylane/max-state.json|docs/polylane/progress.md|\
     docs/polylane/run-stats.json|docs/polylane/spend-ledger.jsonl|\
