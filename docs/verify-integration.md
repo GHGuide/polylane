@@ -219,3 +219,5 @@ relaunching, and only the completed rerun's rc=0 log is cited. (3) The
 "read full output, count failures" step drove the `not ok`/`FAIL` scans of the
 5334-line log, classifying all 22 `FAIL`-word hits as fixture text rather than
 letting a grep count stand unexplained.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c43c-recovery-20260819-a1
