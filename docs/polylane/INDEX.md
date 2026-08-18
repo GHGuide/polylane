@@ -290,3 +290,4 @@ preserved, while the four autonomous integration targets and `c56` remain open f
 fresh post-Cycle-22 certification.  Cycle 12's rendered ten-product visual comparison
 remains external.
 - [provider-outage-20260818.md](provider-outage-20260818.md) — dual provider outage evidence, hardening landed, and the exact unblock steps for the c42a recovery
+- [c42a-recovery-runbook.md](c42a-recovery-runbook.md) — exact import/launch steps for the m32.6 contract-freeze recovery once a provider is live
