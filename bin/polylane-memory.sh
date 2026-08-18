@@ -26,7 +26,7 @@
 #   attempted <text>                exit 0 iff this approach is already in the log as an attempt
 #   progress                        "subgoals: X/Y done · criteria: A/B done · N% "
 #   met                             exit 0 iff every sub-goal AND criterion done AND every acceptance check passing
-#   add-accept   <sid> <cmd> [--tier focused|terminal] [--key safe-id] [dep-glob...]
+#   add-accept   <sid> <cmd> [--tier focused|terminal] [--evidence-kind autonomous|external] [--key safe-id] [dep-glob...]
 #                                    register a FROZEN acceptance command for <sid>
 #                                    (refused once done; dep-globs enable content-hash memoization)
 #   tag-accept   <sid> [--tier focused|terminal] --key <safe-id>
@@ -292,13 +292,14 @@ case "$CMD" in
 
   add-accept)
     _need
-    _sid="${1:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [--key safe-id] [dep-glob...]}"
-    _cmd="${2:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [--key safe-id] [dep-glob...]}"
+    _sid="${1:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [--evidence-kind autonomous|external] [--key safe-id] [dep-glob...]}"
+    _cmd="${2:?usage: add-accept <sid> <cmd> [--tier focused|terminal] [--evidence-kind autonomous|external] [--key safe-id] [dep-glob...]}"
     shift 2
-    _tier="focused"; _key=""
+    _tier="focused"; _kind="autonomous"; _key=""
     while [ "$#" -gt 0 ]; do
       case "$1" in
         --tier) _tier="${2:?--tier needs focused or terminal}"; shift 2 ;;
+        --evidence-kind) _kind="${2:?--evidence-kind needs autonomous or external}"; shift 2 ;;
         --key) _key="${2:?--key needs a safe id}"; shift 2 ;;
         --) shift; break ;;
         *) break ;;
@@ -315,12 +316,21 @@ case "$CMD" in
     case "$_tier" in focused|terminal) : ;; *)
       echo "polylane-memory: acceptance tier must be focused or terminal" >&2; exit 2 ;;
     esac
+    case "$_kind" in autonomous|external) : ;; *)
+      echo "polylane-memory: acceptance evidence_kind must be autonomous or external" >&2; exit 2 ;;
+    esac
+    jq -e --arg id "$_sid" --arg kind "$_kind" '
+      all((.accept // [])[] | select(.sid==$id); (.evidence_kind // "autonomous") == $kind)
+    ' "$F" >/dev/null || {
+      echo "polylane-memory: sub-goal '$_sid' cannot mix autonomous and external acceptance" >&2
+      exit 1
+    }
     [ "${1:-}" = "--" ] && shift
     # remaining args are dependency globs the check GRADES; content-hash of these
     # gates memoization. No deps -> always re-run (backward-compatible).
     _deps="[]"; if [ "$#" -gt 0 ]; then _deps=$(printf '%s\n' "$@" | jq -R . | jq -cs .); fi
-    _save --arg sid "$_sid" --arg cmd "$_cmd" --arg tier "$_tier" --arg key "$_key" --argjson deps "$_deps" \
-      '.accept = ((.accept // []) + [{sid:$sid, cmd:$cmd, tier:$tier, key:$key, status:"unchecked", deps:$deps, fp:"", regressed_cycle:null}])'
+    _save --arg sid "$_sid" --arg cmd "$_cmd" --arg tier "$_tier" --arg kind "$_kind" --arg key "$_key" --argjson deps "$_deps" \
+      '.accept = ((.accept // []) + [{sid:$sid, cmd:$cmd, tier:$tier, evidence_kind:$kind, key:$key, status:"unchecked", deps:$deps, fp:"", regressed_cycle:null}])'
     ;;
 
   tag-accept)
@@ -353,16 +363,20 @@ case "$CMD" in
     # Targeted focused checks keep inner cycles fast. Terminal checks are reserved
     # for final certification; a plain check-accept remains backward-compatible
     # and runs everything.
-    _cyc="null"; _targets=""; _focused=0; _terminal_only=0
+    _cyc="null"; _targets=""; _focused=0; _terminal_only=0; _evidence_kind=""
     while [ "$#" -gt 0 ]; do
       case "$1" in
         --cycle) _cyc="${2:?--cycle needs N}"; shift 2 ;;
         --targets) _targets="${2:?--targets needs comma-separated ids}"; shift 2 ;;
         --focused) _focused=1; shift ;;
         --only-terminal) _terminal_only=1; shift ;;
+        --evidence-kind) _evidence_kind="${2:?--evidence-kind needs autonomous or external}"; shift 2 ;;
         *) echo "polylane-memory: unknown check-accept option '$1'" >&2; exit 2 ;;
       esac
     done
+    case "$_evidence_kind" in ''|autonomous|external) : ;; *)
+      echo "polylane-memory: acceptance evidence_kind must be autonomous or external" >&2; exit 2 ;;
+    esac
     _n=$(jq '.accept // [] | length' "$F")
     [ "$_n" = "0" ] && { echo "check-accept: no acceptance checks registered"; exit 0; }
     # A successful top-level invocation must not inherit an old failure for the
@@ -373,6 +387,7 @@ case "$CMD" in
       _cmd=$(jq -r ".accept[$_i].cmd" "$F")
       _sid=$(jq -r ".accept[$_i].sid" "$F")
       _tier=$(jq -r ".accept[$_i].tier // \"focused\"" "$F")
+      _kind=$(jq -r ".accept[$_i].evidence_kind // \"autonomous\"" "$F")
       _key=$(jq -r ".accept[$_i].key // \"\"" "$F")
       _prev=$(jq -r ".accept[$_i].status // \"unchecked\"" "$F")
       _rc=$(jq -r ".accept[$_i].regressed_cycle // \"null\"" "$F")
@@ -386,22 +401,24 @@ case "$CMD" in
       fi
       [ "$_focused" = "1" ] && [ "$_tier" = "terminal" ] && _selected=0
       [ "$_terminal_only" = "1" ] && [ "$_tier" != "terminal" ] && _selected=0
+      [ -n "$_evidence_kind" ] && [ "$_kind" != "$_evidence_kind" ] && _selected=0
       if [ "$_selected" = "0" ]; then
         _st="$_prev"; _newfp="$_oldfp"
       else
         # shellcheck disable=SC2086  # dependency globs must expand into graded files
-        if [ -n "$_deps" ]; then _newfp=$(_fingerprint $_deps); fi
+        _newfp="$_kind:"
+        if [ -n "$_deps" ]; then _newfp="$_kind:$(_fingerprint $_deps)"; fi
       # memoization is OFF by default: a check often reads files outside its declared
       # deps, so a byte-identical dep-set can falsely cache a pass over now-broken work
       # (invisible to `met`). Correctness first; opt in with POLYLANE_ACCEPT_MEMO=1 only
       # when a check provably reads ONLY its deps and re-running is measurably costly.
         if [ -n "$_key" ]; then
           case "$_key_results" in
-            *"|$_key:pass|"*) _st="pass" ;;
-            *"|$_key:fail|"*) _st="fail" ;;
+            *"|$_kind:$_key:pass|"*) _st="pass" ;;
+            *"|$_kind:$_key:fail|"*) _st="fail" ;;
             *)
               if _accept_run "$_cmd"; then _st="pass"; else _st="fail"; fi
-              _key_results="$_key_results$_key:$_st|"
+              _key_results="$_key_results$_kind:$_key:$_st|"
               ;;
           esac
         elif [ "${POLYLANE_ACCEPT_MEMO:-0}" = "1" ] && [ "$_prev" = "pass" ] && [ -n "$_deps" ] && [ -n "$_newfp" ] && [ "$_newfp" = "$_oldfp" ]; then
@@ -432,7 +449,7 @@ case "$CMD" in
 
   unmet-accept)
     _need
-    jq -r '(.accept // []) | map(select(.status!="pass")) | .[] | "\(.sid): \(.cmd) [\(.status)]"' "$F"
+    jq -r '(.accept // []) | map(select(.status!="pass")) | .[] | "\(.sid): \(.cmd) [\(.evidence_kind // "autonomous")/\(.status)]"' "$F"
     ;;
 
   regressions)
@@ -442,7 +459,7 @@ case "$CMD" in
     # promote gate treats it as an auto-NO-GO / revert.
     jq -r '(.accept // [])
       | map(select(.status!="pass" and (.regressed_cycle // null) != null))
-      | .[] | "REGRESSED c\(.regressed_cycle): \(.sid): \(.cmd)"' "$F"
+      | .[] | "REGRESSED c\(.regressed_cycle): \(.sid): \(.cmd) [\(.evidence_kind // "autonomous")]"' "$F"
     ;;
 
   brief)
