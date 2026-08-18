@@ -41,6 +41,24 @@ canonical repo (pushed to origin):
 
 ## Launch steps (when a provider is live)
 
+**The recovery is packaged and validated — launch is one command:**
+
+```bash
+bash docs/polylane/recovery-c43/launch.sh claude   # after `claude` + /login
+```
+
+```bash
+bash docs/polylane/recovery-c43/launch.sh codex    # after the Aug 20 15:03 quota reset
+```
+
+Both manifests passed every pre-launch gate by --dry-run on 2026-08-18 (strict
+prompt lint, kits, scope, cycle-42 closure, model policy). The launcher restores
+the validated scratch files, runs doctor (which now hard-fails on dead provider
+auth), and hands off to the supervisor. Plan: `docs/polylane/cycle-43-plan.md` —
+one contract-import builder + integrator, target m32.6, READY-FOR-HOST-GATE.
+
+### Manual alternative
+
 ```bash
 cd /Users/leonardo/Downloads/polylane
 bin/polylane-doctor.sh              # must show 'auth' PASS for the chosen agent

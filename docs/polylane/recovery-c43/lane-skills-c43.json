@@ -1,0 +1,63 @@
+{
+  "version": 3,
+  "lanes": {
+    "contract-import": {
+      "predefined": [
+        "superpowers:verification-before-completion"
+      ],
+      "specific": [
+        "superpowers:systematic-debugging"
+      ],
+      "selected": {
+        "predefined": [
+          {
+            "id": "superpowers:verification-before-completion",
+            "path": "/Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/verification-before-completion/SKILL.md",
+            "reason": "predefined role selection",
+            "source": "plugin-cache",
+            "fingerprint": "1896692335-3646"
+          }
+        ],
+        "specific": [
+          {
+            "id": "superpowers:systematic-debugging",
+            "path": "/Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/systematic-debugging/SKILL.md",
+            "reason": "specific role selection",
+            "source": "plugin-cache",
+            "fingerprint": "4111822586-9465"
+          }
+        ]
+      },
+      "github_suggestions": []
+    },
+    "integrator": {
+      "predefined": [
+        "engineering:testing-strategy"
+      ],
+      "specific": [
+        "superpowers:verification-before-completion"
+      ],
+      "selected": {
+        "predefined": [
+          {
+            "id": "engineering:testing-strategy",
+            "path": "/Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md",
+            "reason": "predefined role selection",
+            "source": "plugin-cache",
+            "fingerprint": "2811424084-1279"
+          }
+        ],
+        "specific": [
+          {
+            "id": "superpowers:verification-before-completion",
+            "path": "/Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/verification-before-completion/SKILL.md",
+            "reason": "specific role selection",
+            "source": "plugin-cache",
+            "fingerprint": "1896692335-3646"
+          }
+        ]
+      },
+      "github_suggestions": []
+    }
+  }
+}

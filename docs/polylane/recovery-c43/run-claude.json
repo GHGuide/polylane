@@ -1,0 +1,67 @@
+{
+  "orchestration_contract": 2,
+  "run_id": "c43-recovery-20260818-a1",
+  "cycle": 43,
+  "state_file": "docs/polylane/max-state.json",
+  "lane_skills_file": ".polylane/lane-skills-c43.json",
+  "cycle_plan_file": "docs/polylane/cycle-43-plan.md",
+  "target_subgoals": [
+    "m32.6"
+  ],
+  "base": "main",
+  "session": "polylane-c43-recovery",
+  "agent": "claude",
+  "codex_profile": "lean",
+  "codex_sandbox": "workspace-write",
+  "prompt_token_budget": 8000,
+  "prompt_byte_budget": 24000,
+  "available_models": [
+    "claude-fable-5",
+    "claude-opus-5",
+    "claude-opus-4-8",
+    "claude-sonnet-5",
+    "claude-haiku-4-5"
+  ],
+  "efficiency_canary": {
+    "max_restarts": 0,
+    "max_wall_s": 7200
+  },
+  "integrator": {
+    "name": "integrator",
+    "model": "claude-fable-5",
+    "branch": "lane/c43-integrator",
+    "worktree": ".polylane/worktrees/c43-integrator",
+    "prompt_file": ".polylane/lanes/c43-integrator.txt",
+    "effort": "xhigh"
+  },
+  "lanes": [
+    {
+      "name": "contract-import",
+      "model": "claude-opus-4-8",
+      "branch": "lane/c43-contract-import",
+      "worktree": ".polylane/worktrees/c43-contract-import",
+      "prompt_file": ".polylane/lanes/c43-contract-import.txt",
+      "own_globs": [
+        "docs/polylane/taste-certification/contracts/**",
+        "bin/polylane-evidence-dag.sh",
+        "bin/polylane-finalize.sh",
+        "bin/polylane-taste-execution-contract.sh",
+        "bin/polylane-taste-source-contract.sh",
+        "bin/polylane-memory.sh",
+        "bin/polylane-run.sh",
+        "bin/polylane-supervisor.sh",
+        "tests/test-taste-execution-contract-v3.sh",
+        "tests/test-evidence-dag.sh",
+        "tests/test-taste-source-contract-v3.sh",
+        "tests/test-finalization-watchdog.sh",
+        "tests/test-contract-acceptance.sh",
+        "docs/verify-contract-import.md",
+        "docs/status-contract-import.md"
+      ],
+      "target_subgoals": [
+        "m32.6"
+      ],
+      "effort": "high"
+    }
+  ]
+}

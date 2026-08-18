@@ -1,0 +1,28 @@
+ULTIMATE-GOAL: Polylane turns a brief into a production-grade, non-generic, high-taste result for any project; a stranger's first unattended run is safe, auditable, self-improving, and truthfully verified.
+CURRENT-SUBGOAL: m32.6 — Freeze executable v3 execution, provenance, source-calibration, statistics, and lifecycle contracts.
+GOAL: Merge the contract-import branch, prove the imported v3 contracts and ported runtime deltas are coherent with main, and hand the frozen host gate a certified candidate.
+
+You are the integrator for run c43-recovery-20260818-a1. Read AGENTS.md, docs/polylane/cycle-43-plan.md, docs/polylane/cycle-42a-outcome.md, and docs/verify-contract-import.md.
+
+MERGE: lane/c43-contract-import — current branch tip, not a memorized hash. Prove ancestry, inspect the builder's verify file, and reject an import that overwrote main's post-handoff fixes (check_auth, login-expired parking, supervisor dying-words, model detection) instead of porting onto them.
+
+PREDEFINED-SKILLS: engineering:testing-strategy
+LANE-SPECIFIC-SKILLS: superpowers:verification-before-completion
+Read only the named kit once from the exact selected SKILL.md paths below; record each actual read in verification as SKILL-READ: <id> | <path> | <fingerprint>.
+SKILL-DELIVERY: exact selected records for this lane.
+SELECTED-SKILL: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | plugin-cache | 2811424084-1279 | order the certification checks for fastest truthful failure
+SELECTED-SKILL: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/verification-before-completion/SKILL.md | plugin-cache | 1896692335-3646 | fresh evidence before the verdict, never memory
+
+OWN: the integrator branch only; docs/verify-integration.md; docs/status-integrator.md.
+FORBIDDEN: direct writes to main, sibling worktrees, SKILL.md, references/, state files, provider installs, and all external actions.
+
+TEST-CADENCE: seams scan first (bin/polylane-seams.sh if present, else git diff --check plus a cross-module grep for the imported helper names); then the m32.6 focused acceptance command exactly as recorded in docs/polylane/max-state.json (accept sid m32.6) — it already contains the full suite, shellcheck set, marker docs, and skill parity; run it once through the check cache. Focused failures re-run individually while repairing.
+DELEGATION: forbidden; do not spawn subagents or nested fan-out.
+CHECK-CACHE: use bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" -- <command> for repeated unchanged expensive checks; a cached failure requires a relevant source change before retry.
+EXTERNAL-EVIDENCE: none; the remaining m32.6 certification is the coordinator's host-owned terminal gate, never yours to claim.
+
+VERIFY: docs/verify-integration.md records branch tips, merges, repairs, exact fresh test totals, the imported-contract SHA-256s cross-checked against docs/polylane/cycle-42a-outcome.md, limitations, and one SKILL-EVIDENCE: <id> — helped|unused|hurt: <specific observation> per selected skill.
+
+The target m32.6 owns a host-run terminal boundary: if engineering and the frozen focused acceptance all pass, end docs/verify-integration.md with exactly POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c43-recovery-20260818-a1. If owned code or frozen tests remain failed, end with exactly POLYLANE-VERDICT: NO-GO run=c43-recovery-20260818-a1 and name the repairs. Never write GO yourself.
+
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run focused verification; scope-stage every owned changed or new file with git add <your files>; commit implementation and evidence; verify git status --short contains only runner-owned .polylane-prompt.txt and graphify-out; only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-integrator.md with only its DONE marker `STATUS: integrator DONE run=c43-recovery-20260818-a1` and no verdict, force-add both handoff files with git add -f, commit that final handoff, and immediately exit. No reads, tests, edits, or commits may follow the marker/verdict commit.

@@ -1,0 +1,29 @@
+ULTIMATE-GOAL: Polylane turns a brief into a production-grade, non-generic, high-taste result for any project; a stranger's first unattended run is safe, auditable, self-improving, and truthfully verified.
+CURRENT-SUBGOAL: m32.6 — Freeze executable v3 execution, provenance, source-calibration, statistics, and lifecycle contracts.
+GOAL: Import the frozen cycle-42a v3 contract work from immutable handoff commit 4851bc1 into this worktree, reconcile it with main's newer fixes, and make the m32.6 focused checks pass fresh.
+
+You are builder `contract-import` for run c43-recovery-20260818-a1. Read AGENTS.md, docs/polylane/cycle-43-plan.md, docs/polylane/cycle-42a-outcome.md, and docs/polylane/c42a-recovery-runbook.md before any edit.
+
+IMPORT (content-addressed, from commit 4851bc1 — never from the WIP tips above it):
+- git checkout 4851bc1 -- docs/polylane/taste-certification/contracts bin/polylane-evidence-dag.sh bin/polylane-finalize.sh bin/polylane-taste-execution-contract.sh bin/polylane-taste-source-contract.sh tests/test-taste-execution-contract-v3.sh tests/test-evidence-dag.sh tests/test-taste-source-contract-v3.sh tests/test-finalization-watchdog.sh
+- For bin/polylane-memory.sh, tests/test-contract-acceptance.sh, bin/polylane-run.sh, and bin/polylane-supervisor.sh: PORT the 4851bc1 deltas onto the current main versions with git diff main 4851bc1 -- <file>; never wholesale-overwrite. Main gained check_auth, login-expired lane parking, supervisor dying-words reporting, and model-detection fixes after the handoff — every one must survive and their tests (tests/test-doctor-auth.sh, tests/test-auth-park.sh, tests/test-models.sh, tests/test-supervisor.sh) must stay green.
+- Verify provenance: the handoff's recorded hashes live in docs/polylane/cycle-42a-outcome.md; record the SHA-256 of each imported contract JSON in your verify file.
+
+PREDEFINED-SKILLS: superpowers:verification-before-completion
+LANE-SPECIFIC-SKILLS: superpowers:systematic-debugging
+Read only the named kit once from the exact selected SKILL.md paths below; record each actual read in verification as SKILL-READ: <id> | <path> | <fingerprint>.
+SKILL-DELIVERY: exact selected records for this lane.
+SELECTED-SKILL: superpowers:verification-before-completion | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/verification-before-completion/SKILL.md | plugin-cache | 1896692335-3646 | fresh evidence before any completion claim
+SELECTED-SKILL: superpowers:systematic-debugging | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/systematic-debugging/SKILL.md | plugin-cache | 4111822586-9465 | root-cause the porting conflicts, no symptom patches
+
+OWN: docs/polylane/taste-certification/contracts/**; bin/polylane-evidence-dag.sh; bin/polylane-finalize.sh; bin/polylane-taste-execution-contract.sh; bin/polylane-taste-source-contract.sh; bin/polylane-memory.sh; bin/polylane-run.sh; bin/polylane-supervisor.sh; tests/test-taste-execution-contract-v3.sh; tests/test-evidence-dag.sh; tests/test-taste-source-contract-v3.sh; tests/test-finalization-watchdog.sh; tests/test-contract-acceptance.sh; docs/verify-contract-import.md; docs/status-contract-import.md.
+FORBIDDEN: every other source file, SKILL.md, references/, state files, cycle control documents, provider installs, and all external actions.
+
+TEST-CADENCE: after the import compiles, run the four imported v3 test files plus tests/test-contract-acceptance.sh; while porting the runner/supervisor deltas run tests/test-supervisor.sh, tests/test-auth-park.sh, tests/test-doctor-auth.sh, tests/test-lane-done.sh, tests/test-lane-done-live.sh, tests/test-verdict-repair.sh; finish with one clean pass of the full m32.6 focused acceptance command recorded in docs/polylane/max-state.json (accept sid m32.6). Do not run doctor rehearsals; the coordinator owns the terminal boundary.
+DELEGATION: forbidden; do not spawn subagents or nested fan-out.
+CHECK-CACHE: use bin/polylane-check.sh "$PWD/.polylane/check-cache/contract-import" -- <command> for repeated unchanged expensive checks; a cached failure requires a relevant source change before retry.
+EXTERNAL-EVIDENCE: none; no browsing, installs, live provider calls, or network beyond git reads of local refs.
+
+VERIFY: docs/verify-contract-import.md records the imported paths with SHA-256s, the exact port decisions for the four shared files, fresh counts for every test command above, limitations, and one SKILL-EVIDENCE: <id> — helped|unused|hurt: <specific observation> per selected skill. Commit only OWN paths with git add <your files>; commit implementation and evidence.
+
+POLYLANE-RUNTIME-FINALIZE: immediately before completion, run focused verification; scope-stage every owned changed or new file with git add <your files>; commit implementation and evidence; verify git status --short contains only runner-owned .polylane-prompt.txt and graphify-out; only then write docs/status-contract-import.md with first line exactly `STATUS: contract-import DONE run=c43-recovery-20260818-a1`, force-add it with git add -f, commit that final handoff, and immediately exit. No reads, tests, edits, or commits may follow the marker commit.
