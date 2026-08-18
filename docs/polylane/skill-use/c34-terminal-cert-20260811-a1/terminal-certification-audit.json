@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "terminal-certification-audit",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c34-terminal-certification-audit/docs/verify-terminal-certification-audit.md",
+  "helped": [
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " it limited fresh execution"
+    },
+    {
+      "id": "superpowers:verification-before-completion",
+      "effect": " it required"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

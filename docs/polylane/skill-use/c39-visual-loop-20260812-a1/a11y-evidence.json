@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "lane": "a11y-evidence",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-a11y-evidence/docs/verify-a11y-evidence.md",
+  "helped": [
+    {
+      "id": "design:accessibility-review",
+      "effect": " its WCAG 2.1 AA quick reference and common-issues list became the canonical criterion set and the fixture violation cases (contrast 1.4.3, labels 3.3.2, keyboard 2.1.1, focus 2.4.7, target 2.5.5, name-role-value 4.1.2); its \"test with real AT catches what I can't\" note anchored the manual-external boundary."
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " \"security boundaries, error handling, edge cases\" focus drove the adversarial-first suite (forged/stale adapter, relabel, coverage gaps) over happy-path coverage; frontend row explicitly lists accessibility as a test dimension."
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " framed the reject taxonomy by failure mode (tamper, stale, relabel, missing coverage, caller pass) and the \"cannot hide missing coverage\" ordering as a compliance/security control rather than a nice-to-have."
+    }
+  ],
+  "unused": [
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

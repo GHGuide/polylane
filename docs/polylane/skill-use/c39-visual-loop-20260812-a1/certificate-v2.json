@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "lane": "certificate-v2",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-certificate-v2/docs/verify-certificate-v2.md",
+  "helped": [
+    {
+      "id": "data:statistical-analysis",
+      "effect": " the threshold-case table was"
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " coverage was planned as"
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " the trust boundaries were"
+    }
+  ],
+  "unused": [
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "judge-codex",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-judge-codex/docs/verify-judge-codex.md",
+  "helped": [
+    {
+      "id": "engineering:system-design",
+      "effect": " drove the explicit"
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " shaped the attack matrix"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

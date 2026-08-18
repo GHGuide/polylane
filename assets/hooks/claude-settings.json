@@ -1,11 +1,11 @@
 {
-  "_comment": "Merge this optional fragment into <project>/.claude/settings.json. It is project-scoped and does not grant permissions, modify global settings, or replace the Polylane supervisor.",
+  "_comment": "TEMPLATE — do not merge raw. Render with `<installed>/bin/polylane-hooks.sh render claude` to substitute __POLYLANE_HOOKS_HELPER__ with the absolute installed helper path plus its sha256, then merge the result into <project>/.claude/settings.json. Project-scoped; grants no permissions; never edits global settings or replaces the Polylane supervisor. If the helper is absent the guarded command is a silent no-op.",
   "hooks": {
     "SessionStart": [
       {
         "matcher": "startup|resume|clear|compact",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude SessionStart --project \"$CLAUDE_PROJECT_DIR\"" }
+          { "type": "command", "command": "h='__POLYLANE_HOOKS_HELPER__'; [ -x \"$h\" ] || exit 0; exec \"$h\" claude SessionStart --project \"$CLAUDE_PROJECT_DIR\"" }
         ]
       }
     ],
@@ -13,7 +13,7 @@
       {
         "matcher": "manual|auto",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude PreCompact --project \"$CLAUDE_PROJECT_DIR\"" }
+          { "type": "command", "command": "h='__POLYLANE_HOOKS_HELPER__'; [ -x \"$h\" ] || exit 0; exec \"$h\" claude PreCompact --project \"$CLAUDE_PROJECT_DIR\"" }
         ]
       }
     ],
@@ -21,14 +21,14 @@
       {
         "matcher": "manual|auto",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude PostCompact --project \"$CLAUDE_PROJECT_DIR\"" }
+          { "type": "command", "command": "h='__POLYLANE_HOOKS_HELPER__'; [ -x \"$h\" ] || exit 0; exec \"$h\" claude PostCompact --project \"$CLAUDE_PROJECT_DIR\"" }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR/bin/polylane-hooks.sh\" claude Stop --project \"$CLAUDE_PROJECT_DIR\"" }
+          { "type": "command", "command": "h='__POLYLANE_HOOKS_HELPER__'; [ -x \"$h\" ] || exit 0; exec \"$h\" claude Stop --project \"$CLAUDE_PROJECT_DIR\"" }
         ]
       }
     ]

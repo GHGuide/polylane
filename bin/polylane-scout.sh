@@ -95,6 +95,14 @@ trusted_skill_source() {
 
 skill_fingerprint() { cksum "$1" | awk '{print $1 "-" $2}'; }
 
+reject_navigation_skill() {
+  case "$1" in
+    graphify|graphify-auto)
+      echo "polylane-scout: '$1' is navigation infrastructure, not an executable selected skill; query graphify-out/q.py directly" >&2
+      return 2 ;;
+  esac
+}
+
 # selected_record ID REASON: metadata only. It never reads a skill body.
 selected_record() {
   local id="$1" reason="$2" resolved path source fingerprint
@@ -259,12 +267,13 @@ write_armed_role() {
 # arm_role FILE LANE ROLE SKILL... : write a strict, role-separated kit. Builders
 # receive both a stable base kit and skills chosen specifically for their lane.
 arm_role() {
-  local f="$1" lane="$2" role="$3" arr selected
+  local f="$1" lane="$2" role="$3" arr selected skill
   shift 3
   case "$role" in predefined|specific) ;; *)
     echo "polylane-scout: role must be predefined or specific" >&2; return 2 ;;
   esac
   command -v jq >/dev/null 2>&1 || { echo "polylane-scout: jq required" >&2; return 2; }
+  for skill in "$@"; do reject_navigation_skill "$skill" || return $?; done
   arr=$(_installed_array "$@")
   selected=$(selected_array "$role" "$arr")
   [ "$(jq 'length' <<<"$selected")" -eq "$(jq 'length' <<<"$arr")" ] || {
@@ -281,6 +290,7 @@ arm_recommendation() {
   case "$role" in predefined|specific) ;; *) echo "polylane-scout: role must be predefined or specific" >&2; return 2 ;; esac
   [ -f "$recommendation" ] || { echo "polylane-scout: recommendation file is missing" >&2; return 2; }
   candidate=$(jq -c --arg id "$id" '(.candidates // [])[] | select(.id == $id)' "$recommendation" | head -n 1)
+  reject_navigation_skill "$id" || return $?
   [ -n "$candidate" ] || { echo "polylane-scout: recommendation does not select '$id'" >&2; return 2; }
   jq -e '.status == "recommended" and .safe_to_apply == true' <<<"$candidate" >/dev/null || {
     echo "polylane-scout: candidate is not benchmark-recommended and safe to apply" >&2; return 2;
@@ -427,6 +437,7 @@ migrate_kit() {
 validate_selected_record() {
   local record="$1" id path reason source fingerprint resolved actual_source
   id=$(jq -r '.id // empty' <<<"$record")
+  reject_navigation_skill "$id" || return $?
   path=$(jq -r '.path // empty' <<<"$record")
   reason=$(jq -r '.reason // empty' <<<"$record")
   source=$(jq -r '.source // empty' <<<"$record")
@@ -441,10 +452,34 @@ validate_selected_record() {
   [ "$(canonical_skill_file "$resolved" 2>/dev/null || true)" = "$path" ] || return 1
 }
 
-# validate_kits FILE MANIFEST : a strict orchestration contract for builders.
-# GitHub suggestions are advisory metadata and never count as installed kit skills.
+# kit_active FILE LANE : an absent or structurally empty optional kit is a
+# compatibility no-op. Any role content (including malformed non-array content)
+# arms the kit so validate_kits applies the complete trusted-record contract.
+kit_active() {
+  local f="$1" lane="$2"
+  [ -f "$f" ] || return 1
+  jq -e --arg lane "$lane" '
+    .lanes[$lane] as $kit
+    | if $kit == null then false
+      elif ($kit | type) != "object" then true
+      else
+        ($kit.selected // null) as $selected
+        | [ $kit.predefined, $kit.specific,
+            (if ($selected | type) == "object" then $selected.predefined else $selected end),
+            (if ($selected | type) == "object" then $selected.specific else $selected end) ]
+        | any(if . == null then false
+              elif (type == "array") then length > 0
+              else true
+              end)
+      end
+  ' "$f" >/dev/null 2>&1
+}
+
+# validate_kits FILE MANIFEST : strict builder kits plus an optional typed
+# integrator kit. GitHub suggestions are advisory metadata and never count as
+# installed kit skills.
 validate_kits() {
-  local f="$1" manifest="$2" lane role count skill record paths duplicates
+  local f="$1" manifest="$2" lane role count skill record paths duplicates lanes integrator
   if [ ! -f "$f" ] ||
      ! jq -e '(.version == 2 or .version == 3) and (.lanes | type == "object")' "$f" >/dev/null 2>&1; then
     echo "SCOUT-KIT: missing or invalid structured lane kit: $f" >&2; return 7
@@ -454,7 +489,12 @@ validate_kits() {
      ! jq -e '.lanes | type == "array"' "$manifest" >/dev/null 2>&1; then
     echo "SCOUT-KIT: invalid manifest: $manifest" >&2; return 7
   fi
-  for lane in $(jq -r '.lanes[].name' "$manifest"); do
+  lanes=$(jq -r '.lanes[].name' "$manifest")
+  integrator=$(jq -r '.integrator.name // ""' "$manifest")
+  if [ -n "$integrator" ] && kit_active "$f" "$integrator"; then
+    lanes="$lanes $integrator"
+  fi
+  for lane in $lanes; do
     for role in predefined specific; do
       count=$(jq -r --arg l "$lane" --arg r "$role" \
         '(.lanes[$l][$r] // []) | unique | length' "$f")
@@ -516,6 +556,7 @@ if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
     arm-role)  shift; arm_role "$@" ;;
     arm-recommendation) shift; arm_recommendation "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}" ;;
     migrate)   shift; migrate_kit "${1:?usage: migrate <kit>}" ;;
+    active)    shift; kit_active "${1:?usage: active <kit> <lane>}" "${2:?usage: active <kit> <lane>}" ;;
     armed-role) shift; armed_role "${1:?}" "${2:?}" "${3:?}" ;;
     github)    shift; record_github "${1:?}" "${2:?}" "${3:?}" "${4:?}" ;;
     github-suggest) shift; github_suggest "${1:?usage: github-suggest <activity> [limit]}" "${2:-5}" ;;

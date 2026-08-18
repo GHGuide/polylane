@@ -1,0 +1,20 @@
+{
+  "schema": 2,
+  "lane": "runner-wiring",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-runner-wiring/docs/verify-runner-wiring.md",
+  "helped": [
+    {
+      "id": "engineering:architecture",
+      "effect": " framed the seam as an ADR-style decision (thin overridable helper-command boundary vs. re-implementing tournament/certificate schema in the runner) and chose the boundary that keeps the runner ignorant of helper schemas, satisfying \"do not duplicate the helper's schema logic\"."
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " enumerated the fail-closed risks (missing authoritative config, unsafe paths, prose-GO bypass, unchanged/exhausted repair, learning from an unpromoted candidate) and turned each into a blocking gate with a dedicated test."
+    }
+  ],
+  "unused": [
+    "engineering:debug",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

@@ -57,6 +57,24 @@ cat > "$MANIFEST" <<'JSON'
 {"lanes":[{"name":"ui-lane"}],"integrator":{"name":"integrator"}}
 JSON
 assert_ok "kit-valid-bounded" validate_kits "$KIT" "$MANIFEST"
+
+# Integrator kits are optional: an absent or structurally empty entry is a
+# compatibility no-op. Once any role is armed, it inherits the full builder
+# cardinality, selected-record, and fingerprint contract.
+jq '.lanes.integrator = {}' "$KIT" > "$TEST_TMPDIR/empty-integrator-kits.json"
+assert_ok "kit-empty-integrator-is-noop" \
+  validate_kits "$TEST_TMPDIR/empty-integrator-kits.json" "$MANIFEST"
+jq '.lanes.integrator = {"predefined":["testing-strategy"]}' "$KIT" \
+  > "$TEST_TMPDIR/partial-integrator-kits.json"
+assert_rc "kit-partial-integrator-is-rejected" 7 \
+  validate_kits "$TEST_TMPDIR/partial-integrator-kits.json" "$MANIFEST"
+arm_role "$KIT" integrator predefined testing-strategy
+arm_role "$KIT" integrator specific dataviz
+assert_ok "kit-valid-integrator-is-validated" validate_kits "$KIT" "$MANIFEST"
+jq '.lanes.integrator.selected.predefined[0].fingerprint = "stale"' "$KIT" \
+  > "$TEST_TMPDIR/stale-integrator-kits.json"
+assert_rc "kit-stale-integrator-fingerprint-is-rejected" 7 \
+  validate_kits "$TEST_TMPDIR/stale-integrator-kits.json" "$MANIFEST"
 arm_role "$KIT" ui-lane specific
 assert_rc "kit-rejects-missing-specific" 7 validate_kits "$KIT" "$MANIFEST"
 arm_role "$KIT" ui-lane specific dataviz

@@ -1,5 +1,5 @@
 {
-  "ultimate": "polylane production-grade: stranger-clonable, flawless unattended first run, every feature proven",
+  "ultimate": "Polylane turns a brief into a production-grade, non-generic, high-taste result for any project; a stranger's first unattended run is safe, auditable, self-improving, and truthfully verified",
   "criteria": [
     {
       "id": "c1",
@@ -390,6 +390,265 @@
       "id": "c56",
       "text": "A fresh process-start run loads recovery fixes, completes with zero restarts and one terminal gate, and proves both live rehearsal outcomes before promotion",
       "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c57",
+      "text": "Live pane identity survives cwd drift, retained worker context cannot import stale-run instructions, and Graphify navigation avoids loading the full skill body into every builder",
+      "weight": 80,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c58",
+      "text": "Manifest intensity custom preserves explicitly baked model and effort settings while a CLI intensity remains the only operation that remaps them",
+      "weight": 81,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c59",
+      "text": "A worker cannot be accepted DONE before its agent exits, its owned changes and evidence are committed, and every repair prompt still satisfies strict scalar contracts",
+      "weight": 90,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c60",
+      "text": "A fresh private-tmux run proves pane-local identity, run-scoped inbox context, custom policy preservation, zero lane or supervisor restarts, exactly one terminal gate, and complete cleanup",
+      "weight": 89,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c61",
+      "text": "Repair prompt admission preserves exact scalar contracts and any admission failure leaves current-run verdict, status, and branch tip untouched",
+      "weight": 96,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c62",
+      "text": "A terminal NO-GO or GO always writes one current-run report; the supervisor never revives completed evidence; a fresh certification has zero restarts and one terminal gate",
+      "weight": 95,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c63",
+      "text": "Empty integrator kits remain compatible while armed kits enforce immutable trusted records",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c64",
+      "text": "Runner-owned marker normalization cannot bypass or be broken by completed-branch scope",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c65",
+      "text": "A host-gate failure preserves enough bounded output to diagnose without rerunning the terminal suite",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c66",
+      "text": "A fresh process completes with two launches, zero restarts, one terminal gate, and green live rehearsals",
+      "weight": 10,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c67",
+      "text": "A live in-flight agent turn receives an effort-scaled time-based silence allowance and remains finitely recoverable without the old false-restart window",
+      "weight": 102,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c68",
+      "text": "Every failed lane retains and reports its exact bounded terminal reason instead of being misclassified as a transient provider error",
+      "weight": 101,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c69",
+      "text": "Codex usage telemetry separates total, cached, uncached, output, and reasoning tokens while preserving resumable no-double-count accounting",
+      "weight": 100,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c70",
+      "text": "Every pane and compiled prompt distinguish its writable source worktree from canonical orchestration state and address Graphify through the source root",
+      "weight": 99,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c71",
+      "text": "A fresh post-watchdog process certifies all recovered repairs with two launches, zero restarts, one terminal gate, complete cleanup, and live GO and NO-GO rehearsals",
+      "weight": 98,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c72",
+      "text": "A long in-progress command cannot trigger material-progress replanning or a worker restart",
+      "weight": 106,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c73",
+      "text": "POLYLANE_SOURCE_ROOT is always an absolute physical lane worktree path even when the manifest uses a relative worktree",
+      "weight": 105,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c74",
+      "text": "A completed scope violation halts once with the offending paths and never consumes retry or repair budgets",
+      "weight": 104,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c75",
+      "text": "Every newly generated lane declares planned writes and preflight rejects any planned path outside own_globs",
+      "weight": 103,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c76",
+      "text": "READY consumes a terminal gate only for an eligible current target with terminal-tier acceptance and no outside autonomous work",
+      "weight": 110,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c77",
+      "text": "Nested acceptance commands cannot inherit canonical failure-evidence authority and successful top-level checks leave no stale failure artifact",
+      "weight": 109,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c78",
+      "text": "Every failed promotion reports its exact bounded blocker while preserving all user data and verified worktrees",
+      "weight": 108,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c79",
+      "text": "An unchanged READY boundary reuses focused proof once while any source or acceptance mutation invalidates it",
+      "weight": 107,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c80",
+      "text": "Manifest tests assert the absolute physical-worktree contract and builder prompts explicitly reserve terminal checks for the coordinator",
+      "weight": 111,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c81",
+      "text": "Focused runs can declare zero expected terminal gates while terminal runs default to one, keeping final efficiency proof, cleanup, report, and criterion state consistent",
+      "weight": 112,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c82",
+      "text": "Reinstalling either provider package over a legacy or full-repository skill directory removes stale package artifacts and leaves both Codex discovery roots byte-identical to the current certified package",
+      "weight": 120,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c83",
+      "text": "Every compiled integrator prompt writes its only current-run verdict to docs/verify-integration.md, keeps docs/status-integrator.md status-only, and fails preflight when that boundary is ambiguous",
+      "weight": 125,
+      "status": "done",
+      "score": 0
+    },
+    {
+      "id": "c84",
+      "text": "Visual promotion reads real browser-rendered desktop/mobile/state pixels with provenance and rejects missing, duplicate, stale, or synthetic-placeholder evidence",
+      "weight": 140,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c85",
+      "text": "Taste judges pass a sealed target-matched rendered-and-interactive human holdout; public static-aesthetics and professional-designer corpora remain transfer diagnostics, and weak, biased, inconsistent, contaminated, or unscoped judges cannot vote",
+      "weight": 139,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c86",
+      "text": "Every comparison is identity-hidden, pointwise-before-pairwise, side-mirrored, independent, and checked for position bias and instruction leakage",
+      "weight": 138,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c87",
+      "text": "A champion needs a sealed confirmatory study of 1,000 independent briefs balanced as 100 across each of ten frozen categories, at least 729 brief wins against the frozen baseline, fixed-N non-win handling, and zero task or accessibility regression",
+      "weight": 137,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c88",
+      "text": "UI builders explore divergent directions and rendered candidates, then perform at most two evidence-targeted repairs without forgetting the frozen goal or design lock",
+      "weight": 136,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c89",
+      "text": "Taste scoring rewards product fit, hierarchy, typography, color, spatial rhythm, craftsmanship, originality, and coherent states; genericness detectors remain review-only until a sealed human-labelled qualification proves their sensitivity and false-positive bounds",
+      "weight": 135,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c90",
+      "text": "Claude and Codex packages ship the same taste contract and a fresh install passes focused, full, shell, capture, benchmark, and live workflow checks",
+      "weight": 134,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c91",
+      "text": "Every certification claim is derived through a verified evidence DAG whose least-trusted ancestor controls the effective grade; fixture evidence is absorbing",
+      "weight": 150,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c92",
+      "text": "The machine benchmark tests H0 win probability at most 0.70 with a one-sided exact alpha 0.025 rule, treats each brief as the only independent unit, never inflates n with repeated measurements, and keeps all 1,000 preregistered briefs in the denominator",
+      "weight": 149,
+      "status": "open",
+      "score": 0
+    },
+    {
+      "id": "c93",
+      "text": "A production panel contains five immutable primary configurations plus one availability reserve across at least three provider organizations and three verified base-model lineages, no more than two configurations per lineage, effective independent panel size at least 3.0, and frozen individual, ensemble, mirror-consistency, contamination, equivalence, and correlated-error gates",
+      "weight": 148,
       "status": "open",
       "score": 0
     }
@@ -863,9 +1122,9 @@
           "id": "m16.4",
           "text": "Integrate both provider skills and certify all cycle-16 mechanisms end to end",
           "weight": 54,
-          "status": "open",
-          "cycle": 17,
-          "evidence": "Cycle 16 terminal gate found 9 compatibility failures; fresh Cycle 17 certification required"
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
     },
@@ -893,9 +1152,9 @@
           "id": "m17.3",
           "text": "Integrate recovery changes and complete the fresh terminal certification for all Cycle 16 capabilities",
           "weight": 58,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
     },
@@ -923,9 +1182,9 @@
           "id": "m18.3",
           "text": "Integrate Cycle 18 fixes and complete one clean terminal certification",
           "weight": 66,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
         }
       ]
     },
@@ -951,6 +1210,422 @@
           "id": "m20.1",
           "text": "Audit restart attribution and complete one zero-restart process-start certification",
           "weight": 76,
+          "status": "done",
+          "cycle": 23,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 23"
+        }
+      ]
+    },
+    {
+      "id": "m21",
+      "text": "Cycle 24 — runtime identity and bounded builder context",
+      "subgoals": [
+        {
+          "id": "m21.1",
+          "text": "Replace cwd-only pane discovery with nonce-bound pane identity and prove observer, supervisor, resume, and recovery behavior",
+          "weight": 82,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m21.2",
+          "text": "Scope durable worker inbox events to the active run, enforce the exact inbox prompt contract, and make Graphify query infrastructure context-free",
+          "weight": 81,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m21.3",
+          "text": "Integrate all seams and complete a fresh zero-intervention terminal certification with live observability and transcript token evidence",
+          "weight": 80,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m21.4",
+          "text": "Make documented custom intensity metadata a true no-remap path and preserve explicit CLI preset behavior",
+          "weight": 83,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        }
+      ]
+    },
+    {
+      "id": "m22",
+      "text": "Cycle 25 — atomic handoff and fresh unattended certification",
+      "subgoals": [
+        {
+          "id": "m22.1",
+          "text": "Make commit-clean marker-last handoff and refinement decision syntax mechanical in every builder and integrator prompt",
+          "weight": 90,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m22.2",
+          "text": "Reject completion while an agent is live and keep reflexion or usage-replan prompts strict-contract valid",
+          "weight": 89,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m22.3",
+          "text": "Integrate Cycle 24 and 25 fixes and complete one fresh zero-restart terminal certification",
+          "weight": 88,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        }
+      ]
+    },
+    {
+      "id": "m23",
+      "text": "Transactional terminal finality",
+      "subgoals": [
+        {
+          "id": "m23.1",
+          "text": "Make integrator repair admission strict-scalar safe and transactional so a failed repair cannot mutate terminal evidence or HEAD",
+          "weight": 96,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m23.2",
+          "text": "Guarantee every terminal NO-GO publishes one fresh report and is never mistaken for a supervisor-recoverable crash",
+          "weight": 95,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m23.3",
+          "text": "Complete a fresh zero-restart one-gate certification and install the verified Claude and Codex skill variants",
+          "weight": 94,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        }
+      ]
+    },
+    {
+      "id": "m24",
+      "text": "Repair terminal-gate contracts and certify them from a fresh process",
+      "subgoals": [
+        {
+          "id": "m24.1",
+          "text": "Make optional integrator skill kits truthful and keep virtual dry-run panes free of real tmux tagging",
+          "weight": 97,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m24.2",
+          "text": "Make exact status-marker normalization compatible with strict lane scope",
+          "weight": 10,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m24.3",
+          "text": "Persist bounded exact acceptance-failure output in host evidence and reports",
+          "weight": 9,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m24.4",
+          "text": "Prove the repaired source in a fresh zero-restart one-gate terminal run",
+          "weight": 10,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        }
+      ]
+    },
+    {
+      "id": "m25",
+      "text": "Truthful long-turn supervision and usage accounting",
+      "subgoals": [
+        {
+          "id": "m25.1",
+          "text": "Replace the short check-count live-turn watchdog with an effort-scaled time-based hard cap that protects active inference and still recovers a genuine freeze",
+          "weight": 102,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m25.2",
+          "text": "Persist exact per-lane failure reasons and render truthful HALTED rows and recovery guidance",
+          "weight": 101,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m25.3",
+          "text": "Separate cached and uncached Codex usage in durable telemetry and reports without breaking legacy totals or resume offsets",
+          "weight": 100,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m25.4",
+          "text": "Expose distinct source and control roots to every pane and compiled prompt so Graphify and file work stay lane-local while coordination stays canonical",
+          "weight": 99,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m25.5",
+          "text": "Certify the recovered terminal and watchdog source from one fresh zero-restart one-gate process",
+          "weight": 98,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        }
+      ]
+    },
+    {
+      "id": "m26",
+      "text": "Active-work and scope-plan truth",
+      "subgoals": [
+        {
+          "id": "m26.1",
+          "text": "Make the material-progress guard preserve demonstrably active commands and replan only completed command churn",
+          "weight": 106,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m26.2",
+          "text": "Canonicalize every lane source root to an absolute physical worktree path before pane export",
+          "weight": 105,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m26.3",
+          "text": "Fail a completed out-of-scope handoff once with its exact reason instead of spending retry and repair budgets",
+          "weight": 104,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m26.4",
+          "text": "Require and mechanically validate a planned write-set against lane ownership for newly generated manifests",
+          "weight": 103,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        }
+      ]
+    },
+    {
+      "id": "m27",
+      "text": "Hermetic host-gate and promotion truth",
+      "subgoals": [
+        {
+          "id": "m27.1",
+          "text": "Gate terminal counting and execution on real current-target terminal work",
+          "weight": 110,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m27.2",
+          "text": "Isolate nested acceptance commands from outer failure evidence and clear successful stale artifacts",
+          "weight": 109,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m27.3",
+          "text": "Persist exact promotion blockers into HALTED reports and recovery guidance",
+          "weight": 108,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        },
+        {
+          "id": "m27.4",
+          "text": "Reuse focused READY proof only across an immutable exact-tip boundary",
+          "weight": 107,
+          "status": "done",
+          "cycle": 34,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 34"
+        }
+      ]
+    },
+    {
+      "id": "m28",
+      "text": "Cycle 32 — terminal contract-drift repair",
+      "subgoals": [
+        {
+          "id": "m28.1",
+          "text": "Align manifest path assertions and compact builder terminal-ownership wording with the shipped runtime contracts",
+          "weight": 111,
+          "status": "done",
+          "cycle": 32,
+          "evidence": "integrator GO; promoted cycle 32"
+        }
+      ]
+    },
+    {
+      "id": "m29",
+      "text": "Cycle 33 — focused efficiency and cleanup truth",
+      "subgoals": [
+        {
+          "id": "m29.1",
+          "text": "Make efficiency certificates grade the manifest-declared terminal-gate count and preserve backward-compatible terminal proof verification",
+          "weight": 112,
+          "status": "done",
+          "cycle": 33,
+          "evidence": "integrator GO; promoted cycle 33"
+        }
+      ]
+    },
+    {
+      "id": "m30",
+      "text": "Installed-package upgrade truth",
+      "subgoals": [
+        {
+          "id": "m30.1",
+          "text": "Make Claude and Codex installers replace stale package layouts safely and prove exact installed-root parity",
+          "weight": 120,
+          "status": "done",
+          "cycle": 36,
+          "evidence": "integrator GO; promoted cycle 36"
+        }
+      ]
+    },
+    {
+      "id": "m31",
+      "text": "Integrator verdict-path truth",
+      "subgoals": [
+        {
+          "id": "m31.1",
+          "text": "Make runtime prompt compilation role-aware and prove the canonical two-file integrator handoff end to end",
+          "weight": 126,
+          "status": "done",
+          "cycle": 36,
+          "evidence": "integrator GO; promoted cycle 36"
+        }
+      ]
+    },
+    {
+      "id": "m32",
+      "text": "Research-backed visual taste certification",
+      "subgoals": [
+        {
+          "id": "m32.1",
+          "text": "Synthesize primary research into a falsifiable visual-taste protocol and threat model",
+          "weight": 140,
+          "status": "done",
+          "cycle": 37,
+          "evidence": "integrator GO; promoted cycle 37"
+        },
+        {
+          "id": "m32.2",
+          "text": "Implement live rendering, blinded ballots, calibration, aggregation, and fail-closed taste certification",
+          "weight": 139,
+          "status": "done",
+          "cycle": 38,
+          "evidence": "integrator GO; promoted cycle 38"
+        },
+        {
+          "id": "m32.3",
+          "text": "Integrate candidate tournaments, visual feedback, taste memory, and provider-parity prompt contracts",
+          "weight": 138,
+          "status": "done",
+          "cycle": 39,
+          "evidence": "integrator GO; promoted cycle 39"
+        },
+        {
+          "id": "m32.4",
+          "text": "Run the pinned real-source and provider campaign required to calibrate the independent judge swarm",
+          "weight": 137,
+          "status": "external",
+          "cycle": 41,
+          "evidence": "External source/provider campaign preserved from cycle 41; resume only after v3 contracts and lifecycle routing are promoted"
+        },
+        {
+          "id": "m32.5",
+          "text": "Install both provider packages and certify the complete workflow end to end",
+          "weight": 136,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.4a",
+          "text": "Implement and live-smoke the pinned corpus, provider judges, browser/task/accessibility adapters, production ballot-v2, prompt freeze, and twenty-brief study harness",
+          "weight": 138,
+          "status": "done",
+          "cycle": 40,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 40"
+        },
+        {
+          "id": "m32.6",
+          "text": "Freeze executable v3 execution, provenance, source-calibration, statistics, and lifecycle contracts",
+          "weight": 160,
+          "status": "doing",
+          "cycle": 42,
+          "evidence": "Cycle 42A contract/lifecycle freeze planned"
+        },
+        {
+          "id": "m32.7",
+          "text": "Implement the production evidence chain, selected-source transport, calibrated judge bridge, UI v3 contract, and prompt tournament against the frozen lock",
+          "weight": 159,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.8",
+          "text": "Acquire selected-only public transfer diagnostics and implement the HCM-v2 study, stimulus, consent, ballot, privacy, analysis, and judge-qualification pipeline with a frozen target-matched corpus",
+          "weight": 158,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.8a",
+          "text": "Complete external ethics and privacy review, recruit and compensate the preregistered target-user and designer panels, collect sealed HCM-v2 ballots, and qualify the machine panel without exposing holdout labels",
+          "weight": 158,
+          "status": "external",
+          "cycle": null,
+          "evidence": "Requires human participants, consent, compensation, and independent governance; autonomous code may prepare but cannot manufacture this evidence"
+        },
+        {
+          "id": "m32.9",
+          "text": "Run the 12-brief smoke and 192-brief adaptive prompt-development bank, then one 300-brief one-bit sealed promotion test before freezing every prompt and policy",
+          "weight": 157,
+          "status": "open",
+          "cycle": null,
+          "evidence": ""
+        },
+        {
+          "id": "m32.10",
+          "text": "Run the untouched 1,000-brief ten-category confirmatory benchmark and publish only the strongest truthful scoped MACHINE_EVALUATED HUMAN_CALIBRATED_MACHINE record",
+          "weight": 156,
           "status": "open",
           "cycle": null,
           "evidence": ""
@@ -1186,6 +1861,114 @@
       "kind": "decision",
       "text": "Start a fresh process from the Cycle 19 integrated tip and require a zero-restart terminal certification.",
       "meta": "base=23cabdf; outer domain_runtime omitted; one evidence-only builder; coordinator owns full suite and GO+NO-GO rehearsal."
+    },
+    {
+      "cycle": 24,
+      "kind": "decision",
+      "text": "Run one fresh three-lane self-hosted cycle for pane identity, run-scoped context, and Graphify prompt efficiency.",
+      "meta": "Observed in Cycle 23: state reported no-pane for live workers; stale Cycle 15 inbox instructions reached the Cycle 23 integrator; graphify/SKILL.md added 37,063 bytes before direct q.py queries."
+    },
+    {
+      "cycle": 24,
+      "kind": "learning",
+      "text": "The Cycle 24 dry-run rejected documented intensity custom before any tmux side effect.",
+      "meta": "Schema says custom is advisory metadata and only a CLI --intensity remaps; model policy currently treats manifest custom as a preset."
+    },
+    {
+      "cycle": 25,
+      "kind": "attempt",
+      "text": "fresh atomic-handoff certification from Cycle 24 integrated NO-GO tip",
+      "meta": "run=c25-finality-20260810-a1; frozen zero-restart proof"
+    },
+    {
+      "cycle": 26,
+      "kind": "learning",
+      "text": "Cycle 25 proved a four-link failure chain: repairable-default routing, duplicate integrator repair scalars, pre-admission evidence mutation, and missing report caused a false supervisor revival.",
+      "meta": "source=live-c25-finality"
+    },
+    {
+      "cycle": 27,
+      "kind": "attempt",
+      "text": "Repair the two Cycle 26 terminal-suite failures and retain exact host-gate output before fresh certification",
+      "meta": "source=d8b9417; cycle26=NO-GO; terminal_gate=1"
+    },
+    {
+      "cycle": 28,
+      "kind": "learning",
+      "text": "Cycle 27's old watchdog falsely halted a still-live high-effort integrator after 40 quiet checks; the worker later completed and committed READY source.",
+      "meta": "preserve Cycle 27 HALTED report; recovered exact tip=38ee3fa8bd0720d02755d2f3215f9bd936a17a78"
+    },
+    {
+      "cycle": 28,
+      "kind": "attempt",
+      "text": "Repair long-turn supervision, failure attribution, cached-token accounting, and source/control-root clarity before a fresh terminal certification.",
+      "meta": "run=c28-watchdog-truth-20260810-a1; focused only; expected launches=2 restarts=0 terminal_gates=0"
+    },
+    {
+      "cycle": 28,
+      "kind": "learning",
+      "text": "Cycle 28 truthfully HALTED: a healthy long regression command triggered the material-progress usage guard, producing eight restarts; the completed tip then failed scope because bin/polylane-promptlint.sh was required by the prompt but omitted from own_globs.",
+      "meta": "run=c28-watchdog-truth-20260810-a1;tip=cf60d3c1646dc6a7ae3f76a636be423cef91e9a1"
+    },
+    {
+      "cycle": 29,
+      "kind": "learning",
+      "text": "Cycle 29 HALTED after nested acceptance evidence polluted the canonical root and promotion refused the exact path",
+      "meta": "source=docs/polylane/cycle-29-outcome.md;tip=9df16a33c51ccbb210247c51fc9bbb1207d256ed"
+    },
+    {
+      "cycle": 30,
+      "kind": "decision",
+      "text": "Repair gate truth in a zero-terminal focused cycle before fresh certification",
+      "meta": "target=m27.1,m27.2,m27.3,m27.4;next=Cycle 31 terminal"
+    },
+    {
+      "cycle": 33,
+      "kind": "learning",
+      "text": "Cycle 32 focused GO cleaned successfully but final efficiency hard-required one terminal gate, creating a false cleanup warning and leaving c80 open",
+      "meta": "report cleanup=complete versus warning text; efficiency proof terminal_gates=0"
+    },
+    {
+      "cycle": 34,
+      "kind": "decision",
+      "text": "Run one fresh zero-retry terminal certificate over every remaining autonomous subgoal after Cycle 33 repaired focused efficiency truth",
+      "meta": "default expected_terminal_gates=1; exactly two launches; one terminal event"
+    },
+    {
+      "cycle": 35,
+      "kind": "decision",
+      "text": "Repair stale installed-package upgrades with one focused builder and no terminal gate",
+      "meta": "post-Cycle-34 installed-path audit found obsolete duplicate engine files"
+    },
+    {
+      "cycle": 36,
+      "kind": "attempt",
+      "text": "Recover Cycle 35 installer repair and eliminate role-ambiguous integrator verdict destinations with a red-first compiled-prompt contract",
+      "meta": "live c35 GO-in-status / UNKNOWN-in-gate reproduction"
+    },
+    {
+      "cycle": 37,
+      "kind": "decision",
+      "text": "Taste certification is empirical: human-calibrated rendered comparisons, confidence, and accessibility veto; no prose-only or self-scored pass.",
+      "meta": ""
+    },
+    {
+      "cycle": 39,
+      "kind": "decision",
+      "text": "Close production taste authority before benchmarking: three rendered candidates, trusted transitive receipts, durable two-repair event replay, provider-native installs, and evidence-scoped memory.",
+      "meta": "adversarial swarm consensus"
+    },
+    {
+      "cycle": 42,
+      "kind": "decision",
+      "text": "Freeze executable trust and lifecycle contracts before any producer or benchmark implementation",
+      "meta": "four disjoint Codex builders; integrator owns sole contract lock and claim registry"
+    },
+    {
+      "cycle": 42,
+      "kind": "learning",
+      "text": "The proposed 20-brief 15-win rule was underpowered and its Wilson/sign gates were redundant; abort before launch and replace it with HCM-v2 human calibration plus a 1,000-brief practical-superiority confirmation",
+      "meta": "15/20 has about 0.416 power at true p=0.70; 729/1000 gives one-sided exact alpha about 0.02381 against p0=0.70 and power about 0.94082 at p=0.75"
     }
   ],
   "accept": [
@@ -1737,10 +2520,10 @@
     },
     {
       "sid": "m16.4",
-      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle16-terminal",
-      "status": "fail",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1799,7 +2582,7 @@
       "sid": "m18.3",
       "cmd": "bash tests/test-cycle-16-contract.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh",
       "tier": "focused",
-      "key": "cycle18-integration",
+      "key": "recovery-integration",
       "status": "pass",
       "deps": [],
       "fp": "",
@@ -1810,7 +2593,7 @@
       "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
       "tier": "terminal",
       "key": "cycle16-terminal",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null
@@ -1831,6 +2614,783 @@
       "tier": "focused",
       "key": "cycle20-process-start",
       "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.1",
+      "cmd": "bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh",
+      "tier": "focused",
+      "key": "pane-identity",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-tmux.sh",
+        "bin/polylane-state.sh",
+        "bin/polylane-supervisor.sh",
+        "bin/polylane-run.sh",
+        "tests/test-tmux-runtime.sh",
+        "tests/test-state.sh",
+        "tests/test-supervisor.sh"
+      ],
+      "fp": "1533571123",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.2",
+      "cmd": "bash tests/test-workers.sh && bash tests/test-worker-canonical-state.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-promptlint.sh && bash tests/test-skill-delivery.sh && bash tests/test-promptopt.sh",
+      "tier": "focused",
+      "key": "bounded-context",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-workers.sh",
+        "bin/polylane-promptlint.sh",
+        "bin/polylane-promptopt.sh",
+        "bin/polylane-run.sh",
+        "references/prompt-blocks.md",
+        "references/skill-scout.md",
+        "references/skill-catalog.md",
+        "tests/test-workers.sh",
+        "tests/test-worker-canonical-state.sh",
+        "tests/test-prime-hybrid-integration.sh",
+        "tests/test-promptlint.sh",
+        "tests/test-skill-delivery.sh",
+        "tests/test-promptopt.sh"
+      ],
+      "fp": "2722162176",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.3",
+      "cmd": "tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "terminal-cert",
+      "status": "pass",
+      "deps": [
+        "bin/*.sh",
+        "tests/test-*.sh",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "references/*.md"
+      ],
+      "fp": "806407979",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m21.4",
+      "cmd": "bash tests/test-model-policy.sh && bash tests/test-intensity.sh",
+      "tier": "focused",
+      "key": "custom-intensity",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-model-policy.sh",
+        "bin/polylane-run.sh",
+        "tests/test-model-policy.sh",
+        "tests/test-intensity.sh",
+        ".polylane/SCHEMA.md"
+      ],
+      "fp": "4274120585",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m22.1",
+      "cmd": "bash tests/test-handoff-contract.sh && bash tests/test-promptlint.sh && bash tests/test-orchestration-contract.sh && bash tests/test-prime-hybrid-integration.sh && bash tests/test-skill-parity.sh",
+      "tier": "focused",
+      "key": "handoff-contract",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-promptlint.sh",
+        "references/prompt-blocks.md",
+        "references/lane-template.md",
+        "references/planning.md",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "tests/test-handoff-contract.sh",
+        "tests/test-promptlint.sh",
+        "tests/test-orchestration-contract.sh",
+        "tests/test-prime-hybrid-integration.sh",
+        "tests/test-skill-parity.sh"
+      ],
+      "fp": "2749471627",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m22.2",
+      "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-progress-guard.sh && bash tests/test-promptopt.sh",
+      "tier": "focused",
+      "key": "runtime-finality",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-lane-done-live.sh",
+        "tests/test-runtime-recovery.sh",
+        "tests/test-progress-guard.sh",
+        "tests/test-promptopt.sh"
+      ],
+      "fp": "882425623",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m22.3",
+      "cmd": "bash tests/test-handoff-contract.sh && bash tests/test-lane-done-live.sh && bash tests/test-tmux-runtime.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh && bash tests/test-workers.sh && bash tests/test-worker-run-scope.sh && bash tests/test-model-policy.sh && bash tests/test-intensity.sh",
+      "tier": "focused",
+      "key": "c25-integration",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "bin/polylane-tmux.sh",
+        "bin/polylane-workers.sh",
+        "references/prompt-blocks.md",
+        "tests/test-handoff-contract.sh",
+        "tests/test-lane-done-live.sh",
+        "tests/test-tmux-runtime.sh",
+        "tests/test-state.sh",
+        "tests/test-supervisor.sh",
+        "tests/test-workers.sh",
+        "tests/test-worker-run-scope.sh",
+        "tests/test-model-policy.sh",
+        "tests/test-intensity.sh"
+      ],
+      "fp": "1103188311",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m22.3",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "terminal-cert",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-action-preview.sh",
+        "bin/polylane-advanced.sh",
+        "bin/polylane-bisect.sh",
+        "bin/polylane-certify.sh",
+        "bin/polylane-check.sh",
+        "bin/polylane-claudemem.sh",
+        "bin/polylane-codex-canary.sh",
+        "bin/polylane-context.sh",
+        "bin/polylane-coordinate.sh",
+        "bin/polylane-corpus.sh",
+        "bin/polylane-cycle.sh",
+        "bin/polylane-dashboard.sh",
+        "bin/polylane-decision.sh",
+        "bin/polylane-digest.sh",
+        "bin/polylane-discovery.sh",
+        "bin/polylane-doctor.sh",
+        "bin/polylane-domain-trials.sh",
+        "bin/polylane-domain.sh",
+        "bin/polylane-efficiency.sh",
+        "bin/polylane-events.sh",
+        "bin/polylane-graph-bench.sh",
+        "bin/polylane-graph.sh",
+        "bin/polylane-harness.sh",
+        "bin/polylane-hooks.sh",
+        "bin/polylane-judges.sh",
+        "bin/polylane-ledger.sh",
+        "bin/polylane-markers.sh",
+        "bin/polylane-memory.sh",
+        "bin/polylane-model-policy.sh",
+        "bin/polylane-models.sh",
+        "bin/polylane-notify.sh",
+        "bin/polylane-optimize.sh",
+        "bin/polylane-outcomes.sh",
+        "bin/polylane-product-benchmark.sh",
+        "bin/polylane-project.sh",
+        "bin/polylane-promptlint.sh",
+        "bin/polylane-promptopt.sh",
+        "bin/polylane-refine.sh",
+        "bin/polylane-rehearse.sh",
+        "bin/polylane-report-items.sh",
+        "bin/polylane-run-stats.sh",
+        "bin/polylane-run.sh",
+        "bin/polylane-scope.sh",
+        "bin/polylane-scout.sh",
+        "bin/polylane-seams.sh",
+        "bin/polylane-select.sh",
+        "bin/polylane-skill-acquire.sh",
+        "bin/polylane-skill-agent-eval.sh",
+        "bin/polylane-skill-benchmark.sh",
+        "bin/polylane-skill-blind-judge.sh",
+        "bin/polylane-skill-catalog.sh",
+        "bin/polylane-skill-evolve.sh",
+        "bin/polylane-soak.sh",
+        "bin/polylane-state.sh",
+        "bin/polylane-supervisor.sh",
+        "bin/polylane-tmux.sh",
+        "bin/polylane-visual-quality.sh",
+        "bin/polylane-visual.sh",
+        "bin/polylane-workers.sh",
+        "tests/test-abs-prompt.sh",
+        "tests/test-accept-dedupe.sh",
+        "tests/test-advanced-runtime.sh",
+        "tests/test-agent-adapter.sh",
+        "tests/test-approval.sh",
+        "tests/test-bisect.sh",
+        "tests/test-check-cache.sh",
+        "tests/test-claudemem.sh",
+        "tests/test-cleanup.sh",
+        "tests/test-clear-markers.sh",
+        "tests/test-codex-canary.sh",
+        "tests/test-codex-profile.sh",
+        "tests/test-context.sh",
+        "tests/test-contract-acceptance.sh",
+        "tests/test-control-room.sh",
+        "tests/test-coordination.sh",
+        "tests/test-corpus.sh",
+        "tests/test-cycle-13-contract.sh",
+        "tests/test-cycle-14-contract.sh",
+        "tests/test-cycle-16-contract.sh",
+        "tests/test-cycle.sh",
+        "tests/test-dashboard.sh",
+        "tests/test-decision.sh",
+        "tests/test-digest.sh",
+        "tests/test-discovery-graph.sh",
+        "tests/test-docs-truth.sh",
+        "tests/test-doctor-agent.sh",
+        "tests/test-doctor.sh",
+        "tests/test-domain-runtime.sh",
+        "tests/test-domain-trials.sh",
+        "tests/test-dryrun-pure.sh",
+        "tests/test-efficiency-canary.sh",
+        "tests/test-graph-authority.sh",
+        "tests/test-graph-benchmark.sh",
+        "tests/test-graph-contract.sh",
+        "tests/test-graph-events.sh",
+        "tests/test-graph-quality-loop.sh",
+        "tests/test-graph-shadow.sh",
+        "tests/test-harness.sh",
+        "tests/test-hooks.sh",
+        "tests/test-install-fresh.sh",
+        "tests/test-installers.sh",
+        "tests/test-intensity.sh",
+        "tests/test-judges.sh",
+        "tests/test-lane-done.sh",
+        "tests/test-learning-economy.sh",
+        "tests/test-ledger.sh",
+        "tests/test-load-manifest.sh",
+        "tests/test-manifest-validation.sh",
+        "tests/test-marker-contract.sh",
+        "tests/test-memory.sh",
+        "tests/test-model-policy.sh",
+        "tests/test-models.sh",
+        "tests/test-notify.sh",
+        "tests/test-orchestration-contract.sh",
+        "tests/test-outcome-rooting.sh",
+        "tests/test-outcomes.sh",
+        "tests/test-pane-errored.sh",
+        "tests/test-pane-log.sh",
+        "tests/test-pane-stalled.sh",
+        "tests/test-parse-args.sh",
+        "tests/test-parse-verdict.sh",
+        "tests/test-prime-hybrid-integration.sh",
+        "tests/test-product-benchmark.sh",
+        "tests/test-progress-guard.sh",
+        "tests/test-project-generality.sh",
+        "tests/test-promote.sh",
+        "tests/test-promotion-transaction.sh",
+        "tests/test-prompt-compiler.sh",
+        "tests/test-prompt-economy.sh",
+        "tests/test-promptlint.sh",
+        "tests/test-promptopt.sh",
+        "tests/test-refine.sh",
+        "tests/test-reflexion.sh",
+        "tests/test-rehearse.sh",
+        "tests/test-report-items.sh",
+        "tests/test-run-stats.sh",
+        "tests/test-runtime-recovery.sh",
+        "tests/test-runtime-refresh.sh",
+        "tests/test-runtime-survival.sh",
+        "tests/test-scope.sh",
+        "tests/test-scout-catalog.sh",
+        "tests/test-scout-outcomes.sh",
+        "tests/test-scout.sh",
+        "tests/test-seams.sh",
+        "tests/test-seed-recovery-accounting.sh",
+        "tests/test-select.sh",
+        "tests/test-session-resume.sh",
+        "tests/test-share-graph.sh",
+        "tests/test-skill-acquire.sh",
+        "tests/test-skill-agent-eval.sh",
+        "tests/test-skill-delivery.sh",
+        "tests/test-skill-evolve.sh",
+        "tests/test-skill-parity.sh",
+        "tests/test-soak.sh",
+        "tests/test-state.sh",
+        "tests/test-status-marker-normalization.sh",
+        "tests/test-supervisor.sh",
+        "tests/test-tmux-runtime.sh",
+        "tests/test-verdict-repair.sh",
+        "tests/test-verify-gate.sh",
+        "tests/test-visual-intelligence.sh",
+        "tests/test-visual-loop-integration.sh",
+        "tests/test-visual-quality.sh",
+        "tests/test-wedge.sh",
+        "tests/test-worker-canonical-state.sh",
+        "tests/test-worker-run-scope.sh",
+        "tests/test-workers.sh",
+        "tests/test-write-report.sh",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "references/cycle-13-integration.md",
+        "references/cycle-9-control-room.md",
+        "references/discovery.md",
+        "references/documentation.md",
+        "references/evidence-driven-domain-autonomy.md",
+        "references/install-helpers.md",
+        "references/interview.md",
+        "references/lane-derivation.md",
+        "references/lane-template.md",
+        "references/merge-and-cleanup.md",
+        "references/model-selection.md",
+        "references/planning.md",
+        "references/project-types.md",
+        "references/prompt-blocks.md",
+        "references/skill-catalog.md",
+        "references/skill-evolution.md",
+        "references/skill-scout.md",
+        "references/visual-intelligence.md"
+      ],
+      "fp": "3114259137",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m23.1",
+      "cmd": "bash tests/test-verdict-repair.sh && bash tests/test-promptopt.sh && bash tests/test-runtime-recovery.sh",
+      "tier": "focused",
+      "key": "repair-transaction",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-verdict-repair.sh",
+        "tests/test-promptopt.sh",
+        "tests/test-runtime-recovery.sh"
+      ],
+      "fp": "524140082",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m23.2",
+      "cmd": "bash tests/test-write-report.sh && bash tests/test-supervisor.sh && bash tests/test-session-resume.sh && bash tests/test-clear-markers.sh",
+      "tier": "focused",
+      "key": "terminal-report",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "bin/polylane-supervisor.sh",
+        "tests/test-write-report.sh",
+        "tests/test-supervisor.sh",
+        "tests/test-session-resume.sh",
+        "tests/test-clear-markers.sh"
+      ],
+      "fp": "1666392478",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m23.3",
+      "cmd": "bash tests/test-run-stats.sh && bash tests/test-state.sh && bash tests/test-supervisor.sh",
+      "tier": "focused",
+      "key": "fresh-runtime",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "bin/polylane-supervisor.sh",
+        "bin/polylane-run-stats.sh",
+        "tests/test-run-stats.sh",
+        "tests/test-state.sh",
+        "tests/test-supervisor.sh"
+      ],
+      "fp": "4079757791",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m24.1",
+      "cmd": "bash tests/test-manifest-validation.sh && bash tests/test-cycle-13-contract.sh && bash tests/test-scout.sh && bash tests/test-orchestration-contract.sh && bash tests/test-dryrun-pure.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-scout.sh",
+        "bin/polylane-run.sh",
+        "tests/test-manifest-validation.sh",
+        "tests/test-cycle-13-contract.sh",
+        "tests/test-scout.sh",
+        "tests/test-orchestration-contract.sh",
+        "tests/test-dryrun-pure.sh"
+      ],
+      "fp": "495465295",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m24.2",
+      "cmd": "bash tests/test-status-marker-normalization.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-scope.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "bin/polylane-scope.sh",
+        "tests/test-status-marker-normalization.sh",
+        "tests/test-lane-done.sh",
+        "tests/test-lane-done-live.sh",
+        "tests/test-scope.sh"
+      ],
+      "fp": "2672156905",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m24.3",
+      "cmd": "bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-write-report.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-memory.sh",
+        "bin/polylane-run.sh",
+        "tests/test-memory.sh",
+        "tests/test-contract-acceptance.sh",
+        "tests/test-verdict-repair.sh",
+        "tests/test-write-report.sh"
+      ],
+      "fp": "4284459469",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m24.4",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "terminal-cert-c29",
+      "status": "pass",
+      "deps": [
+        "bin/*.sh",
+        "tests/test-*.sh",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "references/*.md"
+      ],
+      "fp": "806407979",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.1",
+      "cmd": "bash tests/test-wedge.sh && bash tests/test-runtime-recovery.sh && bash tests/test-pane-errored.sh",
+      "tier": "focused",
+      "key": "live-turn-supervision",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-wedge.sh",
+        "tests/test-runtime-recovery.sh",
+        "tests/test-pane-errored.sh"
+      ],
+      "fp": "2546687324",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.2",
+      "cmd": "bash tests/test-write-report.sh && bash tests/test-runtime-recovery.sh",
+      "tier": "focused",
+      "key": "failure-reason-truth",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-write-report.sh",
+        "tests/test-runtime-recovery.sh"
+      ],
+      "fp": "892024012",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.3",
+      "cmd": "bash tests/test-run-stats.sh && bash tests/test-write-report.sh && bash tests/test-efficiency-canary.sh",
+      "tier": "focused",
+      "key": "usage-breakdown",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run-stats.sh",
+        "bin/polylane-run.sh",
+        "tests/test-run-stats.sh",
+        "tests/test-write-report.sh",
+        "tests/test-efficiency-canary.sh"
+      ],
+      "fp": "473079299",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.4",
+      "cmd": "bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-orchestration-contract.sh && bash tests/test-promptlint.sh",
+      "tier": "focused",
+      "key": "source-control-roots",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-agent-adapter.sh",
+        "tests/test-prompt-compiler.sh",
+        "tests/test-orchestration-contract.sh",
+        "tests/test-promptlint.sh"
+      ],
+      "fp": "3405823763",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m25.5",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bash tests/test-installers.sh && POLYLANE_MIN_DISK_GB=0 bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "terminal-cert-c29",
+      "status": "pass",
+      "deps": [
+        "bin/*.sh",
+        "tests/test-*.sh",
+        "SKILL.md",
+        "codex/SKILL.md",
+        "references/*.md"
+      ],
+      "fp": "806407979",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.1",
+      "cmd": "bash tests/test-progress-guard.sh && bash tests/test-wedge.sh",
+      "tier": "focused",
+      "key": "active-command-progress",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.2",
+      "cmd": "bash tests/test-agent-adapter.sh && bash tests/test-prompt-compiler.sh && bash tests/test-promptlint.sh",
+      "tier": "focused",
+      "key": "absolute-source-root",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.3",
+      "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-runtime-recovery.sh && bash tests/test-write-report.sh",
+      "tier": "focused",
+      "key": "scope-fail-fast",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m26.4",
+      "cmd": "bash tests/test-scope.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh",
+      "tier": "focused",
+      "key": "planned-write-set",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.1",
+      "cmd": "bash tests/test-contract-acceptance.sh && bash tests/test-run-stats.sh",
+      "tier": "focused",
+      "key": "target-terminal-eligibility",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-contract-acceptance.sh",
+        "tests/test-run-stats.sh"
+      ],
+      "fp": "583827816",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.2",
+      "cmd": "bash tests/test-memory.sh && bash tests/test-contract-acceptance.sh",
+      "tier": "focused",
+      "key": "accept-evidence-hermetic",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-memory.sh",
+        "bin/polylane-run.sh",
+        "tests/test-memory.sh",
+        "tests/test-contract-acceptance.sh"
+      ],
+      "fp": "1659722472",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.3",
+      "cmd": "bash tests/test-promotion-transaction.sh && bash tests/test-write-report.sh",
+      "tier": "focused",
+      "key": "promotion-failure-report",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-promotion-transaction.sh",
+        "tests/test-write-report.sh"
+      ],
+      "fp": "2572459859",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m27.4",
+      "cmd": "bash tests/test-contract-acceptance.sh && bash tests/test-efficiency-canary.sh",
+      "tier": "focused",
+      "key": "focused-proof-snapshot",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "tests/test-contract-acceptance.sh",
+        "tests/test-efficiency-canary.sh"
+      ],
+      "fp": "3287849340",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m28.1",
+      "cmd": "bash tests/test-load-manifest.sh && bash tests/test-prompt-economy.sh && bash tests/test-abs-prompt.sh && bash tests/test-orchestration-contract.sh",
+      "tier": "focused",
+      "key": "terminal-contract-drift",
+      "status": "pass",
+      "deps": [
+        "bin/polylane-run.sh",
+        "references/prompt-blocks.md",
+        "tests/test-load-manifest.sh",
+        "tests/test-prompt-economy.sh",
+        "tests/test-abs-prompt.sh",
+        "tests/test-orchestration-contract.sh"
+      ],
+      "fp": "2638469736",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m29.1",
+      "cmd": "bash tests/test-efficiency-canary.sh && bash tests/test-write-report.sh && bash tests/test-manifest-validation.sh && bash tests/test-orchestration-contract.sh && shellcheck -S warning bin/polylane-efficiency.sh bin/polylane-run.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m30.1",
+      "cmd": "bash tests/test-install-fresh.sh && bash tests/test-installers.sh && bash tests/test-doctor-agent.sh",
+      "tier": "focused",
+      "key": "install-upgrade",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m31.1",
+      "cmd": "bash tests/test-lane-done-live.sh && bash tests/test-promptlint.sh && bash tests/test-handoff-contract.sh && bash tests/test-orchestration-contract.sh && bash tests/test-marker-contract.sh && bash tests/test-skill-parity.sh",
+      "tier": "focused",
+      "key": "integrator-verdict-path",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.1",
+      "cmd": "test -s docs/polylane/taste-certification/RESEARCH.md && test -s docs/polylane/taste-certification/PROTOCOL.md && rg -qi 'human[- ]rated|human label' docs/polylane/taste-certification/RESEARCH.md && rg -qi 'pointwise.*pairwise|pairwise.*pointwise' docs/polylane/taste-certification/PROTOCOL.md && rg -qi 'position bias|side.*mirror' docs/polylane/taste-certification/PROTOCOL.md",
+      "tier": "focused",
+      "key": "taste-research",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.2",
+      "cmd": "tests/test-taste-certification.sh && tests/test-visual-capture.sh && shellcheck -S warning bin/polylane-taste.sh bin/polylane-visual-capture.sh",
+      "tier": "focused",
+      "key": "taste-engine",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.3",
+      "cmd": "bash tests/test-taste-validator-receipts.sh && bash tests/test-taste-certification.sh && bash tests/test-visual-capture.sh && bash tests/test-taste-a11y.sh && bash tests/test-taste-stimulus.sh && bash tests/test-visual-tournament.sh && bash tests/test-taste-tournament.sh && bash tests/test-tournament-capture-seam.sh && bash tests/test-champion-persistence.sh && bash tests/test-graph-tournament.sh && bash tests/test-taste-memory.sh && bash tests/test-taste-memory-security.sh && bash tests/test-taste-memory-advice.sh && bash tests/test-visual-taste-memory-integration.sh && bash tests/test-visual-intelligence.sh && bash tests/test-visual-quality.sh && bash tests/test-taste-runner-gate.sh && bash tests/test-promptlint.sh && bash tests/test-prompt-compiler.sh && bash tests/test-claude-taste-contract.sh && bash tests/test-visual-loop-integration.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bash tests/test-hooks.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-taste-production-chain.sh && bash tests/test-taste-runner-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
+      "tier": "focused",
+      "key": "taste-contract",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4",
+      "cmd": "bin/polylane-taste.sh certify docs/polylane/taste-certification/benchmark/manifest.json docs/polylane/taste-certification/benchmark/certificate.json && jq -e '.status == \"TASTE-CERTIFIED\" and .human_calibrated == true and .human_certified == false and .fixture_only == false and .eligible_judges >= 5 and .briefs >= 10 and .brief_wins >= 7 and .preference_rate >= 0.70 and .confidence_lower > 0.50 and .accessibility_regressions == 0 and (.subject_revision | test(\"^[0-9a-f]{40}([0-9a-f]{24})?$\")) and (.validator_chain_sha256 | test(\"^[0-9a-f]{64}$\"))' docs/polylane/taste-certification/benchmark/certificate.json >/dev/null",
+      "tier": "focused",
+      "evidence_kind": "external",
+      "key": "taste-live-corpus",
+      "status": "fail",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.5",
+      "cmd": "bash tests/run.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh && bash tests/test-installers.sh && bash tests/test-install-fresh.sh && bash tests/test-skill-parity.sh && bash tests/test-codex-taste-install.sh && bin/polylane-doctor.sh --rehearse",
+      "tier": "terminal",
+      "key": "taste-terminal",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4a",
+      "cmd": "bash tests/test-taste-source-live.sh && bash tests/test-taste-calibration-live.sh && bash tests/test-taste-judge-claude.sh && bash tests/test-taste-judge-codex.sh && bash tests/test-taste-judge-run.sh && bash tests/test-taste-ballot-live.sh && bash tests/test-taste-browser-live.sh && bash tests/test-taste-decode-live.sh && bash tests/test-taste-a11y-live.sh && bash tests/test-taste-task-live.sh && bash tests/test-taste-corpus-20.sh && bash tests/test-taste-prompts-live.sh && bash tests/test-taste-generate-live.sh && bash tests/test-taste-study-live.sh && bash tests/test-taste-live-harness-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
+      "tier": "focused",
+      "key": "",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4a",
+      "cmd": "bash tests/test-taste-protocol-live.sh && bin/polylane-markers.sh check-docs references/ && bash tests/test-skill-parity.sh && git diff --check",
+      "tier": "focused",
+      "key": "",
+      "status": "pass",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4",
+      "cmd": "bash tests/test-taste-dataverse-transport.sh && bash tests/test-taste-dataone-metadata.sh && bash tests/test-taste-source-freeze.sh && bash tests/test-taste-download-campaign.sh && bash tests/test-taste-cache-integrity.sh && bash tests/test-taste-ratings-normalize.sh && bash tests/test-taste-corpus-select.sh && bash tests/test-taste-pair-builder.sh && bash tests/test-taste-calibration-campaign.sh && bash tests/test-taste-calibration-audit.sh && bash tests/test-taste-panel-freeze.sh && bash tests/test-taste-benchmark-preflight.sh && bash tests/test-taste-source-adversarial.sh && bash tests/test-taste-source-campaign-e2e.sh && shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh",
+      "tier": "focused",
+      "evidence_kind": "external",
+      "key": "",
+      "status": "fail",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.4",
+      "cmd": "jq -e '.status == \"VALIDATED\" and .fixture_only == false and .domains == 3 and .calibration_images == 180 and .holdout_images == 72 and .eligible_judges >= 5 and .human_calibrated == true and .human_certified == false' docs/polylane/taste-certification/benchmark/calibration-summary.json >/dev/null",
+      "tier": "focused",
+      "evidence_kind": "external",
+      "key": "",
+      "status": "fail",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.6",
+      "cmd": "bash tests/test-taste-execution-contract-v3.sh && bash tests/test-evidence-dag.sh && bash tests/test-taste-source-contract-v3.sh && bash tests/test-finalization-watchdog.sh && bash tests/test-contract-acceptance.sh && bash tests/test-verdict-repair.sh && bash tests/test-lane-done.sh && bash tests/test-lane-done-live.sh && bash tests/test-supervisor.sh && shellcheck -S warning bin/polylane-taste-execution-contract.sh bin/polylane-evidence-dag.sh bin/polylane-taste-source-contract.sh bin/polylane-finalize.sh bin/polylane-memory.sh bin/polylane-run.sh bin/polylane-supervisor.sh assets/verify-gate.sh && tests/run.sh && bin/polylane-markers.sh check-docs references/ && bash tests/test-skill-parity.sh && git diff --check",
+      "tier": "focused",
+      "evidence_kind": "autonomous",
+      "key": "taste-v3-contract-lock",
+      "status": "unchecked",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

@@ -22,13 +22,31 @@
 #             A HALTED report is recoverable runner failure and is resumed.
 #   halt    : restart cap exhausted -> notify halt, exit 1, worktrees intact.
 #
-# Panes are found by WORKTREE PATH, not remembered index, so the relay works
-# across restarts. `--check-once` runs a single watch tick with no launch (ops /
-# tests). bash-3.2 safe.
+# Panes are found by nonce-bound identity, not remembered index, so the relay
+# works across restarts and agent cwd drift. `--check-once` runs a single watch
+# tick with no launch (ops / tests). bash-3.2 safe.
 #
 # Env: POLYLANE_SESSION (tmux session), POLYLANE_SUP_INTERVAL, POLYLANE_SUP_MAX_RESTARTS.
 
 set -euo pipefail
+
+supervisor_usage() {
+  cat <<'USAGE'
+polylane-supervisor.sh — crash-proof outer loop for polylane-run.sh
+
+USAGE:
+  bin/polylane-supervisor.sh <manifest.json> [runner-args...]
+  bin/polylane-supervisor.sh --help
+
+The supervisor adds --yes when absent, relays safe approvals, and resumes a runner
+that dies before writing a terminal report.
+USAGE
+}
+
+case "${1:-}" in
+  -h|--help) supervisor_usage; exit 0 ;;
+  '') supervisor_usage >&2; exit 2 ;;
+esac
 
 SUP_MANIFEST="${1:?usage: polylane-supervisor.sh <manifest.json> [runner-args...]}"
 shift || true
@@ -62,8 +80,23 @@ RUNNER_LOG="$MDIR/runner.log"
 SUP_LOCK="$MDIR/supervisor.lock"
 DECIDED=""            # lanes parked on a critical approval (notified once)
 SUP_START=$(date +%s)
+SUP_CHILD_PID=""
 
 sup_log() { printf '[supervisor %s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
+
+supervisor_stop() {
+  local sig="$1" code="$2"
+  trap - INT TERM
+  sup_log "received $sig — stopping the active runner and exiting"
+  if [ -n "$SUP_CHILD_PID" ] && kill -0 "$SUP_CHILD_PID" 2>/dev/null; then
+    case "$sig" in
+      INT)  kill -INT "$SUP_CHILD_PID" 2>/dev/null || true ;;
+      TERM) kill -TERM "$SUP_CHILD_PID" 2>/dev/null || true ;;
+    esac
+    wait "$SUP_CHILD_PID" 2>/dev/null || true
+  fi
+  exit "$code"
+}
 
 record_supervisor_restart() {
   [ -x "$SCRIPT_DIR/polylane-run-stats.sh" ] || return 0
@@ -91,7 +124,8 @@ supervisor_disk_ready() {
 report_fresh() {
   [ -f "$REPORT" ] || return 1
   local mt; mt=$(stat -c %Y "$REPORT" 2>/dev/null || stat -f %m "$REPORT" 2>/dev/null || echo 0)
-  [ "$mt" -ge "$SUP_START" ]
+  [ "$mt" -ge "$SUP_START" ] || return 1
+  grep -qF -- "**Run:** $RUN_ID" "$REPORT"
 }
 
 report_outcome() {
@@ -99,14 +133,9 @@ report_outcome() {
   sed -n 's/.*\*\*Outcome:\*\*[[:space:]]*\([^[:space:]·]*\).*/\1/p' "$REPORT" | head -1
 }
 
-# pane_for_wt WT : print the pane index whose cwd is WT, else fail.
+# pane_for_wt WT : print the nonce-bound pane index for WT, else fail.
 pane_for_wt() {
-  local wt="$1" line
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    case "$line" in *"|$wt") printf '%s' "${line%%|*}"; return 0 ;; esac
-  done < <(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}' 2>/dev/null || true)
-  return 1
+  polylane_tmux_find_pane "$TMUX_SESSION" "$RUN_ID" "$1"
 }
 
 # drain_approvals : the runner-independent approval relay. For every unfinished
@@ -180,7 +209,9 @@ release_lock() {
 supervisor_main() {
   local restarts=0 rc pid args_line outcome
   acquire_lock || return 1
-  trap release_lock EXIT INT TERM
+  trap release_lock EXIT
+  trap 'supervisor_stop INT 130' INT
+  trap 'supervisor_stop TERM 143' TERM
   # default --yes: the supervisor IS the unattended path; keep user args too.
   case " $* " in *" --yes "*) args_line="$*" ;; *) args_line="--yes${*:+ $*}" ;; esac
 
@@ -198,6 +229,7 @@ supervisor_main() {
     # shellcheck disable=SC2086  # args_line is intentionally word-split
     POLYLANE_SESSION="$TMUX_SESSION" "$SCRIPT_DIR/polylane-run.sh" "$SUP_MANIFEST" $args_line >> "$RUNNER_LOG" 2>&1 &
     pid=$!
+    SUP_CHILD_PID="$pid"
 
     while kill -0 "$pid" 2>/dev/null; do
       tick alive "$restarts"
@@ -205,6 +237,7 @@ supervisor_main() {
     done
     # a crashed child returns nonzero from `wait` — must NOT kill the supervisor
     rc=0; wait "$pid" 2>/dev/null || rc=$?
+    SUP_CHILD_PID=""
 
     if report_fresh; then
       outcome=$(report_outcome)
@@ -237,6 +270,16 @@ supervisor_main() {
           return "$rc"
           ;;
       esac
+    fi
+
+    # rc=2 is the runner's usage/manifest/contract/preflight class. The same
+    # immutable manifest cannot heal by relaunching, and no work has begun, so
+    # preserve the first diagnostic instead of burning the restart budget on
+    # identical failures (and emitting repeated failure notifications).
+    if [ "$rc" = 2 ]; then
+      sup_log "runner stopped on deterministic preflight/configuration failure (rc=2) — not relaunching identical work"
+      heartbeat halted "$restarts"
+      return 2
     fi
 
     restarts=$((restarts + 1))

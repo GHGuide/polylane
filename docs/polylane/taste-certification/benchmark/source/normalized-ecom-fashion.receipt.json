@@ -1,0 +1,35 @@
+{
+  "aggregate_check": "recomputed-within-tolerance",
+  "domain": "e-commerce",
+  "excluded": 291,
+  "executed_at": "2026-08-13T00:00:00Z",
+  "inputs": {
+    "aggregate_sha256": "ab02f666c26c7536eea6ab2c0961dffe0d8b006f9f1b7c9ef3f75584c0fef544",
+    "compliant_sessions_sha256": "5bc42bdaf42902f7354e90bfabb631d64310a6b6b378911f7c6e78f1f1fcb320",
+    "raw_sha256": "9c14d098c48ff45cec2dd91d5832a14f50ca589c7f00fab9163077c1bcfa557d"
+  },
+  "kind": "receipt",
+  "min_support_required": 5,
+  "output_sha256": "cde5ef045cb8a7dcf5c75d1e32bd71712f480224ab79445369f742087cc9dbd1",
+  "records": 262,
+  "row_stats": {
+    "nonfinite_rows": 0,
+    "raw_rows": 50998,
+    "training_rows": 1779
+  },
+  "schema_version": "taste-ratings-normalize/v1",
+  "source_id": "miniukovich-9fksqi",
+  "support_basis": "compliant-sessions",
+  "tolerance": 0.01,
+  "tool": {
+    "fingerprint": "212c6944ae3f9d230f9f51001d2aa1957a81e609611353ff621392a1b3b8dd09",
+    "id": "polylane-taste-ratings"
+  },
+  "verification": {
+    "expected_finite_values": 3315,
+    "max_abs_error": 0.000000,
+    "mismatched_values": 0,
+    "unverified_values": 0,
+    "verified_values": 3315
+  }
+}

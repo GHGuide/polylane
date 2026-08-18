@@ -1,0 +1,21 @@
+{
+  "schema": 2,
+  "lane": "evidence-policy-freeze",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c42a-evidence-policy-freeze/docs/verify-evidence-policy-freeze.md",
+  "helped": [
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " separated DAG contract,"
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " prioritized laundering, sample"
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the full adversarial suite"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "judge-calibration",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-judge-calibration/docs/verify-judge-calibration.md",
+  "helped": [],
+  "unused": [
+    "data:statistical-analysis",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

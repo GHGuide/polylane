@@ -21,9 +21,18 @@ Environment variables the runner honors:
 - `POLYLANE_POLL_INTERVAL` — seconds between DONE-file polls (default 2).
 - `POLYLANE_HEALTH_INTERVAL` / `POLYLANE_MAX_RETRIES` — health checks and transient retries (default: scan every 15 s, 3 retries, then reflect-and-repair).
 - `POLYLANE_SEED_VERIFY` — seconds after launch before checking that seeded commands actually started (default 2).
-- `POLYLANE_INTEGRATOR_REPAIRS` — autonomous repairs after NO-GO/UNKNOWN (default 3).
+- `POLYLANE_MAX_REPAIRS` — shared lane repair cap and the integrator fallback cap;
+  `0` disables both unless the dedicated integrator override is present.
+- `POLYLANE_INTEGRATOR_REPAIRS` — explicit autonomous integrator repair cap after
+  NO-GO/UNKNOWN. It wins over `POLYLANE_MAX_REPAIRS`; when both are unset, the
+  integrator retains its legacy default of 3.
 
 Run it ONLY after the integrator's GO on a **re-merge of current branch HEADs** (not a stale prior GO). If NO-GO, don't run cleanup.
+
+`READY-FOR-HOST-GATE` is not a generic completion marker: use it only when the
+current target has terminal-tier acceptance and no open/doing autonomous subgoal
+remains outside that target. Focused-only recovery work receives a focused host
+verification and may promote as GO without a terminal boundary.
 
 ## What the runner does, in order
 
@@ -70,6 +79,11 @@ Deleting the status markers but keeping the verify files is the point: the trans
 
 ### 6. Report
 The runner writes `docs/polylane-report.md` — a plain-language digest (outcome GO/NO-GO, per-lane results table, recent commits, suggested next steps) — on **both** GO and NO-GO, and prints: worktrees removed, branches deleted, scratch cleared, lanes skipped (if any were unmerged). The orchestrator reads the report and relays a simple summary to the user in the chat. Exactly one folder remains — the main project tree.
+
+If promotion refuses a tracked/untracked path or a merge transaction fails, the
+report names the bounded blocker and tells the operator to preserve the verified
+branch, worktrees, and user data. The narrow user-dirt guard remains in force:
+acceptance artifacts are never broadly allowlisted merely to make promotion pass.
 
 ## Safety rules (invariants the runner holds)
 

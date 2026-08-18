@@ -1,111 +1,235 @@
-# Cycle 20 integration verification — truthful failed-certification handoff
+# Verify — taste-calibration-integrator (c41-source-calibration-20260812-a1)
 
-Run: `c20-clean-cert-20260809-a1` on `lane/c20-integrator`.
+Target: `m32.4` — acquire the real human-rated corpus and calibrate the
+independent judge swarm. This document is the only verdict destination for
+this run; `docs/status-taste-calibration-integrator.md` is status-only.
 
-## Provenance and independent review
+## 1. Merges and ancestry
 
-The integrator accepted only the committed builder tip
-`716624affb45b6e8ba75945e0fb135ea229bd59a` after confirming its committed first line
-was `STATUS: restart-accounting-audit DONE run=c20-clean-cert-20260809-a1`. Its complete
-range from base `228570d` added only `docs/verify-restart-accounting.md` and
-`docs/status-restart-accounting-audit.md`, passed `git diff --check`, and was merged as
-`20aa4e1c82b85ab701b3172da1ea01e696786740` with that exact tip as second parent.
+All fifteen Cycle-41 lane tips merged into `lane/c41-taste-calibration-integrator`
+with `git merge --no-ff`, zero conflicts; every tip proven with
+`git merge-base --is-ancestor` (all fifteen ANCESTOR-OK):
 
-Commits `80849c5c54713a1c406b0b93a62193896a803f4a` and
-`e26c208b91c382ee07dda47ccca6d09fcfcc5ed6` were independently inspected. The former
-returns from `domain_grade_gate` before bundle/grade/evidence/Git mutation whenever
-`domain_runtime` is absent or disabled; the latter makes `lane_done` ignore only a graph
-symlink resolving to a real non-symlink graph directory owned by another registered
-worktree in the exact Git common directory. Current caller tracing found
-`domain_grade_gate` at the verifier gate and `shared_graph_link_owned` only at the
-clean-tree exception in `lane_done`. The required existing-graph queries for both
-changed helpers and callers returned stale fuzzy document nodes rather than source
-nodes; the graph was not rebuilt, and current source plus hermetic contracts were used
-instead.
+| Lane | Tip |
+|---|---|
+| dataverse-transport | `942f75019bef` |
+| dataone-metadata | `3a2cb8ab0a63` |
+| source-freeze | `0ceea9b78c5a` |
+| download-campaign | `90111d4cbc02` |
+| cache-integrity | `46b82dc40f89` |
+| ratings-normalize | `5f6ebe777457` |
+| corpus-select | `d0905f7f8776` |
+| pair-builder | `164bb0f3f2f3` |
+| calibration-campaign | `7548fdbdb19f` |
+| calibration-audit | `f81c2226de2b` |
+| panel-freeze | `11edf4164c44` |
+| benchmark-preflight | `7ab89fbba908` |
+| source-adversary | `7a407ac49645` |
+| source-runbook | `26a37402e871` |
+| source-protocol | `bfe945d07b1f` |
 
-The initial code review found no defect in those two Cycle 19 repairs. The live Cycle 20
-run then exposed two different orchestration seams outside that review boundary:
+Every lane `docs/verify-*.md` was inspected; the source-adversary catalog of
+twelve integrator seams drove the repair plan.
 
-1. The builder twice committed the exact current-run DONE line under
-   `docs/status-restart-accounting.md`, not the canonical
-   `docs/status-restart-accounting-audit.md`. It was following the frozen plan: both
-   Cycle 20 `own_globs` and its authored prompt explicitly named the shortened path.
-   The old runner correctly rejected that plan/observer mismatch but spent one health
-   restart before coordinator commit `716624a` performed the auditable rename. Final
-   canonical run stats prove one builder launch, one builder restart, one integrator
-   launch, one host-boundary entry, and pending cleanup.
-2. The canonical relay contained a coordinator request naming that confirmed seam, but
-   the authored integrator prompt said only to read the "canonical relay". The worker
-   instead read tracked `docs/parallel-status.md` and missed the live request. This was
-   a prompt-delivery failure even though the reference block described the relay
-   correctly.
+## 2. Seam repairs (all twelve adversarial seams closed)
 
-Coordinator commit `763fb00` closes both classes for the next process. Contract-v2
-health recovery now normalizes only one clean, committed, regular `docs/status-*.md`
-whose first line exactly matches the lane and current nonce; stale, foreign-lane,
-uncommitted, dirty, symlink, and ambiguous candidates remain rejected. Prompt
-compilation now injects the literal relay command and canonical DONE path into every
-builder and integrator prompt after optimization/skill delivery, and strict runtime
-lint requires each injected contract exactly once. The durable cleanup reference now
-also calls `docs/parallel-status.md` a post-cycle summary rather than a live log.
+`tests/test-taste-source-adversarial.sh` and
+`tests/test-taste-source-campaign-e2e.sh` now pass integrator mode
+(`POLYLANE_ADVERSARY_REQUIRE_SEAMS_CLOSED=1`) with `seams=0`
+(70 and 29 assertions; previously 50/19 with 7+5 seams). Wired against the
+merged sibling interfaces: dataone-metadata-crosscheck and distribution-drift
+(source-freeze compile refuses DOI/licence/version/size/missing/extra/
+challenge-HTML disagreement), download-resume-ledger (campaign selftest),
+benchmark-preflight-gate (fail-closed NOT-READY probe), pair-manifest-freeze
+(deterministic byte-identical rebuild + verify), corpus-select-unbalanced-quota
+(production 60/24 selector accepts the unbalanced split its cycle-40
+predecessor rejected), dataverse-transport-rehearsal (adapter selftest),
+ratings-normalize-schema (real released schema round-trip + drift rejection),
+calibration-audit-recompute (independent recompute over the completed
+rehearsal campaign, Wilson agreement to 1e-4), panel-freeze-claim-ceiling
+(frozen panel invariants). Two required production repairs, test-first:
 
-The final host rejection exposed a third truth seam. The old report blamed the
-integrator even though its verdict was READY, displayed an unknown Codex cost as `$0`,
-and wrote the failed gate certificate over a tracked proof in the completed integrator
-checkout. Commit `e1de56a` moves gate proofs to
-`docs/polylane/efficiency-proofs/<run>-gate.md`, exports that exact path and nonce into
-terminal acceptance, verifies proof run ids, attributes report failures to canonical
-host evidence, and reports unpriced totals as unavailable. The additional report,
-efficiency, verdict, acceptance, promotion, telemetry, recovery, compiler, and docs
-matrix passed 261/0 with whole-tree ShellCheck and diff hygiene.
+- `bin/polylane-taste-calibration-campaign.sh` — duplicate raw-response
+  digests across sealed ballots refused at seal time and in `verify-ledger`
+  (session-uniqueness seam).
+- `bin/polylane-taste-cache.sh` — new `verify-content` subcommand: image
+  magic bytes + minimum plausible size on top of digest checks
+  (image-content-verification seam).
 
-Commit `f58d3cb` closes the planning root cause before launch. Contract-v2 preflight now
-requires every builder to own exactly `docs/status-<lane>.md`, rejects any second or
-broad glob capable of matching a status marker, and runtime prompt lint rejects a
-builder prompt that names a conflicting status path even after canonical injection.
-The scope/compiler/orchestration/skill/parity matrix passed 292/0, including explicit
-shortened, broad, duplicate, and contradictory-prompt cases.
+## 3. Steered integration repairs (all test-first, all green)
 
-## Fresh merged-tree evidence
+- **NUL hygiene**: raw NUL bytes inside jq programs (bash silently strips
+  them from words) escaped as backslash-u0000 in
+  `bin/polylane-taste-calibration-campaign.sh` (1) and
+  `bin/polylane-taste-a11y-live.sh` (9); no-NUL regressions added; tracked
+  `*.sh` scan clean.
+- **`bin/polylane-taste-ratings.sh`** (focused test 70 → 121 assertions):
+  - Source-exact pipeline reproduction: training ratings enter each compliant
+    session's dup-averaged sample-SD standardization basis (discovered by
+    live replay, independently confirmed); byte-identical repeated raw and
+    aggregate rows collapse losslessly while distinct repeats stay terminal.
+  - Strict `sessions` subcommand: demographics susCheat=FALSE
+    (case-insensitive, header-bound incl. the raw sessionId column) →
+    compliant-session list with SHA-receipt; duplicate/malformed/missing
+    columns and empty joins terminal.
+  - Source-fidelity verification decoupled from eligibility: every finite
+    published cell verified — finite siblings of NA rows and training-only
+    stimuli included — before any exclusion; counters
+    expected/verified/unverified/mismatched + max_abs_error in output and
+    receipt; any mismatch or coverage gap is a non-success exit.
+  - Per-stimulus standardized AE samples (`--samples AE`), explicit
+    `label_dimension`/`label_support`, and a label-dimension-scoped support
+    floor (unchanged value 5) so pair/selection contracts consume real
+    sample arrays.
 
-Every command below ran once from this merged worktree through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator" --`.
+## 4. Verification totals (final tree)
 
-| Command | Observed result |
-| --- | --- |
-| `bash tests/test-lane-done.sh` | 27 pass, 0 fail; accepts the registered same-repository graph link, rejects a foreign repository, and keeps unrelated dirt blocking completion. |
-| `bash tests/test-share-graph.sh` | 11 pass, 0 fail; includes recovery sharing from the primary graph. |
-| `bash tests/test-cycle-16-contract.sh` | 35 pass, 0 fail; proves both requested bundle/grade/PASS persistence and the unrequested `not-requested` no-op with unchanged evidence, HEAD, and clean Git. |
-| `bash tests/test-verdict-repair.sh` | 40 pass, 0 fail; preserves the one-use READY host boundary and its failure paths. |
-| `bash tests/test-supervisor.sh` | 26 pass, 0 fail; includes session-loss recovery and bounded launch accounting. |
-| `bash tests/test-efficiency-canary.sh` | 14 pass, 0 fail; includes restart rejection and canonical-proof checks. |
+- Frozen focused matrix: 17/17 PASS (test-by-test receipts in §2/§3; totals:
+  transport 31, dataone 19, freeze 54, download 63, cache 57, ratings 121,
+  corpus-select 29, pairs 46, campaign 48, audit 21, panel PASS,
+  preflight 34, adversarial 70 seams=0, campaign-e2e 29 seams=0,
+  source-live 40, calibration-live 22, live-harness-e2e PASS).
+- Full suite `tests/run.sh`: 4005 passed, 0 failed, 166 test files (completed
+  run after the seam-closure commit); every test file changed after that run
+  was rerun green individually on the final tree (ratings 121, campaign 48,
+  a11y-live 47, adversarial 70, campaign-e2e 29, cache 57); a confirming
+  full-suite rerun on the final tree was still executing at handoff.
+- `shellcheck -S warning bin/*.sh codex/install.sh claude-code/install.sh`: clean.
+- `bin/polylane-markers.sh check-docs references/`: OK.
+- `tests/test-skill-parity.sh`: 72 pass, 0 fail.
+- `bin/polylane-seams.sh scan .`: no findings.
+- `git diff --check`: clean.
 
-Focused runtime total: 153 pass, 0 fail. Whole-tree `shellcheck -S warning bin/*.sh`,
-`bin/polylane-markers.sh check-docs references/`,
-`bin/polylane-seams.sh scan "$PWD"`, and `git diff --check` all exited 0. Skill parity
-passed 57/0; installers passed 50/0; fresh installs passed 39/0.
+## 5. Real external evidence (classification: live, public, CC0; no fixtures)
 
-After the two live seams were reproduced, the coordinator added a red-first recovery
-and prompt-delivery matrix. The marker test failed 6 assertions before implementation;
-the Cycle 13 compiler contract failed 6 assertions before injection. The repaired
-12-file runtime/prompt/parity matrix then passed 381/0, including marker normalization
-17/0, lane completion 27/0, runtime recovery 14/0, Cycle 13 contract 50/0, prompt
-compiler 16/0, prompt lint 22/0, selected-skill delivery 44/0, agent adapter 49/0,
-prime-hybrid integration 57/0, skill parity 57/0, and supervisor 26/0. Documentation
-truth passed 25/0; whole-tree ShellCheck, marker-doc consistency, and diff hygiene
-exited 0. The full terminal suite and doctor rehearsal were deliberately not consumed
-inside a run that had already exceeded its zero-restart budget.
+Cache root `~/Library/Caches/polylane/taste-primary-v1`: 23 content-addressed
+objects, 23 MB; binaries never enter Git.
 
-## State, boundary, and limitations
+- **Harvard Dataverse (live, ephemeral WAF-cleared Chrome)**: all three
+  frozen dataset envelopes acquired and re-fetch-stable — e-commerce
+  `17ef0759…` (v4.0, 1074 files), universities `14a57bc1…` (v4.0, 1066),
+  banks `c608ee19…` (v4.0, 1040); all CC0 1.0. All twelve
+  ratings/aggregate/demographics files acquired with content hashes
+  (full table: `docs/polylane/taste-certification/benchmark/source/PROVENANCE-NOTES.md`).
+- **DataONE (live, cn.dataone.org)**: immutable-PID receipts for all three
+  domains, `mode:"live"`, `urn:node:HD`, digests equal to the frozen PIDs,
+  distribution counts 1074/1066/1040 matching Harvard exactly.
+- **Source reproduction**: every finite published aggregate cell verified —
+  fashion 3315/3315, homeware 3063/3063, universities 6354/6354, banks
+  6196/6196; mismatches 0; max abs error 0.000000/0.000000/0.000000/0.004141
+  (banks residuals ≤ 0.004141 recorded as a publisher basis quirk). Eligible
+  AE-labeled records: e-commerce 262+443=705, universities 340, banks 510 —
+  all three domains exceed the 84-per-domain quota pool.
+- **Image corpus**: 8 image objects fetched live before the WAF throttled
+  the burst (receipts preserved); the 3159-image sweep was deliberately
+  stopped per steering in favour of a selected-only 252 acquisition that is
+  not yet implemented (§6). Source counts: 0 of 252 selected images
+  finalized; split/pairs not sealed; no judge output exists, so nothing was
+  tuned on holdout and no item was replaced after results.
 
-The focused `m20.1` acceptance remains local evidence only. Cycle 20 cannot certify
-`m20.1`, `m18.3`, or `c56`: its one recorded restart exceeds the configured zero-restart
-budget. The runner preserved NO-GO after one host-boundary entry; its efficiency failure
-correctly skipped the full terminal acceptance command. A fresh Cycle 21 process must
-load `f58d3cb` and establish exactly two launches, zero restarts, one host boundary,
-one full terminal acceptance, complete cleanup, and both rehearsal outcomes. No live external
-action occurred; approval-bound receipts remain simulations and trading remains
-research/backtest/paper-only. The pre-existing untracked `.polylane-prompt.txt` and
-`graphify-out/` were retained as runner-owned helpers.
+## 6. Confirmed open engineering gaps (catalogued, not hidden)
 
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c20-clean-cert-20260809-a1
+Independent red-team and schema audits during this run confirmed the
+following producer/consumer breaks that block the remaining campaign; none
+is reachable by the frozen test suite today, and closing them is the next
+cycle's work:
+
+1. Two-stage selected-only acquisition contract (inventory receipt bound to
+   DOI/version/metadata-SHA/file-id/name/size/MD5 → deterministic
+   preselection ranked by `seed|domain|file-id/name` → download only the 252
+   → finalize with observed SHA-256 → re-deriving verify): not yet built;
+   the shipped corpus-select ranks by `sha256(seed|id|image-sha)` which
+   structurally demands all 3159 images first.
+2. Transport: per-source persistent/batch browser session with consecutive-
+   failure circuit breaker, 429/Retry-After classification, plan-bound
+   resume keys, browser-instance receipts (current shim launches one
+   ephemeral Chrome per fetch; observed 8 fast OKs then a throttle streak;
+   the "text/plain renders inline" hypothesis was refuted — 11/11 text
+   files fetched, failures were a transient global WAF window).
+3. Judge chain: runner appends REQUEST_JSON to `adapter.command` but the
+   frozen panel's `polylane-taste-judge-{claude,codex}` CLIs implement a
+   different invocation surface; work-unit/request v1 carries hashes without
+   brief/rubric content; response schema hardcodes a smoke work-unit id;
+   calibration-live/audit pin a `FINAL:` line parser while the runner
+   produces strict JSON choices. A per-slot provider bridge, request v2 with
+   canonical brief/rubric binding, and one canonical parser fingerprint are
+   required before any 24-pair run; a lossy FINAL translation was refused.
+4. Ledger→calibration-input, pairs→work-unit, selection→download-plan,
+   selection+samples→pair-input, normalized→selector-ratings compilers do
+   not exist; preflight trusts individual eligibility receipts instead of
+   the audit closure and expects a `taste-source-acquisition/v1` receipt no
+   v2 chain emits; calibration-live can classify local files as production
+   without a verified campaign-ledger/native-invocation closure.
+5. Claim hardening: certificate paths must never mint HUMAN_CERTIFIED from
+   relabeled machine receipts; `human_certified` remained false in every
+   receipt this run produced and no GO/certification claim is made.
+6. 20-brief study blockers recorded for the generation cycle: ui-contract
+   encoding drift across five components, a dispatched-but-missing
+   `polylane-visual-quality.sh authoritative` subcommand, and candidate-
+   policy conflicts (3-direction doctrine vs 2-direction protocol vs
+   baseline+3 generator), plus tournament-vs-absolute-floor gaps.
+7. Minor routed defects: samples serialized at 6 decimals; isDuplicate
+   FALSE/FALSE-TRUE/TRUE pair semantics not yet validated; normalize does
+   not consume the sessions receipt.
+
+## 7. Judge eligibility
+
+No judge configuration was executed this run (chain gaps in §6.3–6.4);
+eligible machine judge configurations: 0 of the required 5. The frozen
+thresholds (24 pairs, ≥17 correct, Wilson LCB ≥ 0.50, side p ≥ 0.05, <2
+mirror contradictions, 5-config panel floor) were not altered; no judge was
+tuned on holdout; no item was replaced after results (no results exist).
+
+## 8. Limitations
+
+- The 252-image selected corpus, sealed split/pairs, provider calibration,
+  independent audit, and benchmark preflight remain unexecuted; every gate
+  needed for `HUMAN_CALIBRATED_MACHINE`/`human_calibrated:true` is therefore
+  unmet this run and no such claim is made. `human_certified` is false
+  everywhere. The full 20-brief taste certificate is not minted.
+- Committed normalized evidence reflects the AE label dimension only; any
+  future machine-judge claim is scoped to human-calibrated visual-aesthetic
+  preference.
+- The detached image campaign was stopped after eight objects; its receipts
+  and all cache objects were preserved (resume-safe).
+
+## 9. Next route
+
+Build, in order: the two-stage selected-only source contract (§6.1) with its
+adversarial matrix; the per-source session transport with circuit breaker
+(§6.2); the judge bridge + request/parser unification (§6.3) with a
+runner→bridge→native contract test and a two-unit live smoke; the missing
+chain compilers plus one hermetic end-to-end whose only handwritten inputs
+are external-boundary fixtures and whose result is FIXTURE-READY, never
+production (§6.4); then rerun the real network path: fetch the 252, seal
+split/pairs, run the declared panel through the bridges, audit, preflight.
+
+## 10. Skill receipts
+
+- SKILL-READ: engineering:debug | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/debug/SKILL.md | 303222582-4074
+- SKILL-READ: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | 2811424084-1279
+- SKILL-READ: operations:risk-assessment | /Users/leonardo/.codex/plugins/cache/claude-cowork/operations/1.3.0/skills/risk-assessment/SKILL.md | 3889652016-1630
+- SKILL-READ: superpowers:test-driven-development | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/test-driven-development/SKILL.md | 1657109997-9015
+- SKILL-EVIDENCE: superpowers:test-driven-development — helped: every repair
+  (seam wiring, NUL regressions, dup-collapse, training-basis, fidelity
+  counters, sessions helper, header binding) was written as a failing test
+  first and watched fail — the RED runs caught two real defects (unset
+  `sup[]` emitting invalid JSON; the hardcoded aggregate-check claim) before
+  they could ship.
+- SKILL-EVIDENCE: engineering:testing-strategy — helped: kept the cadence
+  merge → focused failures → frozen matrix → full suite, and scoped the
+  bounded fixes to hermetic tests while classifying the live campaign as a
+  separate evidence layer.
+- SKILL-EVIDENCE: engineering:debug — helped: the reproduce→isolate cadence
+  refuted the text/plain-inline transport hypothesis with receipts and
+  isolated the WAF throttle window, and located the exact standardization
+  variant (training-in-basis) by hypothesis-testing four pipelines against
+  published values.
+- SKILL-EVIDENCE: operations:risk-assessment — helped: ranked the seam
+  catalog by certification-honesty impact (mirror substitution and claim
+  escalation first), and drove the decision to refuse a lossy FINAL-line
+  translation rather than force a panel this run.
+
+POLYLANE-VERDICT: EXTERNAL-EVIDENCE-OPEN run=c41-source-calibration-20260812-a1
+
+ACCEPTANCE-GATE: frozen focused/terminal checks failed; repair autonomously.

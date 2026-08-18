@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "lifecycle-external-routing",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c42a-lifecycle-external-routing/docs/verify-lifecycle-external-routing.md",
+  "helped": [
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " separated memory unit,"
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " prioritized four critical/high"
+    },
+    {
+      "id": "superpowers:systematic-debugging",
+      "effect": " traced mutation,"
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " each requested failure"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

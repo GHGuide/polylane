@@ -53,7 +53,14 @@ VERIFY: record STATUS: blocked DONE run=authority-run.
 EOF
 mkdir -p "$TEST_TMPDIR/wt"
 TMUX_CALLS="$TEST_TMPDIR/tmux.calls"
-tmux() { [ "$1" = has-session ] && return 1; printf '%s\n' "$*" >> "$TMUX_CALLS"; return 0; }
+tmux() {
+  [ "$1" = has-session ] && return 1
+  printf '%s\n' "$*" >> "$TMUX_CALLS"
+  # new_pane consumes tmux's authoritative returned pane index; preserve that
+  # real interface in this graph-admission mock.
+  case " $* " in *" -P -F "*) printf '0' ;; esac
+  return 0
+}
 
 blocked_out=$(launch_panes 2>&1); blocked_rc=$?
 assert_fail "authority-blocked-lane-fails-closed" test "$blocked_rc" -eq 0

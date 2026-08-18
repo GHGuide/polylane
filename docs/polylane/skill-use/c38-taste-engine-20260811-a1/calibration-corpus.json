@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "calibration-corpus",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-calibration-corpus/docs/verify-calibration-corpus.md",
+  "helped": [
+    {
+      "id": "data:validate-data",
+      "effect": " explicit source, deduplication, split-balance, and reproducibility checks became fail-closed manifest assertions."
+    },
+    {
+      "id": "design:research-synthesis",
+      "effect": " the schema separates rated human observations from interpretations and keeps acquisition/label limitations explicit."
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " focused tests cover the valid path, deterministic sampler, integrity boundaries, and rights boundary."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the focused test failed first because the command did not exist, then passed after the minimal implementation."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

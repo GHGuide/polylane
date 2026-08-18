@@ -1,0 +1,21 @@
+{
+  "schema": 2,
+  "lane": "corpus-20",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-corpus-20/docs/verify-corpus-20.md",
+  "helped": [
+    {
+      "id": "design:user-research",
+      "effect": " its \"who has this problem and what are they doing today\" framing drove one distinct role/locale/coverage-limit triple per brief (twenty distinct roles, fourteen locales) instead of a generic \"user\" audience."
+    },
+    {
+      "id": "product-management:product-brainstorming",
+      "effect": " varying solutions along meaningful dimensions (scope, information unit, interaction) produced twenty distinct signature mechanisms (capacity bars, reciprocal-pair matcher, backlink web, seat meters, decade comparator) rather than one CRUD list re-skinned."
+    },
+    {
+      "id": "product-management:write-spec",
+      "effect": " its testable acceptance-criteria discipline (\"avoid ambiguous words, each criterion independently testable\") shaped the three concrete acceptance facts and deterministic success oracles per brief, each anchored to seeded numbers the validator can cross-check."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "blind-ballot",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-blind-ballot/docs/verify-blind-ballot.md",
+  "helped": [],
+  "unused": [
+    "design:design-critique",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

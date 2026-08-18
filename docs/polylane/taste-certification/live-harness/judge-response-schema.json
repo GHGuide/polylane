@@ -1,0 +1,240 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "work_unit_id",
+    "positions",
+    "observations",
+    "choice",
+    "abstain_reason"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": [
+        "taste-judge-response/v1"
+      ]
+    },
+    "work_unit_id": {
+      "type": "string",
+      "enum": [
+        "wu-c40-live-smoke-a3"
+      ]
+    },
+    "positions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "A",
+        "B"
+      ],
+      "properties": {
+        "A": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "craftsmanship",
+            "hierarchy",
+            "originality",
+            "product_fit",
+            "spatial_rhythm",
+            "state_coherence",
+            "typography"
+          ],
+          "properties": {
+            "color": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "craftsmanship": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "hierarchy": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "originality": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "product_fit": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "spatial_rhythm": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "state_coherence": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "typography": {
+              "type": "integer",
+              "description": "1..7"
+            }
+          }
+        },
+        "B": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "craftsmanship",
+            "hierarchy",
+            "originality",
+            "product_fit",
+            "spatial_rhythm",
+            "state_coherence",
+            "typography"
+          ],
+          "properties": {
+            "color": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "craftsmanship": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "hierarchy": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "originality": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "product_fit": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "spatial_rhythm": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "state_coherence": {
+              "type": "integer",
+              "description": "1..7"
+            },
+            "typography": {
+              "type": "integer",
+              "description": "1..7"
+            }
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "A",
+        "B"
+      ],
+      "properties": {
+        "A": {
+          "type": "array",
+          "description": "exactly 8 items, one per criterion",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "brief_clause",
+              "capture_id",
+              "criterion",
+              "reason",
+              "region_or_state"
+            ],
+            "properties": {
+              "brief_clause": {
+                "type": "string"
+              },
+              "capture_id": {
+                "type": "string"
+              },
+              "criterion": {
+                "type": "string",
+                "enum": [
+                  "color",
+                  "craftsmanship",
+                  "hierarchy",
+                  "originality",
+                  "product_fit",
+                  "spatial_rhythm",
+                  "state_coherence",
+                  "typography"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "region_or_state": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "B": {
+          "type": "array",
+          "description": "exactly 8 items, one per criterion",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "brief_clause",
+              "capture_id",
+              "criterion",
+              "reason",
+              "region_or_state"
+            ],
+            "properties": {
+              "brief_clause": {
+                "type": "string"
+              },
+              "capture_id": {
+                "type": "string"
+              },
+              "criterion": {
+                "type": "string",
+                "enum": [
+                  "color",
+                  "craftsmanship",
+                  "hierarchy",
+                  "originality",
+                  "product_fit",
+                  "spatial_rhythm",
+                  "state_coherence",
+                  "typography"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "region_or_state": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "choice": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "abstain"
+      ]
+    },
+    "abstain_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

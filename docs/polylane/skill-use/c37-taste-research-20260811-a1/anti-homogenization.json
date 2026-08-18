@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "anti-homogenization",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-anti-homogenization/docs/verify-anti-homogenization.md",
+  "helped": [],
+  "unused": [
+    "deep-research",
+    "design:design-critique",
+    "product-management:competitive-brief",
+    "product-management:product-brainstorming"
+  ],
+  "hurt": []
+}

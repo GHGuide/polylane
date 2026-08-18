@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "cert-aggregator",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-cert-aggregator/docs/verify-cert-aggregator.md",
+  "helped": [
+    {
+      "id": "engineering:code-review",
+      "effect": " caught the need to reject caller verdict fields and receipt-path trust boundaries."
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " focused the fixture on thresholds, error paths, and atomic output behavior."
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " made missing/tampered evidence a hard failure, rather than a fallback."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the initial missing compiler and later caller-status case were both observed red before their implementation."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

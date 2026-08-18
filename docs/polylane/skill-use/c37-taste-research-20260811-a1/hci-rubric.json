@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "hci-rubric",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-hci-rubric/docs/verify-hci-rubric.md",
+  "helped": [],
+  "unused": [
+    "deep-research",
+    "design:research-synthesis",
+    "engineering:testing-strategy",
+    "product-management:competitive-brief"
+  ],
+  "hurt": []
+}

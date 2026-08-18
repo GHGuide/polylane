@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "task-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-task-live/docs/verify-task-live.md",
+  "helped": [],
+  "unused": [
+    "engineering:testing-strategy",
+    "product-management:write-spec"
+  ],
+  "hurt": []
+}

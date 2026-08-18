@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "judge-claude",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-judge-claude/docs/verify-judge-claude.md",
+  "helped": [],
+  "unused": [
+    "engineering:system-design",
+    "engineering:testing-strategy"
+  ],
+  "hurt": []
+}

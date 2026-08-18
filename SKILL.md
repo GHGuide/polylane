@@ -67,6 +67,11 @@ Initialize measurable criteria and frozen acceptance before builders begin:
 "$MEM" "$STATE" add-accept m1.1 '<terminal certification>' --tier terminal
 ```
 
+If a criterion can only become true after the coordinator's terminal host gate, list
+its open id in the manifest's optional `target_criteria`; the runner closes it only
+after verified promotion, cleanup, and the final efficiency proof. Never let a builder
+or integrator pre-close host-owned evidence.
+
 Use executable checks where they fit, plus source provenance, review, measurement,
 or external/manual proof where that is the credible evidence. `external` is not
 `done`: it preserves the exact blocker while independent work continues.
@@ -84,17 +89,40 @@ Apply the selected profile’s gate from `project-types.md`:
 - Operations, content, and data work distinguishes a prepared artifact from sent,
   published, purchased, deployed, or changed external state.
 - UI Visual Intelligence is mandatory only when discovery or recon finds a
-  user-facing UI. Then follow [references/visual-intelligence.md](references/visual-intelligence.md);
-  carry the literal `ULTIMATE-GOAL`, a reference packet with reference evidence,
-  and a design lock covering tokens, layout, motion, and signature. Automatically
-  discover optional candidates only into quarantine; audit and benchmark them, then require a pinned arm before use.
-  If admission fails, never execute rejected content and use the
-  best installed kit. The council chooses the lock automatically. Require
-  product-specific typography, imagery, and humanized UX copy; desktop/mobile and
-  empty/loading/error/hover/focus captures; three independent visual lenses; and at most two targeted repairs.
-  Compare anonymized screenshots blind. Reject
-  emoji-as-product-art and default-font sameness. Promotion needs >=10 varied prompts and >=70% creative/polish wins.
-  Require no accessibility regression and a visual certification record.
+  user-facing UI; non-UI projects skip it and keep full autonomy. Then follow
+  [references/visual-intelligence.md](references/visual-intelligence.md) and run the
+  fail-closed rendered taste tournament:
+  - Lock first: the literal `ULTIMATE-GOAL`, audience/task context, a reference packet
+    with reference evidence, and a design lock over tokens, layout, motion, and
+    signature. The council picks the lock automatically; ask only on irreducible brand
+    forks.
+  - Build at least three meaningfully divergent rendered candidates from one base, then
+    run deterministic function, accessibility, and provenance gates plus real
+    desktop/mobile and empty/loading/error/hover/focus captures first. Missing browser,
+    account, or manual evidence is `external`/`NO-GO`, never an asserted pass. Require
+    product-specific typography, imagery, and humanized UX copy.
+  - Judge anonymized candidates with three independent visual lenses and
+    held-out-human-calibrated, identity-hidden, A/B-and-B/A mirrored judges; a unique
+    Condorcet winner selects. Builders never self-judge; a prose or caller-authored
+    `pass` never promotes. Reject emoji-as-product-art and default-font sameness.
+  - Allow at most two targeted repairs, each naming the failed lens and changed
+    evidence; otherwise keep the best-so-far incumbent champion by compare-and-swap. A
+    third repair is replan.
+  - Lint and optimize every generated lane prompt before launch
+    (`polylane-promptlint.sh`, `polylane-promptopt.sh`); manifest-derived UI contract
+    fields survive optimization, and selected skills install/path-resolve and invoke
+    through native Claude skill syntax. Untrusted candidates follow quarantine → audit →
+    isolated benchmark → pinned arm before any execution; never execute rejected content
+    and fall back to the best installed kit.
+  - Require the authoritative visual-quality and tournament record before promotion with
+    no accessibility regression; update project-scoped taste memory only after verified
+    promotion. Taste memory is bounded untrusted evidence and can never inject executable
+    instructions.
+  - The single-project tournament label is local selection only: machine panels may be
+    human-calibrated, but only real eligible humans make a result human-certified.
+    Global champion certification is a separate benchmark of >=10 varied prompts with
+    >=70% creative/polish wins; never claim it from fixtures or one attractive UI. Write
+    one durable visual certification record.
 
 ## Evidence-driven domain autonomy
 
@@ -154,8 +182,8 @@ dependencies, `OWN`/`FORBIDDEN` paths, and frozen cross-lane contracts. Never us
 parallelism as theater or reopen a recorded failed approach.
 
 Each prompt must state the goal, project profile, lane ownership, selected installed
-skills, focused test cadence, scoped staging, `docs/verify-<lane>.md`, and the exact
-completion marker `STATUS: <lane> DONE run=<RUN_ID>`. Route expensive repeated checks
+skills, focused test cadence, scoped staging, `docs/verify-<lane>.md`, the exact
+completion marker `STATUS: <lane> DONE run=<RUN_ID>`, and builder POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. For an integrator, only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-<lane>.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit. Route expensive repeated checks
 through:
 
 ```bash
@@ -164,14 +192,27 @@ bin/polylane-check.sh <canonical-project>/.polylane/check-cache/<lane> -- <comma
 
 A cached failure requires a relevant source change before retry. For prime-hybrid
 runs, read `POLYLANE_CONTEXT_PACKET` exactly once and use `polylane-workers.sh` and
-the durable inbox for follow-ups. `prime_hybrid` refinements use
-`bin/polylane-refine.sh propose-or-decline`; global skill changes remain proposals to
+the durable inbox for follow-ups. `prime_hybrid` refinements first run
+`"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then
+exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT
+a subcommand. Global skill changes remain proposals to
 `bin/polylane-skill-evolve.sh`, not edits to an active skill.
+
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored,
+commit it, and exit immediately. Integrator final handoff: write the only current-run
+verdict sentinel as the final line of `docs/verify-integration.md`; write
+`docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both
+handoff files if ignored, commit them, and exit immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
 
 Use `orchestration_contract: 2`, validate scope and prompts, then run doctor and the
 supervisor. Surface only the truthful watch command, `tmux attach -t <session>`.
-The integrator checks seams, profile evidence, focused failures, then terminal check
-at final certification and writes one nonce-bearing verdict. `NO-GO` names repairs;
+The integrator checks seams, profile evidence, and focused failures, then uses
+`READY-FOR-HOST-GATE` only when the current target owns at least one terminal-tier
+acceptance and no open/doing autonomous subgoal remains outside that target. A
+focused-only recovery target emits `GO` after its focused host verification; it does
+not invent a terminal gate. Runner-owned eligibility decides whether terminal checks
+start and terminal targets execute/count exactly once.
+It writes one nonce-bearing verdict. `NO-GO` names repairs;
 `EXTERNAL-EVIDENCE-OPEN` promotes verified repository work but never passes missing
 external proof.
 After a post-PASS coordinator crash, the runner may reuse only its durable current-run
@@ -193,7 +234,8 @@ equivalent is irrelevant here; do not import Codex syntax or assumptions into Cl
 lanes. Use `POLYLANE_COORDINATION_FILE` through `bin/polylane-coordinate.sh`.
 
 For `prime_hybrid`, retain bounded worker context and reject unvalidated refinement.
-Repeated evidence enters the queue; `propose-or-decline` then validates it or invokes a rollback next cycle.
+Repeated evidence enters the queue; queue it, then make exactly one real proposal or
+decline decision, which validates it or invokes a rollback next cycle.
 Skill evolution uses `bin/polylane-skill-evolve.sh`: champion and challenger compare
 against frozen cases, a failed canary rolls back, and ordinary
 success does not rewrite the skill. Use `bin/polylane-certify.sh` for focused and

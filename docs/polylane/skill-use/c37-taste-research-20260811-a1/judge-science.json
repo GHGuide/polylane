@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "judge-science",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-judge-science/docs/verify-judge-science.md",
+  "helped": [],
+  "unused": [
+    "deep-research",
+    "engineering:architecture",
+    "engineering:testing-strategy",
+    "operations:risk-assessment"
+  ],
+  "hurt": []
+}

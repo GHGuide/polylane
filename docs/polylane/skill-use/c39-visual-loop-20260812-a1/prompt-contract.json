@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "prompt-contract",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-prompt-contract/docs/verify-prompt-contract.md",
+  "helped": [],
+  "unused": [
+    "engineering:architecture",
+    "engineering:documentation",
+    "engineering:testing-strategy",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

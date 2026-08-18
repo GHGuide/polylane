@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "judge-runner",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-judge-runner/docs/verify-judge-runner.md",
+  "helped": [],
+  "unused": [
+    "engineering:architecture",
+    "operations:risk-assessment"
+  ],
+  "hurt": []
+}

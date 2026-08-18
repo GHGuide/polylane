@@ -1,13 +1,13 @@
 # polylane efficiency proof
 
-- Run: walk-c8-20260806-233854
+- Run: c36-verdict-path-20260811-a1
 - Phase: final
 - Status: PASS
-- Wall seconds: 305 / 900
-- Launches: 3 / 3
+- Wall seconds: 1266 / 7200
+- Launches: 2 / 2
 - Restarts: 0 / 0
-- Terminal gates: 1
+- Terminal gates: 0 / 0
 - Cleanup: complete
-- Tokens: 780626 (known; reconstructed from current-run Codex turn completions)
+- Tokens: 4333767 (known)
 - Unexpected launches: 0
 - Manual intervention policy: forbidden

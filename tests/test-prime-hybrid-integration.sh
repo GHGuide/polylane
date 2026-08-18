@@ -88,6 +88,7 @@ assert_contains "prime-hybrid-export-alpha-harness" "POLYLANE_HARNESS_DIR=$RUNTI
 assert_contains "prime-hybrid-export-alpha-workers" "POLYLANE_WORKERS_DIR=$RUNTIME_ROOT/docs/polylane/workers" "$CMD"
 assert_contains "prime-hybrid-export-alpha-worker-id" "POLYLANE_WORKER_ID=alpha" "$CMD"
 assert_contains "prime-hybrid-export-alpha-context-packet" "POLYLANE_CONTEXT_PACKET=$RUNTIME_ROOT/.polylane/context/alpha.md" "$CMD"
+assert_contains "prime-hybrid-export-alpha-run-id" "POLYLANE_WORKER_RUN_ID=$RUN_ID" "$CMD"
 CMD=$(pane_cmd "$TEST_TMPDIR/beta" gpt-test "$TEST_TMPDIR/beta-prompt" high)
 assert_contains "prime-hybrid-export-beta-harness" "POLYLANE_HARNESS_DIR=$RUNTIME_ROOT/docs/polylane/harness" "$CMD"
 assert_contains "prime-hybrid-export-beta-workers" "POLYLANE_WORKERS_DIR=$RUNTIME_ROOT/docs/polylane/workers" "$CMD"
@@ -98,6 +99,13 @@ assert_contains "prime-hybrid-export-integrator-harness" "POLYLANE_HARNESS_DIR=$
 assert_contains "prime-hybrid-export-integrator-workers" "POLYLANE_WORKERS_DIR=$RUNTIME_ROOT/docs/polylane/workers" "$CMD"
 assert_contains "prime-hybrid-export-integrator-worker-id" "POLYLANE_WORKER_ID=integrator" "$CMD"
 assert_contains "prime-hybrid-export-integrator-context-packet" "POLYLANE_CONTEXT_PACKET=$RUNTIME_ROOT/.polylane/context/integrator.md" "$CMD"
+assert_contains "prime-hybrid-export-integrator-run-id" "POLYLANE_WORKER_RUN_ID=$RUN_ID" "$CMD"
+
+# Contract-v2 must require the frozen literal durable-inbox command, rather
+# than merely a generic mention of a workers directory or inbox.
+assert_contains "prime-hybrid-contract-requires-exact-inbox-command" \
+  'grep -qF '\''"$POLYLANE_PROJECT_ROOT/bin/polylane-workers.sh" inbox "$POLYLANE_PROJECT_ROOT" "$POLYLANE_WORKER_ID"'\''' \
+  "$(sed -n '/^preflight_contract()/,/^}/p' "$RUNNER")"
 
 # The scratch bridge is the live writable channel; the runner imports its
 # append-only events into canonical durable history at completion.

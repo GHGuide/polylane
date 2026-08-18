@@ -6,6 +6,210 @@ Decisions: [decisions/INDEX.md](decisions/INDEX.md)
 
 State: `max-state.json` (query through `bin/polylane-memory.sh`; never infer it from prose).
 
+Cycle 42A contract freeze remains a historical **NO-GO**: [plan](cycle-42-plan.md) ·
+[outcome](cycle-42a-outcome.md) ·
+[host precheck](prechecks/c42a-host-precheck-20260813.json). Four builders and the
+integrator produced the v3 contract candidate, but the isolated worker host could not
+bind loopback sockets or create a private tmux socket. Its immutable handoff stays
+NO-GO. A separate host precheck of candidate `1e89f4f` passed 4,049 assertions in 170
+test files; that result is explicitly `PRECHECK_ONLY`, not authority to rewrite the
+old verdict or promote. Recovery uses a fresh contract-v3 nonce.
+
+Cycle 40 live harness (active): [plan](cycle-40-plan.md) ·
+[research lock](cycle-40-research.md) · [per-lane skills](cycle-40-suggestions.md).
+Fifteen isolated builders plus a deferred integrator own the primary human-corpus
+acquirer, held-out calibration, Claude/Codex judge adapters, production ballot-v2,
+real browser/decode/task/accessibility evidence, immutable prompts/generation, twenty
+briefs, and the study compiler. Thresholds and the pre-visual baseline were frozen
+before launch. This cycle can prove the harness only; `m32.4` remains open for the
+subsequent rendered old-versus-new study and honest machine-panel certificate.
+
+Cycle 39 production taste loop: [plan](cycle-39-plan.md) ·
+[research](cycle-39-research.md) · [skill suggestions](cycle-39-suggestions.md) · [council](cycle-39-council.md) ·
+[digest](cycle-39-digest.md) · [questions](cycle-39-questions.md) ·
+[integration proof](../verify-integration.md). Fifteen file-isolated builders and one
+deferred integrator closed the capture, hard-gate, tournament, repair-memory, prompt,
+hook, installer, and Claude/Codex seams. The frozen 28-script gate, 3,201-check full
+suite, ShellCheck, and cross-module adversarial chains passed, and `m32.3` promoted.
+The result is an engineering chain, not a live taste claim; `m32.4` now owns the pinned
+human corpus, calibrated machine panel, real rendered study, and non-fixture certificate.
+
+Cycle 37 taste-certification research: [plan](cycle-37-plan.md) ·
+[research scope](taste-certification/RESEARCH-SCOPE.md) ·
+[research synthesis](taste-certification/RESEARCH.md) ·
+[executable protocol](taste-certification/PROTOCOL.md) ·
+[council](cycle-37-council.md) · [digest](cycle-37-digest.md) ·
+[questions](cycle-37-questions.md). Eight file-isolated research lanes were merged
+into a falsifiable, provider-neutral protocol. `m32.1` is GO for research only:
+implementation, pinned corpus acquisition, real browser evidence, human calibration,
+human ballots, and the ten-brief certificate remain open for later cycles.
+
+Cycle 36 verdict-path recovery: [plan](cycle-36-plan.md) ·
+[research](cycle-36-research.md) · [skill suggestions](cycle-36-suggestions.md) ·
+[council](cycle-36-council.md) · [digest](cycle-36-digest.md) ·
+[questions](cycle-36-questions.md) · [integration verification](../verify-integration.md).
+Cycle 35 remains an immutable `NO-GO`: its integrator committed a valid current-run
+GO to `docs/status-integrator.md`, while the runner correctly read only
+`docs/verify-integration.md` and returned `UNKNOWN`. The fresh recovery merges the
+proven staged installer implementation and establishes one role-specific two-file
+handoff boundary with fresh hermetic installer, compiler, lint, provider-contract,
+syntax, marker, and parity evidence.
+
+Cycle 35 focused install-upgrade repair: [plan](cycle-35-plan.md) ·
+[research](cycle-35-research.md) · [skill suggestions](cycle-35-suggestions.md) ·
+[questions](cycle-35-questions.md). The post-certification installed-path audit found
+that a Codex reinstall could retain obsolete top-level files and an old duplicate
+`bin/` engine in a legacy `~/.agents/skills/polylane` directory. One focused builder
+now owns failure-safe package replacement and hermetic dirty-upgrade regressions; the
+unrelated human visual corpus remains external.
+
+Cycle 34 terminal-gate handoff: [plan](cycle-34-plan.md) ·
+[research](cycle-34-research.md) · [skill suggestions](cycle-34-suggestions.md) ·
+[council](cycle-34-council.md) · [digest](cycle-34-digest.md) ·
+[questions](cycle-34-questions.md) · [audit](../verify-terminal-certification-audit.md) ·
+[integration verification](../verify-integration.md). Exact audit tip
+`2e065fb84a8e42a25cd6c0e061caf62f93024bd6` is merged. All 24 target-scoped
+focused entries and bounded retained-script checks pass; canonical telemetry records
+one audit launch, one integrator launch, zero restarts, and zero terminal gates. All
+27 current autonomous targets are covered and four own terminal acceptance. The
+runner alone owns the one real terminal matrix and may award GO only after promotion,
+cleanup, and a current PASS `1 / 1` proof.
+
+Cycle 33 focused efficiency-contract handoff: [plan](cycle-33-plan.md) ·
+[research](cycle-33-research.md) · [skill suggestions](cycle-33-suggestions.md) ·
+[council](cycle-33-council.md) · [digest](cycle-33-digest.md) ·
+[questions](cycle-33-questions.md) · [integration verification](../verify-integration.md).
+Exact repair tip `619f4dec64e7a7592262d78107fe50a0cb9dc2bb` is merged. The
+certificate now distinguishes focused `0 / 0` from the backward-compatible terminal
+default `1 / 1`, and malformed or mismatched proofs fail closed. The frozen focused
+matrix passes with one builder launch, one integrator launch, zero restarts, and zero
+terminal gates. The runner owns promotion, final cleanup proof, durable state, and
+the later fresh terminal certification.
+
+Cycle 32 focused contract repair GO: [plan](cycle-32-plan.md) ·
+[research](cycle-32-research.md) · [skill suggestions](cycle-32-suggestions.md) ·
+[council](cycle-32-council.md) · [digest](cycle-32-digest.md) ·
+[questions](cycle-32-questions.md) · [integration verification](../verify-integration.md).
+Exact repair tip `712e2f898cf4e21b202c8af6e6990455bffc5e06` is merged. Four
+fixture assertions now match the absolute physical-worktree contract and Block G
+contains the compact coordinator-owned-terminal phrase exactly once. The frozen
+focused matrix passes with one builder launch, one integrator launch, zero restarts,
+and zero terminal gates. Cycle 31 remains terminal NO-GO; Cycle 33 owns fresh
+terminal certification.
+
+Cycle 31 terminal run NO-GO: [plan](cycle-31-plan.md) ·
+[research](cycle-31-research.md) · [skill suggestions](cycle-31-suggestions.md) ·
+[council](cycle-31-council.md) · [digest](cycle-31-digest.md) ·
+[questions](cycle-31-questions.md).
+Exact audit tip `cff6ec32f988726471af51a9622f9cba53b56aa9` is merged. All 24
+target-scoped focused entries and bounded changed-shell checks pass, while canonical
+telemetry records one builder launch, one integrator launch, zero restarts, and zero
+terminal gates. All 27 current autonomous subgoals are targeted and four own terminal
+acceptance. The runner-owned terminal gate then found four stale relative-path fixture
+expectations and one missing prompt phrase, so Cycle 31 remains NO-GO and nothing was
+promoted or cleaned.
+
+Cycle 29 active/scope recovery HALTED after its READY handoff: [plan](cycle-29-plan.md) ·
+[research](cycle-29-research.md) · [skill suggestions](cycle-29-suggestions.md) ·
+[council](cycle-29-council.md) · [digest](cycle-29-digest.md) ·
+[questions](cycle-29-questions.md) · [outcome](cycle-29-outcome.md) ·
+[integration verification](../verify-integration.md). Exact integrated source tip
+`9df16a33c51ccbb210247c51fc9bbb1207d256ed` passed every focused matrix with two
+launches and zero restarts. The host then charged a phantom terminal gate, inherited
+nested fixture failures into canonical evidence, and correctly refused the resulting
+unrelated path at promotion. Nothing merged or cleaned. Cycle 30 repairs that gate
+truth; Cycle 31 owns the fresh terminal certificate.
+
+Cycle 30 gate-truth recovery NO-GO: [plan](cycle-30-plan.md) ·
+[research](cycle-30-research.md) · [skill suggestions](cycle-30-suggestions.md) ·
+[council](cycle-30-council.md) · [digest](cycle-30-digest.md) ·
+[questions](cycle-30-questions.md) · [integration verification](../verify-integration.md).
+Exact builder tip `1e8f8cc96e259f31776528e5c3f981e8430ea676` is merged. The retry
+repaired a half-exported efficiency proof context and the full focused gate passes,
+but canonical telemetry records one integrator restart. The frozen zero-restart
+criterion makes this run NO-GO; zero terminal gates were consumed. Cycle 29 remains
+HALTED. Cycle 31 separately owns the full terminal certificate, installers, parity,
+live rehearsals, one real terminal gate, promotion, and cleanup after a fresh handoff.
+
+Cycle 27 repair READY handoff: [plan](cycle-27-plan.md) ·
+[research](cycle-27-research.md) · [skill suggestions](cycle-27-suggestions.md) ·
+[council](cycle-27-council.md) · [digest](cycle-27-digest.md) ·
+[questions](cycle-27-questions.md) · [integration verification](../verify-integration.md).
+Exact gate-repair tip `013534eef494976e66826d39e3fd2c9a845c60e8` is
+merged; the frozen repair matrices pass 124/78/183 assertions, adjacent runtime and
+graph checks pass 133/133, and changed-script ShellCheck is clean. Independent review
+repaired one canonical failure-output root seam. Canonical telemetry records one
+builder launch, one integrator launch, zero restarts, and zero terminal gates. Cycle
+28 owns fresh-process one-gate certification, installers, parity, and both live
+rehearsal routes.
+
+Cycle 26 terminal history: [plan](cycle-26-plan.md) ·
+[research](cycle-26-research.md) · [skill suggestions](cycle-26-suggestions.md) ·
+[council](cycle-26-council.md) · [digest](cycle-26-digest.md) ·
+[questions](cycle-26-questions.md) · [integration verification](../verify-integration.md).
+Exact terminal-finality tip `a4bb7fd442c47185c644cf08cc9999be16d06d8c`
+is merged; 700 focused checks across 28 files plus 341-check post-relay and
+246-check fingerprint/scout matrices, changed-script ShellCheck, and the repository
+seam scan are green. The final source also aligns observer completion with compiled
+prompt/pane identity and delivers typed, fingerprint-validated integrator skill
+selections conditionally; a 23-check state regression preserves integrator-less
+manifests. Canonical inspection shows one builder and one integrator launch with zero
+restarts and zero terminal gates. The coordinator owns the sole terminal gate,
+promotion, final state, report, and cleanup.
+
+Cycle 25 NO-GO evidence: [plan](cycle-25-plan.md) ·
+[research](cycle-25-research.md) · [skill suggestions](cycle-25-suggestions.md) ·
+[council](cycle-25-council.md) · [digest](cycle-25-digest.md) ·
+[questions](cycle-25-questions.md) · [integration verification](../verify-integration.md).
+The exact two tips and three integration seam repairs pass 599 focused checks plus
+changed-script ShellCheck. Canonical stats nevertheless record one handoff restart, so
+the untouched terminal gate cannot run. A fresh nonce owns zero-restart certification.
+
+Cycle 24 NO-GO evidence: [plan](cycle-24-plan.md) ·
+[research](cycle-24-research.md) · [skill suggestions](cycle-24-suggestions.md) ·
+[council](cycle-24-council.md) · [digest](cycle-24-digest.md) ·
+[questions](cycle-24-questions.md) · [integration verification](../verify-integration.md).
+The exact tips merged and focused contracts are green, but two context-hygiene restarts
+plus one supervisor restart forced the sole terminal gate to reject its efficiency
+proof. The exhausted run is NO-GO. The integrator fixed pane-option inheritance; a
+fresh cycle owns prompt handoff/reflexion repairs and zero-restart certification.
+
+Cycle 23 completed certification: [plan](cycle-23-plan.md) ·
+[research](cycle-23-research.md) · [council](cycle-23-council.md) ·
+[digest](cycle-23-digest.md) · [questions](cycle-23-questions.md) ·
+[terminal-fixture audit](../verify-terminal-fixture-audit.md) ·
+[integration verification](../verify-integration.md) · [skill suggestions](cycle-23-suggestions.md) ·
+[outcome](cycle-23-outcome.md).
+It started from repaired tip `23572df` with new process-bound state, used exactly two
+launches, zero restarts, and one terminal gate, and passed the full terminal matrix plus
+both live rehearsal routes.  Promotion and cleanup completed; the four remaining
+autonomous targets and `c56` are done.  Only the human-supplied ten-product visual
+comparison remains explicitly external.
+
+Cycle 22 certification: [plan](cycle-22-plan.md) ·
+[research](cycle-22-research.md) · [council](cycle-22-council.md) ·
+[digest](cycle-22-digest.md) · [questions](cycle-22-questions.md) ·
+[integration verification](../verify-integration.md) · [skill suggestions](cycle-22-suggestions.md) ·
+[outcome](cycle-22-outcome.md).
+It used exactly two launches, zero restarts, and one terminal gate.  The host correctly
+withheld promotion after the full suite exposed a recovery fixture inheriting live
+zero-retry policy.  The exact diagnostic replay then found stale marker ownership in
+the rehearsal fixture.  Both seams have red-first repairs, and the 2,210-check suite,
+ShellCheck, parity, installers, and live GO/NO-GO rehearsal pass under the terminal
+environment.  Cycle 22 remains truthful NO-GO; Cycle 23 owns fresh certification.
+
+Cycle 21 certification: [plan](cycle-21-plan.md) ·
+[research](cycle-21-research.md) · [council](cycle-21-council.md) ·
+[digest](cycle-21-digest.md) · [questions](cycle-21-questions.md) ·
+[integration verification](../verify-integration.md) · [skill suggestions](cycle-21-suggestions.md) ·
+[outcome](cycle-21-outcome.md).
+It used exactly two launches and zero restarts, merged the audit tip as `656d1e5`, and
+reached a clean READY handoff.  The host then stopped before terminal acceptance because
+the focused precheck exported a new nonce without a matching efficiency proof.  The
+runner now keeps that proof context atomic, with a red-first regression and a 2,210/0
+full-suite repair proof.  Cycle 21 remains a truthful NO-GO with zero terminal gates;
+all four autonomous targets and `c56` remain open for a fresh-process certification.
+
 Cycle 20 certification: [plan](cycle-20-plan.md) ·
 [research](cycle-20-research.md) · [skill suggestions](cycle-20-suggestions.md) ·
 [council](cycle-20-council.md) · [digest](cycle-20-digest.md) ·
@@ -81,6 +285,7 @@ Earlier digests: [c1](cycle-1-digest.md) · [c2](cycle-2-digest.md) ·
 [c6](cycle-6-digest.md) · [c7](cycle-7-digest.md) · [c8](cycle-8-digest.md) ·
 [c9](cycle-9-digest.md) · [c10](cycle-10-digest.md).
 
-Post-goal packet: [original 30 suggestions](next-suggestions.md). Every independent
-autonomous criterion is complete. Cycle 12's rendered ten-product visual comparison
-remains external and is the only unfinished evidence in the frozen goal tree.
+Post-goal packet: [original 30 suggestions](next-suggestions.md).  Prior durable work is
+preserved, while the four autonomous integration targets and `c56` remain open for the
+fresh post-Cycle-22 certification.  Cycle 12's rendered ten-product visual comparison
+remains external.

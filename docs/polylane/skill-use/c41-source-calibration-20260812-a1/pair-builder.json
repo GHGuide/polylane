@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "pair-builder",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-pair-builder/docs/verify-pair-builder.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

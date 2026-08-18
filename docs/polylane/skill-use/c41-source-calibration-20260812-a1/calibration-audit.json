@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "calibration-audit",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-calibration-audit/docs/verify-calibration-audit.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

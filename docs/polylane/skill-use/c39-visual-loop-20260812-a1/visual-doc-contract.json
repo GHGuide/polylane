@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "visual-doc-contract",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-visual-doc-contract/docs/verify-visual-doc-contract.md",
+  "helped": [
+    {
+      "id": "design:ux-copy",
+      "effect": " its error/empty-state/CTA structure informed `UI-CONTENT` and the real per-state copy requirement (default/loading/empty/error/success/focus/mobile) in the `ui-design-lock/v2` schema."
+    },
+    {
+      "id": "engineering:documentation",
+      "effect": " \"write for the reader,\" \"start with the most useful information,\" and \"link, don't duplicate\" produced the ownership-boundary-first ordering of visual-intelligence.md and the backtick-path (not duplicated content) references to the frozen PROTOCOL.md."
+    },
+    {
+      "id": "humanizer",
+      "effect": " removed em-dash overuse, rule-of-three, and \"unless justified\" hedging from the rewritten visual-intelligence.md; the new prose uses straight quotes, plain copulas, and positive definitions (added em-dashes that remain are pre-existing house style in lines I only lightly touched)."
+    },
+    {
+      "id": "product-management:write-spec",
+      "effect": " its goals/non-goals and testable acceptance-criteria framing shaped the shift from a free-form generic blacklist to positively defined, checkable product-specificity requirements (primary task/entity/information unit, per-state done-when copy)."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

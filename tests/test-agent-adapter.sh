@@ -74,7 +74,8 @@ mkdir -p "$RUNTIME_WT"
 git init -q -b main "$RUNTIME_WT"
 printf 'runtime prompt\n' > "$RUNTIME_PROMPT"
 CMD=$(pane_cmd "$RUNTIME_WT" gpt-5-codex "$RUNTIME_PROMPT" high)
-assert_contains "panecmd-stages-worktree-local-prompt" "< $RUNTIME_WT/.polylane-prompt.txt" "$CMD"
+RUNTIME_WT_PHYSICAL=$(cd "$RUNTIME_WT" && pwd -P)
+assert_contains "panecmd-stages-worktree-local-prompt" "< $RUNTIME_WT_PHYSICAL/.polylane-prompt.txt" "$CMD"
 assert_ok "panecmd-staged-prompt-identical" cmp "$RUNTIME_PROMPT" "$RUNTIME_WT/.polylane-prompt.txt"
 assert_eq "panecmd-staged-prompt-mode" "600" "$(stat -f '%Lp' "$RUNTIME_WT/.polylane-prompt.txt" 2>/dev/null || stat -c '%a' "$RUNTIME_WT/.polylane-prompt.txt")"
 # A manifest may keep its worktree path project-relative. The pane changes into
@@ -87,13 +88,17 @@ mkdir -p "$REL_WT"
 git init -q -b main "$REL_WT"
 REL_CMD=$(cd "$REL_ROOT" && PROJECT_ROOT="$REL_ROOT" REPO_ROOT="$REL_ROOT" PRIME_HYBRID=0 \
   pane_cmd ".polylane/worktrees/lane" gpt-5-codex "$RUNTIME_PROMPT" high)
+REL_WT_PHYSICAL=$(cd "$REL_WT" && pwd -P)
 assert_contains "panecmd-relative-worktree-uses-absolute-staged-prompt" \
-  "< $REL_WT/.polylane-prompt.txt" "$REL_CMD"
+  "< $REL_WT_PHYSICAL/.polylane-prompt.txt" "$REL_CMD"
+assert_contains "panecmd-relative-worktree-exports-absolute-source-root" \
+  "POLYLANE_SOURCE_ROOT=$REL_WT_PHYSICAL" "$REL_CMD"
 assert_ok "panecmd-relative-worktree-staged-prompt-identical" \
   cmp "$RUNTIME_PROMPT" "$REL_WT/.polylane-prompt.txt"
 REPO_ROOT='/tmp/canonical project' POLYLANE_COORDINATION_FILE='/tmp/canonical project/.polylane/coordination.jsonl'
 CMD=$(pane_cmd '/tmp/lane worktree' gpt-5-codex '/tmp/prompt;unsafe.txt' high)
 assert_contains "panecmd-canonical-project-env" "POLYLANE_PROJECT_ROOT=/tmp/canonical\\ project" "$CMD"
+assert_contains "panecmd-exact-source-root" "POLYLANE_SOURCE_ROOT=/tmp/lane\\ worktree" "$CMD"
 assert_contains "panecmd-coordination-file-env" "POLYLANE_COORDINATION_FILE=/tmp/canonical\\ project/.polylane/coordination.jsonl" "$CMD"
 if printf '%s' "$CMD" | grep -q 'unsafe.txt.*POLYLANE_COORDINATION'; then fail "panecmd-coordination-not-prompt-interpolated" "relay env was derived from prompt"; else pass "panecmd-coordination-not-prompt-interpolated"; fi
 # A self-run inherits the outer pane's relay environment. Once load_manifest has
@@ -103,6 +108,7 @@ POLYLANE_PROJECT_ROOT='/tmp/outer project'; POLYLANE_COORDINATION_FILE='/tmp/out
 CMD=$(pane_cmd '/tmp/lane worktree' gpt-5-codex '/tmp/prompt.txt' high)
 assert_contains "panecmd-manifest-project-wins-stale-env" "POLYLANE_PROJECT_ROOT=/tmp/inner\\ project" "$CMD"
 assert_contains "panecmd-manifest-coordination-wins-stale-env" "POLYLANE_COORDINATION_FILE=/tmp/inner\\ project/.polylane/coordination.jsonl" "$CMD"
+assert_contains "panecmd-worktree-source-wins-stale-env" "POLYLANE_SOURCE_ROOT=/tmp/lane\\ worktree" "$CMD"
 unset COORDINATION_PROJECT_ROOT COORDINATION_FILE POLYLANE_PROJECT_ROOT POLYLANE_COORDINATION_FILE
 
 # Break caught: a linked-worktree Codex workspace-write command cannot commit
@@ -167,5 +173,17 @@ unset POLYLANE_AGENT_CMD
 
 TMUX_SESSION=polylane-c42
 assert_eq "watch-command" "tmux attach -t polylane-c42" "$(tmux_watch_command)"
+
+# load_manifest canonicalizes every pane worktree, including the integrator.
+# A relative integrator root otherwise becomes a second source-root escape hatch.
+MANIFEST_ROOT="$TEST_TMPDIR/integrator-relative-manifest"
+mkdir -p "$MANIFEST_ROOT/.polylane/worktrees/builder" "$MANIFEST_ROOT/.polylane/worktrees/integrator"
+cat > "$MANIFEST_ROOT/.polylane/run.json" <<'JSON'
+{"base":"main","integrator":{"name":"integrator","model":"m","branch":"lane/integrator","worktree":".polylane/worktrees/integrator","prompt_file":"p"},"lanes":[{"name":"builder","model":"m","branch":"lane/builder","worktree":".polylane/worktrees/builder","prompt_file":"p","own_globs":["src/**"]}]}
+JSON
+MANIFEST="$MANIFEST_ROOT/.polylane/run.json"
+load_manifest
+assert_eq "load-manifest-relative-integrator-worktree-is-physical" \
+  "$(cd "$MANIFEST_ROOT/.polylane/worktrees/integrator" && pwd -P)" "$INT_WORKTREE"
 
 finish

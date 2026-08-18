@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "terminal-fixture-audit",
+  "verify_file": ".polylane/worktrees/c23-terminal-fixture-audit/docs/verify-terminal-fixture-audit.md",
+  "helped": [
+    {
+      "id": "superpowers:systematic-debugging",
+      "effect": " required a"
+    },
+    {
+      "id": "superpowers:verification-before-completion",
+      "effect": " kept the"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

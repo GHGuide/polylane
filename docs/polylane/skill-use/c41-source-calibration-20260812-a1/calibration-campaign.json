@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "lane": "calibration-campaign",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-calibration-campaign/docs/verify-calibration-campaign.md",
+  "helped": [
+    {
+      "id": "engineering:debug",
+      "effect": " reproduce-isolate loop on the rc-4 plan"
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " shaped the single hermetic"
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " the fail-closed guard list"
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " RED run exposed a real"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

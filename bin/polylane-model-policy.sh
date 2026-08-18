@@ -110,13 +110,19 @@ model_policy_apply_override() {
 }
 
 resolve_model_policy() {
-  local agent intensity source effort desired model i role result active=0 max_tier
+  local agent intensity source effort desired model i role result active=0 max_tier manifest_custom=0
   agent=$(model_policy_agent) || { model_policy_die "agent '$(agent_selected)' has no model policy; use claude or codex"; return $?; }
   intensity="${INTENSITY:-}"
-  if [ -z "$intensity" ]; then intensity="${MANIFEST_INTENSITY:-}"; source=manifest; else source='CLI override'; fi
+  if [ -z "$intensity" ]; then
+    intensity="${MANIFEST_INTENSITY:-}"
+    source=manifest
+    [ "$intensity" != custom ] || manifest_custom=1
+  else
+    source='CLI override'
+  fi
   [ -z "$intensity" ] || active=1
   [ "${#MODEL_OVERRIDES[@]:-0}" -eq 0 ] || active=1
-  if [ -n "$intensity" ]; then
+  if [ -n "$intensity" ] && [ "$manifest_custom" = 0 ]; then
     effort=$(model_policy_effort "$intensity") || { model_policy_die "unknown intensity '$intensity' (want economy|balanced|performance|max)"; return $?; }
     model_policy_validate_available "$agent" || return $?
     desired=$(model_policy_target_tier "$intensity" "$agent") || return 2
@@ -129,6 +135,21 @@ resolve_model_policy() {
   if [ "${#MODEL_OVERRIDES[@]:-0}" -gt 0 ]; then
     model_policy_validate_available "$agent" || return $?
     for model in "${MODEL_OVERRIDES[@]}"; do model_policy_apply_override "$model" "$agent" || return $?; done
+  fi
+  if [ "$manifest_custom" = 1 ]; then
+    # `custom` validates the baked settings but is never a preset remap.
+    model_policy_validate_available "$agent" || return $?
+    for i in "${!LANE_NAMES[@]}"; do
+      model_policy_tier "$agent" "${LANE_MODELS[$i]}" >/dev/null || { model_policy_die "unsupported $agent model '${LANE_MODELS[$i]}' for lane '${LANE_NAMES[$i]}'"; return $?; }
+      model_policy_available "${LANE_MODELS[$i]}" || { model_policy_die "lane '${LANE_NAMES[$i]}' model '${LANE_MODELS[$i]}' is not in available_models"; return $?; }
+      model_policy_effort_valid "${LANE_EFFORTS[$i]:-medium}" || { model_policy_die "unsupported effort '${LANE_EFFORTS[$i]}' for lane '${LANE_NAMES[$i]}'"; return $?; }
+      LANE_POLICY_SOURCES[i]=manifest-custom
+    done
+    model_policy_tier "$agent" "$INT_MODEL" >/dev/null || { model_policy_die "unsupported $agent model '$INT_MODEL' for integrator '$INT_NAME'"; return $?; }
+    model_policy_available "$INT_MODEL" || { model_policy_die "integrator model '$INT_MODEL' is not in available_models"; return $?; }
+    model_policy_effort_valid "${INT_EFFORT:-medium}" || { model_policy_die "unsupported effort '$INT_EFFORT' for integrator '$INT_NAME'"; return $?; }
+    INT_POLICY_SOURCE=manifest-custom
+    return 0
   fi
   if [ "$active" = 0 ]; then
     # A legacy manifest with no intensity and no availability declaration may

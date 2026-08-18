@@ -46,10 +46,41 @@ if ! command -v tmux >/dev/null 2>&1; then
 fi
 
 TMUX_SESSION="polylane-atomic-$$"
+IDENTITY_SESSION="polylane-identity-$$"
 DRY_RUN=0; SESSION_STARTED=0; NEXT_PANE_IDX=0
 RUN_ID="$RUN_ONE"; PROJECT_ROOT="$TEST_TMPDIR/project"
-mkdir -p "$PROJECT_ROOT"
-trap 'tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true; rm -rf "$ROOT_ONE" "$ROOT_TWO" "$ROOT_NESTED"; cleanup_tmpdirs' EXIT
+LEGACY_PROJECT="$TEST_TMPDIR/legacy-project"
+PARTIAL_PROJECT="$TEST_TMPDIR/partial-project"
+WRONG_RUN_PROJECT="$TEST_TMPDIR/wrong-run-project"
+WRONG_WORKTREE_PROJECT="$TEST_TMPDIR/wrong-worktree-project"
+TAGGED_OTHER_PROJECT="$TEST_TMPDIR/tagged-other-project"
+mkdir -p "$PROJECT_ROOT" "$LEGACY_PROJECT" "$PARTIAL_PROJECT" \
+  "$WRONG_RUN_PROJECT" "$WRONG_WORKTREE_PROJECT" "$TAGGED_OTHER_PROJECT"
+trap 'tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true; tmux kill-session -t "$IDENTITY_SESSION" 2>/dev/null || true; rm -rf "$ROOT_ONE" "$ROOT_TWO" "$ROOT_NESTED"; cleanup_tmpdirs' EXIT
+
+# A pane can retain its Polylane identity after its process changes directory.
+# Tags are authoritative; cwd is migration-only for fully untagged panes.
+polylane_tmux_configure "$RUN_ONE" ensure
+tmux new-session -d -s "$IDENTITY_SESSION" -c /tmp 'sleep 30'
+tmux set-option -t "$IDENTITY_SESSION" @polylane_run_id session-owner
+tmux split-window -d -t "$IDENTITY_SESSION:0" -c "$LEGACY_PROJECT" 'sleep 30'
+polylane_tmux_tag_pane "$IDENTITY_SESSION" 0 "$RUN_ONE" atomic "$PROJECT_ROOT"
+assert_eq "tmux-find-tag-survives-cwd-drift" "0" "$(polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$PROJECT_ROOT")"
+assert_ok "tmux-find-allows-fully-untagged-legacy-cwd-under-tagged-session" polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$LEGACY_PROJECT"
+
+# Any identity metadata disables cwd adoption. Partial, wrong-run, and
+# wrong-worktree tags must all fail closed instead of impersonating this run.
+PARTIAL_IDX=$(tmux split-window -d -t "$IDENTITY_SESSION:0" -c "$PARTIAL_PROJECT" -P -F '#{pane_index}' 'sleep 30')
+tmux set-option -p -t "$IDENTITY_SESSION:0.$PARTIAL_IDX" @polylane_run_id "$RUN_ONE"
+assert_fail "tmux-find-rejects-partial-tags" polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$PARTIAL_PROJECT"
+
+WRONG_RUN_IDX=$(tmux split-window -d -t "$IDENTITY_SESSION:0" -c "$WRONG_RUN_PROJECT" -P -F '#{pane_index}' 'sleep 30')
+polylane_tmux_tag_pane "$IDENTITY_SESSION" "$WRONG_RUN_IDX" "$RUN_TWO" wrong-run "$WRONG_RUN_PROJECT"
+assert_fail "tmux-find-rejects-wrong-run-tags" polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$WRONG_RUN_PROJECT"
+
+WRONG_WORKTREE_IDX=$(tmux split-window -d -t "$IDENTITY_SESSION:0" -c "$WRONG_WORKTREE_PROJECT" -P -F '#{pane_index}' 'sleep 30')
+polylane_tmux_tag_pane "$IDENTITY_SESSION" "$WRONG_WORKTREE_IDX" "$RUN_ONE" wrong-worktree "$TAGGED_OTHER_PROJECT"
+assert_fail "tmux-find-rejects-wrong-worktree-tags" polylane_tmux_find_pane "$IDENTITY_SESSION" "$RUN_ONE" "$WRONG_WORKTREE_PROJECT"
 
 # A payload longer than the command that exposed the old seed race must arrive
 # byte-for-byte through one fresh-server pane launch without send-keys.

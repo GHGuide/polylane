@@ -1,18 +1,23 @@
-# Cycle 20 integration status
+# Cycle 39 — parallel status (post-cycle evidence)
 
-Run: `c20-clean-cert-20260809-a1` · branch: `lane/c20-integrator` · merged builder
-tip: `716624affb45b6e8ba75945e0fb135ea229bd59a` via `20aa4e1c`.
+Cycle 39 (`c39-visual-loop-20260812-a1`) integrated all 15 lane tips into one
+production-authoritative rendered taste loop: hash-bound producer receipts →
+subset-validating certificate compiler → three-candidate blind Condorcet tournament with
+durable event replay and CAS champion persistence → evidence-scoped taste memory →
+provider-native prompt contracts → fresh-install parity for both Claude and Codex. The
+file-disjoint carve merged with a single auto-resolved `SKILL.md` overlap; four seams were
+repaired and documented (jq-1.8.2 corpus precedence, a stale calibration fixture, Claude/Codex
+parity wording, and the coordinator seq28/seq29 runner auto-quiesce). Two new cross-module
+tests were added — `tests/test-taste-production-chain.sh` (35/0, real decoded PNGs +
+validator-produced receipts, one mutation per trust boundary) and
+`tests/test-taste-runner-e2e.sh` (21/0, hermetic promotion canary + quiesce regression). The
+full frozen acceptance set, shellcheck, markers, seams, `git diff --check`, and the entire
+136-file suite are green (**3201 passed, 0 failed**); verdict **GO**. Nothing here crosses an
+external boundary: the loop is proven hermetically only.
 
-| Lane | Exact tip | Integration state | Independently reproduced evidence |
-| --- | --- | --- | --- |
-| restart accounting audit | `716624a` | nonce-matched evidence-only tip merged; range added only its verification and status documents | Cycle 19 restart attribution retained; no production surface changed |
-| integrator | `f58d3cb` | the planning root cause plus three live orchestration/reporting seams were reproduced and repaired; READY was rejected by the host efficiency proof, not by the integrator | original focused matrix 153/0; runtime/prompt/parity 381/0; host-proof/report matrix 261/0; scope/prompt/preflight matrix 292/0; docs truth 25/0; ShellCheck clean |
-
-Canonical run stats prove one builder restart, two launches, one host-boundary entry,
-zero full terminal acceptance runs, 4,424,983 known tokens, and retained cleanup. Commits
-`763fb00`, `e1de56a`, and `f58d3cb` add marker/relay recovery, canonical nonce-scoped host
-proofs, truthful report attribution, and prelaunch rejection of noncanonical status
-contracts. Cycle 21 owns the untouched terminal full-suite and
-hermetic GO plus NO-GO rehearsal outcomes that can decide `m20.1`, `m18.3`, and `c56`.
-No live external action occurred; approval hashes remain mandatory and trading remains
-research/backtest/paper-only. This file is a durable post-cycle summary, never live IPC.
+**Next real-benchmark work (out of scope this cycle, blocked on real evidence):** stand up the
+≥10-varied-brief (target 20) old-versus-new human study with the pinned CC0 calibration corpus,
+real browser/decoder/OCR/accessibility adapter runs against actual rendered products, and an
+externally verified human panel — the only path to `TASTE-CERTIFIED` / `human_certified:true`
+and to marking `m32.4`, `m32.5`, and `c84`–`c90`. Until then every local outcome stays
+`SELECTED_NOT_CERTIFIED` and machine judges stay `human_calibrated`-at-most.

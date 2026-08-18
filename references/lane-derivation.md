@@ -112,4 +112,9 @@ Two preconditions before any worktree/branch op (both from SKILL.md Phase 3 reco
 - Every spec item maps to exactly one lane.
 - No file appears in two lanes' OWN lists.
 - Every FORBIDDEN list names the other lanes' OWN globs.
+- New generated manifests set `write_plan_contract: 1` and copy each builder’s
+  concrete write-set into `planned_writes` as non-empty, unique, safe exact
+  repository-relative paths (including the canonical status marker). Before any
+  worktree or pane exists, `polylane-scope.sh check-write-plan` proves each path
+  fits that lane’s `own_globs`; legacy manifests may omit the opt-in.
 - Every contract is stated from both sides (owner keeps stable; consumer doesn't edit).

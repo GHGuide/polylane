@@ -1,0 +1,42 @@
+{
+  "schema": "polylane-host-precheck/v1",
+  "label": "PRECHECK_ONLY",
+  "historical_run_id": "c42a-taste-contracts-20260813-a2",
+  "candidate_commit": "1e89f4f182b43fef7aa1b62bcdc9ed364c10aabe",
+  "candidate_tree": "26b33981ef0881d15d3361c143d931dff9d5cfd0",
+  "command": "bash tests/run.sh > /tmp/polylane-c42a-host-full-suite.log 2>&1",
+  "started_at_utc": "2026-08-13T12:06:01Z",
+  "ended_at_utc": "2026-08-13T12:30:13Z",
+  "exit_code": 0,
+  "assertions_passed": 4049,
+  "assertions_failed": 0,
+  "test_files": 170,
+  "raw_log_path_at_execution": "/tmp/polylane-c42a-host-full-suite.log",
+  "raw_log_sha256": "1a2bb2cfd8b6889caf31f285c01c81066ca542f2b4981025f9892b4be6c3e680",
+  "tracked_worktree_before": "clean",
+  "tracked_worktree_after": "clean",
+  "allowed_untracked_runner_scratch": [
+    ".polylane-prompt.txt",
+    "graphify-out"
+  ],
+  "host_capabilities": {
+    "loopback_bind": "available",
+    "private_tmux_socket": "available"
+  },
+  "previously_blocked_test_blobs": {
+    "tests/test-taste-browser-live.sh": "6fc1f317e94489bcca1ed086382b02140f7200f5",
+    "tests/test-taste-dataone-metadata.sh": "c6dfe23cd294334770c784963e723877fbf37ce5",
+    "tests/test-tmux-runtime.sh": "e2829f0bc65fdbc42b197d39338a2950efe9a44c"
+  },
+  "historical_handoff": {
+    "commit": "4851bc12e22ab2260c2baeb1",
+    "status_sha256": "52c99513054a658f30277856ab04f7d810b672af870717721c86a80a4e93a033",
+    "verdict_sha256": "4eb179e6c543b04e181efa996815b8623821c8bb2a678ab720889e3d98e5fee2",
+    "verdict": "NO-GO"
+  },
+  "limitations": [
+    "This precheck is not a worker-owned GO handoff.",
+    "It may not rewrite or supersede the historical nonce.",
+    "Promotion requires a fresh contract-v3 run and exact-commit host gate."
+  ]
+}

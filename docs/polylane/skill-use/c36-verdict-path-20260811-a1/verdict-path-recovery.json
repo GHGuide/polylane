@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "verdict-path-recovery",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c32/.polylane/worktrees/c36-verdict-path-recovery/docs/verify-verdict-path-recovery.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

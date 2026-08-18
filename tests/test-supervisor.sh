@@ -27,41 +27,57 @@ cp "$(cd "$(dirname "$RUNNER")" && pwd)/polylane-tmux.sh" "$BIN/polylane-tmux.sh
 #   nogo          : write report, exit 1                  (legit NO-GO end)
 #   halted-then-go: HALTED report first, then GO           (boundary recovery)
 #   external      : write external-open report, exit 0     (clean cycle end)
+#   preflight-error: deterministic configuration rc2        (never retry)
 #   always-crash  : crash rc137 every time                 (cap path)
 #   halted-needs-user: HALTED + needs-user marker           (do not relaunch)
 #   slow-go       : stay alive briefly, then GO             (lock contention)
 cat > "$BIN/polylane-run.sh" <<'FAKE'
 #!/usr/bin/env bash
 set -euo pipefail
-lane_done(){ return 1; }; pane_awaiting_approval(){ return 1; }
+lane_done(){ return 1; }; pane_awaiting_approval(){ [ "${POLYLANE_TEST_AWAITING:-0}" = 1 ]; }
 approval_is_critical(){ return 1; }; notify_event(){ :; }
 if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
   M="$1"; shift; D=$(cd "$(dirname "$M")" && pwd); ROOT=$(cd "$D/.." && pwd)
   echo "ARGS: $*" >> "$D/calls.log"
   case "$(cat "$D/mode")" in
-    crash-then-go) if [ -f "$D/crashed" ]; then echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0
+    crash-then-go) if [ -f "$D/crashed" ]; then printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0
                    else touch "$D/crashed"; exit 137; fi ;;
-    halted-then-go) if [ -f "$D/halted" ]; then echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0
-                    else touch "$D/halted"; echo '**Outcome:** HALTED' > "$ROOT/docs/polylane-report.md"; exit 1; fi ;;
-    external)      echo '**Outcome:** EXTERNAL-EVIDENCE-OPEN' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
-    nogo)          echo '**Outcome:** NO-GO' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
-    halted-needs-user) echo lane-a > "$D/needs-user"; echo '**Outcome:** HALTED' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
-    slow-go)       sleep 2; echo '**Outcome:** GO' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
+    halted-then-go) if [ -f "$D/halted" ]; then printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0
+                    else touch "$D/halted"; printf '**Outcome:** HALTED\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1; fi ;;
+    external)      printf '**Outcome:** EXTERNAL-EVIDENCE-OPEN\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
+    preflight-error) exit 2 ;;
+    nogo)          printf '**Outcome:** NO-GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
+    halted-needs-user) echo lane-a > "$D/needs-user"; printf '**Outcome:** HALTED\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 1 ;;
+    slow-go)       trap 'echo term > "$D/child-term"; exit 143' TERM
+                   sleep 2; printf '**Outcome:** GO\n**Run:** current-nonce\n' > "$ROOT/docs/polylane-report.md"; exit 0 ;;
     always-crash)  exit 137 ;;
   esac
 fi
 FAKE
 chmod +x "$BIN"/*.sh
 cat > "$PROJ/.polylane/run.json" <<EOF
-{"base":"main","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$PROJ/.polylane/wt/int","prompt_file":"p"},
+{"base":"main","run_id":"current-nonce","integrator":{"name":"int","model":"m","effort":"x","branch":"lane/int","worktree":"$PROJ/.polylane/wt/int","prompt_file":"p"},
 "lanes":[{"name":"a","model":"m","effort":"h","branch":"lane/a","worktree":"$PROJ/.polylane/wt/a","prompt_file":"p","own_globs":["x"]}]}
 EOF
+mkdir -p "$PROJ/.polylane/wt/a" "$PROJ/.polylane/wt/int"
 
 reset_proj() {
   rm -f "$PROJ/.polylane/calls.log" "$PROJ/.polylane/crashed" \
     "$PROJ/.polylane/halted" "$PROJ/.polylane/needs-user" \
+    "$PROJ/.polylane/child-term" \
     "$PROJ/docs/polylane-report.md"
 }
+
+# --- help is inert: no manifest parse, runner launch, or recovery loop ----------
+mkdir -p "$TEST_TMPDIR/help-probe"
+(
+  cd "$TEST_TMPDIR/help-probe" || exit 1
+  POLYLANE_SUP_MAX_RESTARTS=0 POLYLANE_SUP_INTERVAL=0 \
+    "$BIN/polylane-supervisor.sh" --help > "$TEST_TMPDIR/out-help" 2>&1
+)
+assert_eq "sup-help-rc0" "0" "$?"
+assert_contains "sup-help-usage" "USAGE:" "$(cat "$TEST_TMPDIR/out-help")"
+assert_fail "sup-help-no-runner-log" test -e "$TEST_TMPDIR/help-probe/runner.log"
 
 # --- crash -> revive with --resume -> rc0 -------------------------------------
 reset_proj; echo crash-then-go > "$PROJ/.polylane/mode"
@@ -92,6 +108,16 @@ rc=$?
 assert_eq "sup-nogo-rc1" "1" "$rc"
 assert_eq "sup-nogo-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
 
+# A newly written report for another run is not this runner's terminal handoff.
+# It remains recoverable instead of suppressing the correct resume decision.
+reset_proj; echo always-crash > "$PROJ/.polylane/mode"
+printf '**Outcome:** NO-GO\n**Run:** stale-nonce\n' > "$PROJ/docs/polylane-report.md"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 POLYLANE_SUP_MAX_RESTARTS=0 \
+  "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-stale-run" 2>&1
+stale_rc=$?
+assert_eq "sup-stale-run-report-is-not-terminal" "1" "$stale_rc"
+assert_contains "sup-stale-run-report-revives" "without a report" "$(cat "$TEST_TMPDIR/out-stale-run")"
+
 # --- a durable no-progress blocker is not relaunched identically ----------------
 reset_proj; echo halted-needs-user > "$PROJ/.polylane/mode"
 POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-needs-user" 2>&1
@@ -99,6 +125,17 @@ rc=$?
 assert_eq "sup-needs-user-rc1" "1" "$rc"
 assert_eq "sup-needs-user-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
 assert_contains "sup-needs-user-no-loop" "not relaunching identical work" "$(cat "$TEST_TMPDIR/out-needs-user")"
+
+# A usage/manifest/contract preflight failure is deterministic. Retrying the
+# same immutable manifest only burns restart budget and sends repeated failure
+# notifications; stop after the first rc2 and preserve its diagnostic log.
+reset_proj; echo preflight-error > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=0 POLYLANE_SUP_MAX_RESTARTS=2 \
+  "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-preflight" 2>&1
+rc=$?
+assert_eq "sup-preflight-rc2" "2" "$rc"
+assert_eq "sup-preflight-single-launch" "1" "$(grep -c ARGS "$PROJ/.polylane/calls.log")"
+assert_contains "sup-preflight-no-identical-retry" "deterministic preflight" "$(cat "$TEST_TMPDIR/out-preflight")"
 
 # --- only one supervisor may own a manifest ------------------------------------
 reset_proj; echo slow-go > "$PROJ/.polylane/mode"
@@ -114,6 +151,22 @@ wait "$owner_pid"
 assert_eq "sup-lock-second-refused" "1" "$second_rc"
 assert_contains "sup-lock-names-owner" "another supervisor already owns" "$(cat "$TEST_TMPDIR/out-lock-second")"
 assert_fail "sup-lock-cleaned-after-owner" test -d "$PROJ/.polylane/supervisor.lock"
+
+# --- TERM stops the child and supervisor, then releases the lock ----------------
+reset_proj; echo slow-go > "$PROJ/.polylane/mode"
+POLYLANE_SESSION=sup-test-nosuch POLYLANE_SUP_INTERVAL=1 \
+  "$BIN/polylane-supervisor.sh" "$PROJ/.polylane/run.json" > "$TEST_TMPDIR/out-term" 2>&1 &
+term_pid=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  [ -d "$PROJ/.polylane/supervisor.lock" ] && break
+  sleep 0.1
+done
+kill -TERM "$term_pid"
+wait "$term_pid"
+term_rc=$?
+assert_eq "sup-term-rc143" "143" "$term_rc"
+assert_ok "sup-term-reaches-child" test -f "$PROJ/.polylane/child-term"
+assert_fail "sup-term-cleans-lock" test -d "$PROJ/.polylane/supervisor.lock"
 
 # --- restart cap: always-crash halts rc1 after cap ------------------------------
 reset_proj; echo always-crash > "$PROJ/.polylane/mode"

@@ -1,0 +1,21 @@
+{
+  "schema": 2,
+  "lane": "study-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-study-live/docs/verify-study-live.md",
+  "helped": [
+    {
+      "id": "engineering:architecture",
+      "effect": " its options→trade-offs→"
+    },
+    {
+      "id": "engineering:code-review",
+      "effect": " reviewing my own jq edits under"
+    },
+    {
+      "id": "operations:risk-assessment",
+      "effect": " the false-positive table"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

@@ -1,0 +1,21 @@
+{
+  "schema": 2,
+  "lane": "execution-contract-freeze",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c42a-execution-contract-freeze/docs/verify-execution-contract-freeze.md",
+  "helped": [
+    {
+      "id": "engineering:system-design",
+      "effect": " forced explicit component,"
+    },
+    {
+      "id": "engineering:testing-strategy",
+      "effect": " organized fast contract tests"
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the missing-tool RED run"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "red-team",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c37-red-team/docs/verify-red-team.md",
+  "helped": [],
+  "unused": [
+    "deep-research",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:systematic-debugging"
+  ],
+  "hurt": []
+}

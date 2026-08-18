@@ -1,100 +1,249 @@
 {
   "version": 1,
-  "run_id": "c17-1787054491",
-  "started_at": 1787054534,
-  "updated_at": 1787054586,
-  "wall_s": 52,
-  "lanes": {},
-  "supervisor_restarts": 10,
+  "run_id": "c42a-taste-contracts-20260813-a2",
+  "started_at": 1786584157,
+  "updated_at": 1786591523,
+  "wall_s": 7366,
+  "lanes": {
+    "execution-contract-freeze": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "evidence-policy-freeze": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "source-contract-freeze": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "lifecycle-external-routing": {
+      "launches": 1,
+      "restarts": 0
+    },
+    "taste-contract-integrator": {
+      "launches": 1,
+      "restarts": 16
+    }
+  },
+  "supervisor_restarts": 0,
   "terminal_gates": 0,
-  "tokens": null,
-  "token_state": "unknown",
-  "usage_offsets": {},
+  "tokens": 95478575,
+  "token_state": "known",
+  "usage_offsets": {
+    "execution-contract-freeze": 238737,
+    "evidence-policy-freeze": 196128,
+    "source-contract-freeze": 614268,
+    "lifecycle-external-routing": 727425,
+    "taste-contract-integrator": 1877192
+  },
   "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1787054534
+      "at": 1786584157
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054539
+      "type": "usage_capture",
+      "lane": "execution-contract-freeze",
+      "at": 1786584249,
+      "added": null
     },
     {
-      "type": "initialized",
-      "at": 1787054539
+      "type": "launches",
+      "lane": "execution-contract-freeze",
+      "at": 1786584249
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054544
+      "type": "usage_capture",
+      "lane": "evidence-policy-freeze",
+      "at": 1786584250,
+      "added": null
     },
     {
-      "type": "initialized",
-      "at": 1787054544
+      "type": "launches",
+      "lane": "evidence-policy-freeze",
+      "at": 1786584250
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054550
+      "type": "usage_capture",
+      "lane": "source-contract-freeze",
+      "at": 1786584250,
+      "added": null
     },
     {
-      "type": "initialized",
-      "at": 1787054550
+      "type": "launches",
+      "lane": "source-contract-freeze",
+      "at": 1786584250
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054555
+      "type": "usage_capture",
+      "lane": "lifecycle-external-routing",
+      "at": 1786584251,
+      "added": null
     },
     {
-      "type": "initialized",
-      "at": 1787054555
+      "type": "launches",
+      "lane": "lifecycle-external-routing",
+      "at": 1786584251
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054560
+      "type": "usage_capture",
+      "lane": "taste-contract-integrator",
+      "at": 1786586155,
+      "added": null
     },
     {
-      "type": "initialized",
-      "at": 1787054560
+      "type": "launches",
+      "lane": "taste-contract-integrator",
+      "at": 1786586155
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054565
+      "type": "usage_capture",
+      "lane": "execution-contract-freeze",
+      "at": 1786591234,
+      "added": 6505832
     },
     {
-      "type": "initialized",
-      "at": 1787054565
+      "type": "usage_capture",
+      "lane": "evidence-policy-freeze",
+      "at": 1786591235,
+      "added": 3667127
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054570
+      "type": "usage_capture",
+      "lane": "source-contract-freeze",
+      "at": 1786591235,
+      "added": 7009029
     },
     {
-      "type": "initialized",
-      "at": 1787054571
+      "type": "usage_capture",
+      "lane": "lifecycle-external-routing",
+      "at": 1786591235,
+      "added": 24929549
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054576
+      "type": "usage_capture",
+      "lane": "taste-contract-integrator",
+      "at": 1786591235,
+      "added": 53367038
     },
     {
-      "type": "initialized",
-      "at": 1787054576
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591236
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054581
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591253
     },
     {
-      "type": "initialized",
-      "at": 1787054581
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591271
     },
     {
-      "type": "supervisor_restart",
-      "at": 1787054586
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591289
     },
     {
-      "type": "initialized",
-      "at": 1787054586
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591307
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591325
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591343
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591361
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591379
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591397
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591415
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591433
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591451
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591469
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591487
+    },
+    {
+      "type": "restarts",
+      "lane": "taste-contract-integrator",
+      "at": 1786591504
+    },
+    {
+      "type": "usage_capture",
+      "lane": "execution-contract-freeze",
+      "at": 1786591523,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "evidence-policy-freeze",
+      "at": 1786591523,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "source-contract-freeze",
+      "at": 1786591523,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "lifecycle-external-routing",
+      "at": 1786591523,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "taste-contract-integrator",
+      "at": 1786591523,
+      "added": null
     }
-  ]
+  ],
+  "usage": {
+    "input_tokens": 95160225,
+    "cached_input_tokens": 93366272,
+    "uncached_input_tokens": 1793953,
+    "output_tokens": 318350,
+    "reasoning_output_tokens": 93727
+  }
 }

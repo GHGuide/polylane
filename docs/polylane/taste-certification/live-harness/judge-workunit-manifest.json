@@ -1,0 +1,29 @@
+{
+  "schema_version": "taste-judge-workunit/v1",
+  "work_unit_id": "wu-c40-live-smoke-a3",
+  "mirror_group_id": "mg-c40-live-smoke-a3",
+  "role": "primary",
+  "session_id": "sess-c40-live-smoke-claude",
+  "judge_id": "judge-claude-opus-4-8",
+  "display_order": "A/B",
+  "brief_sha256": "22204b0b33eb55d172692ea2482b91e15a5087986bffe3e135e19564929746b7",
+  "capture_manifest_sha256": "a9e9033750e73eaab7dc2e319471afb4aabaa6c454541ad6534fca23a44bfcda",
+  "prompt_sha256": "cc73f6c03c905286ee7c8462a7b4d9f9e66773ba083f517e7c08f0011bf8c19c",
+  "candidate_ids": [
+    "stim-91ea41bde9fa",
+    "stim-12b3bf3f8fab"
+  ],
+  "images": {
+    "A": "/private/tmp/claude-501/-Users-leonardo-Downloads-polylane-c40-taste-live-integrator/a3a15020-02b2-48cf-90a8-c9a2f5cd92ea/scratchpad/smoke/A.png",
+    "B": "/private/tmp/claude-501/-Users-leonardo-Downloads-polylane-c40-taste-live-integrator/a3a15020-02b2-48cf-90a8-c9a2f5cd92ea/scratchpad/smoke/B.png"
+  },
+  "adapter": {
+    "command": [
+      "bin/polylane-taste-judge-claude.sh",
+      "invoke"
+    ],
+    "fingerprint": "618fcd10dc065e9518d1317a42d2ba05cbc2a492c308b053c9dc3472909bb9a6"
+  },
+  "response_schema": "taste-judge-response/v1",
+  "deadline_s": 300
+}

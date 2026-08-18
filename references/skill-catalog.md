@@ -25,10 +25,10 @@ Curated indexes (search these for the lane's task type):
 | Content campaign | editorial/brand/link-check skill | review publication-ready artifacts without publishing |
 | Software specialization | frontend/design, security, MCP, or platform skill | source/build/test/UI evidence when applicable |
 | Token efficiency | caveman | compressed output mode (~75% fewer output tokens) |
-| Codebase Q&A | graphify | knowledge-graph over the repo for navigation |
+| Codebase Q&A | direct `graphify-out/q.py` query | read-only graph navigation; never a selected skill |
 
 ## Step 3.5 — always-on set (assume/recommend for every round)
-`superpowers` (verification, debugging, plans), `caveman` (token efficiency), `graphify` (navigation when `graphify-out/` exists). If any is missing, put it at the TOP of the suggestion list with its install command.
+`superpowers` (verification, debugging, plans) and `caveman` (token efficiency). Graphify remains query-only navigation when `graphify-out/q.py` exists; never suggest, install, or arm it as a lane skill. If an execution skill is missing, put it at the TOP of the suggestion list with its install command.
 
 ## Step 4 — present the suggestion list
 Format each: `- <name> — <artifact/activity/evidence contribution> — install: <command>` grouped by lane. Mark already-installed ones ✓. End with: "Approve which to install; I recommend none run without you eyeballing the repo first." Do not gate prompts on installs or name a suggestion as an executable skill.

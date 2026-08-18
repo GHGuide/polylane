@@ -9,7 +9,11 @@ CERTIFY="$ROOT/bin/polylane-certify.sh"
 assert_ok "cycle14-promotion-transaction" bash "$ROOT/tests/test-promotion-transaction.sh"
 assert_ok "cycle14-failed-promotion-report-truth" bash "$ROOT/tests/test-write-report.sh"
 assert_ok "cycle14-quiet-live-turn-grace" bash "$ROOT/tests/test-wedge.sh"
-assert_ok "cycle14-dead-worker-recovery" bash "$ROOT/tests/test-runtime-recovery.sh"
+# A host terminal suite inherits the live runner's policy.  Recovery fixtures
+# must remain hermetic even when the certifying run intentionally allows zero
+# retries, or a green product is rejected by its own operator environment.
+assert_ok "cycle14-dead-worker-recovery" env POLYLANE_MAX_RETRIES=0 \
+  bash "$ROOT/tests/test-runtime-recovery.sh"
 assert_ok "cycle14-canonical-worker-api" bash "$ROOT/tests/test-workers.sh"
 assert_ok "cycle14-cross-worktree-ledger" bash "$ROOT/tests/test-worker-canonical-state.sh"
 assert_ok "cycle14-selected-skill-catalog" bash "$ROOT/tests/test-scout-catalog.sh"

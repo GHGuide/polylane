@@ -1,0 +1,85 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "repair-reminder",
+  "stratum": "operations",
+  "category": "rental-maintenance-tracking",
+  "origin": "schema-v1",
+  "title": "Remember the small repairs",
+  "brief": "I manage a small rental and forget recurring maintenance until a tenant complains.",
+  "target_population": {
+    "role": "solo landlord maintaining one four-unit rental building",
+    "locale": "en-GB",
+    "coverage_limit": "single property; no tenant logins or contractor marketplace"
+  },
+  "product_shape": "web dashboard",
+  "core_task": {
+    "id": "task-repair-reminder",
+    "summary": "complete an overdue task and confirm its next recurrence is scheduled",
+    "success_oracle": "marking the overdue gutter clearing done removes it from the overdue lane and shows its next occurrence scheduled 180 days later"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the nine recurring tasks are seeded local records and rescheduling is date arithmetic, so nothing asynchronous ever leaves the dashboard waiting"
+  },
+  "state_recipes": {
+    "empty": "mark all three seeded overdue tasks done; the overdue lane collapses to its all-clear message",
+    "validation-error": "submit the new-task form with a blank name or a recurrence of zero days; an inline error appears on the field",
+    "success": "mark the gutter clearing done; a confirmation shows the 2027-02-08 next-due chip",
+    "focus": "press Tab from page load until the first overdue card's done button shows its focus ring",
+    "mobile": "load the dashboard at 390x844; lanes stack vertically with overdue first"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "click", "target": "done-gutter-clearing"}
+    ],
+    "assertions": [
+      {"op": "assert_count", "target": "overdue-row", "value": 2},
+      {"op": "assert_text", "target": "next-due-gutter-clearing", "value": "2027-02-08"},
+      {"op": "assert_visible", "target": "all-tasks-lane"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed defines nine recurring tasks across four flats and exactly three are overdue on 2026-08-12.",
+    "Completing the gutter clearing schedules its next occurrence 180 days later on 2027-02-08.",
+    "The overdue lane orders work by days overdue with the oldest item first."
+  ],
+  "product_signature": {
+    "mechanism": "overdue lane that converts each completion into the next scheduled occurrence automatically",
+    "anchor": "left overdue lane of the dashboard",
+    "brief_trace": "forget recurring maintenance until a tenant complains",
+    "counterfactual": "a plain one-shot todo list would fit a moving-day checklist brief, not recurring building upkeep",
+    "task_proof": "success capture shows the gutter card leaving the overdue lane wearing its 2027-02-08 next-due chip"
+  },
+  "anti_goals": [
+    "no tenant portal, messaging, or complaint intake",
+    "no contractor booking or cost marketplace",
+    "no photo upload or document storage"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"task": "gutter clearing", "unit": "building", "every_days": 180, "last_done": "2026-01-30"},
+      {"task": "boiler service", "unit": "flat 2", "every_days": 365, "last_done": "2025-07-01"},
+      {"task": "smoke alarm test", "unit": "all flats", "every_days": 90, "last_done": "2026-04-20"},
+      {"task": "extractor fan clean", "unit": "flat 4", "every_days": 120, "last_done": "2026-06-01"}
+    ],
+    "data_notes": "nine seeded tasks total; gutter clearing, boiler service, and smoke alarm test are the three overdue on the frozen date 2026-08-12"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

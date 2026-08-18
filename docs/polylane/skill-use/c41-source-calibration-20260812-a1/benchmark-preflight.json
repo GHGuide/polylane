@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "benchmark-preflight",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c41-benchmark-preflight/docs/verify-benchmark-preflight.md",
+  "helped": [],
+  "unused": [
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "operations:risk-assessment",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

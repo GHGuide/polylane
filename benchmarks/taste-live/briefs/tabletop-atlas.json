@@ -1,0 +1,88 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "tabletop-atlas",
+  "stratum": "collaboration",
+  "category": "shared-campaign-atlas",
+  "origin": "cycle-40-plan",
+  "title": "One atlas, four notebooks retired",
+  "brief": "Our campaign's places live in four different notebooks, so every session starts with an argument about where the river actually runs.",
+  "target_population": {
+    "role": "game master maintaining a shared world atlas with four players",
+    "locale": "es-AR",
+    "coverage_limit": "one campaign world as text entries; no maps, dice, or rules content"
+  },
+  "product_shape": "wiki-style atlas",
+  "core_task": {
+    "id": "task-tabletop-atlas",
+    "summary": "add a location to a region and confirm the backlink appears",
+    "success_oracle": "adding the Gullwing Lighthouse to the Saltmarsh Coast region creates its entry and lists it in that region's backlinks immediately"
+  },
+  "required_routes": ["/", "/regions"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the atlas is seeded local text mutated in memory, so entries and backlinks appear in the same frame they are written"
+  },
+  "state_recipes": {
+    "empty": "open the Ember Steppe region, which has no seeded locations; the region page invites its first entry",
+    "validation-error": "add a location named Gullwing Lighthouse a second time; a duplicate-entry error refuses it",
+    "success": "add the Gullwing Lighthouse under Saltmarsh Coast; the entry renders with its region backlink live",
+    "focus": "press Tab from page load until the location-name field shows its visible focus ring",
+    "mobile": "load the atlas at 390x844; the region index collapses into a drawer above entries"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "location-name", "value": "Gullwing Lighthouse"},
+      {"op": "select", "target": "region-picker", "value": "saltmarsh-coast"},
+      {"op": "click", "target": "add-location"}
+    ],
+    "assertions": [
+      {"op": "assert_visible", "target": "entry-gullwing-lighthouse"},
+      {"op": "assert_text", "target": "backlinks-saltmarsh-coast", "value": "Gullwing Lighthouse"},
+      {"op": "assert_count", "target": "location-entry", "value": 10}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed atlas holds nine locations across three regions authored by four fictional players.",
+    "Adding the Gullwing Lighthouse to the Saltmarsh Coast lists it in that region's backlinks immediately.",
+    "A location name that already exists anywhere in the atlas is refused with a duplicate-entry error."
+  ],
+  "product_signature": {
+    "mechanism": "region backlink web that keeps every place attached to where it belongs",
+    "anchor": "backlink panel on each region page",
+    "brief_trace": "an argument about where the river actually runs",
+    "counterfactual": "a flat notes wiki would fit a journal brief and lets places float unattached to any region",
+    "task_proof": "success capture shows the lighthouse entry with its Saltmarsh Coast backlink live"
+  },
+  "anti_goals": [
+    "no dice rollers, stat blocks, or rules content",
+    "no drawn maps or image uploads; the atlas is deliberately textual",
+    "no real-time presence, chat, or notifications"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"region": "Saltmarsh Coast", "locations": 4},
+      {"region": "Vardh Hills", "locations": 5},
+      {"region": "Ember Steppe", "locations": 0},
+      {"player": "GM Rocio", "entries_authored": 3},
+      {"player": "Mati", "entries_authored": 2}
+    ],
+    "data_notes": "nine invented locations across three regions; Ember Steppe is deliberately empty to fix the empty state, and the lighthouse becomes entry ten"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

@@ -146,6 +146,25 @@ assert_eq "cycle13-runner-places-records-beside-kit" "yes" "$(awk '
   named && /^SELECTED-SKILL:/ { print (NR == named + 2 ? "yes" : "no"); exit }
 ' "${LANE_PROMPTS[0]}")"
 assert_contains "cycle13-runner-requires-selected-read-receipts" "SKILL-READ: id | path | fingerprint" "$(cat "${LANE_PROMPTS[0]}")"
+assert_eq "cycle13-unselected-integrator-remains-noop" "0" "$(grep -c '^SELECTED-SKILL:' "$INT_PROMPT" || true)"
+
+# Integrator selections are optional for compatibility, but once typed records
+# exist they must pass the same dedupe/path/fingerprint/budget pipeline and reach
+# the compiled launch prompt exactly once.
+"$SCOUT" arm-role "$KIT" integrator predefined \
+  engineering:testing-strategy superpowers:verification-before-completion
+"$SCOUT" arm-role "$KIT" integrator specific \
+  ui:browser-screenshots ui:accessibility-review
+BAD_INTEGRATOR_KIT="$P/.polylane/lane-skills-bad-integrator.json"
+jq '.lanes.integrator.selected.predefined[0].fingerprint = "1-1"' "$KIT" > "$BAD_INTEGRATOR_KIT"
+assert_fail "cycle13-integrator-selected-fingerprint-is-enforced" \
+  "$SCOUT" validate "$BAD_INTEGRATOR_KIT" "$CODEX_MANIFEST"
+MANIFEST="$CODEX_MANIFEST"; INTENSITY=""; MODEL_OVERRIDES=(); load_manifest
+if preflight_contract; then pass "cycle13-selected-integrator-recompiles"; else fail "cycle13-selected-integrator-recompiles"; fi
+INTEGRATOR_RECORD=$(jq -r '.lanes.integrator.selected.predefined[0] | "SELECTED-SKILL: \(.id) | \(.path) | \(.source) | \(.fingerprint) | \(.reason)"' "$KIT")
+assert_contains "cycle13-integrator-delivers-exact-selected-record" "$INTEGRATOR_RECORD" "$(cat "$INT_PROMPT")"
+assert_eq "cycle13-integrator-delivers-all-trusted-records" "4" "$(grep -c '^SELECTED-SKILL:' "$INT_PROMPT")"
+assert_contains "cycle13-integrator-requires-selected-read-receipts" "SKILL-READ: id | path | fingerprint" "$(cat "$INT_PROMPT")"
 RUNTIME_RELAY='COORD="$POLYLANE_PROJECT_ROOT/bin/polylane-coordinate.sh"; "$COORD" pending "$POLYLANE_COORDINATION_FILE"'
 assert_contains "cycle13-builder-gets-live-relay-command" "$RUNTIME_RELAY" "$(cat "${LANE_PROMPTS[0]}")"
 assert_contains "cycle13-integrator-gets-live-relay-command" "$RUNTIME_RELAY" "$(cat "$INT_PROMPT")"

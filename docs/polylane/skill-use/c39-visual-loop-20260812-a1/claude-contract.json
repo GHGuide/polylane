@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "claude-contract",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c39-claude-contract/docs/verify-claude-contract.md",
+  "helped": [],
+  "unused": [
+    "design:design-critique",
+    "engineering:documentation",
+    "engineering:testing-strategy",
+    "ponytail:ponytail-review"
+  ],
+  "hurt": []
+}

@@ -1,0 +1,89 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "shift-handoff",
+  "stratum": "health",
+  "category": "clinic-shift-continuity",
+  "origin": "schema-v1",
+  "title": "No surprises at shift change",
+  "brief": "Our volunteer clinic loses important details whenever one shift hands work to the next.",
+  "target_population": {
+    "role": "volunteer triage coordinator at a free evening clinic",
+    "locale": "en-US",
+    "coverage_limit": "one clinic site with two shifts per day; no patient-identifying records of any kind"
+  },
+  "product_shape": "responsive web app",
+  "core_task": {
+    "id": "task-shift-handoff",
+    "summary": "publish a signed handoff note that flags one unresolved operational item",
+    "success_oracle": "publishing a note with one unresolved flag adds that item to the unresolved queue attributed to the signing volunteer's initials"
+  },
+  "required_routes": ["/", "/history"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "notes and the unresolved queue are seeded local records written synchronously, so publishing never shows an in-flight or spinner frame"
+  },
+  "state_recipes": {
+    "empty": "resolve both seeded unresolved items; the queue strip collapses to its nothing-carried-over message",
+    "validation-error": "press publish with the signer initials field blank; an inline error blocks the note",
+    "success": "flag the glove restock as unresolved, sign with initials, and publish; the queue gains the new item",
+    "focus": "press Tab from page load until the note composer shows its visible focus ring",
+    "mobile": "load the composer at 390x844; the unresolved strip stays pinned above the note field"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "fill", "target": "note-body", "value": "Evening shift: supply shelf audited."},
+      {"op": "fill", "target": "unresolved-flag", "value": "Glove restock pending"},
+      {"op": "fill", "target": "signer-initials", "value": "AR"},
+      {"op": "click", "target": "publish-note"}
+    ],
+    "assertions": [
+      {"op": "assert_count", "target": "unresolved-item", "value": 3},
+      {"op": "assert_text", "target": "unresolved-item-newest", "value": "Glove restock pending"},
+      {"op": "assert_text", "target": "note-author-newest", "value": "AR"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed contains four handoff notes and exactly two unresolved items at the 2026-08-12 shift change.",
+    "Publishing requires signer initials and stamps the note with its shift name and author.",
+    "The unresolved queue shows the oldest item first and names the shift each item originated from."
+  ],
+  "product_signature": {
+    "mechanism": "unresolved queue that carries flagged items across shifts until someone closes them",
+    "anchor": "unresolved strip pinned above the note composer",
+    "brief_trace": "loses important details whenever one shift hands work to the next",
+    "counterfactual": "a chat log would fit a team messaging brief, but items would scroll away instead of persisting until closed",
+    "task_proof": "success capture shows the new flag standing in the unresolved queue with the author's initials"
+  },
+  "anti_goals": [
+    "no patient records, clinical notes, or medical guidance of any kind",
+    "no real-time chat or notification system",
+    "no staff scheduling or rota management"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"volunteer": "Ana R.", "initials": "AR", "shift": "evening"},
+      {"volunteer": "Dev P.", "initials": "DP", "shift": "morning"},
+      {"volunteer": "Mo K.", "initials": "MK", "shift": "evening"},
+      {"unresolved": "Supply restock: exam gloves", "since": "2026-08-11"},
+      {"unresolved": "Follow-up call to plumbing contractor", "since": "2026-08-10"}
+    ],
+    "data_notes": "volunteers, notes, and unresolved items are invented operational records; nothing references a patient or clinical decision"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": "Operational coordination aid for volunteer logistics only; not a medical record system and offers no clinical decision support or guidance."
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

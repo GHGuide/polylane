@@ -1,0 +1,12 @@
+{
+  "schema": 2,
+  "lane": "prompts-live",
+  "verify_file": "/Users/leonardo/Downloads/polylane-c40-prompts-live/docs/verify-prompts-live.md",
+  "helped": [],
+  "unused": [
+    "design:design-system",
+    "design:ux-copy",
+    "humanizer"
+  ],
+  "hurt": []
+}

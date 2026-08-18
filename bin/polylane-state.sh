@@ -22,9 +22,8 @@
 #   working            pane alive, agent process in the foreground
 #   no-pane            lane has no pane and no commits (not started / lost)
 #
-# Panes are discovered by WORKTREE PATH (pane_current_path), not by remembered
-# index — so state stays correct across runner restarts. Read-only: never sends
-# keys, never mutates. bash-3.2 safe.
+# Panes are discovered by nonce-bound pane identity, with cwd used only for
+# fully untagged legacy panes. Read-only: never sends keys, never mutates.
 
 set -euo pipefail
 
@@ -46,6 +45,8 @@ REPO_ROOT=$(git -C "$PROJECT_ROOT" rev-parse --show-toplevel 2>/dev/null || prin
 # agent_procs). It only runs main when executed directly, so sourcing is inert.
 # shellcheck source=polylane-run.sh
 . "$SCRIPT_DIR/polylane-run.sh"
+# shellcheck source=polylane-tmux.sh
+. "$SCRIPT_DIR/polylane-tmux.sh"
 
 BASE=$(jq -r '.base // "main"' "$MANIFEST")
 # per-run nonce: the sourced lane_done/parse_verdict trust markers only when run=
@@ -56,6 +57,40 @@ polylane_tmux_configure "$RUN_ID"
 # shellcheck disable=SC2034  # consumed by the sourced runner's agent_procs/pane_dead
 AGENT=$(jq -r '.agent // "claude"' "$MANIFEST")
 REPORT="$PROJECT_ROOT/docs/polylane-report.md"
+
+# State sources lane_done outside the live runner process, so it must reconstruct
+# the runner's authoritative prompt and worktree paths from durable run state.
+# Prefer the nonce-scoped compiled prompt when it exists; the authored manifest
+# prompt is only the pre-compilation fallback. This keeps the narrow
+# .polylane-prompt.txt dirty-tree exception byte-for-byte identical to the live
+# runner without broadly ignoring prompt scratch.
+state_worktree_path() {
+  [ -n "$1" ] || return 0
+  case "$1" in /*) printf '%s' "$1" ;; *) printf '%s/%s' "$PROJECT_ROOT" "$1" ;; esac
+}
+
+state_prompt_path() {
+  local name="$1" authored="$2" compiled="$PROJECT_ROOT/.polylane/compiled-prompts/${RUN_ID:-legacy}/$1.txt"
+  [ -n "$name" ] || return 0
+  if [ -f "$compiled" ] && [ ! -L "$compiled" ]; then
+    printf '%s' "$compiled"
+  elif [ -z "$authored" ]; then
+    return 0
+  else
+    case "$authored" in /*) printf '%s' "$authored" ;; *) printf '%s/%s' "$PROJECT_ROOT" "$authored" ;; esac
+  fi
+}
+
+LANE_NAMES=(); LANE_PROMPTS=()
+while IFS='|' read -r state_name state_prompt; do
+  [ -n "$state_name" ] || continue
+  LANE_NAMES+=("$state_name")
+  LANE_PROMPTS+=("$(state_prompt_path "$state_name" "$state_prompt")")
+done < <(jq -r '.lanes[] | "\(.name)|\(.prompt_file)"' "$MANIFEST")
+INT_NAME=$(jq -r '.integrator.name // ""' "$MANIFEST")
+INT_WT=$(state_worktree_path "$(jq -r '.integrator.worktree // ""' "$MANIFEST")")
+# shellcheck disable=SC2034  # consumed indirectly by sourced lane_prompt_get/lane_done
+INT_PROMPT=$(state_prompt_path "$INT_NAME" "$(jq -r '.integrator.prompt_file // ""' "$MANIFEST")")
 
 # discover_session : recover the exact session without relying on chat memory or
 # the observer's environment. New manifests persist `.session`; upgraded legacy
@@ -81,24 +116,12 @@ TMUX_SESSION=$(discover_session)
 tmux_session_active() { tmux has-session -t "$TMUX_SESSION" 2>/dev/null; }
 tmux_watch_command() { polylane_tmux_watch_command "$TMUX_SESSION"; }
 
-# --- pane discovery by worktree path (index-free, restart-proof) --------------
-PANE_LIST=$(tmux list-panes -t "$TMUX_SESSION:0" -F '#{pane_index}|#{pane_current_path}|#{pane_current_command}' 2>/dev/null || true)
-
+# --- pane discovery by nonce-bound identity (index-free, restart-proof) -------
 pane_for_wt() { # -> "idx|cmd" or ""
-  local wt="$1" line idx rest pane_path cmd
-  [ ! -d "$wt" ] || wt=$(cd "$wt" 2>/dev/null && pwd -P)
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    idx="${line%%|*}"
-    rest="${line#*|}"
-    pane_path="${rest%%|*}"
-    cmd="${line##*|}"
-    [ ! -d "$pane_path" ] || pane_path=$(cd "$pane_path" 2>/dev/null && pwd -P)
-    [ "$pane_path" = "$wt" ] && { printf '%s|%s' "$idx" "$cmd"; return 0; }
-  done <<EOF
-$PANE_LIST
-EOF
-  return 1
+  local wt="$1" idx cmd
+  idx=$(polylane_tmux_find_pane "$TMUX_SESSION" "$RUN_ID" "$wt") || return 1
+  cmd=$(tmux display-message -p -t "$TMUX_SESSION:0.$idx" '#{pane_current_command}' 2>/dev/null || true)
+  printf '%s|%s' "$idx" "$cmd"
 }
 
 # --- per-lane status ----------------------------------------------------------
@@ -139,8 +162,6 @@ while IFS= read -r line; do
   case "$line" in *"polylane-run.sh"*" $REAL_MANIFEST"*) runner_alive="alive"; break ;; esac
 done < <(pgrep -fl "polylane-run\.sh" 2>/dev/null || true)
 
-INT_NAME=$(jq -r '.integrator.name // ""' "$MANIFEST")
-INT_WT=$(jq -r '.integrator.worktree // ""' "$MANIFEST")
 verdict="UNKNOWN"
 [ -n "$INT_WT" ] && verdict=$(parse_verdict "$INT_WT/docs/verify-integration.md")
 
@@ -166,7 +187,7 @@ fi
 
 # --- emit ----------------------------------------------------------------------
 NAMES=(); WTS=()
-while IFS='|' read -r n w; do [ -n "$n" ] && { NAMES+=("$n"); WTS+=("$w"); }; done < <(jq -r '.lanes[] | "\(.name)|\(.worktree)"' "$MANIFEST")
+while IFS='|' read -r n w; do [ -n "$n" ] && { NAMES+=("$n"); WTS+=("$(state_worktree_path "$w")"); }; done < <(jq -r '.lanes[] | "\(.name)|\(.worktree)"' "$MANIFEST")
 [ -n "$INT_NAME" ] && { NAMES+=("$INT_NAME"); WTS+=("$INT_WT"); }
 
 if [ "$JSON" = "1" ]; then

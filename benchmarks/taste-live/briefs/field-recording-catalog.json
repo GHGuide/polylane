@@ -1,0 +1,88 @@
+{
+  "schema_version": "taste-study-brief/v1",
+  "brief_id": "field-recording-catalog",
+  "stratum": "creative",
+  "category": "field-audio-archive",
+  "origin": "cycle-40-plan",
+  "title": "Find the marsh dawn take",
+  "brief": "My field recordings pile up as cryptic filenames, so I can never find the marsh dawn take I know I have.",
+  "target_population": {
+    "role": "hobbyist sound recordist archiving dawn-chorus field sessions",
+    "locale": "ja-JP",
+    "coverage_limit": "one personal archive of metadata records; no audio files, playback, or uploads"
+  },
+  "product_shape": "library-style catalog app",
+  "core_task": {
+    "id": "task-field-recording-catalog",
+    "summary": "tag a recording with habitat and time of day, then find it by filter",
+    "success_oracle": "tagging take FR-021 with marsh and dawn, then filtering the catalog to marsh, lists FR-021 among exactly three results"
+  },
+  "required_routes": ["/"],
+  "required_states": ["default", "empty", "validation-error", "success", "focus", "mobile"],
+  "not_applicable_states": {
+    "loading": "the archive is seeded metadata held locally and filters recompute in memory, so the shelf never shows a fetching or buffering frame"
+  },
+  "state_recipes": {
+    "empty": "filter to the glacier habitat, which holds no seeded takes; the shelf offers to clear the filter instead of standing blank",
+    "validation-error": "apply a custom tag with an empty name; an inline error refuses the tag and the take is unchanged",
+    "success": "tag FR-021 marsh and dawn, then filter marsh; three takes line the shelf including FR-021",
+    "focus": "press Tab from page load until the habitat filter shows its visible focus ring",
+    "mobile": "load the catalog at 390x844; the filter shelf folds into a chip row above the list"
+  },
+  "action_oracle": {
+    "target_convention": "data-testid",
+    "allowlist": ["goto", "click", "fill", "select", "press", "assert_text", "assert_visible", "assert_count", "assert_value"],
+    "steps": [
+      {"op": "goto", "route": "/"},
+      {"op": "select", "target": "habitat-tag-FR-021", "value": "marsh"},
+      {"op": "select", "target": "time-tag-FR-021", "value": "dawn"},
+      {"op": "click", "target": "apply-tags-FR-021"},
+      {"op": "select", "target": "habitat-filter", "value": "marsh"}
+    ],
+    "assertions": [
+      {"op": "assert_count", "target": "catalog-row", "value": 3},
+      {"op": "assert_visible", "target": "catalog-row-FR-021"},
+      {"op": "assert_text", "target": "tag-chips-FR-021", "value": "marsh"}
+    ]
+  },
+  "acceptance_facts": [
+    "The seed catalogs eighteen recordings across five habitats with duration and recording gear noted for each take.",
+    "After tagging FR-021 with marsh and dawn, the marsh filter returns exactly three takes.",
+    "Filtering to a habitat with no takes offers to clear the filter instead of showing a blank shelf."
+  ],
+  "product_signature": {
+    "mechanism": "tag-shelf browser that files takes by habitat and hour instead of filename",
+    "anchor": "filter shelf across the top of the catalog",
+    "brief_trace": "can never find the marsh dawn take I know I have",
+    "counterfactual": "a file-manager table would fit a downloads-folder brief and leaves the filenames just as cryptic",
+    "task_proof": "success capture shows the marsh shelf holding three takes with FR-021 among them"
+  },
+  "anti_goals": [
+    "no audio playback, waveforms, or file uploads; this is a metadata catalog",
+    "no GPS, maps, or location pins; habitats are named tags",
+    "no sharing, publishing, or community features"
+  ],
+  "content_seed": {
+    "fictional": true,
+    "entities": [
+      {"take": "FR-021", "recorded": "2026-05-03", "duration_min": 14, "gear": "MX-2 stereo pair"},
+      {"take": "FR-014", "habitat": "marsh", "time": "dawn", "duration_min": 22},
+      {"take": "FR-009", "habitat": "marsh", "time": "dusk", "duration_min": 8},
+      {"habitats": ["marsh", "forest", "coast", "meadow", "city-park"]}
+    ],
+    "data_notes": "eighteen invented takes; two marsh takes are pre-tagged so FR-021 becomes the third marsh result, and glacier is absent to fix the empty state"
+  },
+  "offline": true,
+  "asset_license_policy": {
+    "allowed": ["owned", "public-domain", "CC0", "OFL", "MIT", "BSD", "Apache"],
+    "remote_assets_forbidden": true
+  },
+  "safety": {
+    "no_medical_claim": true,
+    "no_financial_claim": true,
+    "no_live_transaction": true,
+    "fictional_data_required": true,
+    "disclaimer_required": null
+  },
+  "locked_at": "2026-08-12T17:00:00Z"
+}

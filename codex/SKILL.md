@@ -38,9 +38,9 @@ test -f "$STATE" && "$MEM" "$STATE" resume
 ```
 
 On resume, read the bounded packet and accepted decisions; do not repeat discovery.
-For a new or vague goal, follow [references/discovery.md](../references/discovery.md).
+For a new or vague goal, follow [references/discovery.md](references/discovery.md).
 Ask outcome/profile/evidence/risk first, then read only the chosen route in
-[references/project-types.md](../references/project-types.md). Before decomposition,
+[references/project-types.md](references/project-types.md). Before decomposition,
 write `docs/polylane/PROJECT_PROFILE.md` and its matching machine form
 `docs/polylane/PROJECT_PROFILE.json` with outcome, deliverables, stakeholders,
 constraints, evidence, risk, external actions, and finish conditions. Run this
@@ -53,7 +53,7 @@ scripts/polylane-project.sh gate docs/polylane/PROJECT_PROFILE.md docs/polylane/
 Lock concise `NORTHSTAR.md`, `STRATEGY.md`, `ULTIMATE_GOAL.md`, `INDEX.md`, and
 decision records. The strategy links the profile, names the riskiest assumption,
 and distinguishes autonomous deliverables from external proof. Create `AGENTS.md`
-from [references/documentation.md](../references/documentation.md): project operating
+from [references/documentation.md](references/documentation.md): project operating
 instructions, artifact provenance, reproduction/validation, decisions, and handoff.
 
 Initialize observable criteria and frozen acceptance before lanes start:
@@ -66,6 +66,11 @@ Initialize observable criteria and frozen acceptance before lanes start:
 "$MEM" "$STATE" add-accept m1.1 '<focused reproducible check>'
 "$MEM" "$STATE" add-accept m1.1 '<terminal certification>' --tier terminal
 ```
+
+If a criterion can only become true after the coordinator's terminal host gate, list
+its open id in the manifest's optional `target_criteria`; the runner closes it only
+after verified promotion, cleanup, and the final efficiency proof. Never let a builder
+or integrator pre-close host-owned evidence.
 
 Use executable checks where they fit, plus source provenance, review, measurement,
 or manual proof where that is credible. `external` is not `done`: preserve the exact
@@ -84,7 +89,7 @@ Apply the selected route in `project-types.md`:
 - Operations, content, and data work distinguishes a prepared artifact from sent,
   published, purchased, deployed, or changed external state.
 - UI Visual Intelligence is required only when discovery or recon finds a user-facing
-  UI. Then follow [references/visual-intelligence.md](../references/visual-intelligence.md),
+  UI. Then follow [references/visual-intelligence.md](references/visual-intelligence.md),
   carry literal `ULTIMATE-GOAL`, a reference packet with reference evidence, and a
   design lock covering tokens, layout, motion, and signature. Automatically discover
   optional candidates only into quarantine; audit and benchmark them, then require a pinned arm before use.
@@ -92,6 +97,11 @@ Apply the selected route in `project-types.md`:
   installed kit. The council chooses the lock automatically. Require product-specific
   typography, imagery, and humanized UX copy; desktop/mobile and
   empty/loading/error/hover/focus captures; three independent visual lenses; and at most two targeted repairs.
+  Render at least three divergent candidates from one locked base and pick the winner by
+  calibrated blind mirrored judging against the incumbent best-so-far after deterministic
+  hard gates. Label a per-project pick `SELECTED_NOT_CERTIFIED`; reserve `TASTE-CERTIFIED`
+  and `human_certified` for the separate >=10 varied-brief global benchmark and real humans.
+  After promotion write only bounded, evidence-scoped taste memory.
   Compare anonymized screenshots blind. Reject
   emoji-as-product-art and default-font sameness. Promotion needs >=10 varied prompts and >=70% creative/polish wins.
   Require no accessibility regression and a visual certification record.
@@ -116,7 +126,7 @@ the manifest’s optional `domain_runtime` object (profile, bundle, grade, and
 registration paths). The runner registers it before pane creation and reruns it
 against the integrator worktree before promotion. A missing, checksum-mismatched,
 or profile-incomplete deliverable bundle is a gate failure—not a generic
-file-exists pass. See [evidence-driven domain autonomy](../references/evidence-driven-domain-autonomy.md).
+file-exists pass. See [evidence-driven domain autonomy](references/evidence-driven-domain-autonomy.md).
 
 Use source-pinned real-domain trials as deterministic completion evidence:
 
@@ -154,8 +164,8 @@ artifacts. Plan the smallest safe lane set: target, evidence, risks, dependencie
 repeat a recorded failed approach.
 
 Each prompt must state the goal, project profile, ownership, selected installed skills,
-focused test cadence, scoped staging, `docs/verify-<lane>.md`, and exact completion
-marker `STATUS: <lane> DONE run=<RUN_ID>`. Route expensive repeated checks through:
+focused test cadence, scoped staging, `docs/verify-<lane>.md`, exact completion
+marker `STATUS: <lane> DONE run=<RUN_ID>`, and builder POLYLANE-RUNTIME-FINALIZE: immediately before completion, run the final relay and durable inbox read; handle all addressed autonomous work; run focused verification; scope-stage every owned changed or new file with `git add <your files>`; commit implementation and evidence; verify `git status --short` contains only runner-owned `.polylane-prompt.txt` and `graphify-out`; only then write the current-run status file, force-add the ignored status file with `git add -f`, commit that final handoff, and immediately exit. No reads, tests, edits, relay decisions, or commits may follow the marker/verdict commit. For an integrator, only then write the only current-run POLYLANE-VERDICT sentinel as the final line of docs/verify-integration.md and write docs/status-<lane>.md with only its DONE marker and no verdict, force-add both handoff files with `git add -f`, commit that final handoff, and immediately exit. Route expensive repeated checks through:
 
 ```bash
 scripts/polylane-check.sh <canonical-project>/.polylane/check-cache/<lane> -- <command>
@@ -167,15 +177,25 @@ syntax, model names, or memory helpers.
 
 A cached failure requires a relevant source change before retry. For `prime_hybrid`,
 read `POLYLANE_CONTEXT_PACKET` exactly once and use `polylane-workers.sh` and the
-durable inbox for follow-ups. `prime_hybrid` refinements use
-`scripts/polylane-refine.sh propose-or-decline`; global skill changes remain proposals
+durable inbox for follow-ups. `prime_hybrid` refinements first run
+`"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then
+exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT
+a subcommand. Global skill changes remain proposals
 to `scripts/polylane-skill-evolve.sh`, never edits to the active skill.
+
+Builder final handoff: write only `docs/status-<lane>.md`, force-add it if ignored,
+commit it, and exit immediately. Integrator final handoff: write the only current-run
+verdict sentinel as the final line of `docs/verify-integration.md`; write
+`docs/status-<lane>.md` with only its DONE marker and no verdict, force-add both
+handoff files if ignored, commit them, and exit immediately. Refinements first run `"$POLYLANE_PROJECT_ROOT/bin/polylane-refine.sh" queue "$POLYLANE_HARNESS_DIR"`, then exactly one real `propose` or `decline` per eligible item; `propose-or-decline` is NOT a subcommand.
 
 Use `orchestration_contract: 2`; validate scope and prompts. A contract-v2 manifest
 uses Codex-only model IDs and defaults `codex_profile` to `lean`. Run doctor and the
 supervisor, then surface only the actual watch command, `tmux attach -t <session>`.
-The integrator checks seams, profile evidence, focused failures, then terminal check
-at final certification and writes one nonce-bearing verdict. `NO-GO` names repairs;
+The integrator checks seams, profile evidence, and focused failures, then hands a
+source-green result to the coordinator as `READY-FOR-HOST-GATE` without reinterpreting
+launch or restart counters; runner-owned eligibility decides whether terminal checks start.
+It writes one nonce-bearing verdict. `NO-GO` names repairs;
 `EXTERNAL-EVIDENCE-OPEN` promotes verified repository work but never passes missing
 external proof.
 After a post-PASS coordinator crash, the runner may reuse only its durable current-run
@@ -185,7 +205,7 @@ platform, and exported environment still match exactly. List extra host executab
 
 ## Shared measured assurance
 
-Use [references/cycle-9-control-room.md](../references/cycle-9-control-room.md):
+Use [references/cycle-9-control-room.md](references/cycle-9-control-room.md):
 `scripts/polylane-product-benchmark.sh`, `scripts/polylane-discovery.sh`, model policy,
 `scripts/polylane-promptopt.sh`, `scripts/polylane-judges.sh`, and the
 canonical dashboard. Build a metadata-only `catalog-index`; select installed skills
@@ -195,7 +215,8 @@ Use the compiled launch and lifecycle hooks contract in
 `references/cycle-13-integration.md` only through shared helpers.
 
 For `prime_hybrid`, retain bounded worker context and reject unvalidated refinement.
-Repeated evidence enters the queue; `propose-or-decline` then validates it or invokes a rollback next cycle.
+Repeated evidence enters the queue; queue it, then make exactly one real proposal or
+decline decision, which validates it or invokes a rollback next cycle.
 Skill evolution uses `scripts/polylane-skill-evolve.sh`: champion and challenger compare
 against frozen cases, a failed canary rolls back, and ordinary
 success does not rewrite the skill. Use `scripts/polylane-certify.sh` for focused and

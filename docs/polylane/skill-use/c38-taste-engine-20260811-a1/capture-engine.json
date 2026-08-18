@@ -1,0 +1,13 @@
+{
+  "schema": 2,
+  "lane": "capture-engine",
+  "verify_file": "/Users/leonardo/Downloads/polylane-taste-cert/.polylane/worktrees/c38-capture-engine/docs/verify-capture-engine.md",
+  "helped": [],
+  "unused": [
+    "design:accessibility-review",
+    "engineering:debug",
+    "engineering:testing-strategy",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}
