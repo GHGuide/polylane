@@ -2960,6 +2960,15 @@ pane_stalled() {
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
   pane_session_cooldown "$idx" && return 0
   txt=$(tmux capture-pane -t "$TMUX_SESSION:0.$idx" -p 2>/dev/null || true)
+  # Model-specific limit ("You've reached your Fable 5 limit. Run /usage-credits
+  # to continue or switch models with /model.") — no numbered menu, but it IS an
+  # actionable paywall: the fallback policy switches down the model ladder for
+  # free. Left undetected it churned wedge-respawns into the same screen
+  # (live 2026-08-19, c43b integrator).
+  if printf '%s' "$txt" | grep -qiE "You'?ve (hit|reached) your [^.]*limit" &&
+     printf '%s' "$txt" | grep -qE '/usage-credits|/model'; then
+    return 0
+  fi
   printf '%s' "$txt" | grep -qiE 'Switch to usage credits|Upgrade your plan' &&
     printf '%s' "$txt" | grep -qE '\[[[:space:]]*1[[:space:]]*\]|(^|[[:space:]])1\.'
 }

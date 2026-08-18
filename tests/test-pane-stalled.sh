@@ -72,4 +72,16 @@ assert_fail "pane-session-limit-prose-without-live-command-is-not-stalled" pane_
 export PANE_TEXT='Build passed: usage limit fixture mentioned in test output.'
 assert_fail "pane-stalled-passing-output-is-not-paywall" pane_stalled 0
 
+# --- model-specific limit screen (no menu) is an actionable fallback stall ----
+export PANE_TEXT="  ⎿  You've reached your Fable 5 limit. Run /usage-credits to continue or switch models with /model.
+✻ Cooked for 1s
+❯ "
+assert_ok "model-limit-is-stalled" pane_stalled 0
+# it must NOT read as the wait-for-reset session cooldown — fallback is free NOW
+assert_fail "model-limit-not-cooldown" pane_session_cooldown 0
+
+# generic weekly banner alone (no /usage-credits or /model offer) is not a stall
+export PANE_TEXT="You've used 88% of your weekly limit · resets 1am (Europe/Chisinau)"
+assert_fail "weekly-banner-alone-not-stalled" pane_stalled 0
+
 finish
