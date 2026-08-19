@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "prompt-chain",
+  "verify_file": "/Users/leonardo/Downloads/polylane/.polylane/worktrees/c44-prompt-chain/docs/verify-prompt-chain.md",
+  "helped": [
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " its \"Verify RED — watch it fail / test passes immediately means you're testing existing behaviour\" rule caught a dead assertion. The first green run showed `baseline-collision-kept-in-brief — expected [1] got [0]`, and chasing that failure exposed that my grep needle `|$COLLISION` was one space short of what `quote_file`'s `sed 's/^/| /'` actually emits. The same wrong needle was in the tamper step, so `verify-detects-locked-byte-edit` had been passing vacuously against an unmodified file — a test that would never have caught a regression. Both were fixed before the suite went green."
+    },
+    {
+      "id": "superpowers:verification-before-completion",
+      "effect": " its regression-test pattern (\"Write → Run (pass) → Revert fix → Run MUST FAIL → Restore → Run pass\") drove the sharpened red above. The original red only proved `dedupe_typed`/`locked_bytes` did not exist yet — a missing-symbol failure, not proof the test catches whole-document deduplication. Swapping `optimize` back to `promptopt compile`, re-running, and restoring from a byte copy produced the real failing output (`current-repeated-brief-clause-survives — expected [2] got [0]`) that this document now records."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

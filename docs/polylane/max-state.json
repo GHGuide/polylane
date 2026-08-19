@@ -1190,7 +1190,7 @@
     },
     {
       "id": "m19",
-      "text": "Cycle 19 \u2014 generic-project rehearsal recovery",
+      "text": "Cycle 19 — generic-project rehearsal recovery",
       "subgoals": [
         {
           "id": "m19.1",
@@ -1204,7 +1204,7 @@
     },
     {
       "id": "m20",
-      "text": "Cycle 20 \u2014 clean process-start terminal certification",
+      "text": "Cycle 20 — clean process-start terminal certification",
       "subgoals": [
         {
           "id": "m20.1",
@@ -1218,7 +1218,7 @@
     },
     {
       "id": "m21",
-      "text": "Cycle 24 \u2014 runtime identity and bounded builder context",
+      "text": "Cycle 24 — runtime identity and bounded builder context",
       "subgoals": [
         {
           "id": "m21.1",
@@ -1256,7 +1256,7 @@
     },
     {
       "id": "m22",
-      "text": "Cycle 25 \u2014 atomic handoff and fresh unattended certification",
+      "text": "Cycle 25 — atomic handoff and fresh unattended certification",
       "subgoals": [
         {
           "id": "m22.1",
@@ -1476,7 +1476,7 @@
     },
     {
       "id": "m28",
-      "text": "Cycle 32 \u2014 terminal contract-drift repair",
+      "text": "Cycle 32 — terminal contract-drift repair",
       "subgoals": [
         {
           "id": "m28.1",
@@ -1490,7 +1490,7 @@
     },
     {
       "id": "m29",
-      "text": "Cycle 33 \u2014 focused efficiency and cleanup truth",
+      "text": "Cycle 33 — focused efficiency and cleanup truth",
       "subgoals": [
         {
           "id": "m29.1",
@@ -1973,19 +1973,19 @@
     {
       "cycle": 42,
       "kind": "decision",
-      "text": "2026-08-18 host session: promoted codex lineage c21-42a to main (deb2d78); fixed codex model detection (.models[].slug cache read); added provider-auth preflight + auth-park after a live dual-provider outage (claude OAuth expired, codex quota until Aug 20 15:03); c42a recovery remains external on provider auth \u2014 see docs/polylane/provider-outage-20260818.md",
+      "text": "2026-08-18 host session: promoted codex lineage c21-42a to main (deb2d78); fixed codex model detection (.models[].slug cache read); added provider-auth preflight + auth-park after a live dual-provider outage (claude OAuth expired, codex quota until Aug 20 15:03); c42a recovery remains external on provider auth — see docs/polylane/provider-outage-20260818.md",
       "meta": ""
     },
     {
       "cycle": 42,
       "kind": "decision",
-      "text": "2026-08-18 host: m32.5 closed \u2014 both provider packages installed from main (claude-code/install.sh, codex/install.sh) and the frozen terminal acceptance (full suite 4040/0, shellcheck, installers, fresh-install, parity, codex-taste-install, doctor --rehearse GO+NO-GO) passed via check-accept",
+      "text": "2026-08-18 host: m32.5 closed — both provider packages installed from main (claude-code/install.sh, codex/install.sh) and the frozen terminal acceptance (full suite 4040/0, shellcheck, installers, fresh-install, parity, codex-taste-install, doctor --rehearse GO+NO-GO) passed via check-accept",
       "meta": ""
     },
     {
       "cycle": 43,
       "kind": "decision",
-      "text": "2026-08-19: m32.6 closed \u2014 c42a v3 contract freeze landed on main (ab6d866) after four independent integrator certifications; frozen focused acceptance re-run fresh on the merged tree by check-accept and passed. Host completed the promotion c43e's gate had already cleared (it was blocked only by uncommitted run evidence, then by the --resume graph-authority defect recorded in cycle-43-findings.md).",
+      "text": "2026-08-19: m32.6 closed — c42a v3 contract freeze landed on main (ab6d866) after four independent integrator certifications; frozen focused acceptance re-run fresh on the merged tree by check-accept and passed. Host completed the promotion c43e's gate had already cleared (it was blocked only by uncommitted run evidence, then by the --resume graph-authority defect recorded in cycle-43-findings.md).",
       "meta": ""
     }
   ],
@@ -3419,9 +3419,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3430,9 +3430,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3441,9 +3441,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3452,9 +3452,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3463,9 +3463,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3474,9 +3474,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {

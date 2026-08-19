@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "comparator",
+  "verify_file": "/Users/leonardo/Downloads/polylane/.polylane/worktrees/c44-comparator/docs/verify-comparator.md",
+  "helped": [],
+  "unused": [
+    "superpowers:systematic-debugging",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

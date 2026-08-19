@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "execution-proof",
+  "verify_file": "/Users/leonardo/Downloads/polylane/.polylane/worktrees/c44-execution-proof/docs/verify-execution-proof.md",
+  "helped": [
+    {
+      "id": "superpowers:systematic-debugging",
+      "effect": " Phase 1 \"gather evidence at each boundary before proposing fixes\" changed the outcome for defect 1. Reading the validator suggested the consumed-stdin control was already complete (`PROMPT_HASH_DISCONTINUITY` plus `FORGED_RECEIPT` plus `REQUEST_ADAPTER_MISMATCH` cover the literal control text). Running six mutation probes instead of trusting that reading showed all six accepted, which located the actual gap — receipt reuse and tautological receipts — rather than a symptom-level fix. The same rule applied to defect 2 produced the two blocking facts (`additionalProperties: false`; zero `run_mode` occurrences) before any design was committed, which ruled out the obvious new-manifest-key approach that would have broken frozen acceptance."
+    },
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " the skill's \"verify RED, and check it fails for the expected reason\" step is what caught the withdrawn adapter-binary clause. The clause turned `frozen-example-keeps-consumed-stdin-proof` red, and because the skill requires reading the failure rather than the pass count, the contradiction with frozen m32.7 acceptance surfaced immediately instead of after a green-looking partial run. Its \"watch it fail first\" rule also drove reproducing RED against the `c989d7c` validator rather than quoting a remembered failure."
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}
