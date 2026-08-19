@@ -1,0 +1,17 @@
+{
+  "schema": 2,
+  "lane": "hcm-corpus",
+  "verify_file": "/Users/leonardo/Downloads/polylane/.polylane/worktrees/c45-hcm-corpus/docs/verify-hcm-corpus.md",
+  "helped": [
+    {
+      "id": "superpowers:test-driven-development",
+      "effect": " writing"
+    },
+    {
+      "id": "superpowers:verification-before-completion",
+      "effect": " the gate"
+    }
+  ],
+  "unused": [],
+  "hurt": []
+}

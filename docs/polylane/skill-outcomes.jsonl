@@ -309,3 +309,15 @@
 
 {"lane":"comparator","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c44-comparator/docs/verify-comparator.md"}
 
+{"lane":"hcm-corpus","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" writing"}
+
+{"lane":"hcm-corpus","domain":"test","skill":"superpowers:verification-before-completion","outcome":"helped","why":" the gate"}
+
+{"lane":"hcm-privacy","domain":"test","skill":"legal:compliance-check","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c45-hcm-privacy/docs/verify-hcm-privacy.md"}
+
+{"lane":"hcm-privacy","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c45-hcm-privacy/docs/verify-hcm-privacy.md"}
+
+{"lane":"hcm-stats","domain":"test","skill":"data:statistical-analysis","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c45-hcm-stats/docs/verify-hcm-stats.md"}
+
+{"lane":"hcm-stats","domain":"test","skill":"superpowers:test-driven-development","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c45-hcm-stats/docs/verify-hcm-stats.md"}
+

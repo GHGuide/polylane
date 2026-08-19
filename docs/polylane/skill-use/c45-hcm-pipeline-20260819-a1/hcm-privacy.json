@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "hcm-privacy",
+  "verify_file": "/Users/leonardo/Downloads/polylane/.polylane/worktrees/c45-hcm-privacy/docs/verify-hcm-privacy.md",
+  "helped": [],
+  "unused": [
+    "legal:compliance-check",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

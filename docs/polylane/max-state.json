@@ -3502,9 +3502,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3513,9 +3513,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3524,9 +3524,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3535,9 +3535,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3546,9 +3546,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {
@@ -3557,9 +3557,9 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     },
     {

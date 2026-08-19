@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "hcm-stats",
+  "verify_file": "/Users/leonardo/Downloads/polylane/.polylane/worktrees/c45-hcm-stats/docs/verify-hcm-stats.md",
+  "helped": [],
+  "unused": [
+    "data:statistical-analysis",
+    "superpowers:test-driven-development"
+  ],
+  "hurt": []
+}

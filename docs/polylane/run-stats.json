@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "run_id": "c44-defect-controls-20260819-a1",
-  "started_at": 1787145472,
-  "updated_at": 1787148979,
-  "wall_s": 3507,
+  "run_id": "c45-hcm-pipeline-20260819-a1",
+  "started_at": 1787151046,
+  "updated_at": 1787154926,
+  "wall_s": 3880,
   "lanes": {
-    "prompt-chain": {
+    "hcm-corpus": {
       "launches": 1,
       "restarts": 0
     },
-    "execution-proof": {
+    "hcm-privacy": {
       "launches": 1,
       "restarts": 0
     },
-    "comparator": {
+    "hcm-stats": {
       "launches": 1,
       "restarts": 0
     },
@@ -27,112 +27,83 @@
   "tokens": null,
   "token_state": "unknown",
   "usage_offsets": {
-    "prompt-chain": 1070123,
-    "execution-proof": 768160,
-    "comparator": 961403,
-    "integrator": 7461243
+    "hcm-corpus": 858909,
+    "hcm-privacy": 744668,
+    "hcm-stats": 1729147,
+    "integrator": 8856996
   },
-  "cleanup": "complete",
+  "cleanup": "pending",
   "events": [
     {
       "type": "initialized",
-      "at": 1787145472
+      "at": 1787151046
     },
     {
       "type": "usage_capture",
-      "lane": "prompt-chain",
-      "at": 1787145482,
+      "lane": "hcm-corpus",
+      "at": 1787151057,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "prompt-chain",
-      "at": 1787145482
+      "lane": "hcm-corpus",
+      "at": 1787151057
     },
     {
       "type": "usage_capture",
-      "lane": "execution-proof",
-      "at": 1787145483,
+      "lane": "hcm-privacy",
+      "at": 1787151057,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "execution-proof",
-      "at": 1787145483
+      "lane": "hcm-privacy",
+      "at": 1787151058
     },
     {
       "type": "usage_capture",
-      "lane": "comparator",
-      "at": 1787145483,
+      "lane": "hcm-stats",
+      "at": 1787151058,
       "added": null
     },
     {
       "type": "launches",
-      "lane": "comparator",
-      "at": 1787145483
+      "lane": "hcm-stats",
+      "at": 1787151058
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1787146752,
+      "at": 1787152910,
       "added": null
     },
     {
       "type": "launches",
       "lane": "integrator",
-      "at": 1787146752
+      "at": 1787152910
     },
     {
       "type": "usage_capture",
-      "lane": "prompt-chain",
-      "at": 1787148914,
+      "lane": "hcm-corpus",
+      "at": 1787154926,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "execution-proof",
-      "at": 1787148914,
+      "lane": "hcm-privacy",
+      "at": 1787154926,
       "added": null
     },
     {
       "type": "usage_capture",
-      "lane": "comparator",
-      "at": 1787148914,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "integrator",
-      "at": 1787148915,
-      "added": null
-    },
-    {
-      "type": "cleanup",
-      "state": "complete",
-      "at": 1787148979
-    },
-    {
-      "type": "usage_capture",
-      "lane": "prompt-chain",
-      "at": 1787148979,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "execution-proof",
-      "at": 1787148979,
-      "added": null
-    },
-    {
-      "type": "usage_capture",
-      "lane": "comparator",
-      "at": 1787148979,
+      "lane": "hcm-stats",
+      "at": 1787154926,
       "added": null
     },
     {
       "type": "usage_capture",
       "lane": "integrator",
-      "at": 1787148979,
+      "at": 1787154926,
       "added": null
     }
   ]
