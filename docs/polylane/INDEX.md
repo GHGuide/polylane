@@ -291,3 +291,4 @@ fresh post-Cycle-22 certification.  Cycle 12's rendered ten-product visual compa
 remains external.
 - [provider-outage-20260818.md](provider-outage-20260818.md) — dual provider outage evidence, hardening landed, and the exact unblock steps for the c42a recovery
 - [c42a-recovery-runbook.md](c42a-recovery-runbook.md) — exact import/launch steps for the m32.6 contract-freeze recovery once a provider is live
+- [cycle-43-findings.md](cycle-43-findings.md) — five harness defects surfaced by the m32.6 recovery attempts: four fixed in-flight, three open for the next cycle
