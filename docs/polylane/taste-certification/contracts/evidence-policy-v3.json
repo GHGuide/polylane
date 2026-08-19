@@ -1,0 +1,129 @@
+{
+  "policy_version": "evidence-policy/v3",
+  "trust_lattice": [
+    {"grade": "fixture", "rank": 0, "claim_ceiling": "FIXTURE_ONLY", "absorbing": true},
+    {"grade": "diagnostic_public", "rank": 1, "claim_ceiling": "DIAGNOSTIC_ONLY", "absorbing": false},
+    {"grade": "machine_only", "rank": 2, "claim_ceiling": "MACHINE_ONLY", "absorbing": false},
+    {"grade": "private_human_calibration", "rank": 3, "claim_ceiling": "HUMAN_CALIBRATED_MACHINE", "absorbing": false},
+    {"grade": "released_artifact_human_ballot", "rank": 4, "claim_ceiling": "HUMAN_CERTIFIED", "absorbing": false}
+  ],
+  "schemas": [
+    "evidence-dag/v3",
+    "fixture-evidence/v3",
+    "public-corpus/v3",
+    "machine-evaluation/v3",
+    "private-human-trust-root/v3",
+    "hcm-v2-study/v2",
+    "final-benchmark-result/v3",
+    "final-benchmark/v3",
+    "prompt-promotion/v3",
+    "genericness-review/v3"
+  ],
+  "producers": [
+    {
+      "id": "fixture-generator",
+      "revision": "fixture-generator/r1",
+      "schema_version": "fixture-evidence/v3",
+      "node_type": "fixture-root",
+      "evidence_grade": "fixture",
+      "source_classifications": ["fixture"]
+    },
+    {
+      "id": "public-corpus-loader",
+      "revision": "public-corpus-loader/r1",
+      "schema_version": "public-corpus/v3",
+      "node_type": "public-corpus-root",
+      "evidence_grade": "diagnostic_public",
+      "source_classifications": ["public_corpus"]
+    },
+    {
+      "id": "machine-evaluator",
+      "revision": "machine-evaluator/r1",
+      "schema_version": "machine-evaluation/v3",
+      "node_type": "machine-evaluation",
+      "evidence_grade": "machine_only",
+      "source_classifications": ["machine_only"]
+    },
+    {
+      "id": "hcm-v2-trust-root",
+      "revision": "hcm-v2-trust-root/r1",
+      "schema_version": "private-human-trust-root/v3",
+      "node_type": "private-human-trust-root",
+      "evidence_grade": "private_human_calibration",
+      "source_classifications": ["private_target_human"]
+    },
+    {
+      "id": "hcm-v2-study-auditor",
+      "revision": "hcm-v2-study-auditor/r1",
+      "schema_version": "hcm-v2-study/v2",
+      "node_type": "hcm-v2-study",
+      "evidence_grade": "private_human_calibration",
+      "source_classifications": ["private_target_human"]
+    },
+    {
+      "id": "final-benchmark-auditor",
+      "revision": "final-benchmark-auditor/r1",
+      "schema_version": "final-benchmark-result/v3",
+      "node_type": "final-benchmark-result",
+      "evidence_grade": "private_human_calibration",
+      "source_classifications": ["private_target_human"]
+    }
+  ],
+  "claims": {
+    "fixture": {"status": "EVIDENCE-ONLY", "claim_label": "FIXTURE_ONLY", "human_calibrated": false, "human_certified": false, "taste_certified": false},
+    "diagnostic_public": {"status": "MACHINE-EVALUATED", "claim_label": "DIAGNOSTIC_ONLY", "human_calibrated": false, "human_certified": false, "taste_certified": false},
+    "machine_only": {"status": "MACHINE-EVALUATED", "claim_label": "MACHINE_ONLY", "human_calibrated": false, "human_certified": false, "taste_certified": false},
+    "private_human_calibration": {"status": "MACHINE-EVALUATED", "claim_label": "HUMAN_CALIBRATED_MACHINE", "human_calibrated": true, "human_certified": false, "taste_certified": false},
+    "released_artifact_human_ballot": {"status": "UNREACHABLE", "claim_label": "HUMAN_CERTIFIED", "human_calibrated": false, "human_certified": false, "taste_certified": false}
+  },
+  "human_certification": {
+    "enabled": false,
+    "required_schema": "released-artifact-deciding-human-ballots/v3",
+    "requirements": ["roster_bound", "deciding_humans", "released_artifact_digest_match"],
+    "taste_certification_enabled": false
+  },
+  "final_benchmark": {
+    "schema_version": "final-benchmark/v3",
+    "briefs": 1000,
+    "categories": 10,
+    "briefs_per_category": 100,
+    "null_probability": 0.70,
+    "alternative": "greater",
+    "alpha": 0.025,
+    "minimum_wins": 729,
+    "denominator_policy": "all-retained",
+    "non_win_outcomes": ["tie", "abstention", "missing_evidence", "invalid_evidence"],
+    "task_regressions": 0,
+    "accessibility_regressions": 0,
+    "boundary_vectors": [{"wins": 728, "passes": false}, {"wins": 729, "passes": true}]
+  },
+  "prompt_promotion": {
+    "schema_version": "prompt-promotion/v3",
+    "smoke_briefs": 12,
+    "development_briefs": 192,
+    "validation_briefs": 300,
+    "null_probability": 0.55,
+    "alternative": "greater",
+    "alpha": 0.025,
+    "minimum_wins": 183,
+    "result_release": "one-bit",
+    "equal_compute": true,
+    "paired_build_replicates": 3,
+    "repairs": 0,
+    "hard_gate_regressions": 0,
+    "non_win_outcomes": ["tie", "abstention", "missing_evidence", "invalid_candidate_build"],
+    "boundary_vectors": [{"wins": 182, "passes": false}, {"wins": 183, "passes": true}]
+  },
+  "diagnostic_sources": {
+    "public_taste_authority": "diagnostic_only",
+    "static_aesthetics_authority": "diagnostic_only",
+    "genericness_authority": "review_only_until_sealed_human_qualification",
+    "genericness_verdicts": ["NO_REVIEW", "REVIEW_REQUIRED", "UNKNOWN"]
+  },
+  "lifecycle": {
+    "closed_studies_immutable": true,
+    "threshold_changes_after_open": false,
+    "validation_labels_visible_to_optimization": false,
+    "repeated_measure_unit": "brief"
+  }
+}

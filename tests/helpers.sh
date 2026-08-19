@@ -10,6 +10,13 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNNER="$TESTS_DIR/../bin/polylane-run.sh"
 FIXTURES="$TESTS_DIR/fixtures"
 
+# The host acceptance gate exports its authority context into every nested
+# command; inherited by a test, it redirects fixture evidence at the real
+# checkout (host-gate-failures leak) and skews sourced-runner fixtures.
+# Tests are hermetic: drop the launcher/gate environment before anything runs.
+unset REPO REPO_ROOT POLYLANE_ACCEPT_FAILURE_ROOT POLYLANE_ACCEPT_FAILURE_RUN_ID \
+  POLYLANE_ACCEPT_FAILURE_PHASE POLYLANE_EFFICIENCY_PROOF POLYLANE_EXPECTED_RUN_ID
+
 PASS_COUNT=0
 FAIL_COUNT=0
 

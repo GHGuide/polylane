@@ -101,4 +101,20 @@ assert_eq "workers-resume-truncation-explicit" true "$(printf '%s' "$RESUME" | j
 assert_ok "workers-resume-packet-bounded" sh -c '[ "$(printf %s "$1" | wc -c | tr -d " ")" -le 600 ]' sh "$RESUME"
 assert_rc "workers-resume-missing-explicit" 4 "$WORKERS" resume "$PROJECT" missing 600
 
+# A contender that catches another holder between mkdir and the created_at
+# stamp must wait, not steal: aging that gap as epoch-0 stole live locks and
+# killed their holders mid-append ("lost worker lock before history append").
+GAP_LOCK="$PROJECT/docs/polylane/workers/.lock"
+mkdir "$GAP_LOCK"
+"$WORKERS" capsule "$PROJECT" gapwait 0 builder 12 active gap context evidence >/dev/null 2>&1 & GAP_PID=$!
+sleep 2
+if kill -0 "$GAP_PID" 2>/dev/null; then
+  pass "workers-unstamped-fresh-lock-not-stolen"
+else
+  fail "workers-unstamped-fresh-lock-not-stolen" "contender finished instantly — stole a fresh unstamped lock"
+fi
+rm -rf "$GAP_LOCK"
+wait "$GAP_PID"; GAP_RC=$?
+assert_eq "workers-unstamped-lock-holder-proceeds-after-release" 0 "$GAP_RC"
+
 finish
