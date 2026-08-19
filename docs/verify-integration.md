@@ -206,3 +206,4 @@ acceptable, and it is the same standard by which the privacy lane's
 file-not-found red would have been insufficient alone — that lane's 11-mutation
 battery (with two surviving mutants killed by new tests) is what satisfied the
 criterion, so no lane was rejected on this gate.
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c45-hcm-pipeline-20260819-a1
