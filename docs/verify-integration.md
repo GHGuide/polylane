@@ -1,182 +1,208 @@
-# verify-integration — run `c44-defect-controls-20260819-a1`
+# Verify — integrator (run `c45-hcm-pipeline-20260819-a1`, target m32.8)
 
-Integrator, branch `lane/c44-integrator`. Merges the three cycle-44 control
-lanes and certifies that the five frozen v3 defect controls coexist correctly
-in one tree. This run implements controls only: no taste or human certification
-claim is minted, implied, or upgraded, and every `implementation_defects`
-status in `EVIDENCE-CLAIM-REGISTRY.v3.json` remains `OPEN` in the merged tree
-(verified by `jq` after the final merge: 5 × `OPEN`).
+Merged the three HCM-v2 pipeline lanes, proved the pipeline composes end to end
+on synthetic fixtures without ever standing in for a human, and ran the frozen
+m32.8 focused acceptance plus the full suite fresh in this session.
 
 ## Branch tips and ancestry
 
-All tips read live at integration time, not from memorized hashes.
+Cycle base: `5eb2181832d825843a6b8a36dbe8af04b2d65af7` (integrator branch HEAD at
+start). `git merge-base` of the integrator branch with each lane tip equals the
+cycle base, so every lane descends from it directly.
 
-| ref | tip |
-|---|---|
-| `main` | `3c475dbeafd1082dcd403b56e8081e54b668a4da` |
-| `lane/c44-prompt-chain` | `7f341f737ce9ae751eb22f0d03a149baee04dfba` |
-| `lane/c44-execution-proof` | `0efab6e176406f957d40978c915b624f5799eb21` |
-| `lane/c44-comparator` | `1d154b07e9307c7a38c9699299692c4ae6da81f0` |
-
-Ancestry proven with `git merge-base`: all three lanes fork from
-`c989d7cce445748c696cd6434f0837ca2eeb4df2`, which is an ancestor of `main`.
-`main` is one commit ahead of the fork point (`3c475db`, the mid-cycle
-wrapped-path safe-read fix); the integrator branch started at `main`'s tip, so
-every lane merge carries that fix plus the lane's work.
-
-## Merges
-
-Zero conflicts; the three lanes own disjoint file sets by plan.
-
-| commit | merge |
-|---|---|
-| `862220322420f07cbc26477ef201007a422218f3` | prep: clear stale prior-run integrator handoff files (owned) |
-| `3bb53b38e11e0dbaca1bf4d5e5fbef1fdcdb0b8b` | `lane/c44-prompt-chain` — typed-section dedupe + immutable finalist retention |
-| `24048c1f46bdce18ea42d86c7604b941e621447f` | `lane/c44-execution-proof` — consumed-stdin receipt integrity + single run-mode vocabulary |
-| `d0106a68ff3916c9e88f349ae7afd9c2aba4ad0d` | `lane/c44-comparator` — validated-win-only comparator tally |
-
-**Repairs: none.** No conflict resolution, no code changes by the integrator.
-
-## Reject-scan (all lanes admitted)
-
-- **Contract/schema/status edits:** `git diff --name-only c989d7c..<lane>` for
-  each lane contains no file under
-  `docs/polylane/taste-certification/contracts/`, no `*.schema.json`, no
-  `CONTRACT-LOCK`/`EVIDENCE-CLAIM-REGISTRY`, no `max-state.json`, no
-  `SKILL.md`, no `references/`. All five registry statuses stay `OPEN`.
-- **Weakened/deleted checks:** every deleted line across the three changed
-  `bin/` scripts was read. The only removed validation clauses are (a) the
-  ballot's outright rejection of ties/abstentions — which *is* the
-  denominator-shrinkage defect, replaced by a stronger typed, fail-closed
-  classification that still refuses every laundering direction (10 dedicated
-  rejection assertions), and (b) the prompts `rm -f` of delivered artifacts —
-  which *is* the deletion defect. Dispatch rewrites in
-  `polylane-taste-execution-contract.sh` and `polylane-taste-ballot.sh`
-  preserve the pre-existing verbs' arity checks and exit codes (covered by
-  usage regressions in the lanes' suites).
-- **Regression tests genuinely gate their controls:** spot-checked by real
-  reverts, not mentally — see below.
-
-## Revert spot-checks (control removed ⇒ test fails)
-
-Each implementing script was replaced by its `c989d7c` (pre-control) bytes, the
-lane's tests were run, and the merged version restored (`git status` clean vs
-`HEAD` afterwards):
-
-| script reverted | test | result without control |
+| lane | branch tip (current, not memorized) | status file |
 |---|---|---|
-| `bin/polylane-taste-prompts.sh` | `test-taste-prompt-integrity.sh` | FAIL (rc=127, `locked_bytes: command not found`, dedupe assertions fail) |
-| `bin/polylane-taste-prompts.sh` | `test-taste-artifact-retention.sh` | FAIL (rc=1, retention chain absent) |
-| `bin/polylane-taste-execution-contract.sh` | `test-taste-delivery-provenance.sh` | FAIL (rc=1, `5 test(s) failed` — matches lane-documented RED exactly) |
-| `bin/polylane-taste-execution-contract.sh` | `test-taste-run-mode.sh` | FAIL (rc=1, `16 test(s) failed` — matches lane-documented RED exactly) |
-| `bin/polylane-taste-ballot.sh` | `test-taste-comparator-outcome.sh` | FAIL (rc=2, tally absent, non-wins vanish) |
+| hcm-corpus | `788c7fe01758cfb48d3a72fffb03b4c06615f485` | `STATUS: hcm-corpus DONE run=c45-hcm-pipeline-20260819-a1` |
+| hcm-privacy | `e80653853028a37b04dc9772a67f6efb1b71a604` | `STATUS: hcm-privacy DONE run=c45-hcm-pipeline-20260819-a1` |
+| hcm-stats | `97786b45c6cc87ca51bcd902f784f04075ae018c` | `STATUS: hcm-stats DONE run=c45-hcm-pipeline-20260819-a1` |
 
-No test passes without its control implemented; no control lacks a test that
-demonstrably failed first (each lane additionally documents its original RED
-run, and execution-proof/comparator REDs reproduce byte-for-byte here).
+Merges (all `--no-ff`, ort strategy, zero conflicts — file ownership was fully
+disjoint): `1654304` (corpus), `133e977` (privacy), `e0a9075` (stats).
+Repairs needed: **none**. No lane touched the contract JSON, a v3 schema,
+SKILL.md, references/, or a state file (verified by `git diff --name-status`
+against the cycle base per lane). All hits for the registry's prohibited
+vocabulary in `bin/` pre-date cycle 45 and are guard comparisons inside the
+pre-existing freeze/compile verbs (validators of inner certificates), not
+emitters; the c45 diff introduces none.
 
-## Seams
+## Reject screening
 
-- `git diff --check c989d7c d0106a6` — clean.
-- Cross-module read of the three merged boundaries together:
-  - `polylane-taste-execution-contract.sh` dispatch keeps
-    `validate`/`fingerprint` shapes unchanged and adds
-    `run-mode-vocabulary`/`run-mode-transition`; the frozen dual-validator
-    acceptance command is unaffected (fingerprint below unchanged).
-  - `taste-prompt-consumed/v1` (`consumed-receipt.json`, prompt-compile
-    boundary) and the manifest `stdin_adapter` receipt fields (execution
-    boundary) share no file, schema version, or key path — no collision, and
-    prompt-chain explicitly disclaims the downstream stdin-proof claim that
-    execution-proof enforces.
-  - `polylane-taste-ballot.sh` `tally` binds its own validator fingerprint;
-    its callers (`polylane-visual-tournament.sh`, `polylane-taste.sh`) are
-    covered by pre-existing suites, all green in the full run.
-- Shellcheck fresh at the merged tree: the three changed `bin/` scripts clean
-  at `-S warning`. Two SC1007 notes in
-  `tests/test-taste-delivery-provenance.sh` / `tests/test-taste-run-mode.sh`
-  come from the pre-existing repo idiom `CDPATH= cd` (identical line in
-  `tests/test-run-stats.sh`, `tests/test-taste-execution-contract-v3.sh`); the
-  frozen terminal shellcheck gate covers `bin/*.sh` only, so this matches
-  convention and gates.
+Checked every NO-GO trigger; none held:
 
-## Frozen m32.7 focused acceptance (exactly as recorded in `docs/polylane/max-state.json`, sid `m32.7`, tier `focused`)
+- **No simulated human anywhere.** Corpus plans are allocations with no verdict
+  field; privacy fixtures are specs and boundary probes; stats fixtures are
+  synthetic arithmetic vectors with hand-derived answers, never ballots
+  presented as evidence about people.
+- **No weakened threshold, no reachable prohibited claim.** Each lane reads the
+  lock/registry at runtime and carries drift tests (mutated-lock runs recorded
+  in each lane's verify doc; re-verified by the passing suites below). The
+  claim-safety suite asserts the registry's prohibited labels, statuses, and
+  certification flags are absent from sources and unreachable in emissions.
+- **No contract/schema edits** (per-lane name-status diffs above).
+- **No unbound inlined constants.** The only inlined frozen strings
+  (two status literals in the consent script) are bound by
+  `assert_external_open_contract`, which fails the command if the contract's
+  value changes; every numeric threshold is read from the lock at runtime.
+- **Red-then-green proven per lane.** Corpus: both suites red first
+  (23/45 and 14/56 passing, gate assertions all red at rc=64). Privacy: judged
+  its own file-not-found red as weak and ran an 11-mutation battery, adding
+  tests until the 2 surviving mutants were killed. Stats: exit-127 red
+  (analysis) and usage-banner red (qualification), plus three real defects
+  found by tests before implementation.
 
-All six commands run fresh on the merged tree through
-`bin/polylane-check.sh "$PWD/.polylane/check-cache/integrator"`:
+## Seam check (cross-module composition, this session)
+
+`git diff --check`: clean. Then a 9-check composition script
+(scratchpad `seam-composition.sh`) drove all three lanes' CLIs over shared
+fixture artifacts:
+
+1. faithful target+designer allocation → `EXPOSURE-BOUND` (corpus)
+2. synthetic 320/32 split passes every structural gate and stops **only** at the
+   frozen `split_sha256` gate, rc 1 — the external boundary held (corpus)
+3. a stimulus derived from the plan passes `blind-check` (corpus→privacy)
+4. the same stimulus carrying a split assignment or a label key is rejected
+   (corpus→privacy negative)
+5. consent record is PII-free; `external-open` emits all 14 requirements
+   unsatisfied (privacy)
+6. five analyses → five gates → qualified judge, thresholds from the lock at
+   runtime (stats)
+7. a blind ballot naming a pair from the corpus plan's universe is admitted and
+   binds the SHA-256 of its qualification receipt (stats→privacy→corpus)
+8. a ballot carrying a split assignment fails `blind-check` before it can be
+   cast (composition-order negative)
+9. `claim-scan` over all 14 artifacts the composition emitted: clean
+
+Result: `PASS: hcm-v2 seam composition (9 checks)`.
+
+## Frozen m32.8 focused acceptance (fresh, via check cache)
+
+Exactly the six commands frozen in `docs/polylane/max-state.json`
+(sid m32.8, tier focused), all run through
+`bin/polylane-check.sh .polylane/check-cache/integrator`:
 
 | command | fresh result |
 |---|---|
-| `bash tests/test-taste-prompt-integrity.sh` | **34 pass, 0 fail** |
-| `bash tests/test-taste-delivery-provenance.sh` | **14 ok, 1..14, rc=0** |
-| `bash tests/test-taste-comparator-outcome.sh` | **49 pass, 0 fail** |
-| `bash tests/test-taste-artifact-retention.sh` | **42 pass, 0 fail** |
-| `bash tests/test-taste-run-mode.sh` | **18 ok, 1..18, rc=0** |
-| execution + source example-manifest validators | `VALID execution-v3 3b8d5fdeb31721caac38696464d84eb4157179d6bd0f06df4948a72bf689542e` + `SOURCE-CONTRACT-V3-OK` |
+| `bash tests/test-hcm-v2-split.sh` | PASS — 45 pass, 0 fail |
+| `bash tests/test-hcm-v2-exposure.sh` | PASS — 56 pass, 0 fail |
+| `bash tests/test-hcm-v2-privacy.sh` | PASS — 62 assertions |
+| `bash tests/test-hcm-v2-analysis.sh` | PASS: hcm-v2 analysis |
+| `bash tests/test-hcm-v2-qualification.sh` | PASS: hcm-v2 qualification |
+| `bash tests/test-hcm-v2-claim-safety.sh` | PASS — 26 assertions |
 
-The execution example fingerprint is unchanged from the freeze — no contract
-byte moved this cycle.
+`shellcheck -S warning bin/*.sh`: clean.
 
-## Full suite
+## Full suite (fresh, once)
 
-`POLYLANE_MIN_DISK_GB=0 bash tests/run.sh` on the merged tree:
-**4237 passed, 0 failed, 180 test files** (rc=0). Pre-merge main was 4110/175;
-the five new lane suites account for the growth, and every pre-existing suite
-stays green.
+`POLYLANE_MIN_DISK_GB=0 bash tests/run.sh` (this session, after all three
+merges): **SUMMARY: 4340 passed, 0 failed, 186 test files**, exit 0.
 
-## Per-defect table
+## Frozen parameters bound (name → lock value → enforcing lane → proving test → fresh result)
 
-| defect id | required v3 control (registry, verbatim-verified) | implementing lane | proving test | fresh result |
+Lock: `docs/polylane/taste-certification/contracts/CONTRACT-LOCK.v3.json`.
+Registry: `EVIDENCE-CLAIM-REGISTRY.v3.json`. Every row is read from the
+lock/registry at runtime by the enforcing script and re-asserted literally by
+the proving test, so a lock change fails the suite before it can change a
+verdict. Fresh results are this session's runs from the table above.
+
+| frozen parameter | lock value | lane | proving test | fresh |
 |---|---|---|---|---|
-| `c42b-unsafe-whole-document-prompt-dedupe` | Deduplication is restricted to typed sections and cannot alter mandatory locked bytes. | `prompt-chain` | `tests/test-taste-prompt-integrity.sh` | 34 pass, 0 fail |
-| `c42b-optimized-prompt-deletion` | The frozen finalist prompt bytes and their source, compiled, delivered, and consumed receipt chain remain immutable and addressable after promotion. | `prompt-chain` | `tests/test-taste-artifact-retention.sh` | 42 pass, 0 fail |
-| `c42b-missing-consumed-stdin-proof` | Delivered and consumed stdin SHA-256 and byte count match and are bound by a successful stdin adapter receipt and request receipt. | `execution-proof` | `tests/test-taste-delivery-provenance.sh` | 14 ok, rc=0 |
-| `c42b-run-mode-vocabulary-mismatch` | Run mode values use one contract-v3 vocabulary at producer, validator, storage, and lifecycle boundaries. | `execution-proof` | `tests/test-taste-run-mode.sh` | 18 ok, rc=0 |
-| `c42b-comparator-pseudo-win` | Only a validated outcome equal to win increments wins; ties, abstentions, missing evidence, and invalid evidence remain non-wins in the fixed denominator. | `comparator` | `tests/test-taste-comparator-outcome.sh` | 49 pass, 0 fail |
+| `hcm_v2.natural_pairs.total` | 320 | corpus | test-hcm-v2-split.sh | 45/45 |
+| `hcm_v2.natural_pairs.development` | 120 | corpus | test-hcm-v2-split.sh | 45/45 |
+| `hcm_v2.natural_pairs.validation` | 40 | corpus | test-hcm-v2-split.sh | 45/45 |
+| `hcm_v2.natural_pairs.confirmatory` | 160 | corpus | test-hcm-v2-split.sh | 45/45 |
+| `hcm_v2.anchors_excluded` | 32 | corpus | test-hcm-v2-split.sh + test-hcm-v2-exposure.sh | 45/45, 56/56 |
+| `hcm_v2.split_sha256` | `5f24bec2…cf0a2031` | corpus | test-hcm-v2-split.sh (lock gate stop) | 45/45 |
+| `hcm_v2.source_id` | `HCM-v2` | corpus + privacy | split + privacy suites | 45/45, 62 |
+| `hcm_v2.target_users.viewports` | `1440x900`, `390x844` | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.target_users.max_natural_pairs_per_participant` | 8 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.target_users.max_anchors_per_participant` | 2 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.target_users.pair_repeat_exposures` | 0 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.target_users.judgments_per_pair` | 80 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.target_users.min_completed_participants` | 3200 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.designers.max_pairs_per_designer` | 40 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.designers.judgments_per_pair` | 12 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.designers.min_credentialed_designers` | 96 | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.designers.separate_from_target_user_ballots` | true | corpus | test-hcm-v2-exposure.sh | 56/56 |
+| `hcm_v2.governance_requirements_are_external` | true | privacy | test-hcm-v2-privacy.sh | 62 |
+| `hcm_v2.status` / `hcm_v2.authority` | external-open / target-matched | privacy | test-hcm-v2-privacy.sh | 62 |
+| registry `private_hcm_v2_prerequisite` certification flags | both false | privacy | test-hcm-v2-claim-safety.sh | 26 |
+| registry `external_requirements` | 14 items, never satisfiable | privacy | test-hcm-v2-privacy.sh | 62 |
+| registry `certification_mint_authority` | `NONE_IN_V3` | privacy | test-hcm-v2-claim-safety.sh | 26 |
+| registry prohibited labels/statuses/flags | unreachable | privacy | test-hcm-v2-claim-safety.sh | 26 |
+| `target_user.coverage_min` | 0.80 | stats | test-hcm-v2-qualification.sh | PASS |
+| `target_user.brier_skill_lower_95_strict_min` | 0 (strict) | stats | analysis + qualification suites | PASS |
+| `target_user.strata_brier_skill_lower_95_strict_min` | 0 (strict) | stats | qualification suite | PASS |
+| `target_user.repeat_stability_min` | 0.95 | stats | qualification suite | PASS |
+| `target_user.orientation_effect_abs_max` | 0.05 | stats | qualification suite | PASS |
+| `target_user.calibration_in_large_abs_max_per_class` | 0.05 | stats | qualification suite | PASS |
+| `target_user.weighted_calibration_error_max` | 0.08 | stats | analysis + qualification suites | PASS |
+| `target_user.weighted_calibration_upper_95_max` | 0.12 | stats | qualification suite | PASS |
+| `designer.decisive_pairs` | 120 | stats | qualification suite | PASS |
+| `designer.both_mirror_correct_min` | 84 | stats | qualification suite (84 passes, 83 fails) | PASS |
+| `designer.macro_agreement_min` | 0.70 | stats | qualification suite (one-ULP boundary pinned) | PASS |
+| `designer.stratum_agreement_min` | 0.60 | stats | qualification suite (Simpson fixture) | PASS |
+| `designer.wilson_lower_95_strict_min` | 0.60 (strict) | stats | qualification suite (0.60 exactly fails) | PASS |
+| `correlation.bootstrap_replicates` | 10000 | stats | analysis + qualification suites | PASS |
+| `correlation.capa_lower_95_threshold` | 0.75 | stats | qualification suite | PASS |
+| `correlation.holm_p_max` | 0.01 | stats | qualification suite | PASS |
+| `correlation.double_fault_independence_multiplier` | 2 | stats | qualification suite | PASS |
+| `correlation.phi_bound` | `upper-95` | stats | qualification suite (declaration check) | PASS |
+| `position_bias.calls` | 480 | stats | qualification suite | PASS |
+| `position_bias.unique_mirrored_pairs` | 240 | stats | qualification suite | PASS |
+| `position_bias.reversals_max` | 6 | stats | qualification + seam (6 passes, 7 fails) | PASS |
+| `equivalence_bias.probes` | 300 | stats | qualification suite | PASS |
+| `equivalence_bias.verbose_candidate_selection_acceptance_inclusive` | [135, 165] | stats | qualification suite (endpoints pass, 134/166 fail) | PASS |
+| `equivalence_bias.self_lineage_selection_acceptance_inclusive` | [135, 165] | stats | qualification suite | PASS |
 
-## Coordination relay
+## External dependencies still open
 
-Start-of-run and pre-completion relay both returned one pending request:
-`contract-import → integrator`, seq 1, dated 2026-08-18 — a **cycle-43/m32.6**
-scope-gap request for a 4-line needle swap in `tests/test-lane-done-live.sh`.
-Already satisfied on `main` before this run: both requested needles are present
-(`grep -c` = 2) and `bash tests/test-lane-done-live.sh` passes fresh at
-**18 pass, 0 fail**. Stale; no action required this run. No
-current-run requests addressed to the integrator exist.
+m32.8a is external and stays `EXTERNAL-EVIDENCE-OPEN`: ethics/privacy
+determination, consent execution, compensation, population frame, locale
+quotas, tasks, viewport rollout, randomization, exclusions, retention,
+withdrawal handling, real ballots, the analysis run on them, and a named
+governance owner — 14 registry requirements, each emitted `satisfied: false`
+with no code path to true. Binding the real split needs the external HCM-v2
+corpus: no synthetic split can hash to the frozen `split_sha256`, so
+`hcm-split`'s success line is deliberately unreachable in this repository.
+This cycle certifies a pipeline, not a study; no ethics review, recruitment, or
+collected ballot is claimed.
 
 ## Limitations
 
-- **All five registry defect statuses remain `OPEN`.** Flipping a status
-  re-freezes a hashed contract; that decision belongs to the registry owner /
-  host gate, not this run. Nothing here upgrades any claim — the controls are
-  implemented and regression-tested, which is exactly what the dispositions
-  require before any flip.
-- **External evidence: none.** No network, installs, live provider calls, or
-  browsing. No taste or human certification claim minted, implied, or
-  upgraded.
-- Lane-declared limitations carry through unchanged and unresolved, notably:
-  the run-mode vocabulary is served and enforced at the execution-contract
-  boundary but `bin/polylane-finalize.sh` still carries its own transition
-  table copy (FORBIDDEN path for the lane and outside this cycle's plan);
-  divergent `adapter_binary_sha256` values under one pinned adapter id remain
-  unconstrained because the frozen example ships that shape; the ballot
-  denominator is a caller-supplied input bound to the lock's constants at the
-  benchmark-runner boundary, not inside `tally`; `taste-ballot-validation/v1`
-  receipts carry no self-hash; ballot v2
-  (`bin/polylane-taste-ballot-live.sh`) still fails closed on ties and
-  abstentions and is out of this cycle's scope.
-- "Typed section" and "mandatory locked byte" are definitions local to
-  `bin/polylane-taste-prompts.sh` (the v3 schemas define neither); a later
-  contract version defining them differently forces re-reconciliation.
-- The terminal-tier acceptance command is the host gate's boundary; its
-  constituent parts were run here (full suite, shellcheck over changed
-  scripts, `git diff --check`) but the gate itself decides GO.
+- The `SPLIT-BOUND` success path has no end-to-end test (external boundary);
+  the eight structural gates before it are proven by code-absence assertions.
+- Exposure plans validate the pair universe by count, not by identity against
+  the frozen split (the split is external).
+- The PII scan is a heuristic backstop; the guarantee is the exact spec key set
+  plus the opaque nonce.
+- `blind-check` is a boundary, not a router — the seam script proves the
+  composition works when routed through it; live wiring is the study runner's
+  job in m32.8a.
+- Estimator conventions in stats (z = 1.96, ten fixed reliability bins,
+  percentile bootstrap from a seeded Lehmer generator, 1e-9 inclusive-only
+  slack) are the analyst's documented choices; the lock freezes acceptance
+  levels, not interval construction.
+- Raw p-values for the Holm family come from upstream; this pipeline adjusts
+  and gates them.
 
-## Skill receipts
+## Skill receipts and evidence
 
 SKILL-READ: engineering:testing-strategy | /Users/leonardo/.codex/plugins/cache/claude-cowork/engineering/1.2.0/skills/testing-strategy/SKILL.md | 2811424084-1279
 SKILL-READ: superpowers:test-driven-development | /Users/leonardo/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/test-driven-development/SKILL.md | 1657109997-9015
 
-SKILL-EVIDENCE: superpowers:test-driven-development — helped: its rule "test passes immediately means you're testing existing behaviour" is why the reject-scan used real reverts instead of the permitted mental spot-check. Replacing each script with its `c989d7c` bytes reproduced the lanes' documented RED signatures exactly (`5 test(s) failed` provenance, `16 test(s) failed` run-mode, rc=127 integrity), which upgraded "the lane says the test failed first" into integrator-verified evidence for all five controls.
+SKILL-EVIDENCE: engineering:testing-strategy — helped: its pyramid framing
+identified exactly which tier the lanes had not covered — each lane shipped
+unit/contract suites, but no test drove the three CLIs over *shared* artifacts.
+The 9-check seam script is that integration tier, and the skill's "security
+boundaries and data integrity" focus is why checks 4 and 8 are leak
+*negatives* (a split-carrying stimulus and a split-carrying ballot must be
+refused at the privacy boundary) rather than only happy-path composition.
 
-SKILL-EVIDENCE: engineering:testing-strategy — helped: its "contract tests for consumers" item shaped the seam pass. For each changed script I enumerated consumers (`polylane-promptopt.sh` callers, `polylane-visual-tournament.sh`/`polylane-taste.sh` for the ballot, the frozen dual-validator acceptance for the execution contract) and checked each is exercised by a pre-existing green suite plus the unchanged example fingerprint — which is what makes "validate/fingerprint unchanged" a verified claim rather than a lane assertion.
-POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c44-defect-controls-20260819-a1
+SKILL-EVIDENCE: superpowers:test-driven-development — helped: used as the audit
+standard for the reject gate "a regression test that never demonstrably failed
+first". Its "watch it fail for the expected reason" rule is the criterion that
+made the corpus lane's rc=64 usage reds and the stats lane's exit-127 red
+acceptable, and it is the same standard by which the privacy lane's
+file-not-found red would have been insufficient alone — that lane's 11-mutation
+battery (with two surviving mutants killed by new tests) is what satisfied the
+criterion, so no lane was rejected on this gate.
