@@ -53,6 +53,13 @@ acquire_lock() {
     now=$(now_epoch)
     recorded=$(cat "$LOCK_DIR/created_at" 2>/dev/null || printf 0)
     case "$recorded" in *[!0-9]*|'') recorded=0 ;; esac
+    if [ "$recorded" -eq 0 ]; then
+      # mkdir and the created_at write are not atomic: reading that gap as
+      # epoch-0 would steal a live lock and kill its holder mid-append.  An
+      # unstamped lock dir is aged by its own mtime instead.
+      recorded=$(stat -f %m "$LOCK_DIR" 2>/dev/null || stat -c %Y "$LOCK_DIR" 2>/dev/null || printf '%s' "$now")
+      case "$recorded" in *[!0-9]*|'') recorded=$now ;; esac
+    fi
     stale=$((now - recorded))
     if [ "$stale" -gt "$(lock_ttl)" ] 2>/dev/null; then
       moved="${LOCK_DIR}.stale.${LOCK_TOKEN}"
