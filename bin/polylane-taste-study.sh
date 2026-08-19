@@ -17,12 +17,33 @@
 #     live study: a compiler cannot create a browser run, a human label, or an
 #     independent panel, so live_study_executed is always false and the real
 #     prerequisites are recorded as external.
+#
+#   hcm-split SPLIT | hcm-split-digest SPLIT
+#     Bind a produced HCM-v2 target-matched split to the frozen
+#     source_calibration.hcm_v2 block of CONTRACT-LOCK.v3.json: stratum counts,
+#     excluded anchors, a self-consistent canonical digest, and a digest equal to
+#     the frozen split_sha256.  Fails closed with reason codes; a digest that is
+#     not the frozen one is a hard failure, never a warning.
+#
+#   hcm-exposure PLAN [OTHER_PLAN]
+#     Bind a stimulus exposure ALLOCATION plan to the same frozen block:
+#     viewports, per-participant pair and anchor caps, zero repeat exposures,
+#     judgments per pair, participant/designer floors, and — with two plans —
+#     that designer ballots stay separate from target-user ballots.
+#
+#   The HCM-v2 study itself is external (ethics review, recruiting, sealed
+#   ballots).  These verbs bind a split and a plan; they never carry a judgment,
+#   a consent signature, a participant, or a study result, and they cannot emit a
+#   certified or human claim.
 set -euo pipefail
 
 usage() {
   printf '%s\n' \
     'usage: polylane-taste-study.sh freeze SPEC OUT' \
-    '       polylane-taste-study.sh compile FREEZE MANIFEST CERT SUBJECT_ROOT' >&2
+    '       polylane-taste-study.sh compile FREEZE MANIFEST CERT SUBJECT_ROOT' \
+    '       polylane-taste-study.sh hcm-split SPLIT' \
+    '       polylane-taste-study.sh hcm-split-digest SPLIT' \
+    '       polylane-taste-study.sh hcm-exposure PLAN [OTHER_PLAN]' >&2
 }
 
 HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
@@ -274,6 +295,219 @@ study_brief_order_matches() {
   [ "$(printf '%s' "$got")" = "$(printf '%s\n' "$order")" ]
 }
 
+# --- HCM-v2: frozen target-matched split + stimulus exposure rules ----------
+#
+# The authority is the frozen `source_calibration.hcm_v2` block of the v3
+# contract lock, read at runtime: nothing about HCM-v2 is inlined below.  Both
+# verbs fail closed — an explicit reason code and a non-zero exit, never a
+# warning — and neither can emit a certified, human, or bound-by-default claim.
+#
+# The study these rules describe is EXTERNAL (m32.8a: ethics review, recruiting,
+# sealed ballots).  These verbs bind an allocation PLAN and a produced SPLIT;
+# they never carry a judgment, a consent signature, or a study result.
+HCM_LOCK="$HERE/../docs/polylane/taste-certification/contracts/CONTRACT-LOCK.v3.json"
+
+HCM_CODES=''
+hcode() { case "|$HCM_CODES|" in *"|$1|"*) ;; *) HCM_CODES="${HCM_CODES:+$HCM_CODES|}$1" ;; esac; }
+
+# hcm_verdict OK_LABEL BAD_LABEL DETAIL — one status line; rc 1 iff any code.
+hcm_verdict() {
+  if [ -z "$HCM_CODES" ]; then printf '%s%s\n' "$1" "${3:+ $3}"; return 0; fi
+  printf '%s %s\n' "$2" "$(printf '%s' "$HCM_CODES" | tr '|' ' ')"
+  return 1
+}
+
+# hcm_lock JQ_FILTER — a frozen value, or rc 1 when the lock is unreadable.
+hcm_lock() { jq -er "$1" "$HCM_LOCK" 2>/dev/null; }
+
+# hcm_split_digest SPLIT — the canonical content digest of a split.  Documented
+# canonicalization: the schema line, then each excluded anchor id (sorted), then
+# each natural pair id with its stratum (sorted by pair id), tab-separated,
+# newline-terminated, SHA-256.  Order of the input arrays is irrelevant.
+hcm_split_digest() {
+  jq -er '"hcm-v2-split/v1",
+          (.anchors | sort | .[] | "anchor\t" + .),
+          (.assignments | sort_by(.pair_id) | .[] | "pair\t" + .pair_id + "\t" + .stratum)' "$1" |
+    sha256_stdin
+}
+
+hcm_split() {
+  local split=$1 vals digest declared
+  local l_total l_dev l_val l_conf l_anchors l_sha l_src
+  HCM_CODES=''
+
+  if ! regular_json_without_duplicate_keys "$split" ||
+     ! jq -e 'type == "object" and .schema_version == "hcm-v2-split/v1"
+              and (.source_id | type == "string" and length > 0)
+              and (.split_sha256 | type == "string" and test("^[0-9a-f]{64}$"))
+              and (.natural_pairs | type == "object")
+              and (.anchors | type == "array")
+              and (.assignments | type == "array")
+              and all(.anchors[]; type == "string" and length > 0)
+              and all(.assignments[];
+                    (.pair_id | type == "string" and length > 0)
+                    and (.stratum | IN("development","validation","confirmatory")))' \
+          "$split" >/dev/null 2>&1; then
+    hcode HCM_SPLIT_INVALID
+    hcm_verdict SPLIT-BOUND SPLIT-NOT-BOUND ''
+    return 1
+  fi
+
+  vals=$(hcm_lock '.source_calibration.hcm_v2 |
+           [.natural_pairs.total, .natural_pairs.development, .natural_pairs.validation,
+            .natural_pairs.confirmatory, .anchors_excluded, .split_sha256, .source_id] | @tsv') || {
+    hcode HCM_LOCK_UNREADABLE
+    hcm_verdict SPLIT-BOUND SPLIT-NOT-BOUND ''
+    return 1
+  }
+  IFS=$'\t' read -r l_total l_dev l_val l_conf l_anchors l_sha l_src <<<"$vals"
+
+  # The lock must itself be internally consistent before it can bind anything.
+  [ "$((l_dev + l_val + l_conf))" -eq "$l_total" ] || hcode HCM_LOCK_INCONSISTENT
+  [ "$l_src" = HCM-v2 ] || hcode HCM_LOCK_INCONSISTENT
+
+  jq -e --argjson t "$l_total" \
+     '.natural_pairs.total == $t and (.assignments | length) == $t' "$split" >/dev/null 2>&1 ||
+    hcode HCM_SPLIT_TOTAL
+  jq -e --argjson d "$l_dev" --argjson v "$l_val" --argjson c "$l_conf" '
+       .natural_pairs.development == $d and .natural_pairs.validation == $v
+       and .natural_pairs.confirmatory == $c
+       and ([.assignments[] | select(.stratum == "development")] | length) == $d
+       and ([.assignments[] | select(.stratum == "validation")] | length) == $v
+       and ([.assignments[] | select(.stratum == "confirmatory")] | length) == $c' \
+     "$split" >/dev/null 2>&1 || hcode HCM_SPLIT_STRATUM_COUNT
+  jq -e '([.assignments[].pair_id] | length) == ([.assignments[].pair_id] | unique | length)' \
+     "$split" >/dev/null 2>&1 || hcode HCM_SPLIT_DUPLICATE_PAIR
+  jq -e --argjson a "$l_anchors" \
+     '(.anchors | length) == $a and (.anchors | unique | length) == $a' "$split" >/dev/null 2>&1 ||
+    hcode HCM_SPLIT_ANCHOR_COUNT
+  jq -e '((.anchors | unique) - [.assignments[].pair_id] | length) == (.anchors | unique | length)' \
+     "$split" >/dev/null 2>&1 || hcode HCM_SPLIT_ANCHOR_OVERLAP
+
+  digest=$(hcm_split_digest "$split" 2>/dev/null) || digest=''
+  declared=$(jq -r '.split_sha256' "$split")
+  [ -n "$digest" ] || hcode HCM_SPLIT_INVALID
+  [ "$digest" = "$declared" ] || hcode HCM_SPLIT_DIGEST_MISMATCH
+  # The frozen authority.  A produced split whose digest is not the frozen one
+  # is not the target-matched corpus, and that is a hard failure: the real
+  # HCM-v2 split is external evidence this repository cannot manufacture.
+  [ "$digest" = "$l_sha" ] || hcode HCM_SPLIT_LOCK_MISMATCH
+
+  hcm_verdict SPLIT-BOUND SPLIT-NOT-BOUND "$digest"
+}
+
+# hcm_plan_codes PLAN — accumulate exposure codes for one allocation plan.
+hcm_plan_codes() {
+  local plan=$1 stream vals viewports
+  local l_nat l_anc l_repeat l_tjpp l_tfloor l_dcap l_djpp l_dfloor l_sep l_total l_anchors
+
+  if ! regular_json_without_duplicate_keys "$plan" ||
+     ! jq -e 'type == "object" and .schema_version == "hcm-v2-exposure-plan/v1"
+              and (.ballot_stream | IN("target_users","designers"))
+              and (.participants | type == "array" and length > 0)
+              and ([.participants[].participant_id] | length == (unique | length))
+              and all(.participants[];
+                    (.participant_id | type == "string" and length > 0)
+                    and (.exposures | type == "array" and length > 0)
+                    and all(.exposures[];
+                          (.pair_id | type == "string" and length > 0)
+                          and (.kind | IN("natural","anchor"))
+                          and (.viewport | type == "string" and length > 0)))' \
+          "$plan" >/dev/null 2>&1; then
+    hcode HCM_EXPOSURE_INVALID
+    return 0
+  fi
+
+  vals=$(hcm_lock '.source_calibration.hcm_v2 |
+           [.target_users.max_natural_pairs_per_participant,
+            .target_users.max_anchors_per_participant,
+            .target_users.pair_repeat_exposures,
+            .target_users.judgments_per_pair,
+            .target_users.min_completed_participants,
+            .designers.max_pairs_per_designer,
+            .designers.judgments_per_pair,
+            .designers.min_credentialed_designers,
+            (.designers.separate_from_target_user_ballots | tostring),
+            .natural_pairs.total, .anchors_excluded] | @tsv') || {
+    hcode HCM_LOCK_UNREADABLE
+    return 0
+  }
+  IFS=$'\t' read -r l_nat l_anc l_repeat l_tjpp l_tfloor l_dcap l_djpp l_dfloor l_sep \
+    l_total l_anchors <<<"$vals"
+  viewports=$(jq -ce '.source_calibration.hcm_v2.target_users.viewports
+                      | select(type == "array" and length > 0)' "$HCM_LOCK" 2>/dev/null) || {
+    hcode HCM_LOCK_UNREADABLE
+    return 0
+  }
+  # Both rules below are only meaningful under the frozen constants they name.
+  [ "$l_repeat" = 0 ] || hcode HCM_LOCK_INCONSISTENT
+  [ "$l_sep" = true ] || hcode HCM_LOCK_INCONSISTENT
+
+  # --- rules that hold for every ballot stream ------------------------------
+  jq -e --argjson vp "$viewports" \
+     'all(.participants[].exposures[]; .viewport as $v | $vp | index($v) != null)' \
+     "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_VIEWPORT
+  jq -e --argjson vp "$viewports" \
+     '([.participants[].exposures[].viewport] | unique) == ($vp | unique)' \
+     "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_VIEWPORT_COVERAGE
+  # pair_repeat_exposures is 0: no participant may meet the same pair twice.
+  jq -e 'all(.participants[];
+           ([.exposures[].pair_id] | length) == ([.exposures[].pair_id] | unique | length))' \
+     "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_REPEAT
+  jq -e --argjson t "$l_total" \
+     '([.participants[].exposures[] | select(.kind == "natural") | .pair_id] | unique | length) == $t' \
+     "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_PAIR_COVERAGE
+
+  stream=$(jq -r '.ballot_stream' "$plan")
+  if [ "$stream" = target_users ]; then
+    jq -e --argjson n "$l_nat" \
+       'all(.participants[]; ([.exposures[] | select(.kind == "natural")] | length) <= $n)' \
+       "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_NATURAL_CAP
+    jq -e --argjson a "$l_anc" \
+       'all(.participants[]; ([.exposures[] | select(.kind == "anchor")] | length) <= $a)' \
+       "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_ANCHOR_CAP
+    jq -e --argjson a "$l_anchors" \
+       '([.participants[].exposures[] | select(.kind == "anchor") | .pair_id] | unique | length) == $a' \
+       "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_ANCHOR_COVERAGE
+    jq -e --argjson f "$l_tfloor" '(.participants | length) >= $f' "$plan" >/dev/null 2>&1 ||
+      hcode HCM_EXPOSURE_PARTICIPANT_FLOOR
+    jq -e --argjson j "$l_tjpp" \
+       '([.participants[].exposures[] | select(.kind == "natural") | .pair_id]
+         | group_by(.) | map(length) | unique) == [$j]' "$plan" >/dev/null 2>&1 ||
+      hcode HCM_EXPOSURE_JUDGMENT_COUNT
+  else
+    jq -e --argjson c "$l_dcap" \
+       'all(.participants[]; ([.exposures[] | select(.kind == "natural")] | length) <= $c)' \
+       "$plan" >/dev/null 2>&1 || hcode HCM_EXPOSURE_DESIGNER_PAIR_CAP
+    jq -e --argjson f "$l_dfloor" '(.participants | length) >= $f' "$plan" >/dev/null 2>&1 ||
+      hcode HCM_EXPOSURE_DESIGNER_FLOOR
+    jq -e --argjson j "$l_djpp" \
+       '([.participants[].exposures[] | select(.kind == "natural") | .pair_id]
+         | group_by(.) | map(length) | unique) == [$j]' "$plan" >/dev/null 2>&1 ||
+      hcode HCM_EXPOSURE_JUDGMENT_COUNT
+  fi
+}
+
+hcm_exposure() {
+  local plan=$1 other=${2:-}
+  HCM_CODES=''
+  hcm_plan_codes "$plan"
+  if [ -n "$other" ]; then
+    hcm_plan_codes "$other"
+    # separate_from_target_user_ballots: the two streams are different streams,
+    # and no person appears on both ballots.
+    if jq -e --slurpfile o "$other" '.ballot_stream == $o[0].ballot_stream' \
+         "$plan" >/dev/null 2>&1; then
+      hcode HCM_EXPOSURE_STREAM_DUPLICATE
+    fi
+    jq -e --slurpfile o "$other" \
+       '([.participants[].participant_id] - [$o[0].participants[].participant_id] | length)
+        == ([.participants[].participant_id] | length)' "$plan" >/dev/null 2>&1 ||
+      hcode HCM_EXPOSURE_BALLOT_OVERLAP
+  fi
+  hcm_verdict EXPOSURE-BOUND EXPOSURE-NOT-BOUND ''
+}
+
 # ---------------------------------------------------------------------------
 case "${1:-}" in
   freeze)
@@ -283,6 +517,18 @@ case "${1:-}" in
   compile)
     [ "$#" -eq 5 ] || { usage; exit 64; }
     compile "$2" "$3" "$4" "$5"
+    ;;
+  hcm-split)
+    [ "$#" -eq 2 ] || { usage; exit 64; }
+    hcm_split "$2"
+    ;;
+  hcm-split-digest)
+    [ "$#" -eq 2 ] || { usage; exit 64; }
+    hcm_split_digest "$2"
+    ;;
+  hcm-exposure)
+    [ "$#" -ge 2 ] && [ "$#" -le 3 ] || { usage; exit 64; }
+    hcm_exposure "$2" "${3:-}"
     ;;
   *) usage; exit 64;;
 esac
