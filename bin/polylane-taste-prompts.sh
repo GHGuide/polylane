@@ -12,12 +12,32 @@
 # blocks the current arm (rc 6, EXTERNAL-EVIDENCE-OPEN) — it never weakens
 # it. Deterministic: same inputs, same bytes, same hashes.
 # Bash 3.2 + jq + read-only `git show`.
+#
+# Typed sections and mandatory locked bytes (defect
+# c42b-unsafe-whole-document-prompt-dedupe). The v3 schemas define neither
+# term, so both are defined narrowly here and nowhere else:
+#
+#   TYPED SECTION — a fenced region of a compiled prompt. The fences are the
+#   `=== NAME ===` / `=== END NAME ===` pairs the frozen templates emit, plus
+#   the three inline quoted-data pairs BRIEF-BEGIN/BRIEF-END,
+#   TASK-ORACLE-BEGIN/TASK-ORACLE-END and REF-PACKET-BEGIN/REF-PACKET-END.
+#
+#   MANDATORY LOCKED BYTES — every byte, fences included, of the typed
+#   sections whose digest this compiler freezes into receipt.json: the quoted
+#   brief (brief.sha256), the quoted task oracle (oracle_sha256), the quoted
+#   reference packet (current.ref_packet_sha256), the pinned baseline material
+#   (baseline.material_sha256) and the design lock (current.design_lock_sha256).
+#
+# Deduplication therefore runs per typed section and never inside a locked
+# one, so no section can delete another section's line and no frozen digest
+# can be invalidated by the optimization pass.
 set -euo pipefail
 
 BASELINE_REV=0b802ad13ada13a0dc7cc702a526ed17d3348851
 BASELINE_LINES="336,337" # the pre-visual one-shot design-lock doctrine, exact
 BASELINE_MATERIAL_SHA256=2393058a7c0c6d92975c0f1f4ccfc97c6c7f89dc5d0914680fd4e1423cb5d142
 PROMPT_BYTE_BUDGET=16000
+RETENTION_DIR=artifacts
 INJECTION_RE='(ignore[[:space:]]+(all[[:space:]]+)?(previous|prior)[[:space:]]+instructions|system[[:space:]]+prompt|reveal[[:space:]]+(the[[:space:]]+)?(prompt|instructions)|assistant[[:space:]]+instructions)'
 LEAKAGE_RE='winner|certif|champion|trophy'
 
@@ -50,6 +70,90 @@ safe_relpath() {
     [ -n "$part" ] && [ "$part" != . ] && [ "$part" != .. ] || { IFS=$old_ifs; return 1; }
   done
   IFS=$old_ifs
+}
+
+# locked_fence LINE : "open" or "close" for a locked typed-section fence, else
+# nothing. See the header for what counts as locked.
+locked_fence() {
+  case "$1" in
+    'BRIEF-BEGIN '*|'TASK-ORACLE-BEGIN '*|'REF-PACKET-BEGIN '*|\
+    '=== BASELINE MATERIAL ==='|'=== DESIGN LOCK ===') printf 'open\n' ;;
+    'BRIEF-END'|'TASK-ORACLE-END'|'REF-PACKET-END'|\
+    '=== END BASELINE MATERIAL ==='|'=== END DESIGN LOCK ===') printf 'close\n' ;;
+  esac
+}
+
+# locked_bytes PROMPT : every mandatory locked byte, fences included, in file
+# order. rc 1 on an unbalanced fence so a truncated prompt can never compare
+# equal by accident.
+locked_bytes() {
+  local prompt="$1" raw locked=0 kind
+  while IFS= read -r raw || [ -n "$raw" ]; do
+    kind=$(locked_fence "$raw")
+    if [ "$locked" = 1 ]; then
+      printf '%s\n' "$raw"
+      [ "$kind" = close ] && locked=0
+      continue
+    fi
+    [ "$kind" = open ] || continue
+    printf '%s\n' "$raw"
+    locked=1
+  done < "$prompt"
+  [ "$locked" = 0 ]
+}
+
+# dedupe_typed PROMPT : the optimization pass. Lines are trimmed, blank runs
+# collapsed, and a repeat dropped only when its earlier twin sits in the same
+# typed section — the seen set resets at every fence. Locked typed sections are
+# copied byte-for-byte and contribute nothing to any seen set, so mandatory
+# locked bytes cannot be trimmed, deduplicated, or suppressed by prose
+# elsewhere in the document.
+dedupe_typed() {
+  local prompt="$1" raw line seen="" previous="" locked=0 kind
+  while IFS= read -r raw || [ -n "$raw" ]; do
+    kind=$(locked_fence "$raw")
+    if [ "$locked" = 1 ]; then
+      printf '%s\n' "$raw"
+      previous="$raw"
+      [ "$kind" = close ] && { locked=0; seen=""; }
+      continue
+    fi
+    if [ "$kind" = open ]; then
+      printf '%s\n' "$raw"
+      previous="$raw"; locked=1; seen=""
+      continue
+    fi
+    line=$(trim_line "$raw")
+    case "$line" in '=== '*) seen="" ;; esac
+    if [ -z "$line" ]; then
+      [ -z "$previous" ] || printf '\n'
+      previous=""
+      continue
+    fi
+    case "|$seen|" in
+      *"|$line|"*) continue ;;
+      *) seen="$seen|$line" ;;
+    esac
+    printf '%s\n' "$line"
+    previous="$line"
+  done < "$prompt"
+  [ "$locked" = 0 ]
+}
+
+# retain OUT SRC : place SRC in OUT's content-addressed store and echo its
+# sha256. The digest is the name, so an existing address already holds exactly
+# these bytes; stored files are made read-only. Nothing is overwritten and
+# nothing is removed — that is what keeps the promoted chain immutable.
+retain() {
+  local out="$1" src="$2" sha dest
+  sha=$(sha256_file "$src") || return 2
+  dest="$out/$RETENTION_DIR/$sha"
+  if [ ! -f "$dest" ]; then
+    cp "$src" "$dest.tmp.$$" || return 2
+    chmod 444 "$dest.tmp.$$" || return 2
+    mv "$dest.tmp.$$" "$dest" || return 2
+  fi
+  printf '%s\n' "$sha"
 }
 
 shared_section() { sed -n '/^=== SHARED CONTRACT ===$/,/^=== END SHARED CONTRACT ===$/p' "$1"; }
@@ -175,14 +279,22 @@ check_prompt_pair() {
   [ "$(bash "$PROMPTOPT" ui-version "$current")" = v2 ] || { die "current UI contract version is not v2"; return 2; }
 }
 
-# optimize PROMPT WORKDIR NAME : run polylane-promptopt compilation as the
-# optimization pass and prove no locked scalar changed (compare must WIN).
+# optimize PROMPT WORKDIR NAME : write the delivered bytes with typed-section
+# deduplication (never whole-document), then prove three things — the delivered
+# prompt still passes promptopt, no locked scalar changed (compare must WIN),
+# and every mandatory locked byte survived byte-for-byte.
 # Echoes "<raw_metrics>|<optimized_metrics>".
 optimize() {
-  local prompt="$1" work="$2" name="$3" opt raw_metrics opt_metrics
+  local prompt="$1" work="$2" name="$3" opt raw_metrics opt_metrics raw_locked opt_locked
   opt="$work/$name.optimized.md"
-  bash "$PROMPTOPT" compile "$prompt" > "$opt" || { die "promptopt compile failed for $name"; return 2; }
+  dedupe_typed "$prompt" > "$opt" || { die "unbalanced typed-section fence in $name"; return 2; }
+  bash "$PROMPTOPT" check "$opt" "$PROMPT_BYTE_BUDGET" >/dev/null || { die "delivered $name fails promptopt check"; return 2; }
   bash "$PROMPTOPT" compare "$prompt" "$opt" >/dev/null || { die "optimization changed a locked scalar in $name"; return 2; }
+  raw_locked=$(locked_bytes "$prompt") || { die "unbalanced typed-section fence in compiled $name"; return 2; }
+  opt_locked=$(locked_bytes "$opt") || { die "unbalanced typed-section fence in delivered $name"; return 2; }
+  [ -n "$raw_locked" ] || { die "compiled $name carries no mandatory locked bytes"; return 2; }
+  [ "$(sha256_text "$raw_locked")" = "$(sha256_text "$opt_locked")" ] ||
+    { die "optimization altered mandatory locked bytes in $name"; return 2; }
   raw_metrics=$(bash "$PROMPTOPT" metrics "$prompt")
   opt_metrics=$(bash "$PROMPTOPT" metrics "$opt")
   printf '%s|%s\n' "$raw_metrics" "$opt_metrics"
@@ -263,9 +375,53 @@ compile() {
   local baseline_opt current_opt
   baseline_opt=$(optimize "$out/baseline.md" "$out" baseline) || return $?
   current_opt=$(optimize "$out/current.md" "$out" current) || return $?
-  rm -f "$out/baseline.optimized.md" "$out/current.optimized.md"
+
+  # The delivered bytes were consumed right here: the optimization pass read
+  # them to prove no locked scalar and no mandatory locked byte moved. Receipt
+  # that consumption so the chain closes on an artifact instead of on a
+  # deleted file.
+  jq -nS --arg run_id "$R_RUN_ID" \
+    --arg b_sha "$(sha256_file "$out/baseline.optimized.md")" \
+    --argjson b_bytes "$(wc -c < "$out/baseline.optimized.md" | tr -d '[:space:]')" \
+    --arg c_sha "$(sha256_file "$out/current.optimized.md")" \
+    --argjson c_bytes "$(wc -c < "$out/current.optimized.md" | tr -d '[:space:]')" '
+    {schema_version: "taste-prompt-consumed/v1", run_id: $run_id,
+     dedupe_scope: "typed-section", locked_bytes: "unaltered",
+     consumed: [
+       {arm: "baseline", delivered: "baseline.optimized.md",
+        delivered_sha256: $b_sha, delivered_bytes: $b_bytes, locked_scalars: "unchanged"},
+       {arm: "current", delivered: "current.optimized.md",
+        delivered_sha256: $c_sha, delivered_bytes: $c_bytes, locked_scalars: "unchanged"}]}
+  ' > "$out/consumed-receipt.json"
+
+  # Immutable, addressable retention of the whole promoted chain.
+  mkdir -p "$out/$RETENTION_DIR"
+  [ -d "$out/$RETENTION_DIR" ] && [ ! -L "$out/$RETENTION_DIR" ] ||
+    { die "retention store unavailable: $out/$RETENTION_DIR"; return 2; }
+  local chain sha
+  chain=$(
+    printf '%s\t%s\t%s\n' source spec.json "$(retain "$out" "$spec")"
+    printf '%s\t%s\t%s\n' source brief "$(retain "$out" "$R_BRIEF_PATH")"
+    printf '%s\t%s\t%s\n' source task-oracle "$(retain "$out" "$R_ORACLE_PATH")"
+    printf '%s\t%s\t%s\n' source reference-packet "$(retain "$out" "$packet_path")"
+    printf '%s\t%s\t%s\n' source baseline-builder.md "$(retain "$out" "$TEMPLATE_DIR/baseline-builder.md")"
+    printf '%s\t%s\t%s\n' source current-builder.md "$(retain "$out" "$TEMPLATE_DIR/current-builder.md")"
+    printf '%s\t%s\t%s\n' compiled baseline.md "$(retain "$out" "$out/baseline.md")"
+    printf '%s\t%s\t%s\n' compiled current.md "$(retain "$out" "$out/current.md")"
+    printf '%s\t%s\t%s\n' delivered baseline.optimized.md "$(retain "$out" "$out/baseline.optimized.md")"
+    printf '%s\t%s\t%s\n' delivered current.optimized.md "$(retain "$out" "$out/current.optimized.md")"
+    printf '%s\t%s\t%s\n' consumed consumed-receipt.json "$(retain "$out" "$out/consumed-receipt.json")"
+  )
+  chain=$(printf '%s\n' "$chain" |
+    jq -R -s 'split("\n") | map(select(length > 0) | split("\t") | {stage: .[0], name: .[1], sha256: .[2]})')
+  jq -e 'length == 11 and all(.[]; .sha256 | type == "string" and test("^[0-9a-f]{64}$"))' <<<"$chain" >/dev/null 2>&1 ||
+    { die "retention chain incomplete"; return 2; }
+  for sha in $(jq -r '.[].sha256' <<<"$chain"); do
+    [ -f "$out/$RETENTION_DIR/$sha" ] || { die "retained artifact not addressable: $sha"; return 2; }
+  done
 
   jq -nS \
+    --argjson retention_chain "$chain" \
     --arg run_id "$R_RUN_ID" --arg brief_id "$R_BRIEF_ID" --arg category "$R_CATEGORY" \
     --arg brief_sha "$R_BRIEF_SHA" --arg oracle_sha "$R_ORACLE_SHA" \
     --arg model "$R_MODEL" --arg effort "$R_EFFORT" --arg out_root "$R_OUT_ROOT" \
@@ -293,7 +449,9 @@ compile() {
        incumbent: $incumbent, metrics: $c_raw, optimized_metrics: $c_opt,
        optimization: "no-scalar-change"},
      fairness: {shared_contract_sha256: $shared, shared_contract_equal: true,
-       identity_policy: "identity lines differ only in arm token and OWN/VERIFY/STATUS paths"}}
+       identity_policy: "identity lines differ only in arm token and OWN/VERIFY/STATUS paths"},
+     retention: {store: "artifacts", addressing: "sha256", immutable: true,
+       chain: $retention_chain}}
   ' > "$out/receipt.json"
 }
 
@@ -329,9 +487,48 @@ verify() {
   [ "$(design_lock_section "$out/current.md" | shasum -a 256 | awk '{print $1}')" = "$(jq -r .current.design_lock_sha256 "$receipt")" ] ||
     { die "design lock section does not match the receipt"; return 2; }
   check_prompt_pair "$out/baseline.md" "$out/current.md" || return $?
-  optimize "$out/baseline.md" "${TMPDIR:-/tmp}" ".taste-prompts-verify-baseline.$$" >/dev/null || return $?
-  optimize "$out/current.md" "${TMPDIR:-/tmp}" ".taste-prompts-verify-current.$$" >/dev/null || return $?
-  rm -f "${TMPDIR:-/tmp}/.taste-prompts-verify-baseline.$$.optimized.md" "${TMPDIR:-/tmp}/.taste-prompts-verify-current.$$.optimized.md"
+
+  # Retention: the promoted chain stays complete, immutable, and addressable.
+  jq -e '
+    .retention.store == "artifacts" and .retention.addressing == "sha256"
+    and .retention.immutable == true
+    and (.retention.chain | type == "array" and length >= 11)
+    and ([.retention.chain[].stage] | unique) == ["compiled","consumed","delivered","source"]
+    and all(.retention.chain[]; (.name | type == "string" and length > 0)
+      and (.sha256 | type == "string" and test("^[0-9a-f]{64}$")))
+  ' "$receipt" >/dev/null 2>&1 || { die "receipt does not address a four-stage retention chain"; return 2; }
+  for f in baseline.optimized.md current.optimized.md consumed-receipt.json; do
+    [ -f "$out/$f" ] && [ ! -L "$out/$f" ] || { die "promotion artifact deleted: $f"; return 2; }
+  done
+  local sha addr
+  for sha in $(jq -r '.retention.chain[].sha256' "$receipt"); do
+    addr="$out/$RETENTION_DIR/$sha"
+    [ -f "$addr" ] && [ ! -L "$addr" ] || { die "retained artifact deleted after promotion: $sha"; return 2; }
+    [ "$(sha256_file "$addr")" = "$sha" ] || { die "retained artifact mutated after promotion: $sha"; return 2; }
+  done
+  for f in baseline.md current.md baseline.optimized.md current.optimized.md consumed-receipt.json; do
+    [ "$(jq -r --arg n "$f" '.retention.chain[] | select(.name == $n) | .sha256' "$receipt")" = "$(sha256_file "$out/$f")" ] ||
+      { die "promoted $f no longer matches its retained address"; return 2; }
+  done
+  jq -e '.schema_version == "taste-prompt-consumed/v1" and (.consumed | length == 2)' \
+    "$out/consumed-receipt.json" >/dev/null 2>&1 || { die "invalid consumed receipt"; return 2; }
+  for f in baseline current; do
+    [ "$(jq -r --arg a "$f" '.consumed[] | select(.arm == $a) | .delivered_sha256' "$out/consumed-receipt.json")" = \
+      "$(sha256_file "$out/$f.optimized.md")" ] ||
+      { die "consumed receipt does not bind the delivered $f bytes"; return 2; }
+  done
+
+  # The delivered bytes must still be exactly what typed-section optimization
+  # produces from the compiled prompt.
+  local scratch drift=""
+  scratch=$(mktemp -d "${TMPDIR:-/tmp}/taste-prompts-verify.XXXXXX") || { die "scratch directory unavailable"; return 2; }
+  optimize "$out/baseline.md" "$scratch" baseline >/dev/null || { rm -rf "$scratch"; return 2; }
+  optimize "$out/current.md" "$scratch" current >/dev/null || { rm -rf "$scratch"; return 2; }
+  for f in baseline current; do
+    [ "$(sha256_file "$scratch/$f.optimized.md")" = "$(sha256_file "$out/$f.optimized.md")" ] || drift="$f"
+  done
+  rm -rf "$scratch"
+  [ -z "$drift" ] || { die "delivered $drift bytes drifted from the compiled prompt"; return 2; }
 }
 
 main() {

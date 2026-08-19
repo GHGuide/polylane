@@ -5,6 +5,7 @@ set -euo pipefail
 
 usage() {
   echo "usage: polylane-taste-ballot.sh validate GROUP POINTWISE_DIR CALIBRATION OUT" >&2
+  echo "       polylane-taste-ballot.sh tally RECEIPT_DIR DENOMINATOR OUT" >&2
 }
 
 die() { echo "TASTE-BALLOT: $*" >&2; return 1; }
@@ -72,14 +73,26 @@ validate_group_shape() {
   ' "$group" >/dev/null
 }
 
+# The comparator outcome vocabulary is closed: a group either resolves to one
+# named candidate (a win) or it is a tie or an abstention.  Ties and abstentions
+# are validated non-wins, retained as evidence so they stay inside the fixed
+# denominator instead of being rejected and silently dropped from it.
+comparator_outcome_of() { # group -> win | tie | abstention
+  jq -r -e '
+    if (.outcome | type == "string" and test("^resolved-stim-[a-f0-9]{12}$")) then "win"
+    elif .outcome == "tie" then "tie"
+    elif .outcome == "abstention" then "abstention"
+    else empty end' "$1"
+}
+
 validate_exposures() {
-  local group="$1" pointwise_dir="$2" calibration="$3" earliest_pointwise winner outcome
+  local group="$1" pointwise_dir="$2" calibration="$3" outcome="$4" earliest_pointwise winner
   earliest_pointwise=$(jq -r '.pointwise_ballot_ids[]' "$group" | while IFS= read -r id; do jq -r .sealed_at "$pointwise_dir/$id.json"; done | sort | tail -1) || return 1
-  winner=$(jq -r '.exposures[0].canonical_choice' "$group") || return 1
-  outcome="resolved-$winner"
+  winner=""
+  [ "$outcome" != win ] || winner=$(jq -r '.outcome | ltrimstr("resolved-")' "$group") || return 1
   jq -e --arg earliest "$earliest_pointwise" --arg winner "$winner" --arg outcome "$outcome" '
-    .outcome == $outcome
-    and all(.exposures[];
+    . as $g |
+    all(.exposures[];
       (keys | sort) == ["abstain_reason","ballot_id","canonical_choice","choice","display_order","identity_visible","injection_detected","judge_discussion","judge_id","prior_ballots_visible","response_sha256","schema_version","sealed_at"]
       and .schema_version == "taste-pairwise/v1"
       and (.ballot_id | type == "string" and test("^pair-[a-z0-9-]{1,}$"))
@@ -90,9 +103,17 @@ validate_exposures() {
       and (.sealed_at | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$") and . > $earliest)
       and (.identity_visible == false and .prior_ballots_visible == false and .injection_detected == false and .judge_discussion == false)
       and (if .choice == "abstain" then (.abstain_reason | type == "string" and length > 0) else .abstain_reason == null end)
+      and (.canonical_choice | IN($g.candidate_ids[]))
     )
-    and ([.exposures[].canonical_choice] | unique | length == 1 and .[0] == $winner)
-    and ([.exposures[].choice] | all(.[]; . != "abstain"))
+    and (if $outcome == "win" then
+           ([.exposures[].choice] | all(.[]; . != "abstain"))
+           and ([.exposures[].canonical_choice] | unique | length == 1 and .[0] == $winner)
+         elif $outcome == "tie" then
+           ([.exposures[].choice] | all(.[]; . != "abstain"))
+           and ([.exposures[].canonical_choice] | unique | length == 2)
+         else
+           any(.exposures[]; .choice == "abstain")
+         end)
   ' "$group" >/dev/null || return 1
   jq -e --argjson judges "$(jq '[.exposures[].judge_id]' "$group")" '
     (keys | sort) == ["judge_eligibility","schema_version"]
@@ -107,7 +128,7 @@ validate_exposures() {
 
 validate() {
   local group="$1" pointwise_dir="$2" calibration="$3" out="$4" id hash file candidates brief tmp \
-        validator_fp capture_sha first_pw
+        validator_fp capture_sha first_pw outcome
   regular_json_without_duplicate_keys "$group" || die "invalid group JSON"
   regular_json_without_duplicate_keys "$calibration" || die "invalid calibration JSON"
   [ -d "$pointwise_dir" ] && [ ! -L "$pointwise_dir" ] || die "invalid pointwise directory"
@@ -118,7 +139,8 @@ validate() {
     file="$pointwise_dir/$id.json"
     validate_pointwise "$file" "$id" "$hash" "$brief" "$candidates" || die "invalid pointwise ballot: $id"
   done < <(jq -r '.pointwise_ballot_ids[] as $id | [$id,.pointwise_sha256[$id]] | @tsv' "$group")
-  validate_exposures "$group" "$pointwise_dir" "$calibration" || die "invalid mirrored exposures or calibration"
+  outcome=$(comparator_outcome_of "$group") || die "unrecognised comparator outcome"
+  validate_exposures "$group" "$pointwise_dir" "$calibration" "$outcome" || die "invalid mirrored exposures or calibration"
   # The receipt content-addresses every input: raw group, escrow, capture
   # manifest, each pointwise record, and the calibration file.  classification
   # is validator-derived "fixture": judge eligibility here is a self-declared
@@ -134,6 +156,7 @@ validate() {
     --arg calibration_sha256 "$(sha256_file "$calibration")" \
     --arg capture_manifest_sha256 "$capture_sha" \
     --arg validator_fp "$validator_fp" \
+    --arg outcome "$outcome" \
     --slurpfile group "$group" '
     ($group[0]) as $g | {
       schema_version:"taste-ballot-validation/v1",
@@ -144,7 +167,10 @@ validate() {
       human_certified:false,
       mirror_group_id:$g.mirror_group_id,
       brief_sha256:$g.brief_sha256,
-      winner:($g.exposures[0].canonical_choice),
+      comparator_outcome:$outcome,
+      repeated_measure_unit:"brief",
+      unit_id:$g.brief_sha256,
+      winner:(if $outcome == "win" then ($g.outcome | ltrimstr("resolved-")) else null end),
       group_sha256:$group_sha256,
       input_sha256:$group_sha256,
       inputs:{
@@ -160,10 +186,100 @@ validate() {
     }' > "$tmp" && mv "$tmp" "$out"
 }
 
+# One receipt -> one classification record {class, unit, winner}.  Anything that
+# is not a validated win receipt classifies as invalid_evidence; it is never
+# discarded, because a discarded record is a unit that leaves the denominator.
+receipt_record() {
+  local file="$1"
+  if ! regular_json_without_duplicate_keys "$file"; then
+    jq -nc --arg unit "file:$file" '{class:"invalid_evidence",unit:$unit,winner:null}'
+    return 0
+  fi
+  jq -c --arg fallback "file:$file" '
+    def sha: type == "string" and test("^[a-f0-9]{64}$");
+    if type != "object" then {class:"invalid_evidence",unit:$fallback,winner:null}
+    else
+      (if (.brief_sha256 | sha) then .brief_sha256 else $fallback end) as $unit
+      | if (.schema_version == "taste-ballot-validation/v1"
+            and .status == "eligible"
+            and (.brief_sha256 | sha)
+            and .unit_id == .brief_sha256
+            and .repeated_measure_unit == "brief"
+            and (.comparator_outcome | IN("win","tie","abstention"))
+            and (if .comparator_outcome == "win"
+                 then (.winner | type == "string" and test("^stim-[a-f0-9]{12}$"))
+                 else .winner == null end))
+          then {class:.comparator_outcome, unit:$unit, winner:.winner}
+          else {class:"invalid_evidence", unit:$unit, winner:null}
+        end
+    end' "$file"
+}
+
+# The repeated measure unit is the brief (CONTRACT-LOCK.v3 statistics), so the
+# replicates of one brief collapse to one unit and the worst class wins: a
+# single non-win replicate makes the brief a non-win.  The denominator is fixed
+# by the caller and never shrinks — unmeasured units count as missing evidence.
+tally() {
+  local dir="$1" denominator="$2" out="$3" file records tmp validator_fp rc=0
+  case "$denominator" in ''|*[!0-9]*) die "denominator must be a positive integer" ;; esac
+  [ "$denominator" -gt 0 ] || die "denominator must be a positive integer"
+  [ -d "$dir" ] && [ ! -L "$dir" ] || die "invalid receipt directory"
+  validator_fp=$(sha256_file "${BASH_SOURCE[0]}") || die "no SHA-256 command available"
+  records=$(mktemp "${TMPDIR:-/tmp}/polylane-tally.XXXXXX") || return 1
+  for file in "$dir"/*.json; do
+    [ -e "$file" ] || continue
+    receipt_record "$file" >> "$records"
+  done
+  mkdir -p "$(dirname "$out")"
+  tmp=$(mktemp "${out}.tmp.XXXXXX") || { rm -f "$records"; return 1; }
+  jq -s --argjson denominator "$denominator" --arg validator_fp "$validator_fp" '
+    (group_by(.unit)
+     | map({unit:.[0].unit, classes:(map(.class) | unique), winners:(map(.winner) | unique)})
+     | map(. + {class:
+         (if (.classes | index("invalid_evidence")) then "invalid_evidence"
+          elif (.classes | index("abstention")) then "abstention"
+          elif (.classes | index("tie")) then "tie"
+          elif ((.winners | length) != 1) then "invalid_evidence"
+          else "win" end)})) as $units
+    | ($units | length) as $observed
+    | ($denominator - $observed) as $missing
+    | if $missing < 0 then
+        error("observed units (\($observed)) exceed the fixed denominator (\($denominator))")
+      else . end
+    | {
+        schema_version:"taste-comparator-tally/v1",
+        receipt_version:"polylane.taste.comparator-tally.v1",
+        classification:"fixture",
+        fixture_only:true,
+        human_certified:false,
+        repeated_measure_unit:"brief",
+        denominator:$denominator,
+        denominator_shrinkage_allowed:false,
+        units_observed:$observed,
+        wins:($units | map(select(.class == "win")) | length),
+        non_wins:{
+          tie:($units | map(select(.class == "tie")) | length),
+          abstention:($units | map(select(.class == "abstention")) | length),
+          missing_evidence:$missing,
+          invalid_evidence:($units | map(select(.class == "invalid_evidence")) | length)
+        },
+        validator:{id:"polylane-taste-ballot",fingerprint:$validator_fp}
+      }
+    | if (.wins + (.non_wins | to_entries | map(.value) | add)) != $denominator then
+        error("tally partition does not exhaust the fixed denominator")
+      else . end' "$records" > "$tmp" || rc=$?
+  rm -f "$records"
+  [ "$rc" = 0 ] || { rm -f "$tmp"; return "$rc"; }
+  mv "$tmp" "$out"
+}
+
 main() {
-  [ "${1:-}" = validate ] && [ $# -eq 5 ] || { usage; return 2; }
   command -v jq >/dev/null 2>&1 || die "jq is required"
-  validate "$2" "$3" "$4" "$5"
+  case "${1:-}" in
+    validate) [ $# -eq 5 ] || { usage; return 2; }; validate "$2" "$3" "$4" "$5" ;;
+    tally)    [ $# -eq 4 ] || { usage; return 2; }; tally "$2" "$3" "$4" ;;
+    *) usage; return 2 ;;
+  esac
 }
 
 if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then main "$@"; fi
