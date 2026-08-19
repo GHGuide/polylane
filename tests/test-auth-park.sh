@@ -118,6 +118,24 @@ NOISE_TXT=' … prompt tail mentions api_key and token handling …
  ❯ 1. Yes'
 assert_ok "screen-noise-does-not-block-read" approval_is_safe_read "$NOISE_TXT"
 
+# a wrapped path (the CLI breaks long paths across pane lines) is still a read
+WRAP_TXT=' Read file
+  Read(/Users/x/.codex/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/test-driven-development/SKILL
+  .md)
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. Yes, allow reading from test-driven-development/ during this session
+   3. No'
+assert_ok "wrapped-kit-read-is-safe" approval_is_safe_read "$WRAP_TXT"
+
+# …and a wrapped SECRET path must still be refused after un-wrapping
+WRAP_SECRET=' Read file
+  Read(/Users/x/.ssh/id_r
+  sa)
+ Do you want to proceed?
+ ❯ 1. Yes'
+assert_fail "wrapped-secret-read-not-safe" approval_is_safe_read "$WRAP_SECRET"
+
 # --- an answered dialog unparks the lane in health_check -----------------------
 NEEDS_DECISION_LANES="a"
 pane_awaiting_approval() { return 1; }   # dialog gone

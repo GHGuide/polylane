@@ -3208,10 +3208,17 @@ startup_check() {
 # and parked for an hour (live 2026-08-18). Secrets are judged on the Read(...)
 # target line only — surrounding prompt text must not decide.
 approval_is_safe_read() {
-  local txt="$1" target
+  local txt="$1" target flat
   printf '%s' "$txt" | grep -qE 'Read file|Read\(' || return 1
-  target=$(printf '%s' "$txt" | grep -oE 'Read\([^)]*\)' | tail -1)
+  # The CLI hard-wraps a long path across pane lines, so a line-based match
+  # misses `Read(` … `)` entirely and the dialog falls through to the
+  # whole-screen critical scan (live 2026-08-19: a lane's own kit path wrapped
+  # and the lane parked). Flatten first, then match.
+  flat=$(printf '%s' "$txt" | tr '\n' ' ' | tr -s ' ')
+  target=$(printf '%s' "$flat" | grep -oE 'Read\([^)]*\)' | tail -1)
   [ -n "$target" ] || return 1
+  # Un-wrap: the CLI breaks a path anywhere, so remove the spaces it injected.
+  target=$(printf '%s' "$target" | tr -d ' ')
   printf '%s' "$target" | grep -qiE '\.ssh|\.env|\.aws|credential|keychain|secret|password|api[_-]?key|token|\.pem|id_rsa' && return 1
   return 0
 }
