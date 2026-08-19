@@ -1271,6 +1271,26 @@ graph_authority_require() {
   fi
 }
 
+# graph_authority_node_state NODE : NODE's state in this run's verified ledger
+# replay ("pending" when absent), empty when the authority is off or unreadable.
+graph_authority_node_state() {
+  local node="$1" replay
+  graph_authority_enabled || return 1
+  replay=$("$SCRIPT_DIR/polylane-events.sh" replay "$EVENTS_FILE" "$RUN_ID" "$GRAPH_ID" 2>/dev/null) || return 1
+  printf '%s\n' "$replay" | jq -r --arg node "$node" '.nodes[$node].state // "pending"' 2>/dev/null
+}
+
+# verifier_gate_admits : 0 iff the verifier gate may proceed now. Normally that
+# means the graph says the node is ready. It ALSO means a verifier that already
+# succeeded in THIS run: a promotion interrupted after a passing gate (c43e was
+# refused for an unrelated dirty base, 2026-08-19) must resume into promotion
+# instead of halting forever, since `ready` correctly never re-offers a
+# succeeded node. Every other state still fails closed.
+verifier_gate_admits() {
+  [ "$(graph_authority_node_state verifier 2>/dev/null || true)" = succeeded ] && return 0
+  graph_authority_require verifier "run verifier gate"
+}
+
 graph_authority_start() {
   graph_authority_enabled || return 0
   graph_authority_record_ready_node start succeeded 0 graph-start
@@ -4902,10 +4922,29 @@ runner_owned_promotion_path() {
     docs/polylane/skill-outcomes.jsonl)
       return 0
       ;;
+    # Only the runner and polylane-memory.sh ever write host-gate evidence, and
+    # a refused promotion leaves it behind for the NEXT run to trip over: c43e's
+    # verified promotion was blocked by c43/c43c/c43d records still untracked in
+    # the base (2026-08-19). Shape-match the runner's own filenames for any run
+    # id so prior-run evidence promotes with the cycle that inherits it.
+    docs/polylane/host-gate-failures/*.md|\
+    docs/polylane/host-gate-failures/*.acceptance.jsonl)
+      case "${path#docs/polylane/host-gate-failures/}" in
+        */*) return 1 ;;          # no nested paths, no traversal
+        *)   return 0 ;;
+      esac
+      ;;
     docs/polylane/skill-use/*)
       for lane in "${LANE_NAMES[@]}"; do
         [ "$path" = "docs/polylane/skill-use/${RUN_ID:-legacy}/${lane}.json" ] && return 0
       done
+      # A prior run's receipts are equally runner-owned and equally capable of
+      # blocking this run's promotion. Accept only the exact
+      # <run-id>/<lane>.json shape — never a nested path or a non-JSON file.
+      case "${path#docs/polylane/skill-use/}" in
+        */*/*|*/) return 1 ;;
+        */*.json) return 0 ;;
+      esac
       return 1
       ;;
     *) return 1 ;;
@@ -5744,7 +5783,7 @@ main() {
   echo "== gate: integrator verdict =="
   capture_stats                        # panes still alive — grab per-lane tokens/time
   graph_authority_reconcile_verifier_repair || { report_completed_terminal HALTED || true; exit 1; }
-  graph_authority_require verifier "run verifier gate" || { report_completed_terminal HALTED || true; exit 1; }
+  verifier_gate_admits || { report_completed_terminal HALTED || true; exit 1; }
   if gate_with_repairs; then
     if graph_authority_enabled; then
       graph_authority_record_ready_node verifier succeeded 0 "${VERDICT_RESULT:-GO}" || { report_completed_terminal HALTED || true; exit 1; }
