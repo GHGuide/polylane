@@ -1586,7 +1586,7 @@
           "id": "m32.6",
           "text": "Freeze executable v3 execution, provenance, source-calibration, statistics, and lifecycle contracts",
           "weight": 160,
-          "status": "doing",
+          "status": "done",
           "cycle": 42,
           "evidence": "Cycle 42A contract/lifecycle freeze planned"
         },
@@ -1980,6 +1980,12 @@
       "cycle": 42,
       "kind": "decision",
       "text": "2026-08-18 host: m32.5 closed — both provider packages installed from main (claude-code/install.sh, codex/install.sh) and the frozen terminal acceptance (full suite 4040/0, shellcheck, installers, fresh-install, parity, codex-taste-install, doctor --rehearse GO+NO-GO) passed via check-accept",
+      "meta": ""
+    },
+    {
+      "cycle": 43,
+      "kind": "decision",
+      "text": "2026-08-19: m32.6 closed — c42a v3 contract freeze landed on main (ab6d866) after four independent integrator certifications; frozen focused acceptance re-run fresh on the merged tree by check-accept and passed. Host completed the promotion c43e's gate had already cleared (it was blocked only by uncommitted run evidence, then by the --resume graph-authority defect recorded in cycle-43-findings.md).",
       "meta": ""
     }
   ],
