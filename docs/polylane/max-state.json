@@ -3495,6 +3495,83 @@
       "deps": [],
       "fp": "autonomous:",
       "regressed_cycle": null
+    },
+    {
+      "sid": "m32.8",
+      "cmd": "bash tests/test-hcm-v2-split.sh",
+      "tier": "focused",
+      "evidence_kind": "autonomous",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.8",
+      "cmd": "bash tests/test-hcm-v2-exposure.sh",
+      "tier": "focused",
+      "evidence_kind": "autonomous",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.8",
+      "cmd": "bash tests/test-hcm-v2-privacy.sh",
+      "tier": "focused",
+      "evidence_kind": "autonomous",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.8",
+      "cmd": "bash tests/test-hcm-v2-analysis.sh",
+      "tier": "focused",
+      "evidence_kind": "autonomous",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.8",
+      "cmd": "bash tests/test-hcm-v2-qualification.sh",
+      "tier": "focused",
+      "evidence_kind": "autonomous",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.8",
+      "cmd": "bash tests/test-hcm-v2-claim-safety.sh",
+      "tier": "focused",
+      "evidence_kind": "autonomous",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
+    },
+    {
+      "sid": "m32.8",
+      "cmd": "POLYLANE_MIN_DISK_GB=0 bash tests/run.sh && shellcheck -S warning bin/*.sh && bash tests/test-skill-parity.sh && bin/polylane-markers.sh check-docs references/ && git diff --check",
+      "tier": "terminal",
+      "evidence_kind": "autonomous",
+      "key": "",
+      "status": "unchecked",
+      "deps": [],
+      "fp": "",
+      "regressed_cycle": null
     }
   ]
 }

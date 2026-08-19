@@ -295,3 +295,4 @@ remains external.
 - [cycle-43-digest.md](cycle-43-digest.md) — the v3 contract freeze landed after five attempts; seven harness defects found and fixed
 - [cycle-44-plan.md](cycle-44-plan.md) — implement the five frozen v3 defect controls (m32.7), three disjoint lanes
 - [cycle-44-digest.md](cycle-44-digest.md) — five frozen v3 defect controls implemented, promoted, and certified; m32.7 closed
+- [cycle-45-plan.md](cycle-45-plan.md) — HCM-v2 pipeline, offline-provable half of m32.8 (the study itself stays external)
