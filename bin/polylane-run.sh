@@ -3648,10 +3648,35 @@ lane_durable_activity_hash() {
   } | cksum | cut -d' ' -f1
 }
 
+# pane_tool_child_running IDX : 0 iff the pane's live agent process has its own
+# child subprocess (a running tool: bash, tests, git). Claude Code stops
+# repainting during a long tool call, so pane-hash AND pipe-pane log both
+# freeze while an hour-long suite runs — the live-wedge cap then kills honest
+# work (live 2026-08-19: c43c integrator respawned mid-suite, breaking the
+# zero-restart canary). Codex lanes get this signal from JSONL; process
+# ancestry is the agent-agnostic equivalent.
+pane_tool_child_running() {
+  local idx="$1" pane_pid pid comm child IFS=$' \t\n'
+  [ "$idx" -ge 0 ] 2>/dev/null || return 1
+  pane_pid=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_pid}' 2>/dev/null || true)
+  [ -n "$pane_pid" ] || return 1
+  for pid in $(pgrep -P "$pane_pid" 2>/dev/null) ; do
+    comm=$(ps -p "$pid" -o comm= 2>/dev/null || true)
+    case "$comm" in
+      *claude*|*codex*|*aider*)
+        child=$(pgrep -P "$pid" 2>/dev/null | head -1)
+        [ -n "$child" ] && return 0
+        ;;
+    esac
+  done
+  return 1
+}
+
 pane_wedged() {
   local name="$1" idx="$2" h prev cnt limit
   if pane_agent_live "$idx"; then
     lane_active_command "$name" && return 1
+    pane_tool_child_running "$idx" && { wedge_cnt_set "$name" 0; return 1; }
     if lane_terminal_or_idle "$name" "$idx"; then
       h=$(lane_durable_activity_hash "$name")
     else

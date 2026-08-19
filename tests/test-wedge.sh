@@ -31,6 +31,8 @@ FAILED_LANES=""; STALLED_LANES=""; NEEDS_DECISION_LANES=""
 mkdir -p "$TEST_TMPDIR/wt/docs"
 FAKE_AGENT_LIVE=0
 pane_agent_live() { [ "$FAKE_AGENT_LIVE" = "1" ]; }
+FAKE_TOOL_CHILD=0
+pane_tool_child_running() { [ "$FAKE_TOOL_CHILD" = "1" ]; }
 
 # A completed shell command or agent progress message is not a completed turn.
 # Codex emits agent_message items between later tools and silent reasoning.
@@ -224,5 +226,22 @@ FAKE_PANE_TXT='frozen'; pane_wedged a 0; pane_wedged a 0; :
 wedge_hash_set a ""; wedge_cnt_set a 0                 # what respawn_lane does
 pane_wedged a 0; rcR=$?
 assert_eq "respawn-fresh-window" "1" "$rcR"            # needs 4 fresh checks again
+
+# --- a live agent running a tool subprocess is NEVER wedged -------------------
+# Claude Code freezes pane paint during a long tool call (an hour-long suite),
+# so hash-based detection sees a dead screen; the process tree is the truth.
+LANE_WHASH=(); LANE_WCNT=()
+FAKE_AGENT_LIVE=1
+FAKE_TOOL_CHILD=1
+lane_active_command() { return 1; }
+lane_terminal_or_idle() { return 1; }
+FAKE_PANE_TXT='frozen for an hour during tests/run.sh'
+pane_wedged a 0; :
+wedge_cnt_set a 99
+pane_wedged a 0; rcTool=$?
+assert_eq "tool-child-never-wedges" "1" "$rcTool"
+assert_eq "tool-child-resets-counter" "0" "$(wedge_cnt_get a)"
+FAKE_TOOL_CHILD=0
+FAKE_AGENT_LIVE=0
 
 finish
