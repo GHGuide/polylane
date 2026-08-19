@@ -1,3 +1,6 @@
-STATUS: integrator DONE run=c43c-recovery-20260819-a1
+STATUS: integrator DONE run=c43d-recovery-20260819-a1
 
-Merged c9ee548 (precheck) + f16e196 (candidate) with zero conflicts into 72be7a4; all hashes re-derived and matching; frozen m32.6 focused acceptance rc=0 (suite 4073 passed, 0 failed, 173 files). Evidence: docs/verify-integration.md.
+Evidence: docs/verify-integration.md (this run, candidate merge 27e2615).
+Merges: a575321 (lane/c43d-precheck) + 27e2615 (lane/c43c-integrator, 3 conflicts resolved).
+Frozen m32.6 acceptance rc=0: suite 4075 passed / 0 failed / 173 files; all per-link checks green.
+All imported-contract and ported-file SHA-256s re-derived and matched; main's post-handoff fixes all present.

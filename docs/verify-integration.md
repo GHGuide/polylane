@@ -242,3 +242,5 @@ result inside the completed acceptance log are the cited proof. (3) The
 "read full output, count failures" step drove the `not ok`/`FAIL` scans of
 the 5336-line log and the exact attribution of the 4073→4075 delta to
 `7e4e35e`'s two added assertions before any success claim was written.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c43d-recovery-20260819-a1
