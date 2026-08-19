@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c43e-recovery-20260819-a1",
   "started_at": 1787137320,
-  "updated_at": 1787141703,
-  "wall_s": 4383,
+  "updated_at": 1787141752,
+  "wall_s": 4432,
   "lanes": {
     "precheck": {
       "launches": 1,
@@ -14,7 +14,7 @@
       "restarts": 0
     }
   },
-  "supervisor_restarts": 6,
+  "supervisor_restarts": 10,
   "terminal_gates": 0,
   "tokens": null,
   "token_state": "unknown",
@@ -181,6 +181,98 @@
     {
       "type": "initialized",
       "at": 1787141703
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141711,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141711,
+      "added": null
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787141713
+    },
+    {
+      "type": "initialized",
+      "at": 1787141713
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141721,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141721,
+      "added": null
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787141723
+    },
+    {
+      "type": "initialized",
+      "at": 1787141724
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141732,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141732,
+      "added": null
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787141733
+    },
+    {
+      "type": "initialized",
+      "at": 1787141734
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141741,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141741,
+      "added": null
+    },
+    {
+      "type": "supervisor_restart",
+      "at": 1787141744
+    },
+    {
+      "type": "initialized",
+      "at": 1787141744
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141751,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787141752,
+      "added": null
     }
   ]
 }
