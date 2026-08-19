@@ -3,6 +3,8 @@ set -euo pipefail
 
 usage() {
   printf 'usage: %s validate|fingerprint MANIFEST.json\n' "${0##*/}" >&2
+  printf '       %s run-mode-vocabulary\n' "${0##*/}" >&2
+  printf '       %s run-mode-transition FROM TO\n' "${0##*/}" >&2
   exit 64
 }
 
@@ -29,6 +31,38 @@ sha256_stdin() {
   else
     reject SHA256_UNAVAILABLE
   fi
+}
+
+# c42b-run-mode-vocabulary-mismatch: one vocabulary means one source. The frozen
+# CONTRACT-LOCK.v3.json lifecycle block is that source, so the run-mode states
+# and transitions are read from it here and never restated in this file — a
+# second copy is exactly how the producer, validator, storage, and lifecycle
+# boundaries drifted apart.
+contract_lock() {
+  lock_dir=$(CDPATH="" cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+  printf '%s/docs/polylane/taste-certification/contracts/CONTRACT-LOCK.v3.json' "$lock_dir"
+}
+
+run_mode_vocabulary() {
+  command -v jq >/dev/null 2>&1 || reject JQ_UNAVAILABLE
+  lock=$(contract_lock)
+  [ -f "$lock" ] && [ ! -L "$lock" ] || reject CONTRACT_LOCK_UNAVAILABLE
+  states=$(jq -r '.lifecycle.authoritative_sequence[]?' "$lock" 2>/dev/null) || reject CONTRACT_LOCK_UNREADABLE
+  [ -n "$states" ] || reject CONTRACT_LOCK_UNREADABLE
+  printf '%s\n' "$states"
+}
+
+run_mode_transition() {
+  from=$1
+  to=$2
+  vocabulary=$(run_mode_vocabulary)
+  for state in "$from" "$to"; do
+    grep -Fqx -- "$state" <<<"$vocabulary" || reject RUN_MODE_VOCABULARY
+  done
+  lock=$(contract_lock)
+  transitions=$(jq -r '.lifecycle.allowed_transitions[]?' "$lock" 2>/dev/null) || reject CONTRACT_LOCK_UNREADABLE
+  grep -Fqx -- "$from->$to" <<<"$transitions" || reject RUN_MODE_TRANSITION
+  printf 'RUN-MODE-OK %s->%s\n' "$from" "$to"
 }
 
 check_jq() {
@@ -200,6 +234,18 @@ validate() {
   check_jq FORGED_RECEIPT '
     all(.prompts[]; .stdin_adapter.exit_status == 0)
     and all(.requests[]; .provider_receipt.receipt_sha256 != .provider_receipt.signature_sha256)
+  ' "$file"
+
+  # c42b-missing-consumed-stdin-proof: matching digests are only proof if the
+  # receipt binding them is an independent, single-use attestation. A receipt
+  # shared by two deliveries attests neither, and a receipt that merely restates
+  # the bytes, the request receipt, or the adapter binary attests nothing.
+  check_jq CONSUMED_STDIN_PROOF '
+    ([.prompts[].stdin_adapter.invocation_id] | length == (unique | length))
+    and ([.prompts[].stdin_adapter.receipt_sha256] | length == (unique | length))
+    and all(.prompts[]; .stdin_adapter as $adapter
+      | ([$adapter.delivered_sha256,$adapter.stdin_sha256,$adapter.request_receipt_sha256,$adapter.adapter_binary_sha256]
+         | index($adapter.receipt_sha256)) == null)
   ' "$file"
 
   check_jq REQUEST_PROMPT_MISMATCH '
@@ -374,14 +420,26 @@ validate() {
 }
 
 main() {
-  [ "$#" -eq 2 ] || usage
+  [ "$#" -ge 1 ] || usage
   command_name=$1
-  manifest=$2
+  shift
   case $command_name in
-    validate) validate "$manifest" ;;
+    validate)
+      [ "$#" -eq 1 ] || usage
+      validate "$1"
+      ;;
     fingerprint)
-      validate "$manifest" >/dev/null
-      sha256_file "$manifest"
+      [ "$#" -eq 1 ] || usage
+      validate "$1" >/dev/null
+      sha256_file "$1"
+      ;;
+    run-mode-vocabulary)
+      [ "$#" -eq 0 ] || usage
+      run_mode_vocabulary
+      ;;
+    run-mode-transition)
+      [ "$#" -eq 2 ] || usage
+      run_mode_transition "$1" "$2"
       ;;
     *) usage ;;
   esac
