@@ -30,7 +30,7 @@ open for the next cycle.
    autonomous *repair round* counts as a restart. Zero-restart evidence belongs
    to criterion c56 (fresh process-start proof), not to every target's
    promotion. Consider distinguishing recovery restarts from repair rounds in
-   the eligibility计算, or scoping the canary to runs that target c56.
+   the eligibility calculation, or scoping the canary to runs that target c56.
 
 3. **Uncommitted run evidence blocks promotion.** `promote` correctly refuses
    to stage unrelated changes, but the runner itself writes host-gate failure
