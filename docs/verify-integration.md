@@ -262,3 +262,5 @@ the two named new assertions before claiming the suite clean, and every
 hashes, both frozen c42a hashes, ancestry for five refs, and the
 post-handoff-fix greps were re-derived fresh this round instead of citing
 attempt-1.
+
+POLYLANE-VERDICT: READY-FOR-HOST-GATE run=c43d-recovery-20260819-a1
