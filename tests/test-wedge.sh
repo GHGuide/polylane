@@ -31,8 +31,8 @@ FAILED_LANES=""; STALLED_LANES=""; NEEDS_DECISION_LANES=""
 mkdir -p "$TEST_TMPDIR/wt/docs"
 FAKE_AGENT_LIVE=0
 pane_agent_live() { [ "$FAKE_AGENT_LIVE" = "1" ]; }
-FAKE_TOOL_CHILD=0
-pane_tool_child_running() { [ "$FAKE_TOOL_CHILD" = "1" ]; }
+FAKE_CPU=0
+pane_tree_cpu_seconds() { printf '%s' "$FAKE_CPU"; }
 
 # A completed shell command or agent progress message is not a completed turn.
 # Codex emits agent_message items between later tools and silent reasoning.
@@ -227,21 +227,30 @@ wedge_hash_set a ""; wedge_cnt_set a 0                 # what respawn_lane does
 pane_wedged a 0; rcR=$?
 assert_eq "respawn-fresh-window" "1" "$rcR"            # needs 4 fresh checks again
 
-# --- a live agent running a tool subprocess is NEVER wedged -------------------
+# --- CPU burn proves work; mere child processes do not -----------------------
 # Claude Code freezes pane paint during a long tool call (an hour-long suite),
-# so hash-based detection sees a dead screen; the process tree is the truth.
-LANE_WHASH=(); LANE_WCNT=()
+# so hash detection sees a dead screen. CPU burn is the agent-agnostic proof.
+# Child PRESENCE is not: persistent MCP servers (npm exec …-mcp, uvx) live for
+# the whole session and would make every lane permanently un-wedgeable.
+LANE_WHASH=(); LANE_WCNT=(); LANE_PCPU=()
 FAKE_AGENT_LIVE=1
-FAKE_TOOL_CHILD=1
 lane_active_command() { return 1; }
 lane_terminal_or_idle() { return 1; }
 FAKE_PANE_TXT='frozen for an hour during tests/run.sh'
-pane_wedged a 0; :
+FAKE_CPU=100; pane_wedged a 0; :          # first sight seeds the baseline
+FAKE_CPU=140                              # +40s CPU: a suite is running
 wedge_cnt_set a 99
-pane_wedged a 0; rcTool=$?
-assert_eq "tool-child-never-wedges" "1" "$rcTool"
-assert_eq "tool-child-resets-counter" "0" "$(wedge_cnt_get a)"
-FAKE_TOOL_CHILD=0
+pane_wedged a 0; rcBusy=$?
+assert_eq "cpu-burn-never-wedges"    "1" "$rcBusy"
+assert_eq "cpu-burn-resets-counter"  "0" "$(wedge_cnt_get a)"
+
+# an idle agent with live MCP servers burns ~nothing and MUST still wedge
+LANE_WHASH=(); LANE_WCNT=(); LANE_PCPU=()
+FAKE_CPU=200; pane_wedged a 0; :
+FAKE_CPU=200                              # idle: no CPU advance
+wedge_cnt_set a 500                       # far past any live-turn grace
+pane_wedged a 0; rcIdle=$?
+assert_eq "idle-with-mcp-children-still-wedges" "0" "$rcIdle"
 FAKE_AGENT_LIVE=0
 
 finish

@@ -877,6 +877,7 @@ load_manifest() {
 
   LANE_NAMES=(); LANE_MODELS=(); LANE_EFFORTS=(); LANE_ROLES=(); LANE_BRANCHES=(); LANE_WORKTREES=(); LANE_PROMPTS=(); LANE_POLLSPEC=()
   LANE_PANE_IDX=(); LANE_RESUMED=(); LANE_ADOPTED=(); LANE_WHASH=(); LANE_WCNT=()
+  LANE_PCPU=()
   LANE_PHASH=(); LANE_PCNT=(); LANE_PCOMMANDS=(); LANE_PREPLANS=()
   INT_PANE_IDX=-1; NEXT_PANE_IDX=0; SESSION_STARTED=0
   WRITE_PLAN_CONTRACT=$(jq -r 'if .write_plan_contract == 1 then 1 else 0 end' "$MANIFEST")
@@ -2532,7 +2533,7 @@ lane_done() {
 # and refuses to act outside contract-v2/current-run. It never respawns and
 # never touches an unmapped pane.
 quiesce_done_pane() {
-  local wt="$1" name="$2" idx base state_dir marker
+  local wt="$1" name="$2" idx base state_dir marker sent
   [ "${DRY_RUN:-0}" = "1" ] && return 1
   [ "${ORCHESTRATION_CONTRACT:-0}" -ge 2 ] 2>/dev/null || return 1
   [ -n "${RUN_ID:-}" ] || return 1
@@ -2553,9 +2554,17 @@ quiesce_done_pane() {
   case "$base" in "$wt"/*) return 1 ;; esac
   state_dir="$base/.polylane/quiesce"
   marker="$state_dir/quiesce-$RUN_ID-$name"
-  [ -e "$marker" ] && return 1
+  # A single /exit is not enough: a keystroke sent while the CLI is mid-render or
+  # mid-turn is swallowed, and the never-re-send rule then hung a fully finished
+  # run for nine hours (live 2026-08-19, c43d integrator). Re-send on a bounded
+  # budget instead — every send needs the same proven-clean-and-committed state,
+  # so a bounded retry cannot close anything but a genuinely finished agent.
   mkdir -p "$state_dir" 2>/dev/null || return 1
-  : > "$marker"
+  sent=0
+  [ -s "$marker" ] && IFS= read -r sent < "$marker" 2>/dev/null
+  case "$sent" in ''|*[!0-9]*) sent=0 ;; esac
+  [ "$sent" -lt "${POLYLANE_QUIESCE_MAX:-5}" ] || return 1
+  printf '%s\n' "$((sent + 1))" > "$marker"
   pane_send_exit "$idx"
 }
 
@@ -3648,35 +3657,57 @@ lane_durable_activity_hash() {
   } | cksum | cut -d' ' -f1
 }
 
-# pane_tool_child_running IDX : 0 iff the pane's live agent process has its own
-# child subprocess (a running tool: bash, tests, git). Claude Code stops
-# repainting during a long tool call, so pane-hash AND pipe-pane log both
-# freeze while an hour-long suite runs — the live-wedge cap then kills honest
-# work (live 2026-08-19: c43c integrator respawned mid-suite, breaking the
-# zero-restart canary). Codex lanes get this signal from JSONL; process
-# ancestry is the agent-agnostic equivalent.
-pane_tool_child_running() {
-  local idx="$1" pane_pid pid comm child IFS=$' \t\n'
+# pane_tree_cpu_seconds IDX : cumulative CPU seconds burned by the pane's whole
+# process tree. Claude Code stops repainting during a long tool call, so pane
+# hash AND pipe-pane log both freeze while an hour-long suite runs; CPU burn is
+# the agent-agnostic proof that work is happening. Presence of a child process
+# is NOT such proof — persistent MCP servers (npm exec …-mcp, uvx) live for the
+# whole session and would make every lane permanently un-wedgeable.
+pane_tree_cpu_seconds() {
+  local idx="$1" pane_pid total=0 pid t h m sec queue seen="" count=0 child IFS=$' \t\n'
   [ "$idx" -ge 0 ] 2>/dev/null || return 1
   pane_pid=$(tmux display-message -t "$TMUX_SESSION:0.$idx" -p '#{pane_pid}' 2>/dev/null || true)
   [ -n "$pane_pid" ] || return 1
-  for pid in $(pgrep -P "$pane_pid" 2>/dev/null) ; do
-    comm=$(ps -p "$pid" -o comm= 2>/dev/null || true)
-    case "$comm" in
-      *claude*|*codex*|*aider*)
-        child=$(pgrep -P "$pid" 2>/dev/null | head -1)
-        [ -n "$child" ] && return 0
-        ;;
+  queue="$pane_pid"
+  while [ -n "$queue" ] && [ "$count" -lt 128 ]; do
+    pid="${queue%% *}"
+    if [ "$queue" = "$pid" ]; then queue=""; else queue="${queue#* }"; fi
+    case " $seen " in *" $pid "*) continue ;; esac
+    seen="$seen $pid"; count=$((count + 1))
+    t=$(ps -p "$pid" -o time= 2>/dev/null | tr -d ' ') || true
+    case "$t" in
+      *:*:*) h=${t%%:*}; t=${t#*:}; m=${t%%:*}; sec=${t##*:}
+             total=$((total + 10#${h:-0} * 3600 + 10#${m:-0} * 60 + 10#${sec:-0})) ;;
+      *:*)   m=${t%%:*}; sec=${t##*:}
+             total=$((total + 10#${m:-0} * 60 + 10#${sec:-0})) ;;
     esac
+    for child in $(pgrep -P "$pid" 2>/dev/null || true); do
+      queue="${queue:+$queue }$child"
+    done
   done
-  return 1
+  printf '%s' "$total"
 }
+
+# pane_burning_cpu NAME IDX : 0 iff the pane tree burned real CPU since the last
+# health check. An idle agent parked at its input (even with MCP servers running)
+# adds near zero; a live inference turn or a running test suite adds seconds.
+pane_burning_cpu() {
+  local name="$1" idx="$2" now prev
+  now=$(pane_tree_cpu_seconds "$idx") || return 1
+  [ -n "$now" ] || return 1
+  prev=$(cpu_get "$name")
+  cpu_set "$name" "$now"
+  [ -n "$prev" ] || return 1
+  [ "$((now - prev))" -ge "${POLYLANE_CPU_ACTIVE_SECONDS:-2}" ]
+}
+cpu_get() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && printf '%s' "${LANE_PCPU[$i]:-}" || printf ''; }
+cpu_set() { local i; i=$(pane_index_for "$1"); [ "$i" -ge 0 ] && LANE_PCPU[i]="$2"; }
 
 pane_wedged() {
   local name="$1" idx="$2" h prev cnt limit
   if pane_agent_live "$idx"; then
     lane_active_command "$name" && return 1
-    pane_tool_child_running "$idx" && { wedge_cnt_set "$name" 0; return 1; }
+    pane_burning_cpu "$name" "$idx" && { wedge_cnt_set "$name" 0; return 1; }
     if lane_terminal_or_idle "$name" "$idx"; then
       h=$(lane_durable_activity_hash "$name")
     else

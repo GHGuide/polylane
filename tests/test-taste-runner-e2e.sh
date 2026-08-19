@@ -169,10 +169,21 @@ assert_eq "quiesce-sent-exactly-one-exit" "1" "$(grep -c . "$EXIT_LOG")"
 # live pane must leave the lane worktree itself byte-for-byte clean.
 assert_eq "quiesce-does-not-dirty-lane-worktree" "" "$(git -C "$QWT" status --porcelain)"
 
-# 2) still live on the next poll: idempotent — no second /exit is sent.
+# 2) still live on the next poll: RE-SEND on a bounded budget. A single /exit
+#    swallowed by a mid-render CLI hung a finished run for nine hours (c43d,
+#    2026-08-19); every send re-proves clean+committed+scope-valid first, so a
+#    bounded retry can only ever close a genuinely finished agent.
 rc=0; lane_done "$QWT" builder || rc=$?
 assert_eq "quiesce-second-poll-still-not-done" 1 "$rc"
-assert_eq "quiesce-no-duplicate-exit" "1" "$(grep -c . "$EXIT_LOG")"
+assert_eq "quiesce-resends-exit-when-swallowed" "2" "$(grep -c . "$EXIT_LOG")"
+
+#    …but the budget is finite: past POLYLANE_QUIESCE_MAX it stops sending.
+POLYLANE_QUIESCE_MAX=3
+rc=0; lane_done "$QWT" builder || rc=$?   # send 3
+assert_eq "quiesce-third-send" "3" "$(grep -c . "$EXIT_LOG")"
+rc=0; lane_done "$QWT" builder || rc=$?   # budget exhausted
+assert_eq "quiesce-budget-caps-resends" "3" "$(grep -c . "$EXIT_LOG")"
+unset POLYLANE_QUIESCE_MAX
 
 # 3) once the agent has exited, the same committed DONE completes normally.
 STUB_LIVE=0
