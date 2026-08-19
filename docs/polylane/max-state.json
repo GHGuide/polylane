@@ -1602,9 +1602,9 @@
           "id": "m32.8",
           "text": "Acquire selected-only public transfer diagnostics and implement the HCM-v2 study, stimulus, consent, ballot, privacy, analysis, and judge-qualification pipeline with a frozen target-matched corpus",
           "weight": 158,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 45,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 45"
         },
         {
           "id": "m32.8a",
@@ -1992,6 +1992,12 @@
       "cycle": 44,
       "kind": "decision",
       "text": "2026-08-19: m32.7 closed — cycle 44 implemented all five frozen v3 defect controls (typed-section dedupe, immutable finalist retention, consumed-stdin proof, single run-mode vocabulary, validated-win-only comparator), each with its named regression test; the run promoted itself EXTERNAL-EVIDENCE-OPEN and all seven frozen accepts (six focused + terminal) then passed fresh on the promoted tree. Registry defect statuses deliberately left OPEN: flipping them re-freezes a hashed contract and is its own decision.",
+      "meta": ""
+    },
+    {
+      "cycle": 45,
+      "kind": "decision",
+      "text": "2026-08-19: m32.8 closed — cycle 45 built and proved the HCM-v2 pipeline offline (frozen 320-pair split bound to split_sha256, exposure caps and viewports, PII-free consent with holdout-label boundary, all judge-qualification gates tested at their exact boundary values), promoted EXTERNAL-EVIDENCE-OPEN with zero interventions, and all seven frozen accepts then passed fresh on the promoted tree. m32.8a remains external: the study itself needs ethics review, 3,200 recruited participants and 96 credentialed designers, and no human result was ever simulated.",
       "meta": ""
     }
   ],
@@ -3568,9 +3574,9 @@
       "tier": "terminal",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     }
   ]

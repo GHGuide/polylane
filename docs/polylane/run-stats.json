@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c45-hcm-pipeline-20260819-a1",
   "started_at": 1787151046,
-  "updated_at": 1787154926,
-  "wall_s": 3880,
+  "updated_at": 1787154992,
+  "wall_s": 3946,
   "lanes": {
     "hcm-corpus": {
       "launches": 1,
@@ -32,7 +32,7 @@
     "hcm-stats": 1729147,
     "integrator": 8856996
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -104,6 +104,35 @@
       "type": "usage_capture",
       "lane": "integrator",
       "at": 1787154926,
+      "added": null
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1787154992
+    },
+    {
+      "type": "usage_capture",
+      "lane": "hcm-corpus",
+      "at": 1787154992,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "hcm-privacy",
+      "at": 1787154992,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "hcm-stats",
+      "at": 1787154992,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787154992,
       "added": null
     }
   ]
