@@ -45,3 +45,4 @@
 {"cycle":43,"ts":"2026-08-19T12:15:32Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":9}
 {"cycle":43,"ts":"2026-08-19T12:15:42Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":9}
 {"cycle":43,"ts":"2026-08-19T12:15:52Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":8}
+{"cycle":44,"ts":"2026-08-19T14:16:19Z","verdict":"EXTERNAL-EVIDENCE-OPEN","tokens":0,"cost":0.00,"subgoals_done":93,"subgoals_total":99,"nogo":0,"lanes":3,"wall_s":3507}

@@ -1594,9 +1594,9 @@
           "id": "m32.7",
           "text": "Implement the production evidence chain, selected-source transport, calibrated judge bridge, UI v3 contract, and prompt tournament against the frozen lock",
           "weight": 159,
-          "status": "open",
-          "cycle": null,
-          "evidence": ""
+          "status": "done",
+          "cycle": 44,
+          "evidence": "integrator EXTERNAL-EVIDENCE-OPEN; promoted cycle 44"
         },
         {
           "id": "m32.8",
@@ -1986,6 +1986,12 @@
       "cycle": 43,
       "kind": "decision",
       "text": "2026-08-19: m32.6 closed — c42a v3 contract freeze landed on main (ab6d866) after four independent integrator certifications; frozen focused acceptance re-run fresh on the merged tree by check-accept and passed. Host completed the promotion c43e's gate had already cleared (it was blocked only by uncommitted run evidence, then by the --resume graph-authority defect recorded in cycle-43-findings.md).",
+      "meta": ""
+    },
+    {
+      "cycle": 44,
+      "kind": "decision",
+      "text": "2026-08-19: m32.7 closed — cycle 44 implemented all five frozen v3 defect controls (typed-section dedupe, immutable finalist retention, consumed-stdin proof, single run-mode vocabulary, validated-win-only comparator), each with its named regression test; the run promoted itself EXTERNAL-EVIDENCE-OPEN and all seven frozen accepts (six focused + terminal) then passed fresh on the promoted tree. Registry defect statuses deliberately left OPEN: flipping them re-freezes a hashed contract and is its own decision.",
       "meta": ""
     }
   ],
@@ -3485,9 +3491,9 @@
       "tier": "terminal",
       "evidence_kind": "autonomous",
       "key": "",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
-      "fp": "",
+      "fp": "autonomous:",
       "regressed_cycle": null
     }
   ]

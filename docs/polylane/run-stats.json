@@ -2,8 +2,8 @@
   "version": 1,
   "run_id": "c44-defect-controls-20260819-a1",
   "started_at": 1787145472,
-  "updated_at": 1787148915,
-  "wall_s": 3443,
+  "updated_at": 1787148979,
+  "wall_s": 3507,
   "lanes": {
     "prompt-chain": {
       "launches": 1,
@@ -32,7 +32,7 @@
     "comparator": 961403,
     "integrator": 7461243
   },
-  "cleanup": "pending",
+  "cleanup": "complete",
   "events": [
     {
       "type": "initialized",
@@ -104,6 +104,35 @@
       "type": "usage_capture",
       "lane": "integrator",
       "at": 1787148915,
+      "added": null
+    },
+    {
+      "type": "cleanup",
+      "state": "complete",
+      "at": 1787148979
+    },
+    {
+      "type": "usage_capture",
+      "lane": "prompt-chain",
+      "at": 1787148979,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "execution-proof",
+      "at": 1787148979,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "comparator",
+      "at": 1787148979,
+      "added": null
+    },
+    {
+      "type": "usage_capture",
+      "lane": "integrator",
+      "at": 1787148979,
       "added": null
     }
   ]

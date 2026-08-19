@@ -294,3 +294,4 @@ remains external.
 - [cycle-43-findings.md](cycle-43-findings.md) — five harness defects surfaced by the m32.6 recovery attempts: four fixed in-flight, three open for the next cycle
 - [cycle-43-digest.md](cycle-43-digest.md) — the v3 contract freeze landed after five attempts; seven harness defects found and fixed
 - [cycle-44-plan.md](cycle-44-plan.md) — implement the five frozen v3 defect controls (m32.7), three disjoint lanes
+- [cycle-44-digest.md](cycle-44-digest.md) — five frozen v3 defect controls implemented, promoted, and certified; m32.7 closed

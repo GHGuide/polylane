@@ -79,3 +79,6 @@
 {"lane":"precheck","sig":"b2:hub0:crowd0","model":"claude-opus-5","verdict":"HALTED","ts":"2026-08-18T21:24:30Z"}
 {"lane":"precheck","sig":"b2:hub0:crowd0","model":"claude-opus-5","verdict":"NO-GO","ts":"2026-08-19T00:19:48Z"}
 {"lane":"precheck","sig":"b2:hub0:crowd0","model":"claude-opus-5","verdict":"NO-GO","ts":"2026-08-19T10:58:32Z"}
+{"lane":"prompt-chain","sig":"b5:hub0:crowd0","model":"claude-opus-5","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-19T14:16:18Z"}
+{"lane":"execution-proof","sig":"b5:hub0:crowd0","model":"claude-opus-5","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-19T14:16:18Z"}
+{"lane":"comparator","sig":"b4:hub0:crowd0","model":"claude-opus-5","verdict":"EXTERNAL-EVIDENCE-OPEN","ts":"2026-08-19T14:16:18Z"}

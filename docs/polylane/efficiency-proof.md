@@ -1,13 +1,14 @@
 # polylane efficiency proof
 
-- Run: c36-verdict-path-20260811-a1
+- Run: c44-defect-controls-20260819-a1
 - Phase: final
-- Status: PASS
-- Wall seconds: 1266 / 7200
-- Launches: 2 / 2
-- Restarts: 0 / 0
-- Terminal gates: 0 / 0
+- Status: FAIL
+- Wall seconds: 3507 / 21600
+- Launches: 4 / 4
+- Restarts: 0 / 3
+- Terminal gates: 0 / 1
 - Cleanup: complete
-- Tokens: 4333767 (known)
+- Tokens: unknown
 - Unexpected launches: 0
 - Manual intervention policy: forbidden
+- Failures: terminal_gates=0/1
