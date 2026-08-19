@@ -277,3 +277,23 @@
 {"lane":"lifecycle-external-routing","domain":"test","skill":"operations:risk-assessment","outcome":"helped","why":" prioritized four critical/high"}
 {"lane":"lifecycle-external-routing","domain":"test","skill":"superpowers:systematic-debugging","outcome":"helped","why":" traced mutation,"}
 {"lane":"lifecycle-external-routing","domain":"test","skill":"superpowers:test-driven-development","outcome":"helped","why":" each requested failure"}
+{"lane":"contract-import","domain":"test","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43-contract-import/docs/verify-contract-import.md"}
+
+{"lane":"contract-import","domain":"test","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43-contract-import/docs/verify-contract-import.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43b-precheck/docs/verify-precheck.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43b-precheck/docs/verify-precheck.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43c-precheck/docs/verify-precheck.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing SKILL-EVIDENCE record in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43c-precheck/docs/verify-precheck.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43d-precheck/docs/verify-precheck.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43d-precheck/docs/verify-precheck.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:systematic-debugging","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43e-precheck/docs/verify-precheck.md"}
+
+{"lane":"precheck","domain":"report","skill":"superpowers:verification-before-completion","outcome":"unused","why":"missing matching SKILL-READ evidence for trusted path and fingerprint in /Users/leonardo/Downloads/polylane/.polylane/worktrees/c43e-precheck/docs/verify-precheck.md"}
+

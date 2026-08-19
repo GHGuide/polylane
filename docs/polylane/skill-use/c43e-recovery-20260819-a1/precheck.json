@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "lane": "precheck",
+  "verify_file": "/Users/leonardo/Downloads/polylane/.polylane/worktrees/c43e-precheck/docs/verify-precheck.md",
+  "helped": [],
+  "unused": [
+    "superpowers:systematic-debugging",
+    "superpowers:verification-before-completion"
+  ],
+  "hurt": []
+}

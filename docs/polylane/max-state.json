@@ -3402,7 +3402,7 @@
       "tier": "focused",
       "evidence_kind": "autonomous",
       "key": "taste-v3-contract-lock",
-      "status": "unchecked",
+      "status": "pass",
       "deps": [],
       "fp": "",
       "regressed_cycle": null

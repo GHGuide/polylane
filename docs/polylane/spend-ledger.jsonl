@@ -30,3 +30,13 @@
 {"cycle":39,"ts":"2026-08-12T16:09:21Z","verdict":"GO","tokens":0,"cost":0.00,"subgoals_done":89,"subgoals_total":92,"nogo":0,"lanes":15,"wall_s":10638}
 {"cycle":40,"ts":"2026-08-12T20:39:50Z","verdict":"EXTERNAL-EVIDENCE-OPEN","tokens":0,"cost":0.00,"subgoals_done":90,"subgoals_total":93,"nogo":0,"lanes":15,"wall_s":7239}
 {"cycle":42,"ts":"2026-08-13T03:25:23Z","verdict":"NO-GO","tokens":95478575,"cost":0.00,"subgoals_done":90,"subgoals_total":99,"nogo":1,"lanes":4,"wall_s":7366}
+{"cycle":43,"ts":"2026-08-18T21:05:39Z","verdict":"NO-GO","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":13463}
+{"cycle":43,"ts":"2026-08-18T21:24:30Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":909}
+{"cycle":43,"ts":"2026-08-19T00:19:48Z","verdict":"NO-GO","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":8203}
+{"cycle":43,"ts":"2026-08-19T10:58:32Z","verdict":"NO-GO","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":37926}
+{"cycle":43,"ts":"2026-08-19T12:14:08Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":4328}
+{"cycle":43,"ts":"2026-08-19T12:14:21Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":8}
+{"cycle":43,"ts":"2026-08-19T12:14:31Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":8}
+{"cycle":43,"ts":"2026-08-19T12:14:41Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":8}
+{"cycle":43,"ts":"2026-08-19T12:14:51Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":8}
+{"cycle":43,"ts":"2026-08-19T12:15:01Z","verdict":"HALTED","tokens":0,"cost":0.00,"subgoals_done":91,"subgoals_total":99,"nogo":1,"lanes":1,"wall_s":8}
